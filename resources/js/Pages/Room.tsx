@@ -753,7 +753,8 @@ export default function Room({
                                             <Avatar name={s.added_by} avatar={dj?.avatar ?? null} cosmetics={dj?.cosmetics} className="h-8 w-8 text-sm" />
                                             <div className="min-w-0 flex-1">
                                                 <p className="truncate font-semibold" style={{ color: dj?.role.color }}>{s.added_by}{s.user_id === user.id && <span className="ml-1.5 text-xs font-normal text-green-400">you</span>}</p>
-                                                <p className="text-xs text-neutral-500">{i === 0 && current ? 'playing now' : i === 1 ? 'next' : `in ${i} ${i === 1 ? 'turn' : 'turns'}`}</p>
+                                                <p className="truncate text-xs text-neutral-400" title={s.title}>{s.title}</p>
+                                                <p className="text-[11px] text-neutral-500">{i === 0 && current ? 'playing now' : i === 1 ? 'next' : `in ${i} turns`}</p>
                                             </div>
                                             {can.manage_queue && (
                                                 <button

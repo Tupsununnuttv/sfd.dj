@@ -42,6 +42,24 @@ class WaitlistPeopleTest extends TestCase
         $this->assertSame(2, ChatMessage::where('kind', 'join')->count(), 'once for each person, the second press said nothing');
     }
 
+    public function test_the_same_song_cannot_be_added_twice_but_other_songs_by_the_same_person_can(): void
+    {
+        $host = User::factory()->create();
+        $room = $host->rooms()->create(['name' => 'Lobby', 'slug' => 'lobby-d']);
+        $song = ['youtube_id' => 'abcdefghijk', 'title' => 'Song a', 'duration' => 200];
+
+        $first = $room->enqueue($song, $host->id);
+        $duplicate = $room->enqueue($song, $host->id);
+        $room->enqueue(['youtube_id' => 'lmnopqrstuv', 'title' => 'Song b', 'duration' => 200], $host->id);
+        $staleDuplicate = $room->items()->create($song + ['user_id' => $host->id, 'position' => 3]);
+
+        $room->syncCurrent();
+
+        $this->assertSame($first->id, $duplicate->id);
+        $this->assertDatabaseMissing('playlist_items', ['id' => $staleDuplicate->id]);
+        $this->assertSame(2, $room->items()->count());
+    }
+
     public function test_the_next_dj_plays_the_top_song_of_their_playlist_as_it_is_on_their_turn(): void
     {
         Event::fake([PlaybackUpdated::class]);

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class Room extends Model
 {
@@ -206,16 +207,25 @@ class Room extends Model
     /** Add a song to the queue; starts playing it if nothing is playing. */
     public function enqueue(array $data, int $userId): PlaylistItem
     {
-        $item = $this->items()->create($data + [
-            'user_id' => $userId,
-            'position' => ($this->items()->max('position') ?? 0) + 1,
-        ]);
+        return DB::transaction(function () use ($data, $userId): PlaylistItem {
+            $room = static::query()->lockForUpdate()->findOrFail($this->getKey());
+            $existing = $room->items()->where('user_id', $userId)->where('youtube_id', $data['youtube_id'])->first();
 
-        if (! $this->current_item_id) {
-            $this->start($item);
-        }
+            if ($existing) {
+                return $existing;
+            }
 
-        return $item;
+            $item = $room->items()->create($data + [
+                'user_id' => $userId,
+                'position' => ($room->items()->max('position') ?? 0) + 1,
+            ]);
+
+            if (! $room->current_item_id) {
+                $room->start($item);
+            }
+
+            return $item;
+        });
     }
 
     /**
@@ -258,7 +268,7 @@ class Room extends Model
             $data = ['user_id' => $played->user_id] + $this->fromSong($song);
         }
 
-        $this->items()->create($data + ['position' => ($this->items()->max('position') ?? 0) + 1]);
+        $this->enqueue($data, $played->user_id);
     }
 
     /** The next DJ in line plays the top song of their active playlist as it is now, not the one it was when they joined. */
@@ -280,12 +290,29 @@ class Room extends Model
         return null;
     }
 
+    private function removeDuplicateWaitingItems(): void
+    {
+        DB::transaction(function (): void {
+            $room = static::query()->lockForUpdate()->findOrFail($this->getKey());
+            $groups = $room->items()->get(['id', 'user_id', 'youtube_id'])
+                ->groupBy(fn (PlaylistItem $item) => $item->user_id.':'.$item->youtube_id)
+                ->filter(fn ($items) => $items->count() > 1);
+
+            foreach ($groups as $duplicates) {
+                $keep = $duplicates->firstWhere('id', $room->current_item_id) ?? $duplicates->first();
+                $room->items()->whereIn('id', $duplicates->where('id', '!=', $keep->id)->pluck('id'))->delete();
+            }
+        });
+    }
+
     /**
      * Songs that have run past their length are over, even if nobody's player reported it (empty room, blocked embed).
      * Called when someone opens the room, so the timeline always starts at 0:00 of the song that is really playing.
      */
     public function syncCurrent(): void
     {
+        $this->removeDuplicateWaitingItems();
+
         for ($i = 0; $i < 50 && $this->current_item_id; $i++) {
             $item = PlaylistItem::find($this->current_item_id);
 
