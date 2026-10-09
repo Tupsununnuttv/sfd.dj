@@ -1,5 +1,5 @@
 /** Send JSON to a Laravel route; throws the server's message (e.g. validation error) on failure. */
-export async function send(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: string, data?: object): Promise<void> {
+export async function send(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: string, data?: object, options: { keepalive?: boolean } = {}): Promise<void> {
     const xsrf = decodeURIComponent(
         document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '',
     );
@@ -12,6 +12,7 @@ export async function send(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: str
             'X-XSRF-TOKEN': xsrf,
         },
         body: data ? JSON.stringify(data) : undefined,
+        keepalive: options.keepalive,
     });
 
     if (!res.ok) {

@@ -228,6 +228,8 @@ export default function Room({
     const box = useRef<HTMLDivElement>(null);
     const player = useRef<any>(null);
     const [ready, setReady] = useState(false);
+    const [discoveredDuration, setDiscoveredDuration] = useState<{ itemId: number; seconds: number } | null>(null);
+    const reportedDuration = useRef<number | null>(null);
     const current = playback.current;
     const currentRef = useRef(current);
     currentRef.current = current;
@@ -380,6 +382,24 @@ export default function Room({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [room.id, user.id]);
 
+    useEffect(() => {
+        if (guest) return;
+
+        let leaveSent = false;
+        const leaveWaitlist = () => {
+            if (leaveSent) return;
+            leaveSent = true;
+            void send('DELETE', route('rooms.leave', room.slug), undefined, { keepalive: true }).catch(() => {});
+        };
+
+        window.addEventListener('pagehide', leaveWaitlist);
+
+        return () => {
+            window.removeEventListener('pagehide', leaveWaitlist);
+            leaveWaitlist();
+        };
+    }, [guest, room.slug]);
+
     // Site-wide broadcasts also show up in this room's chat as system lines (not stored).
     useEffect(() => {
         const ch = echo<'reverb'>().channel('site');
@@ -464,6 +484,32 @@ export default function Room({
         // Only a different song should reload the video, not a queue change.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ready, playbackOn, current?.id]);
+
+    useEffect(() => {
+        if (!ready || !current || current.duration > 0) return;
+
+        let active = true;
+        const syncDuration = () => {
+            const duration = Math.round(player.current?.getDuration?.() ?? 0);
+            if (!active || !Number.isFinite(duration) || duration < 1 || duration > 86400) return;
+
+            setDiscoveredDuration((previous) => previous?.itemId === current.id && previous.seconds === duration ? previous : { itemId: current.id, seconds: duration });
+            if (guest || reportedDuration.current === current.id) return;
+
+            reportedDuration.current = current.id;
+            post(route('rooms.duration', room.slug), { item_id: current.id, duration }).catch(() => {
+                if (reportedDuration.current === current.id) reportedDuration.current = null;
+            });
+        };
+
+        syncDuration();
+        const timer = window.setInterval(syncDuration, 1000);
+
+        return () => {
+            active = false;
+            window.clearInterval(timer);
+        };
+    }, [current?.id, current?.duration, guest, ready, room.slug]);
 
     // the first click or key anywhere on the page lets the browser play sound: turn it on
     useEffect(() => {
@@ -609,7 +655,7 @@ export default function Room({
                         title={current?.title ?? null}
                         playing={!!current && playbackOn}
                         position={position}
-                        duration={current?.duration ?? 0}
+                        duration={current?.duration || (current && discoveredDuration?.itemId === current.id ? discoveredDuration.seconds : 0)}
                         volume={volume}
                         muted={muted}
                         onVolume={(v) => { setVolume(v); setMuted(false); }}

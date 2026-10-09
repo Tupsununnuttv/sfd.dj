@@ -24,8 +24,8 @@ use App\Services\Music;
 use App\Services\YouTube;
 use App\Support\Automod;
 use App\Support\LinkGuard;
-use App\Support\RoomCss;
 use App\Support\Presence;
+use App\Support\RoomCss;
 use App\Support\RoomPresence;
 use App\Support\Season;
 use Illuminate\Http\Client\ConnectionException;
@@ -35,6 +35,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -621,6 +622,36 @@ class RoomController extends Controller
         $song && $room->log($request->user(), 'remove_song', $song->user, $song->title);
         $song && ChatMessage::system($room, 'remove', "{$request->user()->name} removed {$song->user->name} from the waitlist", $request->user());
         PlaybackUpdated::dispatch($room->refresh());
+
+        return response()->noContent();
+    }
+
+    public function updateDuration(Request $request, Room $room): Response
+    {
+        $data = $request->validate([
+            'item_id' => ['required', 'integer'],
+            'duration' => ['required', 'integer', 'min:1', 'max:86400'],
+        ]);
+
+        $updated = DB::transaction(function () use ($room, $data): bool {
+            $lockedRoom = Room::query()->lockForUpdate()->findOrFail($room->id);
+            if ($lockedRoom->current_item_id !== $data['item_id']) {
+                return false;
+            }
+
+            $item = $lockedRoom->items()->whereKey($data['item_id'])->lockForUpdate()->first();
+            if (! $item || $item->duration > 0) {
+                return false;
+            }
+
+            $item->update(['duration' => $data['duration']]);
+
+            return true;
+        });
+
+        if ($updated) {
+            PlaybackUpdated::dispatch($room->refresh());
+        }
 
         return response()->noContent();
     }

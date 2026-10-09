@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Events\ChatCleared;
 use App\Events\MessageSent;
 use App\Events\PlaybackUpdated;
-use App\Models\Room;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
@@ -41,6 +40,23 @@ class RoomTest extends TestCase
 
         $this->actingAs($user)->post("/rooms/{$room->slug}/skip", ['item_id' => $state['current']['id']]);
         $this->assertNull($room->refresh()->playback()['current']);
+    }
+
+    public function test_player_duration_is_saved_only_for_the_current_song_and_broadcast(): void
+    {
+        Event::fake([PlaybackUpdated::class]);
+        $user = User::factory()->create();
+        $room = $user->rooms()->create(['name' => 'Lobby', 'slug' => 'lobby-duration']);
+        $current = $room->enqueue(['youtube_id' => 'abcdefghijk', 'title' => 'Current', 'duration' => 0], $user->id);
+        $next = $room->enqueue(['youtube_id' => 'lmnopqrstuv', 'title' => 'Next', 'duration' => 0], $user->id);
+
+        $this->actingAs($user)->postJson("/rooms/{$room->slug}/duration", ['item_id' => $next->id, 'duration' => 3672])->assertNoContent();
+        $this->assertDatabaseHas('playlist_items', ['id' => $next->id, 'duration' => 0]);
+
+        $this->actingAs($user)->postJson("/rooms/{$room->slug}/duration", ['item_id' => $current->id, 'duration' => 3672])->assertNoContent();
+        $this->assertDatabaseHas('playlist_items', ['id' => $current->id, 'duration' => 3672]);
+        $this->assertSame(3672, $room->refresh()->playback()['current']['duration']);
+        Event::assertDispatched(PlaybackUpdated::class);
     }
 
     public function test_rejects_non_youtube_links_and_broadcasts_chat(): void

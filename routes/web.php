@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Auth\UsernameController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\DeveloperController;
@@ -18,13 +19,14 @@ use App\Http\Controllers\RoomModerationController;
 use App\Http\Controllers\RoomRoleController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SiteController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\WhisperController;
-use App\Http\Controllers\SubscriptionController;
 use App\Http\Middleware\EnsureRoomAccess;
 use App\Http\Middleware\VerifiedIfLoggedIn;
+use App\Support\Plans;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -35,7 +37,7 @@ Route::name('site.')->group(function () {
     Route::get('/features/{feature}', fn (string $feature) => Inertia::render('Site/Feature', ['slug' => $feature]))->whereIn('feature', ['rooms', 'music', 'chat', 'moderation', 'roles', 'avatars'])->name('feature');
     Route::get('/about', fn () => Inertia::render('Site/About'))->name('about');
     Route::get('/brand', fn () => Inertia::render('Site/Brand'))->name('brand');
-    Route::get('/pricing', fn () => Inertia::render('Site/Pricing', ['plans' => \App\Support\Plans::catalog()]))->name('pricing');
+    Route::get('/pricing', fn () => Inertia::render('Site/Pricing', ['plans' => Plans::catalog()]))->name('pricing');
     Route::get('/developers', fn () => Inertia::render('Site/Developers'))->name('developers');
     Route::get('/contact', fn () => Inertia::render('Site/Contact'))->name('contact');
     Route::get('/legal/{doc}', fn (string $doc) => Inertia::render('Site/Legal', ['slug' => $doc]))->whereIn('doc', ['rules', 'terms', 'privacy'])->name('legal');
@@ -45,7 +47,7 @@ Route::name('site.')->group(function () {
 Route::post('/stripe/webhook', [SubscriptionController::class, 'webhook'])->name('stripe.webhook');
 
 // is this username free? (the register and profile forms ask while you type)
-Route::get('/api/username-available', \App\Http\Controllers\Auth\UsernameController::class)->middleware('throttle:40,1')->name('username.available');
+Route::get('/api/username-available', UsernameController::class)->middleware('throttle:40,1')->name('username.available');
 
 Route::get('/two-factor-challenge', [TwoFactorController::class, 'challenge'])->name('two-factor.challenge');
 Route::post('/two-factor-challenge', [TwoFactorController::class, 'verify'])->middleware('throttle:6,1');
@@ -175,6 +177,7 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::post('/rooms/{room}/join', [RoomController::class, 'join'])->middleware('throttle:30,1')->name('rooms.join');
     Route::delete('/rooms/{room}/queue/{item}', [RoomController::class, 'removeItem'])->name('rooms.remove');
     Route::delete('/rooms/{room}/waitlist', [RoomController::class, 'leaveWaitlist'])->name('rooms.leave');
+    Route::post('/rooms/{room}/duration', [RoomController::class, 'updateDuration'])->name('rooms.duration');
     Route::post('/rooms/{room}/skip', [RoomController::class, 'skip'])->name('rooms.skip');
     Route::post('/rooms/{room}/vote', [RoomController::class, 'vote'])->name('rooms.vote');
     Route::post('/rooms/{room}/kick/{user}', [RoomController::class, 'kick'])->name('rooms.kick');

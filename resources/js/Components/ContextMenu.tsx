@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export interface MenuItem {
@@ -81,7 +82,9 @@ export default function ContextMenu({ anchor, header, groups, label, onClose }: 
         };
     }, []);
 
-    return (
+    if (typeof document === 'undefined') return null;
+
+    return createPortal(
         <div
             ref={box}
             role="menu"
@@ -109,6 +112,7 @@ export default function ContextMenu({ anchor, header, groups, label, onClose }: 
                     ))}
                 </div>
             ))}
-        </div>
+        </div>,
+        document.body,
     );
 }
