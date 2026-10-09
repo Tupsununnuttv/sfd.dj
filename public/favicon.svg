@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="tile" x1="12" y1="4" x2="118" y2="126" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3b1a6e"/>
+      <stop offset="1" stop-color="#0a0418"/>
+    </linearGradient>
+    <linearGradient id="a" x1="14" y1="10" x2="108" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fbcfe8"/>
+      <stop offset=".4" stop-color="#e879f9"/>
+      <stop offset="1" stop-color="#9d1fb8"/>
+    </linearGradient>
+    <linearGradient id="b" x1="114" y1="10" x2="20" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#bae6fd"/>
+      <stop offset=".45" stop-color="#6aa9ff"/>
+      <stop offset="1" stop-color="#4338ca"/>
+    </linearGradient>
+    <clipPath id="disc"><circle cx="64" cy="64" r="53"/></clipPath>
+  </defs>
+  <rect width="128" height="128" rx="30" fill="url(#tile)"/>
+  <g clip-path="url(#disc)">
+    <circle cx="64" cy="64" r="53" fill="url(#a)"/>
+    <path d="M64 11A53 53 0 0 1 64 117A26.5 26.5 0 0 0 64 64A26.5 26.5 0 0 1 64 11Z" fill="url(#b)"/>
+    <path d="M64 11A26.5 26.5 0 0 0 64 64A26.5 26.5 0 0 1 64 117" stroke="#fff" stroke-opacity=".9" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <circle cx="64" cy="64" r="53" stroke="#fff" stroke-opacity=".35" stroke-width="2"/>
+  <circle cx="64" cy="64" r="11" fill="#0a0418"/>
+  <circle cx="64" cy="64" r="11" stroke="#fff" stroke-width="4"/>
+</svg>

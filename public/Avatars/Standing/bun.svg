@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -32 200 276" width="200" height="276" role="img" aria-label="Bun, standing">
+<style> .all, .headgrp, .tail, .legL, .legR, .earL, .earR, .blink, .armL, .armR, .glow, .led { transform-box: view-box; } .blink { transform-box: fill-box; transform-origin: center; } .glow { transform-box: fill-box; transform-origin: center; } .all { transform-origin: 80px 238px; } .headgrp { transform-origin: 80px 118px; } .tail { transform-origin: 112px 182px; } .earL { transform-origin: 58px 50px; } .earR { transform-origin: 102px 50px; } .armL { transform-origin: 50px 138px; } .armR { transform-origin: 110px 138px; } .legL { transform-origin: 66px 192px; } .legR { transform-origin: 94px 192px; } @media (prefers-reduced-motion: reduce) { * { animation: none !important; } } @keyframes breathe { 0%,100% { transform: translateY(0) scale(1,1); } 50% { transform: translateY(-1.5px) scale(1.012,1.018); } } @keyframes blink { 0%,90%,100% { transform: scaleY(1); } 94% { transform: scaleY(.08); } } @keyframes sway { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(3deg); } } @keyframes armSway { 0%,100% { transform: rotate(2deg); } 50% { transform: rotate(-3deg); } } @keyframes earTwitch { 0%,86%,100% { transform: rotate(0); } 90% { transform: rotate(-9deg); } 95% { transform: rotate(3deg); } } .all { animation: breathe 3.2s ease-in-out infinite; } .blink { animation: blink 4.4s infinite; } .tail { animation: sway 3.6s ease-in-out infinite; } .armL { animation: armSway 3.2s ease-in-out infinite; } .armR { animation: armSway 3.2s ease-in-out infinite reverse; } .earL { animation: earTwitch 6s infinite; } .earR { animation: earTwitch 6s infinite 2.2s; }</style>
+<ellipse cx="80" cy="236" rx="44" ry="6" fill="#000" opacity=".22"/>
+<g stroke="#1c1033" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+<g class="all">
+<g class="tail"><circle cx="116" cy="188" r="14" fill="#ffffff"/></g>
+
+    <g class="legL"><path d="M66 192V220" stroke="#7c3aed" stroke-width="21"/><path d="M58 230Q66 218 78 228Q80 238 66 238Q54 238 58 230Z" fill="#ffffff"/><path d="M60 228Q66 224 74 227" fill="none" stroke="#a78bfa" stroke-width="3"/></g>
+    <g class="legR"><path d="M94 192V220" stroke="#7c3aed" stroke-width="21"/><path d="M102 230Q94 218 82 228Q80 238 94 238Q106 238 102 230Z" fill="#ffffff"/><path d="M100 228Q94 224 86 227" fill="none" stroke="#a78bfa" stroke-width="3"/></g>
+<g class="torso">
+    <path d="M46 138C50 120 110 120 114 138L122 196Q80 208 38 196Z" fill="#fde047"/>
+    <ellipse cx="80" cy="126" rx="33" ry="11" fill="#bea835"/>
+    <path d="M54 170H106L110 192Q80 200 50 192Z" fill="#fef08a" opacity=".75" stroke="none"/>
+    <path d="M72 128L69 150M88 128L91 150" stroke="#ffffff" stroke-width="2.6" fill="none"/>
+    <circle cx="69" cy="151" r="2.4" fill="#ffffff" stroke="none"/><circle cx="91" cy="151" r="2.4" fill="#ffffff" stroke="none"/>
+    <g><path d="M80 160C66 150 72 140 80 147C88 140 94 150 80 160Z" fill="#fff" stroke="none"/></g></g>
+<g class="armL"><path d="M50 138V176" stroke="#fde047" stroke-width="18"/><rect x="40.5" y="168" width="19" height="9" rx="4" fill="#ffffff"/><circle cx="50" cy="184" r="9.5" fill="#fff0e0"/></g><g class="armR"><path d="M110 138V176" stroke="#fde047" stroke-width="18"/><rect x="100.5" y="168" width="19" height="9" rx="4" fill="#ffffff"/><circle cx="110" cy="184" r="9.5" fill="#fff0e0"/></g>
+<g class="headgrp">
+<g class="earL"><ellipse cx="54" cy="14" rx="11" ry="32" transform="rotate(-10 54 30)" fill="#fbcfe8"/><ellipse cx="54" cy="16" rx="5.5" ry="22" transform="rotate(-10 54 30)" fill="#f9a8d4" stroke="none"/></g><g class="earR"><ellipse cx="106" cy="14" rx="11" ry="32" transform="rotate(10 106 30)" fill="#fbcfe8"/><ellipse cx="106" cy="16" rx="5.5" ry="22" transform="rotate(10 106 30)" fill="#f9a8d4" stroke="none"/></g>
+<circle cx="80" cy="76" r="44" fill="#fff0e0"/>
+<path d="M36 82C32 46 56 28 80 28C104 28 128 46 124 82C118 66 108 58 98 62C90 52 72 52 64 62C52 58 42 66 36 82Z" fill="#fbcfe8"/><path d="M36 82L34 104L44 96ZM124 82L126 104L116 96Z" fill="#fbcfe8"/>
+
+
+    <path d="M37 86C32 30 128 30 123 86" fill="none" stroke="#1c1033" stroke-width="10"/><path d="M37 86C32 30 128 30 123 86" fill="none" stroke="#a78bfa" stroke-width="5" class="glow"/>
+    <rect x="25" y="72" width="17" height="32" rx="8" fill="#a78bfa" class="glow"/><rect x="118" y="72" width="17" height="32" rx="8" fill="#a78bfa" class="glow"/>
+    <rect x="30" y="78" width="7" height="20" rx="3.5" fill="#1c1033" opacity=".45" stroke="none"/><rect x="123" y="78" width="7" height="20" rx="3.5" fill="#1c1033" opacity=".45" stroke="none"/>
+<g class="blink"><ellipse cx="62" cy="85" rx="9" ry="12" fill="#fff"/><ellipse cx="62" cy="86" rx="6.6" ry="9.4" fill="#fb7185" stroke="none"/><ellipse cx="62" cy="87" rx="3.4" ry="5.4" fill="#1c1033" stroke="none"/><circle cx="65" cy="81" r="2.8" fill="#fff" stroke="none"/><circle cx="59.5" cy="90" r="1.4" fill="#fff" stroke="none"/></g><g class="blink"><ellipse cx="98" cy="85" rx="9" ry="12" fill="#fff"/><ellipse cx="98" cy="86" rx="6.6" ry="9.4" fill="#fb7185" stroke="none"/><ellipse cx="98" cy="87" rx="3.4" ry="5.4" fill="#1c1033" stroke="none"/><circle cx="101" cy="81" r="2.8" fill="#fff" stroke="none"/><circle cx="95.5" cy="90" r="1.4" fill="#fff" stroke="none"/></g><ellipse cx="48" cy="99" rx="7" ry="4.6" fill="#fb7185" opacity=".55" stroke="none"/><ellipse cx="112" cy="99" rx="7" ry="4.6" fill="#fb7185" opacity=".55" stroke="none"/><path d="M72 104Q80 111 88 104" fill="none" stroke="#1c1033" stroke-width="3.4"/>
+</g>
+</g>
+</g>
+</svg>

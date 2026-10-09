@@ -1,0 +1,22 @@
+import { Preferences } from '@/types';
+import { router } from '@inertiajs/react';
+
+export const defaults = {
+    appearance: { chat_size: 'normal' as 'small' | 'normal' | 'large', show_avatars: true, show_badges: true, show_activity: true, always_animate: false },
+    audio: { default_volume: 80, mute_on_join: false },
+    notifications: { friend_requests: true, announcements: true, whispers: true, mentions: true, desktop: false },
+    privacy: { whispers: 'everyone' as 'everyone' | 'friends' | 'nobody', friend_requests: true, show_online: true },
+};
+
+/** The user's saved preferences with defaults filled in. */
+export function withDefaults(p: Preferences | null | undefined) {
+    return {
+        appearance: { ...defaults.appearance, ...p?.appearance },
+        audio: { ...defaults.audio, ...p?.audio },
+        notifications: { ...defaults.notifications, ...p?.notifications },
+        privacy: { ...defaults.privacy, ...p?.privacy },
+    };
+}
+
+export const savePrefs = (patch: Preferences) =>
+    router.patch(route('settings.preferences'), patch as never, { preserveScroll: true });

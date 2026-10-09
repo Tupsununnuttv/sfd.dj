@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="tile" x1="12" y1="4" x2="118" y2="126" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3b1a6e"/>
+      <stop offset=".5" stop-color="#170b33"/>
+      <stop offset="1" stop-color="#06020f"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="64" cy="66" r="62" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d946ef" stop-opacity=".5"/>
+      <stop offset=".55" stop-color="#7c3aed" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="a" x1="20" y1="18" x2="104" y2="110" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fdf2f8"/>
+      <stop offset=".28" stop-color="#f0abfc"/>
+      <stop offset=".62" stop-color="#c026d3"/>
+      <stop offset="1" stop-color="#6b21a8"/>
+    </linearGradient>
+    <linearGradient id="b" x1="108" y1="18" x2="24" y2="110" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e0f2fe"/>
+      <stop offset=".28" stop-color="#7dd3fc"/>
+      <stop offset=".62" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#3b0f8c"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="8" y1="8" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22d3ee"/>
+      <stop offset=".5" stop-color="#a855f7"/>
+      <stop offset="1" stop-color="#f472b6"/>
+    </linearGradient>
+    <radialGradient id="shade" cx="64" cy="64" r="44" gradientUnits="userSpaceOnUse">
+      <stop offset=".5" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".5"/>
+    </radialGradient>
+    <radialGradient id="sheen" cx="64" cy="64" r="44" gradientUnits="userSpaceOnUse">
+      <stop offset=".1" stop-color="#fff" stop-opacity="0"/>
+      <stop offset=".6" stop-color="#fff" stop-opacity=".1"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".3"/>
+    </radialGradient>
+    <linearGradient id="gloss" x1="34" y1="22" x2="62" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff" stop-opacity=".5"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="disc"><circle cx="64" cy="64" r="44"/></clipPath>
+    <filter id="blur" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="dot" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.2"/></filter>
+  </defs>
+
+  <!-- tile -->
+  <rect width="128" height="128" rx="30" fill="url(#tile)"/>
+  <rect width="128" height="128" rx="30" fill="url(#halo)"/>
+  <rect x=".6" y=".6" width="126.8" height="126.8" rx="29.4" stroke="#fff" stroke-opacity=".16" stroke-width="1.2"/>
+
+  <!-- the dial around the record, like a progress ring that ends in a playhead -->
+  <circle cx="64" cy="64" r="53.5" stroke="#fff" stroke-opacity=".07" stroke-width="3"/>
+  <circle cx="64" cy="64" r="53.5" stroke="url(#ring)" stroke-width="3" stroke-linecap="round" stroke-dasharray="236 100" transform="rotate(70 64 64)"/>
+  <circle cx="107.8" cy="33.3" r="4.4" fill="#67e8f9" filter="url(#dot)"/>
+  <circle cx="107.8" cy="33.3" r="2.7" fill="#ecfeff"/>
+
+  <!-- glow under the record -->
+  <circle cx="64" cy="72" r="42" fill="#c026d3" opacity=".55" filter="url(#blur)"/>
+
+  <!-- the record: two halves, divided by an S -->
+  <g clip-path="url(#disc)">
+    <g class="logo-disc">
+      <circle cx="64" cy="64" r="44" fill="url(#a)"/>
+      <path d="M64 20A44 44 0 0 1 64 108A22 22 0 0 0 64 64A22 22 0 0 1 64 20Z" fill="url(#b)"/>
+      <g stroke="#000" stroke-opacity=".17" stroke-width="1">
+        <circle cx="64" cy="64" r="39.5"/><circle cx="64" cy="64" r="35"/><circle cx="64" cy="64" r="30.5"/><circle cx="64" cy="64" r="26"/><circle cx="64" cy="64" r="21.5"/><circle cx="64" cy="64" r="17"/>
+      </g>
+      <g stroke="#fff" stroke-opacity=".1" stroke-width=".8">
+        <circle cx="64" cy="64" r="37.2"/><circle cx="64" cy="64" r="32.7"/><circle cx="64" cy="64" r="28.2"/><circle cx="64" cy="64" r="23.7"/><circle cx="64" cy="64" r="19.2"/>
+      </g>
+      <path d="M64 20A22 22 0 0 0 64 64A22 22 0 0 1 64 108" stroke="#fff" stroke-opacity=".8" stroke-width="2" stroke-linecap="round"/>
+    </g>
+    <circle cx="64" cy="64" r="44" fill="url(#shade)"/>
+    <path d="M64 64 86 25.9A44 44 0 0 1 102.1 42Z" fill="url(#sheen)"/>
+    <path d="M64 64 42 102.1A44 44 0 0 1 25.9 86Z" fill="url(#sheen)"/>
+    <ellipse cx="46" cy="38" rx="28" ry="12" transform="rotate(-38 46 38)" fill="url(#gloss)"/>
+  </g>
+  <circle cx="64" cy="64" r="44" stroke="#fff" stroke-opacity=".42" stroke-width="1.2"/>
+
+  <!-- spindle -->
+  <circle cx="64" cy="64" r="8.5" fill="#0a0418"/>
+  <circle cx="64" cy="64" r="8.5" stroke="#fff" stroke-opacity=".92" stroke-width="2.2"/>
+  <circle cx="64" cy="64" r="2.6" fill="#fff"/>
+</svg>

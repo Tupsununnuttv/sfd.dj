@@ -1,0 +1,212 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Events\PlaybackUpdated;
+use App\Models\Playlist;
+use App\Models\PlaylistItem;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
+use Tests\TestCase;
+
+class PlaylistDeckTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function song(string $id, ?string $title = null): array
+    {
+        return ['youtube_id' => str_pad($id, 11, 'x'), 'title' => $title ?? "Song {$id}", 'duration' => 200];
+    }
+
+    /** A playlist of three songs (a, b, c, in that order). */
+    private function list(User $user, string $name = 'Mix'): Playlist
+    {
+        $list = $user->playlists()->create(['name' => $name, 'kind' => 'custom']);
+        $list->addSongs([$this->song('a'), $this->song('b'), $this->song('c')]);
+
+        return $list;
+    }
+
+    private function titles(Playlist $list): array
+    {
+        return $list->songs()->pluck('title')->all();
+    }
+
+    public function test_songs_keep_the_order_they_were_added_in_and_can_be_dragged_into_another(): void
+    {
+        $me = User::factory()->create();
+        $list = $this->list($me);
+        $this->assertSame(['Song a', 'Song b', 'Song c'], $this->titles($list));
+
+        [$a, $b, $c] = $list->songs()->pluck('id')->all();
+        $this->actingAs($me)->putJson("/api/playlists/{$list->id}/order", ['ids' => [$c, $a, $b]])->assertOk();
+        $this->assertSame(['Song c', 'Song a', 'Song b'], $this->titles($list));
+        $this->actingAs($me)->getJson("/api/playlists/{$list->id}")->assertJsonPath('0.title', 'Song c')->assertJsonPath('0.position', 1)->assertJsonPath('2.position', 3);
+
+        // a song that is not named stays after the named ones, ids of other lists are ignored, a new song goes last
+        $other = $this->list($me, 'Other');
+        $this->actingAs($me)->putJson("/api/playlists/{$list->id}/order", ['ids' => [$b, $other->songs()->first()->id]])->assertOk();
+        $this->assertSame(['Song b', 'Song c', 'Song a'], $this->titles($list));
+        $list->addSongs([$this->song('d')]);
+        $this->assertSame(['Song b', 'Song c', 'Song a', 'Song d'], $this->titles($list));
+        $this->assertSame(['Song a', 'Song b', 'Song c'], $this->titles($other), 'the other list was not touched');
+
+        // strangers cannot reorder, and the list must be sent as numbers
+        $this->actingAs(User::factory()->create())->putJson("/api/playlists/{$list->id}/order", ['ids' => [$a]])->assertForbidden();
+        $this->actingAs($me)->putJson("/api/playlists/{$list->id}/order", ['ids' => ['x']])->assertStatus(422);
+        $this->actingAs($me)->putJson("/api/playlists/{$list->id}/order", [])->assertStatus(422);
+    }
+
+    public function test_shuffle_keeps_every_song_and_gives_each_its_own_place(): void
+    {
+        $me = User::factory()->create();
+        $list = $me->playlists()->create(['name' => 'Big', 'kind' => 'custom']);
+        $list->addSongs(array_map(fn ($i) => $this->song("s{$i}"), range(1, 30)));
+        $before = $list->songs()->pluck('id')->all();
+
+        $after = $this->actingAs($me)->postJson("/api/playlists/{$list->id}/shuffle")->assertOk()->json();
+
+        $this->assertCount(30, $after);
+        $this->assertEqualsCanonicalizing($before, array_column($after, 'id'));
+        $this->assertSame(range(1, 30), array_column($after, 'position'));
+        $this->assertNotSame($before, array_column($after, 'id'), 'thirty songs in the same order after a shuffle');
+        $this->actingAs(User::factory()->create())->postJson("/api/playlists/{$list->id}/shuffle")->assertForbidden();
+    }
+
+    public function test_one_playlist_is_active_the_first_one_to_begin_with(): void
+    {
+        $me = User::factory()->create();
+
+        $first = $this->actingAs($me)->postJson('/api/playlists', ['name' => 'First'])->assertCreated()->assertJsonPath('is_active', true)->json('id');
+        $second = $this->actingAs($me)->postJson('/api/playlists', ['name' => 'Second'])->assertCreated()->assertJsonPath('is_active', false)->json('id');
+
+        $lists = fn () => collect($this->actingAs($me)->getJson('/api/playlists')->assertOk()->json())->where('kind', 'custom')->pluck('is_active', 'id')->all();
+        $this->assertSame([$first => true, $second => false], $lists());
+
+        $this->actingAs($me)->postJson("/api/playlists/{$second}/activate")->assertOk()->assertJsonPath('lists.1.is_active', true);
+        $this->assertSame([$first => false, $second => true], $lists());
+
+        // when the active one goes, the other takes over; with none left, nothing is active
+        $this->actingAs($me)->deleteJson("/api/playlists/{$second}")->assertOk();
+        $this->assertSame([$first => true], $lists());
+
+        // other people's lists cannot be activated
+        $this->actingAs(User::factory()->create())->postJson("/api/playlists/{$first}/activate")->assertForbidden();
+        $this->assertNull(Playlist::activeFor(User::factory()->create()));
+    }
+
+    public function test_the_list_sums_up_each_playlist_and_a_person_without_an_active_one_gets_one(): void
+    {
+        $me = User::factory()->create();
+        $a = $this->list($me, 'Alpha');
+        $b = $this->list($me, 'Beta');
+        $this->assertSame(0, Playlist::where('user_id', $me->id)->where('is_active', true)->count()); // lists made without the endpoint
+
+        $rows = collect($this->actingAs($me)->getJson('/api/playlists')->assertOk()->json())->keyBy('id');
+
+        $this->assertSame(3, $rows[$a->id]['songs_count']);
+        $this->assertSame(600, (int) $rows[$a->id]['songs_sum_duration']);
+        $this->assertTrue($rows[$a->id]['is_active'], 'the first list became the active one');
+        $this->assertFalse($rows[$b->id]['is_active']);
+    }
+
+    public function test_the_deck_shows_my_lists_and_the_next_track_of_the_active_one(): void
+    {
+        $me = User::factory()->create();
+        $this->getJson('/api/playlists/deck')->assertUnauthorized();
+
+        $this->actingAs($me)->getJson('/api/playlists/deck')->assertOk()->assertJson(['lists' => [], 'next' => null]);
+
+        $a = $this->list($me, 'Alpha');
+        $b = $this->list($me, 'Beta');
+        $b->addSongs([$this->song('z', 'Zed')]);
+        $b->reorder([$b->songs()->where('title', 'Zed')->value('id')]); // Zed first
+
+        $deck = $this->actingAs($me)->getJson('/api/playlists/deck')->assertOk();
+        $deck->assertJsonPath('lists.0.name', 'Alpha')->assertJsonPath('lists.0.is_active', true)->assertJsonPath('lists.0.songs_count', 3)
+            ->assertJsonPath('lists.1.name', 'Beta')->assertJsonPath('lists.1.songs_count', 4)->assertJsonPath('next.title', 'Song a');
+
+        $this->actingAs($me)->postJson("/api/playlists/{$b->id}/activate")->assertOk()->assertJsonPath('next.title', 'Zed');
+    }
+
+    public function test_join_waitlist_queues_the_next_track_of_the_active_playlist_once(): void
+    {
+        Event::fake([PlaybackUpdated::class]);
+        $me = User::factory()->create();
+        $room = $me->rooms()->create(['name' => 'Lobby', 'slug' => 'lobby-1']);
+
+        $this->actingAs($me)->postJson("/rooms/{$room->slug}/join")->assertOk()->assertJson(['queued' => false, 'reason' => 'no_playlist']);
+
+        $empty = $me->playlists()->create(['name' => 'Empty', 'kind' => 'custom']);
+        $this->actingAs($me)->postJson("/rooms/{$room->slug}/join")->assertOk()->assertJson(['queued' => false, 'reason' => 'empty']);
+        $empty->delete();
+
+        $list = $this->list($me);
+        $song = $list->songs()->first();
+        $this->actingAs($me)->postJson("/rooms/{$room->slug}/join")->assertOk()->assertJson(['queued' => true, 'title' => 'Song a']);
+        Event::assertDispatched(PlaybackUpdated::class);
+
+        $item = PlaylistItem::where('room_id', $room->id)->sole();
+        $this->assertSame($song->youtube_id, $item->youtube_id);
+        $this->assertSame($song->id, $item->playlist_song_id);
+        $this->assertSame($me->id, $item->user_id);
+        $this->assertSame($item->id, $room->refresh()->current_item_id, 'nothing was playing, so it starts');
+
+        // pressing it again does not queue a second song
+        $this->actingAs($me)->postJson("/rooms/{$room->slug}/join")->assertOk()->assertJson(['queued' => false, 'reason' => 'already']);
+        $this->assertSame(1, PlaylistItem::where('room_id', $room->id)->count());
+
+        // guests cannot, and a locked waitlist is closed to people who do not manage it
+        $this->app['auth']->forgetGuards();
+        $this->postJson("/rooms/{$room->slug}/join")->assertUnauthorized();
+        $room->update(['waitlist_locked' => true]);
+        $other = User::factory()->create();
+        $this->list($other);
+        $this->actingAs($other)->postJson("/rooms/{$room->slug}/join")->assertStatus(422);
+    }
+
+    public function test_a_song_that_was_played_goes_to_the_bottom_of_its_playlist(): void
+    {
+        Event::fake([PlaybackUpdated::class]);
+        $me = User::factory()->create();
+        $room = $me->rooms()->create(['name' => 'Lobby', 'slug' => 'lobby-1']);
+        $list = $this->list($me);
+
+        $this->actingAs($me)->postJson("/rooms/{$room->slug}/join")->assertJson(['queued' => true, 'title' => 'Song a']);
+        $this->assertSame(['Song a', 'Song b', 'Song c'], $this->titles($list), 'it stays on top while it waits and plays');
+
+        $room->refresh()->advance(); // the song ends
+        $this->assertSame(['Song b', 'Song c', 'Song a'], $this->titles($list));
+
+        // the next turn plays the next song
+        $this->actingAs($me)->postJson("/rooms/{$room->slug}/join")->assertJson(['queued' => true, 'title' => 'Song b']);
+        $room->refresh()->advance();
+        $this->assertSame(['Song c', 'Song a', 'Song b'], $this->titles($list));
+
+        // a song queued by hand (a link, or "Queue" in the manager) does not move anything
+        $this->actingAs($me)->post("/rooms/{$room->slug}/queue-playlist", ['playlist_id' => $list->id])->assertNoContent();
+        $room->refresh()->advance();
+        $this->assertSame(['Song c', 'Song a', 'Song b'], $this->titles($list));
+    }
+
+    public function test_the_channel_is_kept_with_a_song_from_the_api_or_from_oembed(): void
+    {
+        config(['services.youtube.key' => 'k']);
+        Http::fake(['googleapis.com/youtube/v3/videos*' => Http::response(['items' => [[
+            'id' => 'aaaaaaaaaaa', 'snippet' => ['title' => 'Breath', 'channelTitle' => 'Trap Nation'], 'contentDetails' => ['duration' => 'PT3M21S'], 'status' => ['embeddable' => true],
+        ]]])]);
+        $me = User::factory()->create();
+        $list = $me->playlists()->create(['name' => 'Mix', 'kind' => 'custom']);
+
+        $this->actingAs($me)->postJson("/api/playlists/{$list->id}/songs", ['video_id' => 'aaaaaaaaaaa'])->assertJson(['added' => 1]);
+        $this->actingAs($me)->getJson("/api/playlists/{$list->id}")->assertJsonPath('0.channel', 'Trap Nation')->assertJsonPath('0.duration', 201);
+
+        // without the API key YouTube's oEmbed names the author
+        config(['services.youtube.key' => null]);
+        Http::fake(['youtube.com/oembed*' => Http::response(['title' => 'Senses', 'author_name' => 'Prismo'])]);
+        $this->actingAs($me)->postJson("/api/playlists/{$list->id}/songs", ['video_id' => 'bbbbbbbbbbb'])->assertJson(['added' => 1]);
+        $this->actingAs($me)->getJson("/api/playlists/{$list->id}")->assertJsonPath('1.channel', 'Prismo');
+    }
+}

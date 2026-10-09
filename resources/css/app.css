@@ -1,0 +1,516 @@
+@import "tailwindcss";
+@config "../../tailwind.config.js";
+
+/*
+ * Every dropdown (<select>) is dark like the rest of the site. The browser draws the open list itself and by default makes it a white page, so the light text
+ * of the options could not be read. `color-scheme` makes the list dark in Chromium and Edge; the option colours do the same in Firefox.
+ */
+@layer base {
+    select { color-scheme: dark; }
+    select option, select optgroup { background-color: #0a0a0a; color: #f5f5f5; }
+}
+
+/* Crowd avatars in the room bob to the beat while a song plays. */
+@keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+@layer utilities {
+    .animate-bob {
+        animation: bob 1.1s ease-in-out infinite;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        :root:not([data-motion='always']) .animate-bob {
+            animation: none;
+        }
+    }
+}
+
+/* Equalizer bars, a slow float for decorative blobs, and a small shake for a wrong password. */
+@keyframes eq {
+    0%, 100% { transform: scaleY(0.25); }
+    50% { transform: scaleY(1); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(0, -14px, 0); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+}
+
+@keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@layer utilities {
+    .animate-eq { animation: eq 1.1s ease-in-out infinite; transform-origin: bottom; }
+    .animate-float { animation: float 7s ease-in-out infinite; }
+    .animate-shake { animation: shake 0.4s ease-in-out; }
+    .animate-rise { animation: rise 0.6s ease-out both; }
+
+    @media (prefers-reduced-motion: reduce) {
+        :root:not([data-motion='always']) .animate-eq, :root:not([data-motion='always']) .animate-float, :root:not([data-motion='always']) .animate-shake, :root:not([data-motion='always']) .animate-rise { animation: none; }
+    }
+}
+
+/* Edge draws its own "show password" eye; the site has its own, so hide the browser's. */
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear {
+    display: none;
+}
+
+/* Avatar shop: a rainbow aura that cycles colours, a frame that turns slowly, and a small pop when something is tried on. */
+@keyframes hue {
+    to { filter: hue-rotate(360deg); }
+}
+
+@keyframes frame-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pop {
+    0% { transform: scale(0.86); }
+    55% { transform: scale(1.07); }
+    100% { transform: scale(1); }
+}
+
+@layer utilities {
+    .animate-hue { animation: hue 5s linear infinite; }
+    .animate-frame-spin { animation: frame-spin 8s linear infinite; }
+    .animate-pop { animation: pop 0.35s ease-out; }
+
+    @media (prefers-reduced-motion: reduce) {
+        :root:not([data-motion='always']) .animate-hue, :root:not([data-motion='always']) .animate-frame-spin, :root:not([data-motion='always']) .animate-pop { animation: none; }
+    }
+}
+
+/* Scrollbars: slim, dark and quiet. The thumb is faint until you point at the area, and there is never a bar along the bottom of the page. */
+html {
+    overflow-x: clip;
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: rgb(255 255 255 / 0.1);
+    background-clip: content-box;
+    border: 3px solid transparent;
+    border-radius: 9999px;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+    background-color: rgb(255 255 255 / 0.22);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(255 255 255 / 0.42);
+    border-width: 2px;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: rgb(255 255 255 / 0.24) transparent;
+    }
+}
+
+/* Animated avatars (lib/animatedAvatars.tsx): every part turns or moves around its own middle, in a loop. */
+.av { transform-box: fill-box; transform-origin: center; }
+.av-top { transform-origin: 50% 0; }
+.av-bottom { transform-origin: 50% 100%; }
+.av-arm { transform-box: view-box; transform-origin: 86px 14px; }
+
+@keyframes av-blink { 0%, 90%, 100% { transform: scaleY(1); } 93%, 96% { transform: scaleY(0.1); } }
+@keyframes av-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.2px); } }
+@keyframes av-float { 0%, 100% { transform: translateY(1.8px); } 50% { transform: translateY(-3px); } }
+@keyframes av-mouth { 0%, 100% { transform: scaleY(0.4); } 16%, 40% { transform: scaleY(1); } 58% { transform: scaleY(0.55); } 76% { transform: scaleY(0.95); } }
+@keyframes av-look { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(2.2px); } 65% { transform: translateX(-2.2px); } }
+@keyframes av-scan { 0%, 100% { transform: translateX(-4px); } 50% { transform: translateX(4px); } }
+@keyframes av-eq { 0%, 100% { transform: scaleY(0.25); } 50% { transform: scaleY(1); } }
+@keyframes av-spin { to { transform: rotate(360deg); } }
+@keyframes av-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+@keyframes av-twitch { 0%, 84%, 100% { transform: rotate(0); } 88% { transform: rotate(-10deg); } 93% { transform: rotate(5deg); } }
+@keyframes av-whisker { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(4deg); } }
+@keyframes av-flicker { 0%, 100% { transform: scale(1, 1) skewX(0); } 25% { transform: scale(0.94, 1.07) skewX(-3deg); } 50% { transform: scale(1.04, 0.95) skewX(2deg); } 75% { transform: scale(0.97, 1.05) skewX(-1deg); } }
+@keyframes av-spark { 0% { transform: translateY(0) scale(1); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-30px) scale(0.3); opacity: 0; } }
+@keyframes av-twinkle { 0%, 100% { transform: scale(0.4) rotate(0); opacity: 0.3; } 50% { transform: scale(1) rotate(45deg); opacity: 1; } }
+@keyframes av-light { 0%, 55%, 100% { opacity: 1; } 56%, 95% { opacity: 0.15; } }
+@keyframes av-glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+@keyframes av-arm { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2.5deg); } }
+@keyframes av-sing { 0%, 100% { transform: scale(1, 0.55); } 22% { transform: scale(1.15, 1.2); } 50% { transform: scale(0.9, 0.7); } 72% { transform: scale(1.1, 1.1); } }
+
+.av-blink { animation: av-blink 4.6s infinite; }
+.av-bob { animation: av-bob 2.4s ease-in-out infinite; }
+.av-float { animation: av-float 3.2s ease-in-out infinite; }
+.av-mouth { animation: av-mouth 1.9s ease-in-out infinite; }
+.av-look { animation: av-look 5.5s ease-in-out infinite; }
+.av-scan { animation: av-scan 2.6s ease-in-out infinite; }
+.av-eq { animation: av-eq 0.8s ease-in-out infinite; }
+.av-spin { animation: av-spin 5s linear infinite; }
+.av-pulse { animation: av-pulse 1.2s ease-in-out infinite; }
+.av-twitch { animation: av-twitch 5s infinite; }
+.av-whisker { animation: av-whisker 2.8s ease-in-out infinite; }
+.av-flicker { animation: av-flicker 0.9s ease-in-out infinite; }
+.av-spark { animation: av-spark 2.8s ease-out infinite; }
+.av-twinkle { animation: av-twinkle 2.6s ease-in-out infinite; }
+.av-light { animation: av-light 1.6s linear infinite; }
+.av-glow { animation: av-glow 2.4s ease-in-out infinite; }
+.av-arm { animation: av-arm 3.4s ease-in-out infinite; }
+.av-sing { animation: av-sing 1.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+    :root:not([data-motion='always']) .animated-avatar * { animation: none !important; }
+}
+
+/* The room scene (Components/RoomScene.tsx and Components/scene/*): a 1600 x 900 canvas that is scaled to fit. It only moves while a song plays. */
+.unscale { transform: scale(calc(1 / var(--s, 1))); }
+
+@keyframes dance-bounce { 0%, 100% { transform: translateY(0) scale(1.04, 0.95); } 45% { transform: translateY(-16px) scale(0.97, 1.04); } }
+@keyframes dance-sway { 0%, 100% { transform: translateY(0) rotate(-8deg); } 25% { transform: translateY(-9px) rotate(0); } 50% { transform: translateY(0) rotate(8deg); } 75% { transform: translateY(-9px) rotate(0); } }
+@keyframes dance-hop { 0%, 100% { transform: scale(1.06, 0.92); } 40% { transform: translateY(-20px) scale(0.94, 1.08); } 65% { transform: translateY(-10px) scale(1, 1); } }
+@keyframes dance-wiggle { 0%, 100% { transform: translateX(-6px) rotate(-6deg); } 50% { transform: translateX(6px) translateY(-7px) rotate(6deg); } }
+@keyframes dance-dj { 0%, 100% { transform: translateY(0) rotate(-5deg); } 25% { transform: translateY(-14px) rotate(0); } 50% { transform: translateY(0) rotate(5deg); } 75% { transform: translateY(-14px) rotate(0); } }
+
+.dance-bounce, .dance-sway, .dance-hop, .dance-wiggle, .dance-dj { transform-origin: 50% 100%; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+.dance-bounce { animation-name: dance-bounce; animation-duration: 0.62s; }
+.dance-sway { animation-name: dance-sway; animation-duration: 0.86s; }
+.dance-hop { animation-name: dance-hop; animation-duration: 0.7s; }
+.dance-wiggle { animation-name: dance-wiggle; animation-duration: 0.74s; }
+.dance-dj { animation-name: dance-dj; animation-duration: 0.64s; }
+
+@keyframes sc-beam { 0% { transform: rotate(-5deg); } 100% { transform: rotate(5deg); } }
+@keyframes sc-woofer { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.09); } }
+@keyframes sc-tile { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.5; } }
+@keyframes sc-star { 0%, 100% { transform: scale(0.5); opacity: 0.3; } 50% { transform: scale(1.1); opacity: 1; } }
+@keyframes sc-fader { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes sc-led { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+@keyframes sc-scratch { 0%, 100% { transform: translateX(-7px); } 50% { transform: translateX(7px); } }
+@keyframes sc-tap { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes sc-lean { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+
+.sc-beam { transform-box: view-box; }
+.sc-star { transform-box: fill-box; transform-origin: center; }
+.sc-lean { transform-box: view-box; transform-origin: 150px 32px; }
+.sc-live .sc-beam { animation: sc-beam 5.5s ease-in-out infinite alternate; }
+.sc-live .sc-woofer { animation: sc-woofer 0.62s ease-in-out infinite; }
+.sc-live .sc-tile { animation: sc-tile 2.6s ease-in-out infinite; }
+.sc-live .sc-star { animation: sc-star 2.6s ease-in-out infinite; }
+.sc-live .sc-spin { animation: av-spin 3.1s linear infinite; }
+.sc-live .sc-bar { animation: av-eq 0.8s ease-in-out infinite; }
+.sc-live .sc-fader { animation: sc-fader 1.6s ease-in-out infinite; }
+.sc-live .sc-led { animation: sc-led 0.5s ease-in-out infinite; }
+.sc-live .sc-scratch { animation: sc-scratch 0.42s ease-in-out infinite; }
+.sc-live .sc-tap { animation: sc-tap 0.6s ease-in-out infinite; }
+.sc-live .sc-lean { animation: sc-lean 1.28s ease-in-out infinite; }
+@keyframes sc-pump { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
+.sc-live .sc-pump { animation: sc-pump 0.64s ease-in-out infinite; }
+.sc-live .sc-pump-b { animation-delay: -0.32s; }
+
+/* The Halloween scenery (Components/scene/Halloween.tsx): bats that drift and flap, ghosts, flames, swinging lanterns, drifting fog, smoke and spiders on a thread. */
+@keyframes sc-bat { 0%, 100% { transform: translate(0, 0); } 30% { transform: translate(110px, -30px); } 60% { transform: translate(230px, 12px); } 82% { transform: translate(100px, 32px); } }
+@keyframes sc-flap { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.38); } }
+@keyframes sc-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-18px); } }
+@keyframes sc-flame { 0%, 100% { opacity: 1; } 30% { opacity: 0.72; } 55% { opacity: 0.96; } 78% { opacity: 0.8; } }
+@keyframes sc-swing { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+@keyframes sc-drift { 0%, 100% { transform: translateX(-38px); } 50% { transform: translateX(38px); } }
+@keyframes sc-drop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(36px); } }
+@keyframes sc-smoke { 0% { transform: translate(0, 0) scale(0.7); opacity: 0; } 25% { opacity: 0.55; } 100% { transform: translate(36px, -100px) scale(1.8); opacity: 0; } }
+@keyframes sc-wisp { 0%, 100% { transform: translate(0, 0); opacity: 0.3; } 50% { transform: translate(14px, -24px); opacity: 1; } }
+
+.sc-flap { transform-box: fill-box; transform-origin: center; }
+.sc-smoke { transform-box: fill-box; transform-origin: center; } /* each puff grows round its own middle, not round the corner of the room */
+.sc-swing { transform-box: view-box; }
+.sc-live .sc-bat { animation: sc-bat 12s ease-in-out infinite; }
+.sc-live .sc-flap { animation: sc-flap 0.34s ease-in-out infinite; }
+.sc-live .sc-float { animation: sc-float 3.4s ease-in-out infinite; }
+.sc-live .sc-flame { animation: sc-flame 1.7s ease-in-out infinite; }
+.sc-live .sc-swing { animation: sc-swing 3.6s ease-in-out infinite; }
+.sc-live .sc-drift { animation: sc-drift 9s ease-in-out infinite; }
+.sc-live .sc-drop { animation: sc-drop 5s ease-in-out infinite; }
+.sc-live .sc-smoke { animation: sc-smoke 7s ease-out infinite; }
+.sc-live .sc-wisp { animation: sc-wisp 4.2s ease-in-out infinite; }
+/* The Christmas scenery (Components/scene/Christmas.tsx and Snow.tsx): lights that chase round the frame, the sleigh across the sky, Santa's boots in the chimney, northern lights, and snow. */
+@keyframes sc-twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+@keyframes sc-pulse { 0%, 100% { transform: scale(0.94); opacity: 0.85; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes sc-aurora { 0% { transform: translateX(-24px); } 100% { transform: translateX(24px); } }
+@keyframes sc-shimmer { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+@keyframes sc-bob { 0% { transform: translateY(-3px); } 100% { transform: translateY(4px); } }
+@keyframes sc-sleigh { 0% { transform: translate(-760px, 70px); } 100% { transform: translate(1660px, -150px); } }
+@keyframes sc-shoot { 0%, 70%, 100% { transform: translate(0, 0); opacity: 0; } 72% { opacity: 1; } 84% { transform: translate(-360px, 190px); opacity: 0; } }
+@keyframes sc-kick { 0% { transform: rotate(-14deg); } 100% { transform: rotate(14deg); } }
+@keyframes sc-dangle { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+@keyframes sc-fall { to { transform: translate3d(0, var(--tile), 0); } }
+@keyframes sc-sway { 0% { transform: translateX(-18px); } 100% { transform: translateX(18px); } }
+
+.sc-twinkle, .sc-pulse { transform-box: fill-box; transform-origin: center; }
+.sc-kick { transform-box: fill-box; transform-origin: 50% 100%; }
+.sc-dangle { transform-box: fill-box; transform-origin: 50% 0; }
+.sc-live .sc-twinkle { animation: sc-twinkle 1.5s ease-in-out infinite; }
+.sc-live .sc-pulse { animation: sc-pulse 2.4s ease-in-out infinite; }
+.sc-live .sc-aurora { animation: sc-aurora 11s ease-in-out infinite alternate; }
+.sc-live .sc-shimmer { animation: sc-shimmer 4.8s ease-in-out infinite alternate; }
+.sc-live .sc-bob { animation: sc-bob 0.7s ease-in-out infinite alternate; }
+.sc-live .sc-sleigh { animation: sc-sleigh 30s linear infinite; animation-delay: -9s; }
+.sc-live .sc-shoot { animation: sc-shoot 12s ease-in infinite; }
+.sc-live .sc-kick { animation: sc-kick 0.8s ease-in-out infinite alternate; }
+.sc-live .sc-dangle { animation: sc-dangle 3.4s ease-in-out infinite; }
+/* Christmas V2 (Components/scene/Christmas2.tsx): the fire and the candles, snow outside the window, the sleigh across the moon, the toy train; gold glitter in the room (Snow.tsx) */
+@keyframes sc-blaze { 0% { transform: scaleY(0.9) skewX(-3deg); } 100% { transform: scaleY(1.1) skewX(3deg); } }
+@keyframes sc-wsnow { to { transform: translateY(312px); } }
+@keyframes sc-xsleigh { 0% { transform: translate(-230px, 50px); } 100% { transform: translate(230px, -50px); } }
+@keyframes sc-toytrain { 0% { transform: translateX(-138px); } 100% { transform: translateX(214px); } }
+.sc-blaze { transform-box: fill-box; transform-origin: 50% 100%; }
+.sc-live .sc-blaze { animation: sc-blaze 0.8s ease-in-out infinite alternate; }
+.sc-live .sc-wsnow { animation: sc-wsnow 13s linear infinite; }
+.sc-live .sc-wsnow-b { animation-duration: 8s; }
+.sc-live .sc-xsleigh { animation: sc-xsleigh 18s linear infinite; animation-delay: -9s; }
+.sc-live .sc-toytrain { animation: sc-toytrain 9s linear infinite; }
+/* Halloween V2 (Components/scene/Halloween2.tsx): the witch across the moon, lightning now and then (never in the still picture), the cauldron's bubbles; green and purple sparks rise over the room (Snow.tsx) */
+@keyframes sc-witch { 0% { transform: translate(-200px, 46px); } 100% { transform: translate(210px, -40px); } }
+@keyframes sc-flash { 0%, 86%, 100% { opacity: 0; } 87% { opacity: 1; } 88.5% { opacity: 0.15; } 90% { opacity: 0.85; } 92% { opacity: 0; } }
+@keyframes sc-bubble { 0%, 100% { transform: scale(0.55); opacity: 0.4; } 55% { transform: scale(1.15); opacity: 1; } 70% { transform: scale(1.3); opacity: 0; } }
+.sc-flash { opacity: 0; }
+.sc-bubble { transform-box: fill-box; transform-origin: 50% 100%; }
+.sc-live .sc-witch { animation: sc-witch 16s linear infinite; animation-delay: -7s; }
+.sc-live .sc-flash { animation: sc-flash 9s linear infinite; }
+.sc-live .sc-bubble { animation: sc-bubble 2.2s ease-in-out infinite; }
+.wisps .snow-far { --c: #bef264; --r: 1.3px; }
+.wisps .snow-mid { --c: #c084fc; --r: 2px; }
+.wisps .snow-near { --c: #a3e635; --r: 2.8px; }
+.sc-live .wisps .snow-far { animation-duration: 18s; animation-direction: reverse; }
+.sc-live .wisps .snow-mid { animation-duration: 12s; animation-direction: reverse; }
+.sc-live .wisps .snow-near { animation-duration: 8s; animation-direction: reverse; }
+/* Easter (Components/scene/Easter.tsx): pastel confetti falls slowly; Midsummer (Midsummer.tsx): fireflies, soft yellow-green lights that drift up */
+.pastel .snow-far, .pastel .snow-mid, .pastel .snow-near {
+    background-image:
+        radial-gradient(circle at 12% 18%, #f9a8d4 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 63% 7%, #c4b5fd 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 38% 44%, #93c5fd 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 85% 36%, #86efac 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 22% 71%, #fde68a 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 71% 63%, #fdba74 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 49% 90%, #f9a8d4 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 92% 84%, #c4b5fd 0 var(--r), transparent calc(var(--r) + 1px));
+}
+.pastel .snow-far { --r: 2.2px; }
+.pastel .snow-mid { --r: 3.2px; }
+.pastel .snow-near { --r: 4.4px; }
+.sc-live .pastel .snow-far { animation-duration: 24s; }
+.sc-live .pastel .snow-mid { animation-duration: 16s; }
+.sc-live .pastel .snow-near { animation-duration: 10s; }
+.fireflies .snow-far, .fireflies .snow-mid, .fireflies .snow-near {
+    background-image:
+        radial-gradient(circle at 12% 18%, #fbffd0 0 var(--r), rgb(217 249 157 / 0.35) calc(var(--r) + 1px), transparent calc(var(--r) * 4)),
+        radial-gradient(circle at 63% 7%, #fbffd0 0 var(--r), rgb(217 249 157 / 0.35) calc(var(--r) + 1px), transparent calc(var(--r) * 4)),
+        radial-gradient(circle at 38% 44%, #fef9c3 0 var(--r), rgb(254 240 138 / 0.35) calc(var(--r) + 1px), transparent calc(var(--r) * 4)),
+        radial-gradient(circle at 85% 36%, #fbffd0 0 var(--r), rgb(217 249 157 / 0.35) calc(var(--r) + 1px), transparent calc(var(--r) * 4)),
+        radial-gradient(circle at 22% 71%, #fef9c3 0 var(--r), rgb(254 240 138 / 0.35) calc(var(--r) + 1px), transparent calc(var(--r) * 4)),
+        radial-gradient(circle at 71% 63%, #fbffd0 0 var(--r), rgb(217 249 157 / 0.35) calc(var(--r) + 1px), transparent calc(var(--r) * 4));
+}
+.fireflies .snow-far { --r: 1.2px; opacity: 0.6; }
+.fireflies .snow-mid { --r: 1.7px; opacity: 0.75; }
+.fireflies .snow-near { --r: 2.3px; opacity: 0.9; filter: none; }
+.sc-live .fireflies .snow-far { animation-duration: 30s; animation-direction: reverse; }
+.sc-live .fireflies .snow-mid { animation-duration: 21s; animation-direction: reverse; }
+.sc-live .fireflies .snow-near { animation-duration: 14s; animation-direction: reverse; }
+.glitter .snow-far { --c: #ffe9a8; --r: 1px; }
+.glitter .snow-mid { --c: #fff4d6; --r: 1.5px; }
+.glitter .snow-near { --c: #ffd27a; --r: 2.1px; }
+.sc-live .glitter .snow-far { animation-duration: 26s; }
+.sc-live .glitter .snow-mid { animation-duration: 18s; }
+.sc-live .glitter .snow-near { animation-duration: 12s; }
+
+/* Each layer of snow is a tile of flakes that repeats; it falls by exactly one tile, so the loop has no seam. */
+.snow { position: absolute; left: -40px; right: -40px; top: calc(var(--tile) * -1); bottom: 0; background-repeat: repeat; will-change: transform; }
+.snow-far { --tile: 360px; --r: 1.2px; background-size: 360px 360px; opacity: 0.7; }
+.snow-mid { --tile: 480px; --r: 2px; background-size: 480px 480px; opacity: 0.85; }
+.snow-near { --tile: 640px; --r: 3.2px; background-size: 640px 640px; opacity: 0.95; filter: blur(0.5px); }
+.snow-far, .snow-mid, .snow-near {
+    background-image:
+        radial-gradient(circle at 12% 18%, var(--c, #fff) 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 63% 7%, var(--c, #fff) 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 38% 44%, var(--c, #fff) 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 85% 36%, var(--c, #fff) 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 22% 71%, var(--c, #fff) 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 71% 63%, var(--c, #fff) 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 49% 90%, var(--c, #fff) 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 92% 84%, var(--c, #fff) 0 var(--r), transparent calc(var(--r) + 1px));
+}
+/* in spring the same falls as blossom: pink, bigger and slower */
+.petals { --c: #ffc2dc; }
+.petals .snow-far { --r: 2.4px; }
+.petals .snow-mid { --r: 3.6px; }
+.petals .snow-near { --r: 5.4px; }
+.sc-live .snow-far { animation: sc-fall 16s linear infinite; }
+.sc-live .snow-mid { animation: sc-fall 10.5s linear infinite; }
+.sc-live .snow-near { animation: sc-fall 6.5s linear infinite; }
+.sc-live .snow-sway { animation: sc-sway 8s ease-in-out infinite alternate; }
+/* The winter, spring and summer sceneries (Components/scene/Winter.tsx, Spring.tsx, Summer.tsx): a gondola and a fox, a balloon and a windmill and butterflies, waves and a boat and gulls and a crab. */
+@keyframes sc-gondola { 0% { transform: translate(-260px, 24px); } 100% { transform: translate(1900px, -174px); } }
+@keyframes sc-fox { 0% { transform: translateX(-760px); } 100% { transform: translateX(1100px); } }
+@keyframes sc-balloon { 0% { transform: translate(-560px, 70px); } 100% { transform: translate(1900px, -90px); } }
+@keyframes sc-spin360 { to { transform: rotate(360deg); } }
+@keyframes sc-flap { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(0.25); } }
+@keyframes sc-flutter { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(60px, -30px); } 50% { transform: translate(110px, 10px); } 75% { transform: translate(50px, 40px); } }
+@keyframes sc-wave { 0% { transform: translateX(-40px); } 100% { transform: translateX(40px); } }
+@keyframes sc-sail { 0% { transform: translateX(-1200px); } 100% { transform: translateX(900px); } }
+@keyframes sc-gulls { 0% { transform: translate(-560px, 40px); } 100% { transform: translate(1900px, -60px); } }
+@keyframes sc-crab { 0%, 100% { transform: translateX(-70px); } 50% { transform: translateX(70px); } }
+@keyframes sc-palm { 0% { transform: rotate(-1.6deg); } 100% { transform: rotate(1.6deg); } }
+
+.sc-blades, .sc-rays, .sc-flap { transform-box: fill-box; transform-origin: center; }
+.sc-palm { transform-box: fill-box; transform-origin: 50% 100%; }
+.sc-live .sc-gondola { animation: sc-gondola 60s linear infinite; animation-delay: -14s; }
+.sc-live .sc-fox { animation: sc-fox 26s linear infinite; animation-delay: -9s; }
+.sc-live .sc-balloon { animation: sc-balloon 110s linear infinite; animation-delay: -18s; }
+.sc-live .sc-blades { animation: sc-spin360 12s linear infinite; }
+.sc-live .sc-rays { animation: sc-spin360 120s linear infinite; }
+.sc-live .sc-flap { animation: sc-flap 0.45s ease-in-out infinite; }
+.sc-live .sc-flutter { animation: sc-flutter 9s ease-in-out infinite; }
+.sc-live .sc-wave { animation: sc-wave 5s ease-in-out infinite alternate; }
+.sc-live .sc-sail { animation: sc-sail 140s linear infinite; animation-delay: -60s; }
+.sc-live .sc-gulls { animation: sc-gulls 40s linear infinite; animation-delay: -10s; }
+.sc-live .sc-crab { animation: sc-crab 7s ease-in-out infinite; }
+.sc-live .sc-palm { animation: sc-palm 4.5s ease-in-out infinite alternate; }
+@keyframes sc-sweep { 0% { transform: rotate(-30deg); } 100% { transform: rotate(30deg); } }
+@keyframes sc-stripes { 0% { transform: translateY(0); } 100% { transform: translateY(10px); } }
+@keyframes sc-car { 0% { transform: translateX(-1300px); } 100% { transform: translateX(900px); } }
+.sc-sweep { transform-origin: 800px 600px; }
+.sc-live .sc-sweep { animation: sc-sweep 7s ease-in-out infinite alternate; }
+.sc-live .sc-stripes { animation: sc-stripes 3s ease-in-out infinite alternate; }
+.sc-live .sc-car { animation: sc-car 18s linear infinite; animation-delay: -12s; }
+@keyframes sc-firework { 0% { transform: scale(0.15); opacity: 0; } 12% { opacity: 1; } 70% { opacity: 0.9; } 100% { transform: scale(1.05); opacity: 0; } }
+@keyframes sc-comet { 0% { transform: translate(300px, -160px); opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { transform: translate(-1700px, 560px); opacity: 0; } }
+@keyframes sc-train { 0% { transform: translateX(-900px); } 100% { transform: translateX(1800px); } }
+@keyframes sc-dash { to { stroke-dashoffset: -1070; } }
+@keyframes sc-bunting { 0% { transform: translateX(-6px); } 100% { transform: translateX(6px); } }
+@keyframes sc-facets { to { transform: translateX(-24px); } }
+.sc-burst { transform-box: fill-box; transform-origin: center; }
+.sc-live .sc-burst { animation: sc-firework 4.6s ease-out infinite; }
+.sc-live .sc-comet { animation: sc-comet 24s linear infinite; animation-delay: -4s; }
+.sc-live .sc-train { animation: sc-train 22s linear infinite; animation-delay: -7s; }
+.sc-live .sc-dash { animation: sc-dash 7s linear infinite; }
+.sc-live .sc-bunting { animation: sc-bunting 3.2s ease-in-out infinite alternate; }
+.sc-live .sc-facets { animation: sc-facets 2.4s linear infinite; }
+@keyframes sc-roll { 0% { transform: translateX(-420px); } 100% { transform: translateX(1900px); } }
+@keyframes sc-dot { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-260px, 40px); } 40% { transform: translate(-120px, -10px); } 60% { transform: translate(180px, 50px); } 80% { transform: translate(280px, 0); } }
+.sc-live .sc-roll { animation: sc-roll 18s linear infinite; animation-delay: -3s; }
+.sc-live .sc-dot { animation: sc-dot 6s ease-in-out infinite; }
+/* in the Foxy forest the same falls as autumn leaves in three colours; in the dragon's lair it rises as embers */
+.leaves .snow-far { --c: #f59e0b; --r: 2.6px; }
+.leaves .snow-mid { --c: #ea580c; --r: 3.8px; }
+.leaves .snow-near { --c: #dc2626; --r: 5.6px; }
+.embers .snow-far { --c: #ffb347; --r: 1.4px; }
+.embers .snow-mid { --c: #ff7a1a; --r: 2.2px; }
+.embers .snow-near { --c: #ff4a1a; --r: 3.2px; }
+/* steam over the food of the Tasty market: it rises, spreads and fades while a song plays */
+@keyframes sc-steam { 0% { transform: translate(0, 0) scale(0.6); opacity: 0; } 20% { opacity: 0.45; } 100% { transform: translate(12px, -80px) scale(1.5); opacity: 0; } }
+.sc-steam { transform-box: fill-box; transform-origin: center; opacity: 0; }
+.sc-live .sc-steam { animation: sc-steam 4.8s ease-out infinite; }
+/* in the Tastycat bakery it is sprinkles: dots in five bright colours */
+.sprinkles .snow-far, .sprinkles .snow-mid, .sprinkles .snow-near {
+    background-image:
+        radial-gradient(circle at 12% 18%, #ff5fa2 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 63% 7%, #4fe0c0 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 38% 44%, #ffd23f 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 85% 36%, #a78bfa 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 22% 71%, #ff8a3d 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 71% 63%, #ff5fa2 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 49% 90%, #4fe0c0 0 var(--r), transparent calc(var(--r) + 1px)),
+        radial-gradient(circle at 92% 84%, #ffd23f 0 var(--r), transparent calc(var(--r) + 1px));
+}
+.sprinkles .snow-far { --r: 2.6px; }
+.sprinkles .snow-mid { --r: 3.6px; }
+.sprinkles .snow-near { --r: 5px; }
+.sc-live .sprinkles .snow-far { animation-duration: 20s; }
+.sc-live .sprinkles .snow-mid { animation-duration: 13s; }
+.sc-live .sprinkles .snow-near { animation-duration: 8s; }
+.sc-live .leaves .snow-far { animation-duration: 22s; }
+.sc-live .leaves .snow-mid { animation-duration: 15s; }
+.sc-live .leaves .snow-near { animation-duration: 9s; }
+.sc-live .embers .snow-far { animation-duration: 15s; animation-direction: reverse; }
+.sc-live .embers .snow-mid { animation-duration: 10s; animation-direction: reverse; }
+.sc-live .embers .snow-near { animation-duration: 6.5s; animation-direction: reverse; }
+.sc-live .petals .snow-far { animation-duration: 24s; }
+.sc-live .petals .snow-mid { animation-duration: 16s; }
+.sc-live .petals .snow-near { animation-duration: 10s; }
+@media (prefers-reduced-motion: reduce) {
+    :root:not([data-motion='always']) .sc-live *, :root:not([data-motion='always']) .dance-bounce, :root:not([data-motion='always']) .dance-sway, :root:not([data-motion='always']) .dance-hop, :root:not([data-motion='always']) .dance-wiggle, :root:not([data-motion='always']) .dance-dj { animation: none !important; }
+}
+
+/* The Avatar shop: badges, accessories, frames and effects are small drawings (lib/cosmetics.tsx) that move only when animations are allowed. */
+@keyframes cos-spin { to { transform: rotate(360deg); } }
+@keyframes cos-pulse { 0%, 100% { opacity: 0.6; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1.05); } }
+@keyframes cos-twinkle { 0%, 100% { opacity: 0.2; transform: scale(0.55); } 50% { opacity: 1; transform: scale(1.1); } }
+@keyframes cos-rise { 0% { transform: translateY(10px) scale(0.7); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-34px) scale(1); opacity: 0; } }
+@keyframes cos-fall { 0% { transform: translate(0, -14px) rotate(0deg); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(10px, 36px) rotate(200deg); opacity: 0; } }
+@keyframes cos-ripple { 0% { transform: scale(0.64); opacity: 0.85; } 100% { transform: scale(1.5); opacity: 0; } }
+@keyframes cos-flicker { 0%, 100% { transform: scaleY(1); opacity: 1; } 35% { transform: scaleY(0.9) scaleX(1.04); opacity: 0.85; } 65% { transform: scaleY(1.07) scaleX(0.97); opacity: 0.95; } }
+@keyframes cos-eq { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+@keyframes cos-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.6px); } }
+@keyframes cos-flash { 0%, 84%, 100% { opacity: 0.35; } 88%, 95% { opacity: 1; } }
+.cos-pulse, .cos-twinkle, .cos-rise, .cos-fall, .cos-ripple, .cos-flicker, .cos-eq, .cos-bob, .cos-flash, .cos-spin { transform-box: fill-box; transform-origin: center; }
+.cos-flicker, .cos-eq { transform-origin: 50% 100%; }
+.cos-orbit { transform-box: view-box; transform-origin: 50px 50px; animation: cos-spin 12s linear infinite; }
+.cos-spin { animation: cos-spin 9s linear infinite; }
+.cos-pulse { animation: cos-pulse 3.2s ease-in-out infinite; }
+.cos-twinkle { animation: cos-twinkle 2.2s ease-in-out infinite; }
+.cos-rise { animation: cos-rise 3.4s ease-out infinite; }
+.cos-fall { animation: cos-fall 4.2s ease-in infinite; }
+.cos-ripple { animation: cos-ripple 3.3s ease-out infinite; }
+.cos-flicker { animation: cos-flicker 0.9s ease-in-out infinite; }
+.cos-eq { animation: cos-eq 0.9s ease-in-out infinite; }
+.cos-bob { animation: cos-bob 2.8s ease-in-out infinite; }
+.cos-flash { animation: cos-flash 2.6s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+    :root:not([data-motion='always']) .cos-orbit, :root:not([data-motion='always']) .cos-spin, :root:not([data-motion='always']) .cos-pulse, :root:not([data-motion='always']) .cos-twinkle, :root:not([data-motion='always']) .cos-rise, :root:not([data-motion='always']) .cos-fall, :root:not([data-motion='always']) .cos-ripple, :root:not([data-motion='always']) .cos-flicker, :root:not([data-motion='always']) .cos-eq, :root:not([data-motion='always']) .cos-bob, :root:not([data-motion='always']) .cos-flash { animation: none !important; }
+}
+
+/* The volume slider in the footbar of a room: a slim track (filled in inline, up to the volume) and a round knob that glows. */
+input[type='range'].vol { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 9999px; outline: none; }
+input[type='range'].vol::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; height: 14px; width: 14px; border-radius: 9999px; border: 0; background: #fff; box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.4), 0 0 10px rgba(168, 85, 247, 0.8); }
+input[type='range'].vol::-moz-range-thumb { height: 14px; width: 14px; border-radius: 9999px; border: 0; background: #fff; box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.4), 0 0 10px rgba(168, 85, 247, 0.8); }
+input[type='range'].vol:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.7); }
+
+/* Menus and cards (the message menu, the quick profile, the hover preview) pop in quickly. */
+@keyframes menu-in {
+    from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@layer utilities {
+    .animate-menu { animation: menu-in 0.14s ease-out both; }
+
+    @media (prefers-reduced-motion: reduce) {
+        :root:not([data-motion='always']) .animate-menu { animation: none; }
+    }
+}
+
+/* The record in the logo turns slowly where the logo is big (the log in panel); the light and the S stay put. */
+@keyframes logo-spin {
+    to { transform: rotate(360deg); }
+}
+
+@layer utilities {
+    .logo-spin .logo-disc { animation: logo-spin 22s linear infinite; transform-origin: 64px 64px; }
+
+    @media (prefers-reduced-motion: reduce) {
+        :root:not([data-motion='always']) .logo-spin .logo-disc { animation: none; }
+    }
+}
