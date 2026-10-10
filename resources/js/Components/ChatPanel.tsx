@@ -11,7 +11,7 @@ import { getJson, post, send, sendJson, upload } from '@/lib/post';
 import { RoleInfo } from '@/types';
 import { Link } from '@inertiajs/react';
 import { AtSign, Check, Copy, Ellipsis, MessageCircle, Reply, Trash2, UserRound } from 'lucide-react';
-import { FormEvent, MouseEvent, ReactNode, useEffect, useRef, useState } from 'react';
+import { FormEvent, MouseEvent, ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export interface ChatMessageData {
     id: number;
@@ -210,12 +210,14 @@ export default function ChatPanel({
     const globals = useGlobalEmotes(!readOnly);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
-    const end = useRef<HTMLDivElement>(null);
+    const chatScroll = useRef<HTMLDivElement>(null);
+    const followMessages = useRef(true);
     const fileInput = useRef<HTMLInputElement>(null);
     const inputBox = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        end.current?.scrollIntoView({ block: 'end' });
+    useLayoutEffect(() => {
+        const container = chatScroll.current;
+        if (container && followMessages.current) container.scrollTop = container.scrollHeight;
     }, [messages]);
 
     useEffect(() => {
@@ -323,7 +325,15 @@ export default function ChatPanel({
                     <span>{welcome}</span>
                 </p>
             )}
-            <div onScroll={peek ? hidePeek : undefined} className={`flex-1 space-y-3 overflow-y-auto overflow-x-hidden p-3 ${chatText[chatSize]}`}>
+            <div
+                ref={chatScroll}
+                onScroll={(event) => {
+                    const container = event.currentTarget;
+                    followMessages.current = container.scrollHeight - container.scrollTop - container.clientHeight < 48;
+                    if (peek) hidePeek();
+                }}
+                className={`flex-1 space-y-3 overflow-y-auto overflow-x-hidden p-3 ${chatText[chatSize]}`}
+            >
                 {messages.map((m) => {
                     if (m.type === 'system') {
                         const loud = m.kind === 'announcement';
@@ -402,7 +412,6 @@ export default function ChatPanel({
                         </div>
                     );
                 })}
-                <div ref={end} />
             </div>
 
             <div className="h-5 shrink-0 px-3 text-xs italic text-neutral-500">{typingText}</div>
