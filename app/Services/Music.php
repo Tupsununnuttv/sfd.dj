@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 
@@ -16,12 +15,15 @@ use Illuminate\Validation\ValidationException;
 class Music
 {
     /** Songs per import. Matching a SoundCloud/Spotify track costs one YouTube search (100 quota units). */
-    public const IMPORT_LIMIT = 25;
+    public const IMPORT_LIMIT = 1000;
+
+    /** Spotify tracks must each be searched on YouTube, unlike a native YouTube playlist import. */
+    private array $importWarnings = [];
 
     public function __construct(private YouTube $youtube) {}
 
     /** @return array<int, array> */
-    public function resolve(string $url): array
+    public function resolve(string $url, ?string $spotifyAccessToken = null): array
     {
         $url = trim($url);
         $host = strtolower((string) parse_url($url, PHP_URL_HOST));
@@ -30,7 +32,7 @@ class Music
             return [$this->soundcloud($url)];
         }
         if ($host === 'open.spotify.com') {
-            return $this->spotify($url);
+            return $this->spotify($url, $spotifyAccessToken);
         }
         if (str_contains($host, 'youtube.com') || $host === 'youtu.be') {
             return $this->youtubeLink($url);
@@ -40,23 +42,27 @@ class Music
     }
 
     /** Resolve one link per line. Returns the songs found and an error message for each line that failed. */
-    public function resolveMany(string $text): array
+    public function resolveMany(string $text, ?string $spotifyAccessToken = null): array
     {
         $songs = [];
         $errors = [];
+        $this->importWarnings = [];
         $lines = array_slice(array_values(array_filter(array_map('trim', preg_split('/\R/', $text)))), 0, self::IMPORT_LIMIT);
 
         foreach ($lines as $line) {
             try {
-                foreach ($this->resolve($line) as $song) {
+                foreach ($this->resolve($line, $spotifyAccessToken) as $song) {
                     $songs[] = $song;
+                    if (count($songs) >= self::IMPORT_LIMIT) {
+                        break 2;
+                    }
                 }
             } catch (ValidationException $e) {
                 $errors[] = $line.': '.collect($e->errors())->flatten()->first();
             }
         }
 
-        return [array_slice($songs, 0, self::IMPORT_LIMIT), $errors];
+        return [array_slice($songs, 0, self::IMPORT_LIMIT), [...$errors, ...$this->importWarnings]];
     }
 
     private function youtubeLink(string $url): array
@@ -97,7 +103,7 @@ class Music
         return $this->matchOnYoutube((string) $res->json('title'), 'soundcloud', $url);
     }
 
-    private function spotify(string $url): array
+    private function spotify(string $url, ?string $accessToken): array
     {
         if (! preg_match('~/(track|playlist|album)/(\w+)~', $url, $m)) {
             $this->fail('Not a Spotify track, playlist or album link.');
@@ -107,25 +113,78 @@ class Music
             return [$this->matchOnYoutube($this->spotifyTrackQuery($url), 'spotify', $url)];
         }
 
-        // Playlists and albums need Spotify API credentials; oEmbed does not list their tracks.
-        $token = $this->spotifyToken() ?? $this->fail('Spotify playlists and albums need SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in .env. Add single tracks instead.');
-
-        $path = $m[1] === 'playlist' ? "playlists/{$m[2]}/tracks?limit=".self::IMPORT_LIMIT : "albums/{$m[2]}/tracks?limit=".self::IMPORT_LIMIT;
-        $res = Http::timeout(8)->withToken($token)->get('https://api.spotify.com/v1/'.$path);
-        $res->successful() || $this->fail('Spotify did not return that list (is it private?).');
-
+        $accessToken ?: $this->fail('Connect your Spotify account before importing playlists or albums.');
+        $endpoint = $m[1] === 'playlist'
+            ? "https://api.spotify.com/v1/playlists/{$m[2]}/items"
+            : "https://api.spotify.com/v1/albums/{$m[2]}/tracks";
         $songs = [];
-        foreach ($res->json('items', []) as $item) {
-            $t = $item['track'] ?? $item;
-            $query = ($t['artists'][0]['name'] ?? '').' '.($t['name'] ?? '');
+        $offset = 0;
+        $total = null;
+        $stopMatching = false;
+
+        while ($offset < self::IMPORT_LIMIT) {
+            $limit = min(50, self::IMPORT_LIMIT - $offset);
             try {
-                $songs[] = $this->matchOnYoutube(trim($query), 'spotify', $url);
-            } catch (ValidationException) {
-                // skip tracks with no playable match
+                $response = Http::timeout(8)->withToken($accessToken)->get($endpoint, ['limit' => $limit, 'offset' => $offset]);
+            } catch (ConnectionException) {
+                if ($songs !== []) {
+                    $this->importWarnings[] = 'Spotify disconnected during import. The songs matched so far were kept; try again for the rest.';
+                    break;
+                }
+                $this->fail('Could not reach Spotify. Try importing again in a moment.');
+            }
+            if (! $response->successful()) {
+                if ($songs !== [] && $response->status() === 429) {
+                    $this->importWarnings[] = 'Spotify rate-limited this import. The songs matched so far were kept; try again for the rest.';
+                    break;
+                }
+                $this->fail($this->spotifyListError($response->status(), $response->json()));
+            }
+            $items = $response->json('items', []);
+            $total = $response->json('total', $total);
+
+            foreach ($items as $item) {
+                $track = $item['item'] ?? $item['track'] ?? $item;
+                if (! is_array($track) || ($track['type'] ?? 'track') !== 'track' || ($item['is_local'] ?? false)) {
+                    continue;
+                }
+
+                $query = ($track['artists'][0]['name'] ?? '').' '.($track['name'] ?? '');
+                try {
+                    $songs[] = $this->matchOnYoutube(trim($query), 'spotify', $url);
+                } catch (ValidationException $exception) {
+                    // Skip tracks without a playable YouTube match.
+                    $error = collect($exception->errors())->flatten()->first();
+                    if ($error === 'YouTube search is unavailable right now.') {
+                        $this->importWarnings[] = 'YouTube search or quota became unavailable. Songs matched so far were kept; try again later for the rest.';
+                        $stopMatching = true;
+                        break;
+                    }
+                }
+            }
+
+            $offset += count($items);
+            if ($stopMatching || count($items) < $limit) {
+                break;
             }
         }
 
+        if ($offset >= self::IMPORT_LIMIT && $total !== null && $total > $offset) {
+            $this->importWarnings[] = 'Only the first 1,000 Spotify playlist items are imported at a time.';
+        }
+
         return $songs ?: $this->fail('None of the tracks could be matched on YouTube.');
+    }
+
+    private function spotifyListError(int $status, ?array $body): string
+    {
+        return match ($status) {
+            401 => 'Spotify connection expired. Connect your Spotify account again.',
+            403 => 'Spotify only lets you import playlists owned by or shared with the connected account. In Spotify Developer settings, also add this account to the app allowlist.',
+            404 => 'Spotify could not find that playlist or album.',
+            429 => 'Spotify is temporarily rate-limiting imports. Try again shortly.',
+            default => data_get($body, 'error.message') ?? 'Spotify could not read that playlist. Check the connected account and try again.',
+        };
     }
 
     /** "Artist Title" for a Spotify track, read from the page's og: tags (artist is the first part of og:description). */
@@ -144,22 +203,6 @@ class Music
         $title !== '' || $this->fail('Spotify track not found.');
 
         return trim($artist.' '.$title);
-    }
-
-    private function spotifyToken(): ?string
-    {
-        $id = config('services.spotify.client_id');
-        $secret = config('services.spotify.client_secret');
-
-        if (! $id || ! $secret) {
-            return null;
-        }
-
-        return Cache::remember('spotify_token', 3000, function () use ($id, $secret) {
-            $res = Http::timeout(6)->asForm()->withBasicAuth($id, $secret)->post('https://accounts.spotify.com/api/token', ['grant_type' => 'client_credentials']);
-
-            return $res->successful() ? $res->json('access_token') : null;
-        });
     }
 
     /** Find the same song on YouTube. */

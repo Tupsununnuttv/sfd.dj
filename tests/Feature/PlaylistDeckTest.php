@@ -6,7 +6,9 @@ use App\Events\PlaybackUpdated;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use App\Models\User;
+use App\Services\YouTube;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -110,6 +112,172 @@ class PlaylistDeckTest extends TestCase
         $this->assertSame(600, (int) $rows[$a->id]['songs_sum_duration']);
         $this->assertTrue($rows[$a->id]['is_active'], 'the first list became the active one');
         $this->assertFalse($rows[$b->id]['is_active']);
+    }
+
+    public function test_free_playlists_hold_five_thousand_songs(): void
+    {
+        $me = User::factory()->create();
+        $list = $me->playlists()->create(['name' => 'Long mix', 'kind' => 'custom']);
+        $songs = array_map(fn (int $number) => [
+            'youtube_id' => sprintf('%011d', $number),
+            'title' => "Song {$number}",
+            'duration' => 180,
+        ], range(1, 5001));
+
+        $this->assertSame(5000, $me->limits()['songs']);
+        $this->assertSame(5000, $list->addSongs($songs));
+        $this->assertSame(5000, $list->songs()->count());
+    }
+
+    public function test_youtube_playlist_import_reads_multiple_api_pages(): void
+    {
+        config(['services.youtube.key' => 'test-key']);
+        Http::fake(function (Request $request) {
+            $path = parse_url($request->url(), PHP_URL_PATH);
+            parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
+
+            if (str_ends_with($path, '/playlistItems')) {
+                $start = isset($query['pageToken']) ? 50 : 0;
+                $items = [];
+                for ($number = $start; $number < min($start + 50, 51); $number++) {
+                    $items[] = ['contentDetails' => ['videoId' => sprintf('%011d', $number + 1)]];
+                }
+
+                return Http::response(['items' => $items, 'nextPageToken' => $start === 0 ? 'next-page' : null]);
+            }
+
+            if (str_ends_with($path, '/videos')) {
+                return Http::response(['items' => collect(explode(',', $query['id']))->map(fn ($id) => [
+                    'id' => $id,
+                    'snippet' => ['title' => "Song {$id}", 'channelTitle' => 'Test channel'],
+                    'contentDetails' => ['duration' => 'PT3M'],
+                    'status' => ['embeddable' => true],
+                ])->all()]);
+            }
+
+            return Http::response([], 404);
+        });
+
+        $songs = app(YouTube::class)->playlist('test-playlist', 1000);
+
+        $this->assertCount(51, $songs);
+        $this->assertSame('00000000001', $songs[0]['id']);
+        $this->assertSame('00000000051', $songs[50]['id']);
+        Http::assertSentCount(4);
+    }
+
+    public function test_spotify_oauth_and_playlist_items_import(): void
+    {
+        config(['services.spotify.client_id' => 'test-client', 'services.spotify.client_secret' => 'test-secret']);
+        config(['services.youtube.key' => 'youtube-test-key']);
+        Http::fake(function (Request $request) {
+            $path = parse_url($request->url(), PHP_URL_PATH);
+            if ($path === '/api/token') {
+                return Http::response(['access_token' => 'spotify-user-token', 'refresh_token' => 'spotify-refresh-token', 'expires_in' => 3600]);
+            }
+            if ($path === '/v1/playlists/playlist1234567890123456/items') {
+                return Http::response(['items' => [[
+                    'item' => ['type' => 'track', 'name' => 'Song Name', 'artists' => [['name' => 'Artist Name']]],
+                ]]]);
+            }
+            if (str_ends_with($path, '/youtube/v3/search')) {
+                return Http::response(['items' => [[
+                    'id' => ['videoId' => 'abcdefghijk'],
+                    'snippet' => ['title' => 'Artist Name - Song Name', 'channelTitle' => 'Test channel'],
+                ]]]);
+            }
+            if (str_ends_with($path, '/youtube/v3/videos')) {
+                return Http::response(['items' => [[
+                    'id' => 'abcdefghijk',
+                    'snippet' => ['title' => 'Artist Name - Song Name', 'channelTitle' => 'Test channel'],
+                    'contentDetails' => ['duration' => 'PT3M'],
+                    'status' => ['embeddable' => true],
+                ]]]);
+            }
+
+            return Http::response([], 404);
+        });
+
+        $user = User::factory()->create();
+        $list = $user->playlists()->create(['name' => 'Spotify import', 'kind' => 'custom']);
+
+        $connect = $this->actingAs($user)->get('/auth/spotify')->assertRedirect();
+        parse_str((string) parse_url($connect->headers->get('Location'), PHP_URL_QUERY), $authorization);
+        $this->assertSame('playlist-read-private playlist-read-collaborative', $authorization['scope']);
+        $this->assertSame(route('spotify.callback'), $authorization['redirect_uri']);
+        $this->assertSame('true', $authorization['show_dialog']);
+
+        $callback = $this->get('/auth/spotify/callback?code=authorization-code&state='.$authorization['state']);
+        $callback->assertRedirect(route('playlists'));
+        $this->assertSame('spotify-user-token', session('spotify.access_token'));
+
+        $this->postJson(route('api.playlists.import', $list), ['text' => 'https://open.spotify.com/playlist/playlist1234567890123456'])
+            ->assertOk()
+            ->assertJsonPath('found', 1)
+            ->assertJsonPath('added', 1);
+        $this->assertSame('Artist Name - Song Name', $list->songs()->sole()->title);
+    }
+
+    public function test_spotify_playlist_import_explains_owner_access_errors(): void
+    {
+        config(['services.spotify.client_id' => 'test-client', 'services.spotify.client_secret' => 'test-secret']);
+        Http::fake(['api.spotify.com/v1/playlists/*/items*' => Http::response(['error' => ['message' => 'Not allowed']], 403)]);
+        $user = User::factory()->create();
+        $list = $user->playlists()->create(['name' => 'Spotify import', 'kind' => 'custom']);
+
+        $this->actingAs($user)->withSession([
+            'spotify.access_token' => 'spotify-user-token',
+            'spotify.expires_at' => now()->addHour()->timestamp,
+        ])->postJson(route('api.playlists.import', $list), ['text' => 'https://open.spotify.com/playlist/playlist1234567890123456'])
+            ->assertOk()
+            ->assertJsonPath('errors.0', fn ($error) => str_contains($error, 'owned by or shared with the connected account'));
+    }
+
+    public function test_spotify_import_keeps_matches_when_youtube_quota_runs_out(): void
+    {
+        config(['services.spotify.client_id' => 'test-client', 'services.spotify.client_secret' => 'test-secret']);
+        config(['services.youtube.key' => 'youtube-test-key']);
+        $searches = 0;
+        Http::fake(function (Request $request) use (&$searches) {
+            $path = parse_url($request->url(), PHP_URL_PATH);
+            if ($path === '/v1/playlists/playlist1234567890123456/items') {
+                return Http::response(['items' => [
+                    ['item' => ['type' => 'track', 'name' => 'First song', 'artists' => [['name' => 'Artist']]]],
+                    ['item' => ['type' => 'track', 'name' => 'Second song', 'artists' => [['name' => 'Artist']]]],
+                ], 'total' => 2]);
+            }
+            if (str_ends_with($path, '/youtube/v3/search')) {
+                $searches++;
+
+                return $searches === 1
+                    ? Http::response(['items' => [[
+                        'id' => ['videoId' => 'abcdefghijk'],
+                        'snippet' => ['title' => 'Artist - First song', 'channelTitle' => 'Test channel'],
+                    ]]])
+                    : Http::response(['error' => ['message' => 'quotaExceeded']], 403);
+            }
+            if (str_ends_with($path, '/youtube/v3/videos')) {
+                return Http::response(['items' => [[
+                    'id' => 'abcdefghijk',
+                    'snippet' => ['title' => 'Artist - First song', 'channelTitle' => 'Test channel'],
+                    'contentDetails' => ['duration' => 'PT3M'],
+                    'status' => ['embeddable' => true],
+                ]]]);
+            }
+
+            return Http::response([], 404);
+        });
+
+        $user = User::factory()->create();
+        $list = $user->playlists()->create(['name' => 'Partial import', 'kind' => 'custom']);
+        $this->actingAs($user)->withSession([
+            'spotify.access_token' => 'spotify-user-token',
+            'spotify.expires_at' => now()->addHour()->timestamp,
+        ])->postJson(route('api.playlists.import', $list), ['text' => 'https://open.spotify.com/playlist/playlist1234567890123456'])
+            ->assertOk()
+            ->assertJsonPath('found', 1)
+            ->assertJsonPath('added', 1)
+            ->assertJsonPath('errors.0', fn ($error) => str_contains($error, 'Songs matched so far were kept'));
     }
 
     public function test_the_deck_shows_my_lists_and_the_next_track_of_the_active_one(): void

@@ -37,7 +37,7 @@ export const features: Feature[] = [
         intro: 'Build playlists once and queue them in any room. Add songs by searching, or paste a link.',
         points: [
             ['YouTube, SoundCloud, Spotify', 'Paste a link from any of them. Songs always play from YouTube: SoundCloud and Spotify tracks are matched to the same song there.'],
-            ['Import in bulk', 'Paste a YouTube playlist or a list of links and import up to 25 songs at a time.'],
+            ['Import in bulk', 'Paste a YouTube playlist or a list of links and import up to 1,000 songs at a time.'],
             ['Your order', 'Drag the tracks of a playlist into the order they should play in. The first one is your next track, and Join Waitlist queues it.'],
             ['Queue all', 'Put a whole playlist (up to 50 songs) into the waitlist with one button, from inside the room.'],
             ['Grabs', 'Press Grab on any song, pick the playlist it goes in, and it is ready to be queued again.'],

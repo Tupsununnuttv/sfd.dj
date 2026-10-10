@@ -224,6 +224,7 @@ class RoomController extends Controller
             'can' => array_fill_keys($can, true),
             'roles' => $room->roles()->get(['id', 'name', 'color', 'rank', 'permissions', 'builtin']),
             'members' => $room->members()->pluck('room_role_id', 'user_id'),
+            'friendIds' => $user ? $this->friendIds($user) : [],
             'memberList' => in_array('manage_roles', $can, true)
                 ? $room->members()->with('user:id,name,avatar')->get()->map(fn ($m) => ['user_id' => $m->user_id, 'name' => $m->user->name, 'avatar' => $m->user->avatar, 'room_role_id' => $m->room_role_id])->values()
                 : [],

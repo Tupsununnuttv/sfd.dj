@@ -6,7 +6,9 @@ use App\Models\Room;
 use App\Models\SiteEvent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,6 +23,7 @@ class EventController extends Controller
             'id' => $e->id,
             'title' => $e->title,
             'description' => $e->description,
+            'image_url' => $e->image ? route('media.event', $e->image) : null,
             'starts_at' => $e->starts_at->toIso8601String(),
             'ends_at' => $e->ends_at?->toIso8601String(),
             'room' => $e->room && $e->room->canEnter($me) ? $e->room->only('name', 'slug') : null,
@@ -53,7 +56,14 @@ class EventController extends Controller
             'starts_at' => ['required', 'date'],
             'ends_at' => ['nullable', 'date', 'after:starts_at'],
             'room_id' => ['nullable', Rule::in($rooms)],
+            'image' => ['nullable', File::image()->types(['jpg', 'jpeg', 'png', 'webp'])->max('4mb')->dimensions(Rule::dimensions()->maxWidth(2400)->maxHeight(1600))],
         ]);
+
+        $upload = $data['image'] ?? null;
+        unset($data['image']);
+        if ($upload instanceof UploadedFile) {
+            $data['image'] = MediaController::store($upload, 'events');
+        }
 
         SiteEvent::create($data + ['created_by' => $request->user()->id]);
 
@@ -64,7 +74,12 @@ class EventController extends Controller
     {
         abort_unless($request->user()->hasPermission('events.manage') || $request->user()->id === $event->created_by, 403);
 
+        $image = $event->image;
         $event->delete();
+
+        if ($image) {
+            MediaController::disk()->delete('events/'.$image);
+        }
 
         return back();
     }

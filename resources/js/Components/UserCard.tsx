@@ -60,6 +60,7 @@ export interface CardRoom {
     onProfile: () => void;
     onMention: () => void;
     onWhisper: () => void;
+    onFriendAdded: () => void;
     onChanged: () => void; // reload what the room page knows about mutes/roles
 }
 
@@ -129,6 +130,7 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
                 const friendship = profile?.friendship === 'received' ? 'friends' : 'sent';
                 patchProfile(user.id, { friendship });
                 setProfile((p) => p && { ...p, friendship });
+                if (friendship === 'friends') room.onFriendAdded();
             },
             onError: (e) => setError(e.name ?? 'Could not send the request.'),
         });

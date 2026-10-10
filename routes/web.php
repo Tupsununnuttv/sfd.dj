@@ -72,6 +72,7 @@ Route::get('/media/avatar/{file}', [MediaController::class, 'avatar'])->name('me
 Route::get('/media/chat/{file}', [MediaController::class, 'chat'])->name('media.chat');
 Route::get('/media/emoji/{file}', [MediaController::class, 'emoji'])->name('media.emoji');
 Route::get('/media/room/{file}', [MediaController::class, 'roomBackground'])->name('media.room');
+Route::get('/media/event/{file}', [MediaController::class, 'event'])->name('media.event');
 // The characters (public/Avatars/Standing, Dancing and DJing), one picture per state.
 Route::get('/characters/{state}/{name}', [AvatarController::class, 'character'])->withoutMiddleware('web')->name('characters.show');
 
@@ -110,6 +111,8 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::get('/auth/discord', [DiscordController::class, 'connect'])->name('discord.connect');
     Route::get('/auth/discord/callback', [DiscordController::class, 'callback'])->name('discord.callback');
     Route::delete('/auth/discord', [DiscordController::class, 'disconnect'])->name('discord.disconnect');
+    Route::get('/auth/spotify', [PlaylistController::class, 'spotifyConnect'])->name('spotify.connect');
+    Route::get('/auth/spotify/callback', [PlaylistController::class, 'spotifyCallback'])->name('spotify.callback');
 
     Route::get('/whispers', [WhisperController::class, 'index'])->name('whispers');
     Route::get('/api/whispers', [WhisperController::class, 'conversations'])->name('api.whispers');

@@ -5,7 +5,7 @@ import { PlaylistInfo, playtime, Song, watchUrl } from '@/lib/playlists';
 import { getJson, post, sendJson } from '@/lib/post';
 import { PageProps } from '@/types';
 import { usePage } from '@inertiajs/react';
-import { ArrowUpDown, CircleDot, ClipboardPaste, Download, ListMusic, Music2, Pencil, Plus, Search, Shuffle, Trash2, X } from 'lucide-react';
+import { ArrowUpDown, CircleDot, ClipboardPaste, Download, ExternalLink, ListMusic, Music2, Pencil, Plus, Search, Shuffle, Trash2, X } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 
 type Sort = 'name' | 'size' | 'time';
@@ -33,7 +33,8 @@ const iconBtn = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bo
  * `onChanged` is called after anything changed, so the footbar of the room can read the lists again.
  */
 export default function PlaylistManager({ roomSlug, onClose, onChanged, className = '' }: { roomSlug?: string; onClose?: () => void; onChanged?: () => void; className?: string }) {
-    const maxSongs = usePage<PageProps>().props.auth.limits?.songs ?? 500; // more with Plus or Premium
+    const { auth } = usePage<PageProps>().props;
+    const maxSongs = auth.limits?.songs ?? 5000; // more with Plus or Premium
     const [lists, setLists] = useState<PlaylistInfo[]>([]);
     const [loaded, setLoaded] = useState(false);
     const [selected, setSelected] = useState<number | null>(null);
@@ -96,6 +97,30 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
         if (selected !== null) loadSongs(selected).catch((e) => say(e.message));
         else setSongs([]);
     }, [selected, loadSongs]);
+
+    useEffect(() => {
+        if (selected === null) return;
+        try {
+            const pendingImport = window.sessionStorage.getItem('sfddj.spotify.pending-import');
+            if (!pendingImport) return;
+            const resumeImport = window.sessionStorage.getItem('sfddj.spotify.resume-import') === '1';
+            window.sessionStorage.removeItem('sfddj.spotify.pending-import');
+            window.sessionStorage.removeItem('sfddj.spotify.resume-import');
+            setImportText(pendingImport);
+            setImportOpen(true);
+            if (resumeImport && auth.spotify_connected) {
+                void run(async () => {
+                    const result = await sendJson<{ added: number; found: number; errors: string[] }>('POST', route('api.playlists.import', selected), { text: pendingImport });
+                    setImportErrors(result.errors);
+                    say(`Found ${result.found} song${result.found === 1 ? '' : 's'}, added ${result.added} new.`);
+                    if (result.added) setImportText('');
+                    await refresh();
+                });
+            }
+        } catch {
+            // Session storage can be disabled in private browsing.
+        }
+    }, [selected, auth.spotify_connected]);
 
     const run = async (fn: () => Promise<void>) => {
         setBusy(true);
@@ -180,6 +205,16 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
     const submitImport = (e: FormEvent) => {
         e.preventDefault();
         if (selected === null || !importText.trim()) return;
+        if (!auth.spotify_connected && /open\.spotify\.com\/(?:playlist|album)\//i.test(importText)) {
+            try {
+                window.sessionStorage.setItem('sfddj.spotify.pending-import', importText);
+                window.sessionStorage.setItem('sfddj.spotify.resume-import', '1');
+                window.location.assign(`${route('spotify.connect')}?resume_import=1`);
+            } catch {
+                say('Spotify needs a one-time authorization. Please connect Spotify before importing this link.');
+            }
+            return;
+        }
         run(async () => {
             const r = await sendJson<{ added: number; found: number; errors: string[] }>('POST', route('api.playlists.import', selected), { text: importText });
             setImportErrors(r.errors);
@@ -374,8 +409,20 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                                         placeholder={'One link per line:\nhttps://www.youtube.com/playlist?list=...\nhttps://soundcloud.com/artist/track\nhttps://open.spotify.com/track/...'}
                                         className="w-full rounded-xl border-white/10 bg-black/40 font-mono text-xs text-neutral-100 placeholder-neutral-600 focus:border-violet-400 focus:ring-violet-500/30"
                                     />
-                                    <p className="text-xs text-neutral-500">A YouTube playlist link imports its videos. Up to 25 songs per import. SoundCloud and Spotify tracks work one by one; SoundCloud sets and Spotify playlists need extra API access.</p>
-                                    <div className="flex items-center gap-3">
+                                    <p className="text-xs text-neutral-500">YouTube playlists import up to 1,000 songs. Spotify requires a one-time account authorization and only allows importing playlists you own or collaborate on; its tracks are matched to YouTube.</p>
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <a
+                                            href={route('spotify.connect')}
+                                            onClick={() => {
+                                                if (importText.trim()) {
+                                                    try { window.sessionStorage.setItem('sfddj.spotify.pending-import', importText); } catch { /* OAuth still works without the draft being restored */ }
+                                                }
+                                            }}
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
+                                        >
+                                            <ExternalLink size={13} /> {auth.spotify_connected ? 'Switch Spotify account' : 'Connect Spotify'}
+                                        </a>
+                                        {auth.spotify_connected && <span className="text-xs font-semibold text-emerald-300">Spotify connected</span>}
                                         <button disabled={busy || !importText.trim()} className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-xs font-bold text-white hover:opacity-90 disabled:opacity-40">{busy ? 'Importing…' : 'Import'}</button>
                                         <button type="button" onClick={() => setImportOpen(false)} className="text-xs font-semibold text-neutral-400 hover:text-white">Close</button>
                                     </div>

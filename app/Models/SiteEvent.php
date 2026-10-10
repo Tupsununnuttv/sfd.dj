@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 /** A community event: a title, a time and optionally the room it happens in. */
 class SiteEvent extends Model
 {
-    protected $fillable = ['title', 'description', 'starts_at', 'ends_at', 'room_id', 'created_by'];
+    protected $fillable = ['title', 'description', 'starts_at', 'ends_at', 'room_id', 'created_by', 'image'];
 
     protected function casts(): array
     {

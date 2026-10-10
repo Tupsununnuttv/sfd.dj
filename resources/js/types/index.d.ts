@@ -55,6 +55,7 @@ export type PageProps<
         guest: boolean;
         coins: number; // your SFD Coins (0 for a guest)
         limits: { playlists: number; songs: number; emojis: number }; // how many you may have: more with Plus or Premium
+        spotify_connected: boolean;
     };
     // somebody who has not confirmed their email yet: must they, can the site send the message, and what became of the last one; null for everybody else
     verification: { required: boolean; mail: boolean; status: string | null } | null;

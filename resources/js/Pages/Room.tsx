@@ -30,7 +30,7 @@ import { withDefaults } from '@/lib/prefs';
 import { PageProps, RoleInfo } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { echo } from '@laravel/echo-react';
-import { Disc3, Footprints, Gavel, MessageCircle, UserPlus, VolumeX, X } from 'lucide-react';
+import { Disc3, Footprints, Gavel, MessageCircle, ShieldCheck, UserCheck, UserPlus, VolumeX, X } from 'lucide-react';
 import { FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
 
 interface Song {
@@ -158,6 +158,7 @@ export default function Room({
     roles,
     members,
     memberList,
+    friendIds: initialFriendIds,
     mod,
     permissionLabels,
     backgrounds,
@@ -177,6 +178,7 @@ export default function Room({
     can: Record<string, boolean>;
     roles: RoomRoleInfo[];
     members: Record<string, number>;
+    friendIds: number[];
     memberList: MemberRow[];
     mod: ModData | null;
     permissionLabels: Record<string, string>;
@@ -199,6 +201,7 @@ export default function Room({
     const [playback, setPlayback] = useState(() => stamp(initialPlayback));
     const [mine, setMine] = useState<MyVotes>(myVotes);
     const [users, setUsers] = useState<Member[]>([]);
+    const [friendIds, setFriendIds] = useState(initialFriendIds);
     const [typers, setTypers] = useState<Record<number, string>>({});
     const [tab, setTab] = useState<Tab>('chat');
     const [panel, setPanel] = useState<PanelName>(null);
@@ -630,12 +633,16 @@ export default function Room({
         post(route('rooms.announce', room.slug), { message }).catch(() => setAnnouncement(message));
     };
 
-    // the Users tab: everybody under the room role they hold, the host first, then the roles in their order, then everyone without one (each by name)
+    // Keep site staff above room roles so an Owner who is also the host is never listed below Host.
     const byName = (a: Member, b: Member) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+    const staffRoleOrder = ['owner', 'developer', 'admin', 'lead_moderator', 'brand_ambassador', 'moderator', 'site_moderator', 'helper', 'promoter', 'translator'];
+    const isSiteTeam = (member: Member) => staffRoleOrder.includes(member.role.key);
+    const byTeamRank = (a: Member, b: Member) => staffRoleOrder.indexOf(a.role.key) - staffRoleOrder.indexOf(b.role.key) || byName(a, b);
     const roleGroups = [
-        { role: HOST_ROLE, people: users.filter((u) => u.id === host.id) },
-        ...[...roles].sort((a, b) => a.rank - b.rank).map((r) => ({ role: { key: `room-${r.id}`, label: r.name, color: r.color }, people: users.filter((u) => u.id !== host.id && members[u.id] === r.id).sort(byName) })),
-        { role: { key: 'member', label: 'Users', color: '#a3a3a3' }, people: users.filter((u) => u.id !== host.id && !roles.some((r) => r.id === members[u.id])).sort(byName) },
+        { role: { key: 'site-team', label: 'SFD.DJ Team', color: '#a78bfa' }, people: users.filter(isSiteTeam).sort(byTeamRank) },
+        { role: HOST_ROLE, people: users.filter((u) => u.id === host.id && !isSiteTeam(u)) },
+        ...[...roles].sort((a, b) => a.rank - b.rank).map((r) => ({ role: { key: `room-${r.id}`, label: r.name, color: r.color }, people: users.filter((u) => !isSiteTeam(u) && u.id !== host.id && members[u.id] === r.id).sort(byName) })),
+        { role: { key: 'member', label: 'Users', color: '#a3a3a3' }, people: users.filter((u) => !isSiteTeam(u) && u.id !== host.id && !roles.some((r) => r.id === members[u.id])).sort(byName) },
     ].filter((g) => g.people.length > 0);
 
     // whoever is in the room right now is drawn as they are now: a new frame or a new flag shows in the chat lines they wrote before, too
@@ -861,7 +868,7 @@ export default function Room({
                                 <section key={role.key} className="mb-3" data-role-group={role.label}>
                                     <div className="mb-1.5 flex items-center justify-between gap-2">
                                         <span className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-bold uppercase leading-none tracking-wider" style={{ color: role.color, borderColor: `${role.color}59`, backgroundColor: `${role.color}1a` }}>
-                                            <RoleGlyph role={role} size={13} /> {role.label}
+                                            {role.key === 'site-team' ? <ShieldCheck size={13} /> : <RoleGlyph role={role} size={13} />} {role.label}
                                         </span>
                                         <span className="rounded-md border border-white/10 bg-white/5 px-1.5 py-1 text-[11px] font-bold leading-none text-neutral-400">{people.length}</span>
                                     </div>
@@ -878,6 +885,8 @@ export default function Room({
                                                         <p className="flex items-center gap-1.5">
                                                             {rr && <RoleIcon role={rr} />}
                                                             <button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} title="Quick profile" className="truncate font-semibold hover:underline" style={{ color: u.role.color }}>{u.name}</button>
+                                                            {u.id === host.id && isSiteTeam(u) && <span title="Room host" className="shrink-0 rounded bg-amber-400/10 px-1 py-0.5 text-[10px] font-semibold text-amber-300">Host</span>}
+                                                                    {friendIds.includes(u.id) && <span title="Already your friend" className="inline-flex shrink-0 items-center gap-0.5 rounded bg-emerald-500/10 px-1 py-0.5 text-[10px] font-semibold text-emerald-300"><UserCheck size={11} />Friend</span>}
                                                             <Flag flag={u.flag} className="h-3" />
                                                             {u.id === user.id && <span className="shrink-0 text-xs text-neutral-500">(you)</span>}
                                                             {u.level !== undefined && <span className="ml-auto shrink-0 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-bold leading-none text-neutral-300">Level {u.level}</span>}
@@ -953,6 +962,7 @@ export default function Room({
                         onProfile: () => setPage({ url: route('users.show', card.user.id), title: `${card.user.name}'s profile` }),
                         onMention: () => { setTab('chat'); setMention({ name: card.user.name, n: Date.now() }); },
                         onWhisper: () => { setWhisperTo(card.user.id); setPanel('whispers'); },
+                        onFriendAdded: () => setFriendIds((ids) => ids.includes(card.user.id) ? ids : [...ids, card.user.id]),
                         onChanged: () => router.reload({ only: ['mod', 'members', 'memberList', 'roles', 'can', 'bans'] }),
                     }}
                 />

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class Playlist extends Model
 {
-    public const MAX_SONGS = 500; // without a plan: Plus and Premium allow more (App\Support\Plans)
+    public const MAX_SONGS = 5000;
 
     protected $fillable = ['user_id', 'name', 'kind', 'is_active'];
 
@@ -47,10 +47,12 @@ class Playlist extends Model
     public function addSongs(array $songs): int
     {
         $added = 0;
+        $count = $this->songs()->count();
+        $position = (int) (PlaylistSong::where('playlist_id', $this->id)->max('position') ?? 0);
         $max = User::find($this->user_id)?->limits()['songs'] ?? self::MAX_SONGS;
 
         foreach ($songs as $song) {
-            if ($this->songs()->count() >= $max) {
+            if ($count >= $max) {
                 break;
             }
 
@@ -61,10 +63,14 @@ class Playlist extends Model
                 'duration' => $song['duration'] ?? 0,
                 'origin' => $song['origin'] ?? 'youtube',
                 'origin_url' => $song['origin_url'] ?? null,
-                'position' => (PlaylistSong::where('playlist_id', $this->id)->max('position') ?? 0) + 1,
+                'position' => $position + 1,
             ]);
 
-            $added += $row->wasRecentlyCreated ? 1 : 0;
+            if ($row->wasRecentlyCreated) {
+                $added++;
+                $count++;
+                $position++;
+            }
         }
 
         return $added;

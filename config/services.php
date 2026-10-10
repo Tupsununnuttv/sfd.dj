@@ -36,6 +36,7 @@ return [
     'spotify' => [
         'client_id' => env('SPOTIFY_CLIENT_ID'),
         'client_secret' => env('SPOTIFY_CLIENT_SECRET'),
+        'redirect_uri' => env('SPOTIFY_REDIRECT_URI'),
     ],
 
     // Lets people link their Discord account (Settings → Account). Create the app at discord.com/developers.

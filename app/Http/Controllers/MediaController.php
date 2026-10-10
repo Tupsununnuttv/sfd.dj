@@ -30,6 +30,11 @@ class MediaController extends Controller
         return $this->serve('room-backgrounds', $file);
     }
 
+    public function event(string $file): Response
+    {
+        return $this->serve('events', $file);
+    }
+
     public function emoji(string $file): Response
     {
         return $this->serve('emojis', $file);

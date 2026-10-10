@@ -112,11 +112,11 @@ const sections: Section[] = [
             <>
                 <List
                     items={[
-                        'Create up to 30 playlists with up to 500 songs each. Pressing Grab in a room asks which of your playlists the song goes in; with no playlist yet you make one on the spot.',
+                        'Create up to 30 playlists with up to 5,000 songs each; Plus and Premium raise that to 10,000 and 20,000. Pressing Grab in a room asks which of your playlists the song goes in; with no playlist yet you make one on the spot.',
                         'Add a song by searching YouTube or pasting a YouTube, SoundCloud or Spotify link.',
                         'Drag the tracks into the order they should play in (or use a track\'s menu: move to the top or the bottom), shuffle the order, find a track in the list, rename or delete the list, and download its links as a text file.',
                         'One playlist is your active playlist. Its first track is your next track: the footbar of a room shows it, and it is the one that plays when your turn in the Waitlist comes. When a song has been played it goes to the bottom of its list and slowly moves up as other songs are played, so your next turn plays the next one. The Waitlist tab lists the people in the line, not songs. Chat tells when a song has ended, who joined or left the waitlist and so on, each in its own colour. Pick the active playlist in the footbar or in Playlists.',
-                        'Import: paste a YouTube playlist link, or several links (one per line). Up to 25 songs are imported at a time.',
+                        'Import: paste a YouTube playlist link, a Spotify playlist you own or collaborate on, or several links (one per line). Up to 1,000 songs are imported at a time. Connect your Spotify account first; Spotify tracks are matched to YouTube.',
                         'Inside a room, “Queue” adds one song to the waitlist and “Queue all” adds up to 50 songs of a playlist.',
                     ]}
                 />

@@ -4,13 +4,14 @@ import AppLayout from '@/Layouts/AppLayout';
 import { countdown, until, useNow } from '@/lib/time';
 import { PageProps } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { CalendarPlus, Check, Plus, Radio, Trash2, X } from 'lucide-react';
-import { FormEvent, useMemo, useState } from 'react';
+import { CalendarPlus, Check, ImagePlus, Plus, Radio, Trash2, X } from 'lucide-react';
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 
 interface EventCard {
     id: number;
     title: string;
     description: string | null;
+    image_url: string | null;
     starts_at: string;
     ends_at: string | null;
     room: { name: string; slug: string } | null;
@@ -117,6 +118,7 @@ function Featured({ e, guest }: { e: EventCard; guest: boolean }) {
                     {e.description && <p className="mt-3 whitespace-pre-line text-neutral-200">{e.description}</p>}
                     <div className="mt-4"><Faces e={e} /></div>
                 </div>
+                {e.image_url && <img src={e.image_url} alt="" className="h-32 w-full rounded-xl object-cover sm:w-48" />}
                 {!e.is_live && <Countdown iso={e.starts_at} />}
             </div>
             <div className="relative mt-6 flex flex-wrap items-center gap-2">
@@ -142,6 +144,7 @@ function EventItem({ e, past, guest }: { e: EventCard; past?: boolean; guest: bo
                 <span className="text-[10px] font-bold tracking-wider text-white/80">{month(e.starts_at)}</span>
                 <span className="text-2xl font-black leading-none">{day(e.starts_at)}</span>
             </div>
+            {e.image_url && <img src={e.image_url} alt="" className="hidden h-16 w-24 shrink-0 rounded-lg object-cover sm:block" />}
             <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-bold">{e.title}</h3>
@@ -177,7 +180,19 @@ function EventItem({ e, past, guest }: { e: EventCard; past?: boolean; guest: bo
 }
 
 function NewEvent({ rooms, onClose }: { rooms: Props['rooms']; onClose: () => void }) {
-    const { data, setData, post, processing, errors, transform } = useForm({ title: '', description: '', starts_at: '', ends_at: '', room_id: '' });
+    const { data, setData, post, processing, errors, transform } = useForm({ title: '', description: '', starts_at: '', ends_at: '', room_id: '', image: null as File | null });
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!data.image) {
+            setImagePreview(null);
+            return;
+        }
+
+        const preview = URL.createObjectURL(data.image);
+        setImagePreview(preview);
+        return () => URL.revokeObjectURL(preview);
+    }, [data.image]);
 
     // the browser's datetime-local value is local time without a zone; send it as an exact instant
     transform((d) => ({
@@ -192,6 +207,8 @@ function NewEvent({ rooms, onClose }: { rooms: Props['rooms']; onClose: () => vo
         post(route('events.store'), { preserveScroll: true, onSuccess: onClose });
     };
 
+    const chooseImage = (event: ChangeEvent<HTMLInputElement>) => setData('image', event.target.files?.[0] ?? null);
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
             <form onSubmit={create} onClick={(e) => e.stopPropagation()} className="w-full max-w-lg space-y-3 rounded-2xl border border-white/10 bg-neutral-900 p-6 shadow-2xl">
@@ -204,6 +221,20 @@ function NewEvent({ rooms, onClose }: { rooms: Props['rooms']; onClose: () => vo
                     {errors.title && <p className="mt-1 text-sm text-red-400">{errors.title}</p>}
                 </div>
                 <textarea value={data.description} onChange={(e) => setData('description', e.target.value)} placeholder="What is it about? (optional)" rows={3} maxLength={1000} className={fieldClass} />
+                <div>
+                    <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/3 px-3 py-2.5 text-sm text-neutral-300 transition hover:bg-white/6">
+                        <ImagePlus size={16} className="shrink-0 text-violet-300" />
+                        <span className="min-w-0 flex-1 truncate">{data.image?.name ?? 'Add an event image from your device'}</span>
+                        <input type="file" accept="image/png,image/jpeg,image/webp" onChange={chooseImage} className="sr-only" />
+                    </label>
+                    {errors.image && <p className="mt-1 text-sm text-red-400">{errors.image}</p>}
+                    {imagePreview && (
+                        <div className="relative mt-2">
+                            <img src={imagePreview} alt="Event image preview" className="max-h-40 w-full rounded-lg object-cover" />
+                            <button type="button" onClick={() => setData('image', null)} aria-label="Remove event image" className="absolute right-2 top-2 rounded-md bg-black/70 p-1.5 text-white hover:bg-black"><X size={14} /></button>
+                        </div>
+                    )}
+                </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <label className="text-xs text-neutral-400">
                         Starts

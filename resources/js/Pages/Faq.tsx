@@ -32,7 +32,7 @@ const faq: { group: string; icon: string; items: Item[] }[] = [
         icon: '🎵',
         items: [
             { q: 'Which services can I add songs from?', a: 'YouTube (links and search), SoundCloud and Spotify (links). Everything is played through YouTube, so a SoundCloud or Spotify track is matched to the same song on YouTube. Check the result: the match can be a different version.' },
-            { q: 'Why can I not import a SoundCloud set or a Spotify playlist?', a: 'SoundCloud sets are not supported. Spotify playlists and albums only work if the site owner has added Spotify credentials. YouTube playlists always work (up to 25 songs at a time).' },
+            { q: 'Why can I not import a SoundCloud set or a Spotify playlist?', a: 'SoundCloud sets are not supported. For Spotify playlists, press Connect Spotify first; the connected account must own the playlist or collaborate on it. YouTube playlists import up to 1,000 songs at a time.' },
             { q: 'What do Woot, Meh and Grab do?', a: 'Woot says you like the song, Meh says you do not. Grab puts the song in one of your playlists so you can play it later: it asks which one, and if you have no playlist yet it lets you make one first. Every woot gives the DJ +1 XP.' },
             { q: 'Why can I not woot, meh or grab my own song?', a: 'To keep the votes honest. While your song plays, the others vote on it.' },
             { q: 'What does the lock on the waitlist mean?', a: 'A room moderator locked it. Until it is unlocked only people who manage the queue can add songs.' },

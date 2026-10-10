@@ -4,12 +4,15 @@ namespace Tests\Feature;
 
 use App\Events\MessageSent;
 use App\Events\PlaybackUpdated;
+use App\Models\Friendship;
 use App\Models\Room;
 use App\Models\SiteEvent;
 use App\Models\User;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -63,6 +66,19 @@ class GuestAndEventsTest extends TestCase
         $this->get('/dashboard')->assertInertia(fn (Assert $p) => $p->has('rooms', 0));
     }
 
+    public function test_room_users_receive_the_viewers_accepted_friend_ids(): void
+    {
+        $me = User::factory()->create();
+        $friend = User::factory()->create();
+        $pending = User::factory()->create();
+        $room = $me->rooms()->create(['name' => 'Lobby', 'slug' => 'lobby-1']);
+        Friendship::create(['user_id' => $me->id, 'friend_id' => $friend->id, 'status' => 'accepted']);
+        Friendship::create(['user_id' => $me->id, 'friend_id' => $pending->id, 'status' => 'pending']);
+
+        $this->actingAs($me)->get("/rooms/{$room->slug}")->assertOk()->assertInertia(fn (Assert $p) => $p
+            ->where('friendIds', [$friend->id]));
+    }
+
     public function test_unverified_users_are_still_sent_to_verification(): void
     {
         $this->mailWorks();
@@ -87,14 +103,22 @@ class GuestAndEventsTest extends TestCase
 
     public function test_events_staff_create_everyone_sees_members_rsvp(): void
     {
+        Storage::fake('local');
         $staff = $this->staff();
         $member = User::factory()->create();
         $room = $staff->rooms()->create(['name' => 'Party', 'slug' => 'party-1']);
         $privateRoom = $staff->rooms()->create(['name' => 'Secret', 'slug' => 'secret-party', 'is_private' => true]);
 
-        $this->actingAs($member)->post('/events', ['title' => 'Community meetup', 'starts_at' => now()->addDays(2)->toIso8601String()])->assertRedirect();
+        $this->actingAs($member)->post('/events', [
+            'title' => 'Community meetup',
+            'starts_at' => now()->addDays(2)->toIso8601String(),
+            'image' => UploadedFile::fake()->createWithContent('cover.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==')),
+        ])->assertRedirect();
         $this->actingAs($member)->from('/events')->post('/events', ['title' => 'Private party', 'starts_at' => now()->addDays(3)->toIso8601String(), 'room_id' => $privateRoom->id])->assertSessionHasErrors('room_id');
         $memberEvent = SiteEvent::where('title', 'Community meetup')->firstOrFail();
+        $this->assertNotNull($memberEvent->image);
+        Storage::disk('local')->assertExists('events/'.$memberEvent->image);
+        $this->get(route('media.event', $memberEvent->image))->assertOk()->assertHeader('Content-Type', 'image/png');
         $this->actingAs($staff)->post('/events', ['title' => 'Listening party', 'starts_at' => now()->addDay()->toIso8601String(), 'room_id' => $room->id])->assertRedirect();
         $this->actingAs($staff)->post('/events', ['title' => 'Bad times', 'starts_at' => now()->addDay()->toIso8601String(), 'ends_at' => now()->toIso8601String()])->assertSessionHasErrors('ends_at');
         SiteEvent::create(['title' => 'Old one', 'starts_at' => now()->subDays(2), 'ends_at' => now()->subDays(2)->addHour()]);
@@ -105,6 +129,7 @@ class GuestAndEventsTest extends TestCase
             ->has('upcoming', 2)->where('upcoming.0.title', 'Listening party')->where('upcoming.0.room.slug', 'party-1')
             ->where('upcoming.0.going', false)->where('upcoming.0.can_delete', false)
             ->where('upcoming.1.title', 'Community meetup')->where('upcoming.1.can_delete', true)
+            ->where('upcoming.1.image_url', route('media.event', $memberEvent->image))
             ->has('past', 1)->where('canCreate', true)->where('canManage', false));
 
         $this->actingAs($member)->post("/events/{$event->id}/attend")->assertRedirect();
@@ -117,6 +142,7 @@ class GuestAndEventsTest extends TestCase
         $this->actingAs($member)->delete("/events/{$event->id}")->assertForbidden();
         $this->actingAs($member)->delete("/events/{$memberEvent->id}")->assertRedirect();
         $this->assertNull(SiteEvent::find($memberEvent->id));
+        Storage::disk('local')->assertMissing('events/'.$memberEvent->image);
         $this->actingAs($staff)->get('/events')->assertInertia(fn (Assert $p) => $p->where('canManage', true)->has('rooms', 2));
         $this->actingAs($staff)->delete("/events/{$event->id}")->assertRedirect();
         $this->assertNull(SiteEvent::find($event->id));

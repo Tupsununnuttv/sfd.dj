@@ -101,49 +101,75 @@ class YouTube
      *
      * @return array<int, array{id: string, title: string, channel: string|null, thumbnail: string, duration: int}>|null null = unavailable
      */
-    public function playlist(string $playlistId, int $max = 25): ?array
+    public function playlist(string $playlistId, int $max = 1000): ?array
     {
         if (! $this->hasKey()) {
             return null;
         }
 
-        try {
-            $list = Http::timeout(6)->get(self::API.'/playlistItems', [
-                'part' => 'contentDetails',
-                'playlistId' => $playlistId,
-                'maxResults' => min($max, 50),
-                'key' => config('services.youtube.key'),
-            ]);
+        $ids = [];
+        $pageToken = null;
 
-            if (! $list->successful()) {
-                return null;
+        try {
+            while (count($ids) < $max) {
+                $parameters = [
+                    'part' => 'contentDetails',
+                    'playlistId' => $playlistId,
+                    'maxResults' => min($max - count($ids), 50),
+                    'key' => config('services.youtube.key'),
+                ];
+                if ($pageToken) {
+                    $parameters['pageToken'] = $pageToken;
+                }
+
+                $page = Http::timeout(6)->get(self::API.'/playlistItems', $parameters);
+                if (! $page->successful()) {
+                    return null;
+                }
+
+                $ids = [...$ids, ...collect($page->json('items', []))->pluck('contentDetails.videoId')->filter()->all()];
+                $pageToken = $page->json('nextPageToken');
+                if (! $pageToken || $page->json('items', []) === []) {
+                    break;
+                }
             }
 
-            $ids = collect($list->json('items', []))->pluck('contentDetails.videoId')->filter()->implode(',');
-            if ($ids === '') {
+            if ($ids === []) {
                 return [];
             }
 
-            $videos = Http::timeout(6)->get(self::API.'/videos', [
-                'part' => 'snippet,contentDetails,status',
-                'id' => $ids,
-                'key' => config('services.youtube.key'),
-            ]);
+            $videos = collect();
+            foreach (array_chunk($ids, 50) as $batch) {
+                $response = Http::timeout(6)->get(self::API.'/videos', [
+                    'part' => 'snippet,contentDetails,status',
+                    'id' => implode(',', $batch),
+                    'key' => config('services.youtube.key'),
+                ]);
+                if (! $response->successful()) {
+                    return null;
+                }
+                $videos = $videos->concat($response->json('items', []));
+            }
         } catch (ConnectionException) {
             return null;
         }
 
-        return $videos->successful()
-            ? collect($videos->json('items', []))
-                ->filter(fn ($v) => ($v['status']['embeddable'] ?? true) !== false)
-                ->map(fn ($v) => [
-                    'id' => $v['id'],
-                    'title' => Str::limit($v['snippet']['title'], 250),
-                    'channel' => isset($v['snippet']['channelTitle']) ? Str::limit($v['snippet']['channelTitle'], 120, '') : null,
-                    'thumbnail' => 'https://i.ytimg.com/vi/'.$v['id'].'/mqdefault.jpg',
-                    'duration' => $this->seconds($v['contentDetails']['duration'] ?? ''),
-                ])->values()->all()
-            : null;
+        $videosById = $videos->keyBy('id');
+
+        return collect($ids)->map(function ($id) use ($videosById) {
+            $video = $videosById->get($id);
+            if (! $video || ($video['status']['embeddable'] ?? true) === false) {
+                return null;
+            }
+
+            return [
+                'id' => $video['id'],
+                'title' => Str::limit($video['snippet']['title'], 250),
+                'channel' => isset($video['snippet']['channelTitle']) ? Str::limit($video['snippet']['channelTitle'], 120, '') : null,
+                'thumbnail' => 'https://i.ytimg.com/vi/'.$video['id'].'/mqdefault.jpg',
+                'duration' => $this->seconds($video['contentDetails']['duration'] ?? ''),
+            ];
+        })->filter()->values()->all();
     }
 
     /** ISO 8601 duration (PT3M33S) to seconds. Live streams ("P0D") give 0. */

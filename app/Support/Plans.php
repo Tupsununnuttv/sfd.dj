@@ -17,8 +17,8 @@ final class Plans
     public const FREE = ['xp' => 1.0, 'playlists' => PlaylistController::MAX_PLAYLISTS, 'songs' => Playlist::MAX_SONGS, 'emojis' => RoomEmojiController::MAX_PER_ROOM];
 
     public const TIERS = [
-        'plus' => ['name' => 'Plus', 'color' => '#2dd4bf', 'month' => 299, 'year' => 2999, 'xp' => 1.25, 'playlists' => 60, 'songs' => 1000, 'emojis' => 50],
-        'premium' => ['name' => 'Premium', 'color' => '#fbbf24', 'month' => 599, 'year' => 5999, 'xp' => 1.5, 'playlists' => 100, 'songs' => 2000, 'emojis' => 100],
+        'plus' => ['name' => 'Plus', 'color' => '#2dd4bf', 'month' => 299, 'year' => 2999, 'xp' => 1.25, 'playlists' => 60, 'songs' => 10000, 'emojis' => 50],
+        'premium' => ['name' => 'Premium', 'color' => '#fbbf24', 'month' => 599, 'year' => 5999, 'xp' => 1.5, 'playlists' => 100, 'songs' => 20000, 'emojis' => 100],
     ];
 
     /** The most songs a playlist can hold on any plan (the order of a playlist is checked against it). */

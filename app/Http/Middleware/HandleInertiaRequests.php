@@ -53,6 +53,7 @@ class HandleInertiaRequests extends Middleware
                 'guest' => $request->user() === null,
                 'coins' => (int) ($request->user()?->coins ?? 0), // SFD Coins: only your own, never in the other people's user data
                 'limits' => $request->user()?->limits() ?? Plans::FREE, // how many playlists, songs and room emojis you may have (more with a plan)
+                'spotify_connected' => $request->hasSession() && ($request->session()->has('spotify.access_token') || $request->session()->has('spotify.refresh_token')),
             ],
             // somebody who has not confirmed their email yet: must they, can the site send the message, and what became of the last one (the banner and the confirm page use it)
             'verification' => fn () => ($u = $request->user()) && ! $u->hasVerifiedEmail()

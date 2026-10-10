@@ -104,7 +104,7 @@ class PlaylistsAndChatTest extends TestCase
 
         $this->assertSame(2, $res->json('added'));
         $this->assertCount(3, $res->json('errors'));
-        $this->assertStringContainsString('SPOTIFY_CLIENT_ID', implode(' ', $res->json('errors')));
+        $this->assertStringContainsString('Connect your Spotify account', implode(' ', $res->json('errors')));
     }
 
     public function test_room_queue_accepts_links_and_whole_playlists(): void
