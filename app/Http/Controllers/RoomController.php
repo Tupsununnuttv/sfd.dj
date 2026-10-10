@@ -258,10 +258,10 @@ class RoomController extends Controller
         ];
     }
 
-    /** The backgrounds this person is shown in Room settings: the plain ones, and the custom ones too if they are the host. */
+    /** The custom and seasonal backgrounds are available to anyone with room settings permission. */
     private function visibleBackgrounds(?User $user, Room $room): array
     {
-        return $user && $user->id === $room->user_id ? self::BACKGROUNDS : array_values(array_diff(self::BACKGROUNDS, self::HOST_BACKGROUNDS));
+        return $user && $room->can($user, 'edit_settings') ? self::BACKGROUNDS : array_values(array_diff(self::BACKGROUNDS, self::HOST_BACKGROUNDS));
     }
 
     public function update(Request $request, Room $room): RedirectResponse
@@ -271,7 +271,7 @@ class RoomController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:50', new NoOtherSites],
             'description' => ['nullable', 'string', 'max:140', new NoOtherSites],
-            'background' => ['nullable', Rule::in([...$this->visibleBackgrounds($request->user(), $room), $room->shownBackground()])], // the one that is on (a custom or a season's) may be saved again, nobody but the host may pick another custom one
+            'background' => ['nullable', Rule::in([...$this->visibleBackgrounds($request->user(), $room), $room->shownBackground()])], // the one that is on (a custom or a season's) may be saved again by anyone who can edit settings
             'genre' => ['nullable', Rule::in(Room::GENRES)],
             'is_private' => ['sometimes', 'boolean'],
             'welcome_message' => ['nullable', 'string', 'max:300', new NoOtherSites],
@@ -339,10 +339,10 @@ class RoomController extends Controller
         return $user && ($user->id === $room->user_id || $user->is_staff);
     }
 
-    /** The host's own picture for the background of the room (it replaces the one uploaded before, and is put on at once). */
+    /** A room settings manager may upload a picture for this room (it replaces the previous one and is put on at once). */
     public function uploadBackground(Request $request, Room $room): RedirectResponse
     {
-        abort_unless($request->user()->id === $room->user_id, 403);
+        abort_unless($room->can($request->user(), 'edit_settings'), 403);
         $request->validate(['image' => ['required', 'file', 'image', 'mimes:png,jpg,jpeg,webp', 'max:4096', 'dimensions:min_width=800,min_height=450']]);
 
         $old = $room->custom_background;
@@ -357,7 +357,7 @@ class RoomController extends Controller
 
     public function removeBackground(Request $request, Room $room): RedirectResponse
     {
-        abort_unless($request->user()->id === $room->user_id, 403);
+        abort_unless($room->can($request->user(), 'edit_settings'), 403);
 
         $room->custom_background && MediaController::disk()->delete("room-backgrounds/{$room->custom_background}");
         $room->update(['custom_background' => null, 'background' => $room->background === 'custom' ? null : $room->background]);

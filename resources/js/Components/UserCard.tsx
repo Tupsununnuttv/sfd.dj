@@ -57,6 +57,7 @@ export interface CardRoom {
     roles: { id: number; name: string }[];
     mutedUntil: string | null | undefined; // undefined = not muted, null = muted until unmuted
     here?: boolean; // is the person in the room right now
+    friendIds?: number[];
     onProfile: () => void;
     onMention: () => void;
     onWhisper: () => void;
@@ -104,6 +105,7 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
     const s = profile?.stats;
     const flag = profile?.flag ?? user.flag;
     const status = statusOf(profile?.status ?? user.status);
+    const alreadyFriends = profile?.friendship === 'friends' || room.friendIds?.includes(user.id) === true;
 
     useEffect(() => {
         const key = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -204,7 +206,7 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
                         <div className="grid grid-cols-3 gap-1.5">
                             <Action icon={MessageCircle} label="Whisper" onClick={() => { room.onWhisper(); onClose(); }} />
                             <Action icon={AtSign} label="Mention" onClick={() => { room.onMention(); onClose(); }} />
-                            {profile?.friendship === 'friends' ? <Action icon={UserCheck} label="Friends" tone="good" disabled />
+                            {alreadyFriends ? <Action icon={UserCheck} label="Friends" tone="good" disabled />
                                 : profile?.friendship === 'sent' ? <Action icon={Clock} label="Requested" disabled />
                                 : profile?.friendship === 'received' ? <Action icon={UserCheck} label="Accept" tone="good" onClick={friend} />
                                 : <Action icon={UserPlus} label="Add friend" onClick={friend} disabled={!profile} />}

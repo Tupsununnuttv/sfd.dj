@@ -12,7 +12,7 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { createContext, MouseEvent, useContext, useEffect, useRef, useState } from 'react';
 import {
     BookOpen, ChevronDown, CalendarDays, Clock, DoorOpen, Gavel, Gift, HelpCircle, LayoutDashboard, ListMusic, LogIn, LogOut, type LucideIcon,
-    MessageCircle, Package, Radio, ScrollText, Settings, ShieldCheck, ShoppingBag, Trophy, UserPlus, Users,
+    MessageCircle, Package, PanelLeftClose, PanelLeftOpen, Radio, ScrollText, Settings, ShieldCheck, ShoppingBag, Trophy, UserPlus, Users,
 } from 'lucide-react';
 
 type NavLink = { label: string; routeName: string; icon: LucideIcon; params?: Record<string, string>; membersOnly?: boolean };
@@ -36,6 +36,7 @@ const help: NavLink[] = [
 
 /** Inside a room this opens a page in the overlay instead of leaving the room. */
 const OpenPage = createContext<((url: string, title: string) => void) | null>(null);
+const ExpandedSidebar = createContext(false);
 
 /** A normal click opens the overlay; ctrl/middle click still opens a new tab. */
 function useOverlayClick(url: string, title: string) {
@@ -50,12 +51,13 @@ function useOverlayClick(url: string, title: string) {
         : undefined;
 }
 
-const item = 'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition [@media(max-height:900px)_and_(min-height:781px)]:py-1.5 [@media(max-height:780px)_and_(min-height:681px)]:py-1 [@media(max-height:680px)]:py-0.5';
-const divider = 'my-3 border-t border-white/10 [@media(max-height:900px)_and_(min-height:681px)]:my-2 [@media(max-height:680px)]:my-1';
+const item = 'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition [@media(max-height:900px)]:py-1 [@media(max-height:780px)]:py-0.5';
+const divider = 'my-3 border-t border-white/10 [@media(max-height:900px)]:my-1';
 const idle = 'text-neutral-400 hover:bg-white/5 hover:text-white';
 
 function NavItem({ label, routeName, icon: Icon, params }: NavLink) {
     const { pendingFriends, unreadWhispers, auth } = usePage<PageProps>().props;
+    const expanded = useContext(ExpandedSidebar);
     const badge = routeName === 'friends' && auth.user.preferences?.notifications?.friend_requests !== false ? pendingFriends : routeName === 'whispers' ? unreadWhispers : 0;
 
     const url = route(routeName, params);
@@ -64,9 +66,9 @@ function NavItem({ label, routeName, icon: Icon, params }: NavLink) {
     const inner = (
         <>
             <Icon size={18} className="shrink-0" />
-            <span className="hidden flex-1 whitespace-nowrap lg:inline">{label}</span>
+            <span className={`${expanded ? 'inline' : 'hidden lg:inline'} flex-1 whitespace-nowrap`}>{label}</span>
             {badge > 0 && <span className="rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">{badge}</span>}
-            {routeName === 'shop' && !auth.guest && <span className="hidden shrink-0 lg:inline"><CoinPill amount={auth.coins} compact className="!px-1.5 !text-[11px]" /></span>}
+            {routeName === 'shop' && !auth.guest && <span className={`${expanded ? 'inline' : 'hidden lg:inline'} shrink-0`}><CoinPill amount={auth.coins} compact className="!px-1.5 !text-[11px]" /></span>}
         </>
     );
 
@@ -80,6 +82,7 @@ function NavItem({ label, routeName, icon: Icon, params }: NavLink) {
 /** Who you are, right under the logo: picture, name, level and how far you are to the next one. Opens your profile. */
 function ProfileCard() {
     const { auth: { user } } = usePage<PageProps>().props;
+    const expanded = useContext(ExpandedSidebar);
     const url = route('profile.edit');
     const onOverlay = useOverlayClick(url, 'Profile');
     const pct = levelPercent(user.xp, user.level);
@@ -89,7 +92,7 @@ function ProfileCard() {
     const body = (
         <>
             {/* wide menu: picture, name, level and the XP bar */}
-            <div className="hidden items-center gap-3 lg:flex">
+            <div className={`${expanded ? 'flex' : 'hidden lg:flex'} items-center gap-3`}>
                 <span className="relative shrink-0">
                     <Avatar name={user.name} avatar={user.avatar} cosmetics={user.cosmetics} className="h-11 w-11 text-xl" />
                     <StatusDot status={user.status} className="absolute -bottom-0.5 -right-0.5 !h-3 !w-3" />
@@ -111,7 +114,7 @@ function ProfileCard() {
             </div>
 
             {/* narrow menu: the picture inside a ring that fills up with XP, and the level on top */}
-            <span className="relative mx-auto block h-10 w-10 lg:hidden">
+            <span className={`${expanded ? 'hidden' : 'relative mx-auto block h-10 w-10 lg:hidden'}`}>
                 <span className="flex h-full w-full items-center justify-center rounded-full p-[2.5px]" style={{ background: `conic-gradient(#d946ef ${pct * 3.6}deg, rgba(255,255,255,0.14) 0)` }}>
                     <span className="flex h-full w-full items-center justify-center rounded-full bg-neutral-950">
                         <Avatar name={user.name} avatar={user.avatar} cosmetics={user.cosmetics} className="h-7 w-7 text-sm" />
@@ -128,6 +131,7 @@ function ProfileCard() {
 /** Online, busy, away or offline: one click on the status under your card opens the choices. */
 function StatusMenu() {
     const { auth: { user } } = usePage<PageProps>().props;
+    const expanded = useContext(ExpandedSidebar);
     const [open, setOpen] = useState(false);
     const box = useRef<HTMLDivElement>(null);
     const status = statusOf(user.status);
@@ -148,11 +152,11 @@ function StatusMenu() {
     };
 
     return (
-        <div ref={box} className="relative mb-3 [@media(max-height:730px)]:mb-2">
+        <div ref={box} className="relative mb-3 [@media(max-height:900px)]:mb-1">
             <button onClick={() => setOpen(!open)} aria-haspopup="menu" aria-expanded={open} title={`Status: ${STATUS[status].label}. Click to change it.`} data-status-button className="flex w-full items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs text-neutral-400 transition hover:bg-white/5 hover:text-white lg:justify-start lg:px-3">
                 <StatusDot status={status} ring="ring-transparent" className="!ring-0" />
-                <span className="hidden flex-1 text-left font-medium lg:inline">{STATUS[status].label}</span>
-                <ChevronDown size={14} className={`hidden transition-transform lg:block ${open ? 'rotate-180' : ''}`} />
+                <span className={`${expanded ? 'inline' : 'hidden lg:inline'} flex-1 text-left font-medium`}>{STATUS[status].label}</span>
+                <ChevronDown size={14} className={`${expanded ? 'block' : 'hidden lg:block'} transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
             {open && (
                 <div role="menu" aria-label="Status" className="absolute left-0 top-full z-40 mt-1 w-64 animate-menu rounded-xl border border-white/10 bg-neutral-900 p-1.5 shadow-2xl shadow-black/60">
@@ -178,21 +182,40 @@ export default function Sidebar({
     room?: { slug: string; name: string; canEdit: boolean; canModerate: boolean; onRoom: () => void; onPlaylists: () => void; onWhispers: () => void; onOpenPage: (url: string, title: string) => void; onSettings: () => void; onModeration: () => void };
 }) {
     const { auth: { user, guest }, unreadWhispers } = usePage<PageProps>().props;
+    const [expanded, setExpanded] = useState(false);
+
+    useEffect(() => {
+        if (!expanded) return;
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setExpanded(false);
+        };
+        window.addEventListener('keydown', closeOnEscape);
+
+        return () => window.removeEventListener('keydown', closeOnEscape);
+    }, [expanded]);
 
     // the page overlay of a room shows pages without their own menu
     if (embedded) return null;
 
     return (
         <OpenPage.Provider value={room?.onOpenPage ?? null}>
-        <aside className="flex w-14 shrink-0 flex-col border-r border-white/10 bg-neutral-950 p-2 lg:w-56">
-            <Link href="/" className="mb-3 flex h-10 shrink-0 items-center justify-center lg:justify-start lg:px-3 [@media(max-height:730px)]:mb-2 [@media(max-height:730px)]:h-8">
-                <ApplicationLogo className="text-xl" textClassName="hidden lg:inline" />
-            </Link>
+        <ExpandedSidebar.Provider value={expanded}>
+        <>
+            {expanded && <button onClick={() => setExpanded(false)} aria-label="Close navigation" className="fixed inset-0 z-40 bg-black/50 lg:hidden" />}
+            <aside className={`relative flex shrink-0 flex-col border-r border-white/10 bg-neutral-950 p-2 ${expanded ? 'fixed inset-y-0 left-0 z-50 h-dvh w-56 shadow-2xl lg:static lg:z-auto lg:h-auto lg:shadow-none' : 'w-14 lg:w-56'}`}>
+            <div className="mb-3 flex h-10 shrink-0 items-center justify-between [@media(max-height:900px)]:mb-2 [@media(max-height:730px)]:h-8 lg:justify-start lg:px-3">
+                <Link href="/" onClick={() => setExpanded(false)} className="flex min-w-0 items-center justify-center lg:justify-start">
+                    <ApplicationLogo className={expanded ? 'text-xl' : 'text-base'} textClassName={expanded ? 'inline' : 'hidden lg:inline'} />
+                </Link>
+                <button onClick={() => setExpanded((previous) => !previous)} aria-label={expanded ? 'Collapse navigation' : 'Expand navigation'} aria-expanded={expanded} aria-controls="primary-navigation" title={expanded ? 'Show less' : 'Show more'} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition hover:bg-white/10 hover:text-white lg:hidden">
+                    {expanded ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+                </button>
+            </div>
 
             {!guest && <ProfileCard />}
             {!guest && <StatusMenu />}
 
-            <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden [@media(max-height:900px)_and_(min-height:681px)]:space-y-0.5 [@media(max-height:680px)]:space-y-0">
+            <nav id="primary-navigation" onClick={() => expanded && setExpanded(false)} className="min-h-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden [@media(max-height:900px)]:space-y-0">
                 {links.filter((l) => (!guest || !l.membersOnly) && !(room && l.routeName === 'whispers')).map((l) => <NavItem key={l.routeName} {...l} />)}
                 <div className={divider} />
                 {help.map((l) => <NavItem key={l.routeName} {...l} />)}
@@ -200,21 +223,21 @@ export default function Sidebar({
                 {room && (
                     <>
                         <div className={divider} />
-                        <p title={room.name} className="hidden truncate px-3 pb-1 pt-0.5 text-[11px] font-bold uppercase tracking-wider text-neutral-500 lg:block">{room.name}</p>
+                        <p title={room.name} className={`${expanded ? 'block' : 'hidden lg:block'} truncate px-3 pb-1 pt-0.5 text-[11px] font-bold uppercase tracking-wider text-neutral-500`}>{room.name}</p>
                         <button onClick={room.onRoom} title={`Room: ${room.name}`} aria-current="page" className={`${item} bg-gradient-to-r from-violet-600/30 to-fuchsia-600/5 font-semibold text-white shadow-[inset_3px_0_0_#a855f7]`}>
                             <Radio size={18} className="shrink-0 text-violet-300" />
-                            <span className="hidden lg:inline">Room</span>
+                            <span className={expanded ? 'inline' : 'hidden lg:inline'}>Room</span>
                         </button>
                         {!guest && (
                             <button onClick={room.onPlaylists} title="Playlists" className={`${item} ${idle}`}>
                                 <ListMusic size={18} className="shrink-0" />
-                                <span className="hidden lg:inline">Playlists</span>
+                                <span className={expanded ? 'inline' : 'hidden lg:inline'}>Playlists</span>
                             </button>
                         )}
                         {!guest && (
                             <button onClick={room.onWhispers} title="Whispers" className={`${item} ${idle}`}>
                                 <MessageCircle size={18} className="shrink-0" />
-                                <span className="hidden flex-1 text-left lg:inline">Whispers</span>
+                                <span className={`${expanded ? 'inline' : 'hidden lg:inline'} flex-1 text-left`}>Whispers</span>
                                 {unreadWhispers > 0 && <span className="rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">{unreadWhispers}</span>}
                             </button>
                         )}
@@ -222,33 +245,33 @@ export default function Sidebar({
                         {room.canEdit && (
                             <button onClick={room.onSettings} title="Room settings" className={`${item} ${idle}`}>
                                 <Settings size={18} className="shrink-0" />
-                                <span className="hidden lg:inline">Room settings</span>
+                                <span className={expanded ? 'inline' : 'hidden lg:inline'}>Room settings</span>
                             </button>
                         )}
                         {room.canModerate && (
                             <button onClick={room.onModeration} title="Room moderation" className={`${item} ${idle}`}>
                                 <Gavel size={18} className="shrink-0" />
-                                <span className="hidden lg:inline">Room moderation</span>
+                                <span className={expanded ? 'inline' : 'hidden lg:inline'}>Room moderation</span>
                             </button>
                         )}
                         <Link href={route('dashboard')} title="Leave Room" className={`${item} text-neutral-400 hover:bg-red-500/10 hover:text-red-300`}>
                             <DoorOpen size={18} className="shrink-0" />
-                            <span className="hidden lg:inline">Leave Room</span>
+                            <span className={expanded ? 'inline' : 'hidden lg:inline'}>Leave Room</span>
                         </Link>
                     </>
                 )}
             </nav>
 
-            <div className="shrink-0 space-y-1 border-t border-white/10 pt-2 [@media(max-height:900px)_and_(min-height:681px)]:space-y-0.5 [@media(max-height:680px)]:space-y-0">
+            <div onClick={() => expanded && setExpanded(false)} className="sfd-sidebar-footer shrink-0 space-y-1 border-t border-white/10 pt-2 [@media(max-height:900px)]:space-y-0 [@media(max-height:900px)]:pt-1">
                 {guest ? (
                     <>
                         <Link href={route('login')} title="Log in" className={`${item} text-neutral-300 hover:bg-neutral-900`}>
                             <LogIn size={18} className="shrink-0" />
-                            <span className="hidden lg:inline">Log in</span>
+                            <span className={expanded ? 'inline' : 'hidden lg:inline'}>Log in</span>
                         </Link>
                         <Link href={route('register')} title="Register" className={`${item} bg-violet-600/20 text-violet-300 hover:bg-violet-600/30`}>
                             <UserPlus size={18} className="shrink-0" />
-                            <span className="hidden lg:inline">Register</span>
+                            <span className={expanded ? 'inline' : 'hidden lg:inline'}>Register</span>
                         </Link>
                     </>
                 ) : (
@@ -257,12 +280,15 @@ export default function Sidebar({
                         {user.is_staff && <NavItem label="Admin panel" routeName="admin" icon={ShieldCheck} />}
                         <Link href={route('logout')} method="post" as="button" title="Log out" className={`${item} text-neutral-500 hover:bg-neutral-900 hover:text-white`}>
                             <LogOut size={18} className="shrink-0" />
-                            <span className="hidden lg:inline">Log out</span>
+                            <span className={expanded ? 'inline' : 'hidden lg:inline'}>Log out</span>
                         </Link>
                     </>
                 )}
             </div>
-        </aside>
+            </aside>
+            {expanded && <div aria-hidden="true" className="w-14 shrink-0 lg:hidden" />}
+        </>
+        </ExpandedSidebar.Provider>
         </OpenPage.Provider>
     );
 }

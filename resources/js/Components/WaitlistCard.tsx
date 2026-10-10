@@ -1,11 +1,24 @@
 import { Disc3, Users, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 /**
  * The card to the left of the DJ booth. Not in the waitlist: "Join Waitlist" (blue). In the waitlist or at the decks: "Leave Waitlist" (orange).
  * The second line is how long it is until your song plays. A locked waitlist cannot be joined, and neither can a full one (67 people).
  */
-export function WaitlistCard({ inList, eta, locked, full = false, busy, onClick }: { inList: boolean; eta: string; locked: boolean; full?: boolean; busy: boolean; onClick: () => void }) {
+export function WaitlistCard({ inList, etaSeconds, etaSince, locked, full = false, busy, onClick }: { inList: boolean; etaSeconds: number; etaSince: number; locked: boolean; full?: boolean; busy: boolean; onClick: () => void }) {
     const closed = (locked || full) && !inList;
+    const [now, setNow] = useState(Date.now);
+    useEffect(() => {
+        if (closed || etaSeconds < 1) return;
+        const timer = window.setInterval(() => {
+            const currentTime = Date.now();
+            setNow(currentTime);
+            if (etaSeconds - (currentTime - etaSince) / 1000 < 1) window.clearInterval(timer);
+        }, 1000);
+        return () => window.clearInterval(timer);
+    }, [closed, etaSeconds, etaSince]);
+    const eta = Math.max(0, etaSeconds - (now - etaSince) / 1000);
+    const etaLabel = eta < 1 ? 'now' : eta >= 3600 ? `${Math.floor(eta / 3600)}h ${String(Math.floor((eta % 3600) / 60)).padStart(2, '0')}m` : `${Math.floor(eta / 60)}:${String(Math.floor(eta % 60)).padStart(2, '0')}`;
     // full class names so Tailwind keeps them
     const tone = inList
         ? { icon: 'from-[#f57b55] to-[#f46c41]', text: 'text-[#f57b55]', edge: 'border-[#f57b55]/25' }
@@ -22,7 +35,7 @@ export function WaitlistCard({ inList, eta, locked, full = false, busy, onClick 
             </span>
             <span className="flex min-w-0 flex-1 flex-col justify-center px-3">
                 <span className="truncate text-[15px] font-bold leading-tight text-white">{inList ? 'Leave Waitlist' : 'Join Waitlist'}</span>
-                <span className={`truncate text-[11px] font-semibold leading-tight ${closed ? 'text-amber-300' : tone.text}`}>{closed ? (locked ? 'Waitlist locked' : 'Waitlist full') : `ETA: ${eta}`}</span>
+                <span className={`truncate text-[11px] font-semibold leading-tight ${closed ? 'text-amber-300' : tone.text}`}>{closed ? (locked ? 'Waitlist locked' : 'Waitlist full') : `ETA: ${etaLabel}`}</span>
             </span>
         </button>
     );

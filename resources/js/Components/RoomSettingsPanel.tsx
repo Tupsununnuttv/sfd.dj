@@ -180,7 +180,7 @@ function General({ room, genres, backgrounds: pickable, seasons, canLock, onSave
                     <div className="mt-4 rounded-xl border border-orange-400/25 bg-gradient-to-r from-orange-500/[0.07] via-purple-500/[0.05] to-red-500/[0.07] p-3" data-special-backgrounds>
                         <p className="mb-2 flex flex-wrap items-center gap-x-2 text-xs font-semibold text-orange-200">
                             <span>🎃 🎄 Special</span>
-                            <span className="font-normal text-neutral-400">Halloween and Christmas. Only you, the host of this room, can see and pick these.</span>
+                            <span className="font-normal text-neutral-400">Halloween and Christmas. Room members with settings permission can see and pick these.</span>
                         </p>
                         <p className="mb-2 text-[11px] text-neutral-400" data-season-note>
                             {season
@@ -194,7 +194,7 @@ function General({ room, genres, backgrounds: pickable, seasons, canLock, onSave
                     <div className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/[0.04] p-3">
                         <p className="mb-2 flex flex-wrap items-center gap-x-2 text-xs font-semibold text-amber-200">
                             <span>★ Custom backgrounds</span>
-                            <span className="font-normal text-neutral-400">Only you, the host of this room, can see and pick these.</span>
+                            <span className="font-normal text-neutral-400">Room members with settings permission can see and pick these.</span>
                         </p>
                         <div className="flex flex-wrap gap-2">{custom.map(([key, b]) => tile(key, b.label, true))}</div>
                         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/5 pt-3">

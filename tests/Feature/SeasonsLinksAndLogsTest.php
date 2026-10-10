@@ -115,7 +115,7 @@ class SeasonsLinksAndLogsTest extends TestCase
         $this->assertSame('christmas2', $this->shown());
     }
 
-    public function test_a_manager_can_save_the_settings_while_the_season_is_on_but_not_pick_a_custom_background(): void
+    public function test_a_manager_can_pick_a_special_background_while_the_season_is_on(): void
     {
         $room = $this->room('neon');
         $manager = User::factory()->create();
@@ -124,7 +124,8 @@ class SeasonsLinksAndLogsTest extends TestCase
 
         $this->save($manager, 'halloween', 'Renamed')->assertSessionHasNoErrors();
         $this->assertSame('Renamed', $room->refresh()->name);
-        $this->save($manager, 'halloween2')->assertSessionHasErrors('background');
+        $this->save($manager, 'halloween2')->assertSessionHasNoErrors();
+        $this->assertSame('halloween2', $room->refresh()->season_background);
         $this->save($manager, 'forest')->assertSessionHasNoErrors(); // a colour scheme: the season is off here now
         $this->assertSame('forest', $this->shown());
     }

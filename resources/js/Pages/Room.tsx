@@ -3,12 +3,8 @@ import Avatar from '@/Components/Avatar';
 import Badges from '@/Components/Badges';
 import ChatPanel, { ChatMessageData, RoomEmojiData, RoomNotifications } from '@/Components/ChatPanel';
 import Flag, { FlagInfo } from '@/Components/Flag';
-import GrabDialog from '@/Components/GrabDialog';
+import type { CardUser } from '@/Components/UserCard';
 import Live from '@/Components/Live';
-import PageOverlay from '@/Components/PageOverlay';
-import PlaylistManager from '@/Components/PlaylistManager';
-import UserCard, { CardUser } from '@/Components/UserCard';
-import WhisperBox from '@/Components/WhisperBox';
 import RoleBadge from '@/Components/RoleBadge';
 import RoleIcon, { RoleGlyph } from '@/Components/RoleIcon';
 import RoomFootbar from '@/Components/RoomFootbar';
@@ -16,10 +12,10 @@ import RulesModal, { agreeToRules, RoomRule, rulesKey, rulesSeen } from '@/Compo
 import StatusDot from '@/Components/StatusDot';
 import SocialIcon from '@/Components/SocialIcon';
 import RoomHeader from '@/Components/RoomHeader';
-import RoomInfoPanel, { RoomStats } from '@/Components/RoomInfoPanel';
-import ModerationPanel, { ModData } from '@/Components/ModerationPanel';
-import { RoomRoleInfo } from '@/Components/RoomRolesEditor';
-import RoomSettingsPanel, { MemberRow, SeasonInfo } from '@/Components/RoomSettingsPanel';
+import type { RoomStats } from '@/Components/RoomInfoPanel';
+import type { ModData } from '@/Components/ModerationPanel';
+import type { RoomRoleInfo } from '@/Components/RoomRolesEditor';
+import type { MemberRow, SeasonInfo } from '@/Components/RoomSettingsPanel';
 import Sidebar from '@/Components/Sidebar';
 import RoomScene from '@/Components/RoomScene';
 import VoteBar, { MyVotes, Votes } from '@/Components/VoteBar';
@@ -31,7 +27,17 @@ import { PageProps, RoleInfo } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { echo } from '@laravel/echo-react';
 import { Disc3, Footprints, Gavel, MessageCircle, ShieldCheck, UserCheck, UserPlus, VolumeX, X } from 'lucide-react';
-import { FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
+import { FormEvent, lazy, ReactNode, Suspense, useEffect, useRef, useState } from 'react';
+
+const GrabDialog = lazy(() => import('@/Components/GrabDialog'));
+const PageOverlay = lazy(() => import('@/Components/PageOverlay'));
+const PlaylistManager = lazy(() => import('@/Components/PlaylistManager'));
+const UserCard = lazy(() => import('@/Components/UserCard'));
+const WhisperBox = lazy(() => import('@/Components/WhisperBox'));
+const RoomInfoPanel = lazy(() => import('@/Components/RoomInfoPanel'));
+const ModerationPanel = lazy(() => import('@/Components/ModerationPanel'));
+const RoomSettingsPanel = lazy(() => import('@/Components/RoomSettingsPanel'));
+const loadingPanel = <div className="flex min-h-0 flex-1 items-center justify-center p-6 text-sm text-neutral-400">Loading...</div>;
 
 interface Song {
     id: number;
@@ -114,10 +120,6 @@ const stamp = (p: Playback) => ({ ...p, receivedAt: Date.now() });
 const HOST_ROLE: RoleInfo = { key: 'host', label: 'Host', color: '#facc15' };
 const USER_ROLE: RoleInfo = { key: 'member', label: 'User', color: '#a3a3a3' };
 const NO_VOTES: MyVotes = { woot: false, meh: false, grab: false };
-const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-// how long until a song plays: "now", 4:07 or 1h 05m
-const etaText = (s: number) => (s < 1 ? 'now' : s >= 3600 ? `${Math.floor(s / 3600)}h ${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}m` : mmss(s));
-
 const input =
     'w-full rounded border-neutral-700 bg-neutral-900 text-sm text-white placeholder-neutral-500 focus:border-violet-500 focus:ring-0';
 
@@ -203,7 +205,7 @@ export default function Room({
     const [users, setUsers] = useState<Member[]>([]);
     const [friendIds, setFriendIds] = useState(initialFriendIds);
     const [typers, setTypers] = useState<Record<number, string>>({});
-    const [tab, setTab] = useState<Tab>('chat');
+    const [tab, setTab] = useState<Tab>(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'room' : 'chat');
     const [panel, setPanel] = useState<PanelName>(null);
     const [whisperTo, setWhisperTo] = useState<number | null>(null);
     const [page, setPage] = useState<{ url: string; title: string } | null>(null);
@@ -214,6 +216,8 @@ export default function Room({
     // meanwhile: then this is true, and the first click or key anywhere turns the sound on.
     const [silenced, setSilenced] = useState(false);
     const [playbackOn, setPlaybackOn] = useState(true);
+    const playbackOnRef = useRef(playbackOn);
+    playbackOnRef.current = playbackOn;
     // The volume you set stays after a refresh (per browser); the Audio setting is only the first-ever value.
     const [volume, setVolume] = useState<number>(() => {
         try {
@@ -232,7 +236,6 @@ export default function Room({
     const [notice, setNotice] = useState('');
     const [announcement, setAnnouncement] = useState('');
     const canLock = user.id === host.id || user.is_staff;
-    const [now, setNow] = useState(Date.now());
 
     const box = useRef<HTMLDivElement>(null);
     const player = useRef<any>(null);
@@ -242,6 +245,19 @@ export default function Room({
     const current = playback.current;
     const currentRef = useRef(current);
     currentRef.current = current;
+    const lastResumeAttempt = useRef<{ songId: number; at: number } | null>(null);
+    const resumePlaybackMuted = () => {
+        const song = currentRef.current;
+        const activePlayer = player.current;
+        if (!playbackOnRef.current || !song || !activePlayer) return;
+
+        const now = Date.now();
+        if (lastResumeAttempt.current?.songId === song.id && now - lastResumeAttempt.current.at < 2000) return;
+        lastResumeAttempt.current = { songId: song.id, at: now };
+        activePlayer.mute?.();
+        activePlayer.playVideo?.();
+        setSilenced(true);
+    };
     const channel = useRef<any>(null);
     const lastWhisper = useRef(0);
     const typingTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
@@ -300,30 +316,34 @@ export default function Room({
     const myPosition = waitlist.findIndex((s) => s.user_id === user.id);
 
     // How far into the song we are: server's elapsed time plus what passed since it arrived.
-    const rawPosition = current ? Math.max(0, playback.elapsed + (now - playback.receivedAt) / 1000) : 0;
+    const rawPosition = current ? Math.max(0, playback.elapsed + (Date.now() - playback.receivedAt) / 1000) : 0;
     const position = current && current.duration > 0 ? Math.min(rawPosition, current.duration) : rawPosition;
-    const progress = current && current.duration > 0 ? Math.min(1, position / current.duration) : 0;
 
     // Join / Leave Waitlist: in the line means a song of mine is waiting or playing. The wait is what is left of the song that plays now plus the songs ahead of mine
     // (all of them, if I am not in the line yet).
     const inList = myPosition >= 0;
-    const left = current && current.duration > 0 ? Math.max(0, current.duration - position) : 0;
     const ahead = (inList ? waitlist.slice(1, myPosition) : playback.queue).reduce((n, s) => n + Math.max(0, s.duration), 0);
-    const wait = inList && myPosition === 0 && current ? 0 : left + ahead;
+    const etaSeconds = inList && myPosition === 0 && current
+        ? 0
+        : (current && current.duration > 0 ? Math.max(0, current.duration - playback.elapsed) : 0) + ahead;
+    const etaSince = current ? playback.receivedAt : Date.now();
     const closed = playback.locked && !can.manage_queue;
-
-    useEffect(() => {
-        const t = setInterval(() => setNow(Date.now()), 1000);
-        return () => clearInterval(t);
-    }, []);
 
     // If a song has run past its length and nobody's player said so (nobody joined, blocked embed), say it ourselves.
     const reportedEnd = useRef<number | null>(null);
     useEffect(() => {
-        if (guest || !current || current.duration <= 0 || rawPosition < current.duration + 3 || reportedEnd.current === current.id) return;
-        reportedEnd.current = current.id;
-        post(route('rooms.skip', room.slug), { item_id: current.id, ended: true }).catch(() => {});
-    }, [guest, current, rawPosition, room.slug]);
+        if (guest || !current || current.duration <= 0) return;
+        const reportEndIfNeeded = () => {
+            const elapsed = Math.max(0, playback.elapsed + (Date.now() - playback.receivedAt) / 1000);
+            if (elapsed < current.duration + 3 || reportedEnd.current === current.id) return;
+            reportedEnd.current = current.id;
+            post(route('rooms.skip', room.slug), { item_id: current.id, ended: true }).catch(() => {});
+        };
+        const timer = window.setInterval(reportEndIfNeeded, 1000);
+        reportEndIfNeeded();
+
+        return () => window.clearInterval(timer);
+    }, [guest, current?.id, current?.duration, playback.elapsed, playback.receivedAt, room.slug]);
 
     // The host changed the room (its name, scene, rules, CSS ...): read it again. A moment apart, so a full room does not ask all at once.
     const reloadRoom = () => { window.setTimeout(() => router.reload({ only: ['room', 'backgrounds'] }), Math.random() * 1500); };
@@ -464,13 +484,22 @@ export default function Room({
             player.current = new window.YT.Player(mount, {
                 width: '100%',
                 height: '100%',
-                playerVars: { controls: 0, disablekb: 1, rel: 0, modestbranding: 1, playsinline: 1 },
+                playerVars: { autoplay: 1, controls: 0, disablekb: 1, rel: 0, modestbranding: 1, playsinline: 1 },
                 events: {
                     onReady: () => setReady(true),
+                    onAutoplayBlocked: resumePlaybackMuted,
                     onStateChange: (e: { data: number }) => {
                         // 0 = ended. Every client reports it; the server ignores duplicates.
                         if (e.data === 0 && currentRef.current && !guest) {
                             post(route('rooms.skip', room.slug), { item_id: currentRef.current.id, ended: true }).catch(() => {});
+                        }
+                        if (e.data === 2 && currentRef.current && playbackOnRef.current) {
+                            const songId = currentRef.current.id;
+                            window.setTimeout(() => {
+                                const activePlayer = player.current;
+                                if (document.visibilityState !== 'visible' || !playbackOnRef.current || currentRef.current?.id !== songId || activePlayer?.getPlayerState?.() !== 2) return;
+                                resumePlaybackMuted();
+                            }, 750);
                         }
                     },
                 },
@@ -507,6 +536,7 @@ export default function Room({
                 if ((state === 1 || state === 3) && !p.isMuted()) return;
                 p?.mute?.();
                 (state === 1 || state === 3) || p?.loadVideoById?.({ videoId: current.youtube_id, startSeconds: at() });
+                p?.playVideo?.();
                 setSilenced(true);
             }, 2500);
             return () => clearTimeout(t);
@@ -518,7 +548,33 @@ export default function Room({
     }, [ready, playbackOn, current?.id]);
 
     useEffect(() => {
-        if (!ready || !current || current.duration > 0) return;
+        const resumeWhenVisible = () => {
+            if (document.visibilityState !== 'visible' || !playbackOnRef.current || !currentRef.current) return;
+            const state = player.current?.getPlayerState?.();
+            if (state === 0 || state === 1 || state === 3) return;
+            resumePlaybackMuted();
+        };
+
+        document.addEventListener('visibilitychange', resumeWhenVisible);
+        window.addEventListener('pageshow', resumeWhenVisible);
+        return () => {
+            document.removeEventListener('visibilitychange', resumeWhenVisible);
+            window.removeEventListener('pageshow', resumeWhenVisible);
+        };
+    }, []);
+
+    const previousTab = useRef(tab);
+    useEffect(() => {
+        const returnedToRoom = previousTab.current !== 'room' && tab === 'room';
+        previousTab.current = tab;
+        if (!returnedToRoom || !ready || !current || !playbackOn) return;
+
+        const state = player.current?.getPlayerState?.();
+        if (state !== 0 && state !== 1 && state !== 3) resumePlaybackMuted();
+    }, [tab, ready, current?.id, playbackOn]);
+
+    useEffect(() => {
+        if (!ready || !current || current.duration > 0 || discoveredDuration?.itemId === current.id) return;
 
         let active = true;
         const syncDuration = () => {
@@ -541,7 +597,7 @@ export default function Room({
             active = false;
             window.clearInterval(timer);
         };
-    }, [current?.id, current?.duration, guest, ready, room.slug]);
+    }, [current?.id, current?.duration, discoveredDuration?.itemId, guest, ready, room.slug]);
 
     // the first click or key anywhere on the page lets the browser play sound: turn it on
     useEffect(() => {
@@ -550,6 +606,7 @@ export default function Room({
         const unmute = (e: Event) => {
             if (navigator.userActivation ? !navigator.userActivation.hasBeenActive : (e as KeyboardEvent).key === 'Escape') return; // Esc does not count as a click
             player.current?.unMute?.();
+            player.current?.playVideo?.();
             setSilenced(false);
         };
         events.forEach((e) => window.addEventListener(e, unmute, true));
@@ -691,7 +748,8 @@ export default function Room({
                         dj={dj}
                         title={current?.title ?? null}
                         playing={!!current && playbackOn}
-                        position={position}
+                        elapsed={playback.elapsed}
+                        receivedAt={playback.receivedAt}
                         duration={current?.duration || (current && discoveredDuration?.itemId === current.id ? discoveredDuration.seconds : 0)}
                         volume={volume}
                         muted={muted}
@@ -711,7 +769,7 @@ export default function Room({
                         playing={!!current && playbackOn}
                         myId={user.id}
                         onUser={(u, anchor) => setCard({ user: u, anchor })}
-                        waitlist={<WaitlistCard inList={inList} eta={etaText(wait)} locked={closed} full={waitlist.length >= playback.max} busy={leaving} onClick={joinOrLeave} />}
+                        waitlist={<WaitlistCard inList={inList} etaSeconds={etaSeconds} etaSince={etaSince} locked={closed} full={waitlist.length >= playback.max} busy={leaving} onClick={joinOrLeave} />}
                         seat={<SeatButton locked={closed} onClick={joinOrLeave} />}
                         votes={<VoteBar votes={playback.votes} mine={mine} disabled={!current || current.user_id === user.id} ownSong={!!current && current.user_id === user.id} onVote={vote} />}
                         screen={
@@ -734,8 +792,8 @@ export default function Room({
                                 {silenced && playbackOn && current && (
                                     // the browser keeps the sound back until a click: any click does, this one says so
                                     <div className="absolute inset-x-0 bottom-3 flex justify-center">
-                                        <button className="unscale flex origin-bottom items-center gap-2 rounded-full bg-black/80 px-4 py-2 text-sm font-semibold text-white shadow-lg ring-1 ring-white/25 hover:bg-violet-600">
-                                            <VolumeX size={16} /> Click anywhere to turn the sound on
+                                            <button onClick={() => { player.current?.unMute?.(); player.current?.playVideo?.(); setMuted(false); setSilenced(false); }} className="unscale flex origin-bottom items-center gap-2 rounded-full bg-black/80 px-4 py-2 text-sm font-semibold text-white shadow-lg ring-1 ring-white/25 hover:bg-violet-600">
+                                                <VolumeX size={16} /> Tap to start playback with sound
                                         </button>
                                     </div>
                                 )}
@@ -774,7 +832,7 @@ export default function Room({
                     />
                 </main>
 
-                <aside className={`sfd-panel ${tab === 'room' ? 'hidden md:flex' : 'flex'} w-full shrink-0 flex-col border-l border-neutral-800 bg-black md:w-80`}>
+                <aside className={`sfd-panel ${tab === 'room' ? 'fixed bottom-[68px] left-14 right-0 z-20 flex h-14 md:static md:z-auto md:h-auto' : 'flex'} min-w-0 flex-1 flex-col border-t border-neutral-800 bg-black md:w-80 md:flex-none md:border-l md:border-t-0`}>
                     <div className="sfd-tabs flex h-14 shrink-0 border-b border-neutral-800">
                         {tabs.map(([key, label]) => (
                             <button
@@ -944,44 +1002,49 @@ export default function Room({
             </div>
 
             {card && (
-                <UserCard
-                    user={card.user}
-                    anchor={card.anchor}
-                    viewerId={user.id}
-                    guest={guest}
-                    onClose={() => setCard(null)}
-                    room={{
-                        slug: room.slug,
-                        hostId: host.id,
-                        can,
-                        roleOf: roomRoleOf(card.user.id),
-                        memberRoleId: members[card.user.id] ?? null,
-                        roles,
-                        mutedUntil: mod?.muted.find((m) => m.id === card.user.id)?.until,
-                        here: users.some((u) => u.id === card.user.id),
-                        onProfile: () => setPage({ url: route('users.show', card.user.id), title: `${card.user.name}'s profile` }),
-                        onMention: () => { setTab('chat'); setMention({ name: card.user.name, n: Date.now() }); },
-                        onWhisper: () => { setWhisperTo(card.user.id); setPanel('whispers'); },
-                        onFriendAdded: () => setFriendIds((ids) => ids.includes(card.user.id) ? ids : [...ids, card.user.id]),
-                        onChanged: () => router.reload({ only: ['mod', 'members', 'memberList', 'roles', 'can', 'bans'] }),
-                    }}
-                />
+                <Suspense fallback={null}>
+                    <UserCard
+                        user={card.user}
+                        anchor={card.anchor}
+                        viewerId={user.id}
+                        guest={guest}
+                        onClose={() => setCard(null)}
+                        room={{
+                            slug: room.slug,
+                            hostId: host.id,
+                            can,
+                            roleOf: roomRoleOf(card.user.id),
+                            memberRoleId: members[card.user.id] ?? null,
+                            roles,
+                            mutedUntil: mod?.muted.find((m) => m.id === card.user.id)?.until,
+                            here: users.some((u) => u.id === card.user.id),
+                            friendIds,
+                            onProfile: () => setPage({ url: route('users.show', card.user.id), title: `${card.user.name}'s profile` }),
+                            onMention: () => { setTab('chat'); setMention({ name: card.user.name, n: Date.now() }); },
+                            onWhisper: () => { setWhisperTo(card.user.id); setPanel('whispers'); },
+                            onFriendAdded: () => setFriendIds((ids) => ids.includes(card.user.id) ? ids : [...ids, card.user.id]),
+                            onChanged: () => router.reload({ only: ['mod', 'members', 'memberList', 'roles', 'can', 'bans'] }),
+                        }}
+                    />
+                </Suspense>
             )}
 
-            {page && <PageOverlay url={page.url} title={page.title} onClose={() => setPage(null)} />}
+            {page && <Suspense fallback={null}><PageOverlay url={page.url} title={page.title} onClose={() => setPage(null)} /></Suspense>}
 
             {grabbing && current && (
-                <GrabDialog
-                    slug={room.slug}
-                    song={{ id: current.id, title: current.title, thumbnail: current.thumbnail, added_by: current.added_by }}
-                    onClose={() => setGrabbing(false)}
-                    onGrabbed={(r) => {
-                        setGrabbing(false);
-                        setMine((m) => ({ ...m, grab: true }));
-                        setDeckKey((k) => k + 1); // my playlists changed: the bar at the bottom reads them again
-                        notify('grab', r.added ? `You saved “${current.title}” in ${r.playlist.name} (${r.songs} ${r.songs === 1 ? 'song' : 'songs'}).` : `“${current.title}” is in ${r.playlist.name} already.`);
-                    }}
-                />
+                <Suspense fallback={null}>
+                    <GrabDialog
+                        slug={room.slug}
+                        song={{ id: current.id, title: current.title, thumbnail: current.thumbnail, added_by: current.added_by }}
+                        onClose={() => setGrabbing(false)}
+                        onGrabbed={(r) => {
+                            setGrabbing(false);
+                            setMine((m) => ({ ...m, grab: true }));
+                            setDeckKey((k) => k + 1); // my playlists changed: the bar at the bottom reads them again
+                            notify('grab', r.added ? `You saved “${current.title}” in ${r.playlist.name} (${r.songs} ${r.songs === 1 ? 'song' : 'songs'}).` : `“${current.title}” is in ${r.playlist.name} already.`);
+                        }}
+                    />
+                </Suspense>
             )}
 
             {rulesOpen && (
@@ -995,71 +1058,77 @@ export default function Room({
 
             {panel === 'whispers' && (
                 <Panel title="Whispers" onClose={() => setPanel(null)} wide>
-                    <WhisperBox start={whisperTo} className="h-[62vh] min-h-[24rem]" openProfile={(id, name) => { setPanel(null); setPage({ url: route('users.show', id), title: `${name}'s profile` }); }} />
+                    <Suspense fallback={loadingPanel}><WhisperBox start={whisperTo} className="h-[62vh] min-h-[24rem]" openProfile={(id, name) => { setPanel(null); setPage({ url: route('users.show', id), title: `${name}'s profile` }); }} /></Suspense>
                 </Panel>
             )}
 
             {panel === 'playlists' && (
                 <Panel title="Playlists" onClose={() => setPanel(null)} full bare>
-                    <PlaylistManager onClose={() => setPanel(null)} onChanged={() => setDeckKey((k) => k + 1)} className="min-h-0 flex-1" />
+                    <Suspense fallback={loadingPanel}><PlaylistManager onClose={() => setPanel(null)} onChanged={() => setDeckKey((k) => k + 1)} className="min-h-0 flex-1" /></Suspense>
                 </Panel>
             )}
 
             {panel === 'info' && (
                 <Panel title="Room info" onClose={() => setPanel(null)} large bare>
-                    <RoomInfoPanel
-                        room={room}
-                        host={host}
-                        online={users}
-                        team={roles.map((r) => ({ role: { key: `room-${r.id}`, label: r.name, color: r.color }, people: users.filter((u) => members[u.id] === r.id) }))}
-                        now={current ? { title: current.title, thumbnail: current.thumbnail, added_by: current.added_by } : null}
-                        queue={playback.queue.length}
-                        stats={stats}
-                        canEdit={canEditRoom}
-                        guest={guest}
-                        myId={user.id}
-                        onEdit={() => setPanel('settings')}
-                        onClose={() => setPanel(null)}
-                        onProfile={(id, name) => { setPanel(null); setPage({ url: route('users.show', id), title: `${name}'s profile` }); }}
-                        onWhisper={(id) => { setWhisperTo(id); setPanel('whispers'); }}
-                    />
+                    <Suspense fallback={loadingPanel}>
+                        <RoomInfoPanel
+                            room={room}
+                            host={host}
+                            online={users}
+                            team={roles.map((r) => ({ role: { key: `room-${r.id}`, label: r.name, color: r.color }, people: users.filter((u) => members[u.id] === r.id) }))}
+                            now={current ? { title: current.title, thumbnail: current.thumbnail, added_by: current.added_by } : null}
+                            queue={playback.queue.length}
+                            stats={stats}
+                            canEdit={canEditRoom}
+                            guest={guest}
+                            myId={user.id}
+                            onEdit={() => setPanel('settings')}
+                            onClose={() => setPanel(null)}
+                            onProfile={(id, name) => { setPanel(null); setPage({ url: route('users.show', id), title: `${name}'s profile` }); }}
+                            onWhisper={(id) => { setWhisperTo(id); setPanel('whispers'); }}
+                        />
+                    </Suspense>
                 </Panel>
             )}
 
             {panel === 'settings' && (
                 <Panel title="Room settings" onClose={() => setPanel(null)} large>
-                    <RoomSettingsPanel
-                        room={room}
-                        genres={genres}
-                        backgrounds={backgrounds}
-                        seasons={seasons}
-                        canLock={canLock}
-                        can={can}
-                        roles={roles}
-                        memberList={memberList}
-                        permissionLabels={permissionLabels}
-                        emojis={emojis}
-                        canCss={user.id === host.id || user.is_staff}
-                        locked={playback.locked}
-                        cycle={playback.cycle}
-                        onSaved={() => setPanel(null)}
-                    />
+                    <Suspense fallback={loadingPanel}>
+                        <RoomSettingsPanel
+                            room={room}
+                            genres={genres}
+                            backgrounds={backgrounds}
+                            seasons={seasons}
+                            canLock={canLock}
+                            can={can}
+                            roles={roles}
+                            memberList={memberList}
+                            permissionLabels={permissionLabels}
+                            emojis={emojis}
+                            canCss={user.id === host.id || user.is_staff}
+                            locked={playback.locked}
+                            cycle={playback.cycle}
+                            onSaved={() => setPanel(null)}
+                        />
+                    </Suspense>
                 </Panel>
             )}
 
             {panel === 'moderation' && (
                 <Panel title="Room moderation" onClose={() => setPanel(null)}>
-                    <ModerationPanel
-                        slug={room.slug}
-                        can={can}
-                        mod={mod}
-                        bans={bans}
-                        online={users.filter((u) => u.id !== user.id && u.id !== host.id)}
-                        currentSongId={current?.id ?? null}
-                        announcement={announcement}
-                        setAnnouncement={setAnnouncement}
-                        announce={announce}
-                    />
+                    <Suspense fallback={loadingPanel}>
+                        <ModerationPanel
+                            slug={room.slug}
+                            can={can}
+                            mod={mod}
+                            bans={bans}
+                            online={users.filter((u) => u.id !== user.id && u.id !== host.id)}
+                            currentSongId={current?.id ?? null}
+                            announcement={announcement}
+                            setAnnouncement={setAnnouncement}
+                            announce={announce}
+                        />
+                    </Suspense>
                 </Panel>
             )}
         </>

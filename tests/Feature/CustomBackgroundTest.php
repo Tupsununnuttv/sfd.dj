@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
-/** Halloween and Christmas are custom backgrounds: only the host of a room sees them in Room settings and can pick them. */
+/** Custom and seasonal backgrounds are available to people with permission to edit a room's settings. */
 class CustomBackgroundTest extends TestCase
 {
     use RefreshDatabase;
@@ -74,7 +74,7 @@ class CustomBackgroundTest extends TestCase
         }
     }
 
-    public function test_somebody_who_may_edit_the_settings_is_not_shown_them_and_cannot_pick_them(): void
+    public function test_a_room_manager_with_settings_permission_can_see_and_pick_custom_backgrounds(): void
     {
         $host = User::factory()->create();
         $room = $this->room($host);
@@ -82,40 +82,38 @@ class CustomBackgroundTest extends TestCase
 
         $this->actingAs($manager)->get("/rooms/{$room->slug}")->assertInertia(fn (Assert $page) => $page
             ->where('can.edit_settings', true)
-            ->where('backgrounds', ['midnight', 'sunset', 'neon', 'forest', 'club']));
+            ->where('backgrounds', RoomController::BACKGROUNDS));
 
-        foreach (RoomController::HOST_BACKGROUNDS as $key) {
-            $this->save($manager, $room, $key)->assertSessionHasErrors('background');
-            $this->assertNull($room->refresh()->background);
+        foreach (array_diff(RoomController::HOST_BACKGROUNDS, ['custom']) as $key) {
+            $this->save($manager, $room, $key)->assertSessionHasNoErrors();
+            $this->assertSame($key, $room->refresh()->background);
         }
 
-        // the plain ones are still theirs to pick
-        $this->save($manager, $room, 'sunset')->assertSessionHasNoErrors();
-        $this->assertSame('sunset', $room->refresh()->background);
+        $room->update(['custom_background' => 'room-picture.png']);
+        $this->save($manager, $room, 'custom')->assertSessionHasNoErrors();
+        $this->assertSame('custom', $room->refresh()->background);
     }
 
-    public function test_when_the_host_has_put_one_on_a_manager_can_keep_it_or_leave_it_but_not_pick_another_custom_one(): void
+    public function test_a_manager_can_keep_or_change_a_host_selected_background(): void
     {
         $host = User::factory()->create();
         $room = $this->room($host);
         $manager = $this->manager($room);
         $this->save($host, $room, 'halloween')->assertSessionHasNoErrors();
 
-        // they are not shown it, yet saving the settings again does not take it off
-        $this->actingAs($manager)->get("/rooms/{$room->slug}")->assertInertia(fn (Assert $page) => $page->where('room.background', 'halloween')->where('backgrounds', fn ($list) => ! in_array('halloween', $list->all(), true)));
+        $this->actingAs($manager)->get("/rooms/{$room->slug}")->assertInertia(fn (Assert $page) => $page->where('room.background', 'halloween')->where('backgrounds', RoomController::BACKGROUNDS));
         $this->save($manager, $room, 'halloween')->assertSessionHasNoErrors();
         $this->assertSame('halloween', $room->refresh()->background);
 
-        // another custom one is the host's alone
-        $this->save($manager, $room, 'christmas')->assertSessionHasErrors('background');
-        $this->assertSame('halloween', $room->refresh()->background);
+        $this->save($manager, $room, 'christmas')->assertSessionHasNoErrors();
+        $this->assertSame('christmas', $room->refresh()->background);
 
         // and they may swap it for a plain one
         $this->save($manager, $room, 'neon')->assertSessionHasNoErrors();
         $this->assertSame('neon', $room->refresh()->background);
     }
 
-    public function test_site_staff_and_guests_are_not_the_host_either(): void
+    public function test_site_staff_and_owners_can_manage_backgrounds_but_guests_cannot(): void
     {
         $host = User::factory()->create();
         $room = $this->room($host);
@@ -123,15 +121,22 @@ class CustomBackgroundTest extends TestCase
         $admin = User::factory()->create();
         $admin->forceFill(['roles' => ['admin']])->save();
         $this->assertTrue($room->can($admin, 'edit_settings'));
-        $this->actingAs($admin)->get("/rooms/{$room->slug}")->assertInertia(fn (Assert $page) => $page->where('backgrounds', ['midnight', 'sunset', 'neon', 'forest', 'club']));
-        $this->save($admin, $room, 'christmas')->assertSessionHasErrors('background');
-        $this->assertNull($room->refresh()->background);
+        $this->actingAs($admin)->get("/rooms/{$room->slug}")->assertInertia(fn (Assert $page) => $page->where('backgrounds', RoomController::BACKGROUNDS));
+        $this->save($admin, $room, 'christmas')->assertSessionHasNoErrors();
+        $this->assertSame('christmas', $room->refresh()->background);
+
+        $owner = User::factory()->create();
+        $owner->forceFill(['roles' => ['owner']])->save();
+        $this->assertTrue($room->can($owner, 'edit_settings'));
+        $this->actingAs($owner)->get("/rooms/{$room->slug}")->assertInertia(fn (Assert $page) => $page->where('backgrounds', RoomController::BACKGROUNDS));
+        $this->save($owner, $room, 'halloween')->assertSessionHasNoErrors();
+        $this->assertSame('halloween', $room->refresh()->background);
 
         // a guest watching the room is sent the plain ones (they cannot save anything anyway)
         $this->app['auth']->forgetGuards();
         $this->get("/rooms/{$room->slug}")->assertInertia(fn (Assert $page) => $page->where('backgrounds', ['midnight', 'sunset', 'neon', 'forest', 'club']));
         $this->patch("/rooms/{$room->slug}", ['name' => 'x', 'background' => 'christmas'])->assertRedirect(route('login'));
-        $this->assertNull($room->refresh()->background);
+        $this->assertSame('halloween', $room->refresh()->background);
     }
 
     public function test_everybody_in_the_room_sees_the_background_the_host_picked(): void

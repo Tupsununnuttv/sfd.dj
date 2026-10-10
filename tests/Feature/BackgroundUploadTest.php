@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
-/** The host can put a picture of their own on the room: it is only theirs to upload, and it is served to everybody in the room. */
+/** Room settings managers can upload a custom room picture, which is served to everybody in the room. */
 class BackgroundUploadTest extends TestCase
 {
     use RefreshDatabase;
@@ -62,7 +62,7 @@ class BackgroundUploadTest extends TestCase
         $this->assertNotSame($old, $room->refresh()->custom_background);
     }
 
-    public function test_only_the_host_can_upload_and_the_picture_must_be_a_big_enough_picture(): void
+    public function test_room_settings_managers_can_upload_and_remove_pictures_but_other_members_cannot(): void
     {
         Storage::fake('local');
         $host = User::factory()->create();
@@ -71,8 +71,18 @@ class BackgroundUploadTest extends TestCase
         $role = $room->roles()->where('name', 'Manager')->first();
         RoomMember::create(['room_id' => $room->id, 'user_id' => $manager->id, 'room_role_id' => $role->id]);
 
-        $this->actingAs($manager)->post("/rooms/{$room->slug}/background", ['image' => $this->png(1600, 900, 'wall.png')])->assertForbidden();
-        $this->actingAs($manager)->delete("/rooms/{$room->slug}/background")->assertForbidden();
+        Storage::fake('local');
+        $this->actingAs($manager)->post("/rooms/{$room->slug}/background", ['image' => $this->png(1600, 900, 'wall.png')])->assertSessionHasNoErrors();
+        $file = $room->refresh()->custom_background;
+        Storage::disk('local')->assertExists("room-backgrounds/{$file}");
+        $this->actingAs($manager)->delete("/rooms/{$room->slug}/background")->assertRedirect();
+        $this->assertNull($room->refresh()->custom_background);
+        Storage::disk('local')->assertMissing("room-backgrounds/{$file}");
+
+        $member = User::factory()->create();
+        $room->members()->create(['user_id' => $member->id, 'room_role_id' => $room->roles()->where('name', 'Bouncer')->value('id')]);
+        $this->actingAs($member)->post("/rooms/{$room->slug}/background", ['image' => $this->png(1600, 900, 'wall.png')])->assertForbidden();
+        $this->actingAs($member)->delete("/rooms/{$room->slug}/background")->assertForbidden();
         $this->app['auth']->forgetGuards();
         $this->post("/rooms/{$room->slug}/background", ['image' => $this->png(1600, 900, 'wall.png')])->assertRedirect(route('login'));
 

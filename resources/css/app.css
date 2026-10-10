@@ -97,12 +97,6 @@ html {
     overflow-x: clip;
 }
 
-@media (max-width: 767px) {
-    .sfd-room > aside:first-child {
-        display: none;
-    }
-}
-
 ::-webkit-scrollbar {
     width: 10px;
     height: 10px;

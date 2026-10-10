@@ -22,7 +22,7 @@ class RoomBarsTest extends TestCase
         $menu = $this->source('Components/Sidebar.tsx');
 
         // the heading is the name of the room, then Room, then what was there before in the same order, and Leave Room last
-        $places = array_map(fn (string $text) => strpos($menu, $text), ['{room.name}</p>', '<span className="hidden lg:inline">Room</span>', 'Playlists</span>', 'Whispers</span>', 'label="History"', 'Room settings</span>', 'Room moderation</span>', 'Leave Room</span>']);
+        $places = array_map(fn (string $text) => strpos($menu, $text), ['{room.name}</p>', "<span className={expanded ? 'inline' : 'hidden lg:inline'}>Room</span>", 'Playlists</span>', 'Whispers</span>', 'label="History"', 'Room settings</span>', 'Room moderation</span>', 'Leave Room</span>']);
         $this->assertNotContains(false, $places);
         $this->assertSame($places, collect($places)->sort()->values()->all(), 'the room section is out of order');
 
@@ -112,9 +112,15 @@ class RoomBarsTest extends TestCase
         $this->assertStringNotContainsString('sfddj.joined', $room);
         // not playing (or playing without sound) after a moment: play it muted, and the first click or key anywhere turns the sound on
         $this->assertStringContainsString('p?.mute?.();', $room);
+        $this->assertStringContainsString('p?.playVideo?.();', $room);
+        $this->assertStringContainsString('onAutoplayBlocked:', $room);
+        $this->assertStringContainsString('e.data === 2', $room);
+        $this->assertStringContainsString("document.addEventListener('visibilitychange'", $room);
+        $this->assertStringContainsString("window.addEventListener('pageshow'", $room);
+        $this->assertStringContainsString('returnedToRoom', $room);
         $this->assertStringContainsString("['pointerup', 'keydown', 'touchend']", $room);
         $this->assertStringContainsString('player.current?.unMute?.();', $room);
-        $this->assertStringContainsString('Click anywhere to turn the sound on', $room);
+        $this->assertStringContainsString('Tap to start playback with sound', $room);
         $this->assertStringNotContainsString('auto_join', $this->source('Pages/Settings/Audio.tsx'));
     }
 }

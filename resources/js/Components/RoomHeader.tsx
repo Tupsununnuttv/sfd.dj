@@ -7,13 +7,14 @@ import { mmss } from '@/lib/playlists';
 import { Link } from '@inertiajs/react';
 import SocialIcon, { socialLabels } from '@/Components/SocialIcon';
 import { ArrowLeft, Music2, Users, Volume1, Volume2, VolumeX } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 /**
  * The bar at the top of a room. On the left: the way out, the name of the room, how many are listening, and under it who I am here.
  * In the middle who is playing what, and under it how far the song is. On the right our social media as small icons (Discord, YouTube and so on;
  * the room info is in More, in the bar at the bottom) and the volume.
  */
-export default function RoomHeader({ room, me, guest, listening, dj, title, playing, position, duration, volume, muted, onVolume, onMute, social, onDj }: {
+export default function RoomHeader({ room, me, guest, listening, dj, title, playing, elapsed, receivedAt, duration, volume, muted, onVolume, onMute, social, onDj }: {
     room: { name: string; badges: string[] | null };
     me: { name: string; avatar: string | null; cosmetics?: Cosmetics | null };
     guest: boolean;
@@ -21,7 +22,8 @@ export default function RoomHeader({ room, me, guest, listening, dj, title, play
     dj: Dancer | null;
     title: string | null; // the song that is playing
     playing: boolean; // and I can hear it
-    position: number; // how far the song is, in seconds
+    elapsed: number; // seconds elapsed when the server sent the current playback
+    receivedAt: number; // when this client received it
     duration: number; // how long it is (0: not known)
     volume: number; // 0 to 100
     muted: boolean;
@@ -30,8 +32,17 @@ export default function RoomHeader({ room, me, guest, listening, dj, title, play
     social: Record<string, string>; // name of the network -> link, only the ones that are set
     onDj: (user: Dancer, anchor: DOMRect) => void;
 }) {
+    const [now, setNow] = useState(Date.now);
+    useEffect(() => {
+        if (!title) return;
+        const timer = window.setInterval(() => setNow(Date.now()), 1000);
+        return () => window.clearInterval(timer);
+    }, [title]);
+
     const shown = muted ? 0 : volume;
     const Speaker = shown === 0 ? VolumeX : shown < 50 ? Volume1 : Volume2;
+    const elapsedPosition = Math.max(0, elapsed + (now - receivedAt) / 1000);
+    const position = duration > 0 ? Math.min(elapsedPosition, duration) : elapsedPosition;
     const progress = duration > 0 ? Math.min(1, position / duration) : 0;
 
     return (
