@@ -48,6 +48,7 @@ class GuestAndEventsTest extends TestCase
 
         $this->post("/rooms/{$room->slug}/messages", ['body' => 'hi'])->assertRedirect('/login');
         $this->post("/rooms/{$room->slug}/vote", ['type' => 'woot'])->assertRedirect('/login');
+        $this->post('/events', ['title' => 'Guest event', 'starts_at' => now()->addDay()->toIso8601String()])->assertRedirect('/login');
         foreach (['/playlists', '/friends', '/shop', '/my-stuff', '/profile', '/admin'] as $page) {
             $this->get($page)->assertRedirect('/login');
         }
@@ -89,17 +90,22 @@ class GuestAndEventsTest extends TestCase
         $staff = $this->staff();
         $member = User::factory()->create();
         $room = $staff->rooms()->create(['name' => 'Party', 'slug' => 'party-1']);
+        $privateRoom = $staff->rooms()->create(['name' => 'Secret', 'slug' => 'secret-party', 'is_private' => true]);
 
-        $this->actingAs($member)->post('/events', ['title' => 'Nope', 'starts_at' => now()->addDay()->toIso8601String()])->assertForbidden();
+        $this->actingAs($member)->post('/events', ['title' => 'Community meetup', 'starts_at' => now()->addDays(2)->toIso8601String()])->assertRedirect();
+        $this->actingAs($member)->from('/events')->post('/events', ['title' => 'Private party', 'starts_at' => now()->addDays(3)->toIso8601String(), 'room_id' => $privateRoom->id])->assertSessionHasErrors('room_id');
+        $memberEvent = SiteEvent::where('title', 'Community meetup')->firstOrFail();
         $this->actingAs($staff)->post('/events', ['title' => 'Listening party', 'starts_at' => now()->addDay()->toIso8601String(), 'room_id' => $room->id])->assertRedirect();
         $this->actingAs($staff)->post('/events', ['title' => 'Bad times', 'starts_at' => now()->addDay()->toIso8601String(), 'ends_at' => now()->toIso8601String()])->assertSessionHasErrors('ends_at');
         SiteEvent::create(['title' => 'Old one', 'starts_at' => now()->subDays(2), 'ends_at' => now()->subDays(2)->addHour()]);
         $event = SiteEvent::where('title', 'Listening party')->first();
 
         $this->app['auth']->forgetGuards(); // back to a guest
-        $this->get('/events')->assertOk()->assertInertia(fn (Assert $p) => $p
-            ->has('upcoming', 1)->where('upcoming.0.title', 'Listening party')->where('upcoming.0.room.slug', 'party-1')
-            ->where('upcoming.0.going', false)->has('past', 1)->where('canManage', false));
+        $this->actingAs($member)->get('/events')->assertOk()->assertInertia(fn (Assert $p) => $p
+            ->has('upcoming', 2)->where('upcoming.0.title', 'Listening party')->where('upcoming.0.room.slug', 'party-1')
+            ->where('upcoming.0.going', false)->where('upcoming.0.can_delete', false)
+            ->where('upcoming.1.title', 'Community meetup')->where('upcoming.1.can_delete', true)
+            ->has('past', 1)->where('canCreate', true)->where('canManage', false));
 
         $this->actingAs($member)->post("/events/{$event->id}/attend")->assertRedirect();
         $this->actingAs($member)->get('/events')->assertInertia(fn (Assert $p) => $p->where('upcoming.0.going', true)->where('upcoming.0.going_count', 1));
@@ -109,7 +115,9 @@ class GuestAndEventsTest extends TestCase
         $this->post("/events/{$event->id}/attend")->assertRedirect('/login');
 
         $this->actingAs($member)->delete("/events/{$event->id}")->assertForbidden();
-        $this->actingAs($staff)->get('/events')->assertInertia(fn (Assert $p) => $p->where('canManage', true)->has('rooms', 1));
+        $this->actingAs($member)->delete("/events/{$memberEvent->id}")->assertRedirect();
+        $this->assertNull(SiteEvent::find($memberEvent->id));
+        $this->actingAs($staff)->get('/events')->assertInertia(fn (Assert $p) => $p->where('canManage', true)->has('rooms', 2));
         $this->actingAs($staff)->delete("/events/{$event->id}")->assertRedirect();
         $this->assertNull(SiteEvent::find($event->id));
     }

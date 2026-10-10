@@ -1,7 +1,7 @@
 import { Cosmetics } from '@/lib/cosmetics';
 import Avatar from '@/Components/Avatar';
 import Badges from '@/Components/Badges';
-import ChatPanel, { ChatMessageData, RoomEmojiData } from '@/Components/ChatPanel';
+import ChatPanel, { ChatMessageData, RoomEmojiData, RoomNotifications } from '@/Components/ChatPanel';
 import Flag, { FlagInfo } from '@/Components/Flag';
 import GrabDialog from '@/Components/GrabDialog';
 import Live from '@/Components/Live';
@@ -93,7 +93,12 @@ interface Host {
     primary_role: RoleInfo;
 }
 
-type Tab = 'chat' | 'waitlist' | 'users';
+type Tab = 'room' | 'chat' | 'waitlist' | 'users';
+const transientNotificationKinds = new Set(['grab', 'woot', 'meh', 'ended', 'skip']);
+const isTransientActivity = (message: ChatMessageData) => message.type === 'system' && (
+    transientNotificationKinds.has(message.kind ?? '')
+    || ((message.kind === 'join' || message.kind === 'leave') && /(?:joined|left) the waitlist/i.test(message.body))
+);
 type PanelName = 'info' | 'settings' | 'moderation' | 'playlists' | 'whispers' | null;
 
 declare global {
@@ -190,6 +195,7 @@ export default function Room({
     const prefs = withDefaults(user.preferences);
 
     const [messages, setMessages] = useState(initialMessages);
+    const [notifications, setNotifications] = useState<{ id: number; kind: string; body: string }[]>([]);
     const [playback, setPlayback] = useState(() => stamp(initialPlayback));
     const [mine, setMine] = useState<MyVotes>(myVotes);
     const [users, setUsers] = useState<Member[]>([]);
@@ -237,12 +243,37 @@ export default function Room({
     const lastWhisper = useRef(0);
     const typingTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
     const localId = useRef(0);
+    const notificationTimers = useRef<Record<number, number>>({});
+    const seenNotifications = useRef(new Set<number>());
 
     // A line that only exists in this browser (joins, site broadcasts); negative ids never clash with stored messages.
     const say = (kind: string, body: string) => {
         const line: ChatMessageData = { id: --localId.current - 1, type: 'system', kind, body, user: 'System', user_id: 0, avatar: null, role: HOST_ROLE };
         setMessages((p) => [...p, line].slice(-200));
     };
+    const notify = (kind: string, body: string) => {
+        const id = --localId.current - 1;
+        setNotifications((p) => [...p, { id, kind, body }].slice(-3));
+        notificationTimers.current[id] = window.setTimeout(() => {
+            setNotifications((p) => p.filter((n) => n.id !== id));
+            delete notificationTimers.current[id];
+        }, 4500);
+    };
+    const receiveMessage = (message: ChatMessageData) => {
+        if (isTransientActivity(message)) {
+            if (!seenNotifications.current.has(message.id)) {
+                seenNotifications.current.add(message.id);
+                if (seenNotifications.current.size > 500) seenNotifications.current.delete(seenNotifications.current.values().next().value!);
+                notify(message.kind ?? 'ended', message.body);
+            }
+            return;
+        }
+        setMessages((p) => (p.some((x) => x.id === message.id) ? p : [...p, message].slice(-200)));
+    };
+
+    useEffect(() => () => {
+        Object.values(notificationTimers.current).forEach((timer) => window.clearTimeout(timer));
+    }, []);
 
     const roomRoleOf = (userId: number): RoleInfo | null => {
         if (userId === host.id) return HOST_ROLE;
@@ -299,7 +330,7 @@ export default function Room({
     activity.current = prefs.appearance.show_activity;
     const sayVote = (v: { user_id: number; name: string; type: 'woot' | 'meh' | 'grab' }) => {
         if (!activity.current || (v.type === 'grab' && v.user_id === user.id)) return; // my own grab says more in the window I just used
-        say(v.type, `${v.name} ${v.type === 'woot' ? 'wooted' : v.type === 'meh' ? "meh'd" : 'grabbed'} this song`);
+        notify(v.type, `${v.name} ${v.type === 'woot' ? 'wooted' : v.type === 'meh' ? "meh'd" : 'grabbed'} this song`);
     };
 
     // The rules people agree to when they come in: the host does not have to, and a changed list asks again.
@@ -319,7 +350,7 @@ export default function Room({
             const name = `room-view.${room.id}`;
             echo<'reverb'>()
                 .channel(name)
-                .listen('.message', (m: ChatMessageData) => setMessages((p) => (p.some((x) => x.id === m.id) ? p : [...p, m].slice(-200))))
+                .listen('.message', receiveMessage)
                 .listen('.message-deleted', (d: { id: number }) => setMessages((p) => p.filter((m) => m.id !== d.id)))
                 .listen('.playback', (p: Playback) => setPlayback(stamp(p)))
                 .listen('.chat-cleared', () => setMessages([]))
@@ -338,19 +369,17 @@ export default function Room({
 
         ch.here((list: Member[]) => {
             setUsers(list);
-            say('join', `You joined ${room.name}. ${list.length} ${list.length === 1 ? 'person is' : 'people are'} here.`);
+            notify('join', `You joined ${room.name}. ${list.length} ${list.length === 1 ? 'person is' : 'people are'} here.`);
         })
             .joining((m: Member) => {
                 setUsers((p) => [...p.filter((u) => u.id !== m.id), m]);
-                activity.current && say('join', `${m.name} joined the room`);
+                activity.current && notify('join', `${m.name} joined the room`);
             })
             .leaving((m: Member) => {
                 setUsers((p) => p.filter((u) => u.id !== m.id));
-                activity.current && say('exit', `${m.name} left the room`);
+                activity.current && notify('exit', `${m.name} left the room`);
             })
-            .listen('.message', (m: ChatMessageData) =>
-                setMessages((p) => (p.some((x) => x.id === m.id) ? p : [...p, m].slice(-200))),
-            )
+            .listen('.message', receiveMessage)
             .listen('.message-deleted', (d: { id: number }) => setMessages((p) => p.filter((m) => m.id !== d.id)))
             .listen('.playback', (p: Playback) => setPlayback(stamp(p)))
             .listen('.chat-cleared', () => setMessages([]))
@@ -611,13 +640,14 @@ export default function Room({
 
     // whoever is in the room right now is drawn as they are now: a new frame or a new flag shows in the chat lines they wrote before, too
     const here = new Map(users.map((u) => [u.id, u]));
-    const shownMessages = messages.map((m) => {
+    const shownMessages = messages.filter((m) => !isTransientActivity(m)).map((m) => {
         const u = m.type === 'system' ? undefined : here.get(m.user_id);
 
         return u ? { ...m, avatar: u.avatar, cosmetics: u.cosmetics, badges: u.badges ?? m.badges, level: u.level ?? m.level, role: u.role ?? m.role } : m;
     });
 
     const tabs: [Tab, string][] = [
+        ['room', 'Room'],
         ['chat', 'Chat'],
         ['waitlist', `Waitlist (${waitlist.length}/${playback.max})`],
         ['users', `Users (${users.length})`],
@@ -643,7 +673,7 @@ export default function Room({
                     }}
                 />
 
-                <main className={`sfd-main flex min-w-0 flex-1 flex-col ${backgroundClass(room.background)}`}>
+                <main className={`sfd-main ${tab === 'room' ? 'flex' : 'hidden md:flex'} min-w-0 flex-1 flex-col ${backgroundClass(room.background)}`}>
                     <Live />
 
                     <RoomHeader
@@ -737,13 +767,13 @@ export default function Room({
                     />
                 </main>
 
-                <aside className="sfd-panel flex w-80 shrink-0 flex-col border-l border-neutral-800 bg-black">
+                <aside className={`sfd-panel ${tab === 'room' ? 'hidden md:flex' : 'flex'} w-full shrink-0 flex-col border-l border-neutral-800 bg-black md:w-80`}>
                     <div className="sfd-tabs flex h-14 shrink-0 border-b border-neutral-800">
                         {tabs.map(([key, label]) => (
                             <button
                                 key={key}
                                 onClick={() => setTab(key)}
-                                className={`flex-1 text-xs font-semibold ${tab === key ? 'border-b-2 border-violet-500 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                className={`flex-1 text-xs font-semibold ${key === 'room' ? 'md:hidden' : ''} ${tab === key ? 'border-b-2 border-violet-500 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
                             >
                                 {label}
                             </button>
@@ -769,6 +799,7 @@ export default function Room({
                             onUser={(u, anchor) => setCard({ user: u, anchor })}
                             onWhisper={(id) => { setWhisperTo(id); setPanel('whispers'); }}
                             mention={mention}
+                            onMentionConsumed={() => setMention(null)}
                             showBadges={prefs.appearance.show_badges}
                             highlightMentions={prefs.notifications.mentions}
                             onPatchNotes={() => setPage({ url: route('patch-notes'), title: 'Patch notes' })}
@@ -892,6 +923,15 @@ export default function Room({
                         </div>
                     )}
                 </aside>
+
+                <RoomNotifications
+                    notifications={notifications}
+                    onDismiss={(id) => {
+                        window.clearTimeout(notificationTimers.current[id]);
+                        delete notificationTimers.current[id];
+                        setNotifications((p) => p.filter((n) => n.id !== id));
+                    }}
+                />
             </div>
 
             {card && (
@@ -929,7 +969,7 @@ export default function Room({
                         setGrabbing(false);
                         setMine((m) => ({ ...m, grab: true }));
                         setDeckKey((k) => k + 1); // my playlists changed: the bar at the bottom reads them again
-                        say('grab', r.added ? `You saved “${current.title}” in ${r.playlist.name} (${r.songs} ${r.songs === 1 ? 'song' : 'songs'}).` : `“${current.title}” is in ${r.playlist.name} already.`);
+                        notify('grab', r.added ? `You saved “${current.title}” in ${r.playlist.name} (${r.songs} ${r.songs === 1 ? 'song' : 'songs'}).` : `“${current.title}” is in ${r.playlist.name} already.`);
                     }}
                 />
             )}

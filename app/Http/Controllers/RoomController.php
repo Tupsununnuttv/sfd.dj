@@ -392,9 +392,9 @@ class RoomController extends Controller
         $data = $request->validate([
             'body' => ['nullable', 'string', 'max:300'],
             'sticker' => ['nullable', Rule::in(self::STICKERS)],
-            'gif' => ['nullable', 'string', 'max:400', 'regex:~^https://[\w.-]*tenor\.com/~'],
+            'gif' => ['nullable', 'string', 'max:400', 'regex:~^https://(?:[\w.-]*tenor\.com|media\d*\.giphy\.com|i\.giphy\.com)/~'],
             'reply_to_id' => ['nullable', 'integer'],
-        ], ['gif.regex' => 'Only Tenor GIFs can be sent.']);
+        ], ['gif.regex' => 'Only Tenor or GIPHY GIF links can be sent.']);
 
         if (blank($data['body'] ?? null) && blank($data['sticker'] ?? null) && blank($data['gif'] ?? null)) {
             throw ValidationException::withMessages(['body' => 'Write something first.']);

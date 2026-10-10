@@ -10,7 +10,7 @@ import { CardUser } from '@/Components/UserCard';
 import { getJson, post, send, sendJson, upload } from '@/lib/post';
 import { RoleInfo } from '@/types';
 import { Link } from '@inertiajs/react';
-import { AtSign, Check, Copy, Ellipsis, MessageCircle, Reply, Trash2, UserRound } from 'lucide-react';
+import { AtSign, Check, Copy, Ellipsis, MessageCircle, Reply, Trash2, UserRound, X } from 'lucide-react';
 import { FormEvent, MouseEvent, ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export interface ChatMessageData {
@@ -54,6 +54,27 @@ const systemTone: Record<string, string> = {
     join: 'text-emerald-400', promote: 'text-emerald-400', leave: 'text-orange-400', demote: 'text-orange-400', waitlist: 'text-sky-400',
     ended: 'text-cyan-300', skip: 'text-yellow-400', remove: 'text-rose-400', grab: 'text-pink-400', exit: 'text-neutral-500', woot: 'text-lime-400', meh: 'text-rose-400', kick: 'text-red-400', ban: 'text-red-500', mute: 'text-fuchsia-400',
 };
+
+export function RoomNotifications({ notifications, onDismiss }: {
+    notifications: { id: number; kind: string; body: string }[];
+    onDismiss: (id: number) => void;
+}) {
+    if (notifications.length === 0) return null;
+
+    return (
+        <div className="pointer-events-none fixed left-2 right-2 top-14 z-40 flex max-h-[40vh] flex-col gap-1.5 overflow-y-auto md:left-auto md:right-[21rem] md:top-16 md:w-[min(22rem,calc(100vw-23rem))]" aria-label="Room notifications" aria-live="polite">
+            {notifications.map((notification) => (
+                <div key={notification.id} className={`pointer-events-auto animate-rise flex items-start gap-2 rounded-md border border-white/10 bg-neutral-900/95 px-2.5 py-2 text-xs shadow-lg ${systemTone[notification.kind] ?? 'text-neutral-300'}`}>
+                    <span aria-hidden className="shrink-0">{systemIcon[notification.kind] ?? '•'}</span>
+                    <p className="min-w-0 flex-1 wrap-break-word font-medium">{notification.body}</p>
+                    <button type="button" onClick={() => onDismiss(notification.id)} title="Dismiss notification" aria-label="Dismiss notification" className="-mr-1 -mt-1 shrink-0 rounded p-1 text-neutral-500 hover:bg-white/10 hover:text-white">
+                        <X size={13} />
+                    </button>
+                </div>
+            ))}
+        </div>
+    );
+}
 
 const chatText = { small: 'text-xs', normal: 'text-sm', large: 'text-base' };
 const input = 'w-full rounded border-neutral-700 bg-neutral-900 text-sm text-white placeholder-neutral-500 focus:border-violet-500 focus:ring-0';
@@ -115,21 +136,53 @@ function EmotePicker({ source, onPick }: { source: 'bttv' | '7tv'; onPick: (e: E
     );
 }
 
-function GifPicker({ onPick }: { onPick: (url: string) => void }) {
+function GifPicker({ onPick }: { onPick: (url: string, analyticsUrl?: string) => void }) {
     const [q, setQ] = useState('');
-    const [gifs, setGifs] = useState<{ id: string; preview: string; url: string }[]>([]);
+    const [gifs, setGifs] = useState<{ id: string; preview: string; url: string; analyticsUrl?: string }[]>([]);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
     const [link, setLink] = useState('');
+    const apiKey = import.meta.env.VITE_GIPHY_API_KEY;
 
     useEffect(() => {
-        const t = setTimeout(() => {
-            getJson<typeof gifs>(`${route('gifs')}?q=${encodeURIComponent(q)}`)
-                .then((g) => { setGifs(g); setError(''); })
-                .catch((e: Error) => { setGifs([]); setError(e.message); });
+        let cancelled = false;
+        const timeout = window.setTimeout(async () => {
+            if (!apiKey) {
+                setGifs([]);
+                setError('GIF search is not configured.');
+                return;
+            }
+
+            const query = q.trim();
+            const endpoint = new URL(`https://api.giphy.com/v1/gifs/${query ? 'search' : 'trending'}`);
+            endpoint.searchParams.set('api_key', apiKey);
+            endpoint.searchParams.set('limit', '18');
+            endpoint.searchParams.set('rating', 'pg');
+            if (query) endpoint.searchParams.set('q', query);
+
+            try {
+                const response = await fetch(endpoint);
+                const result = await response.json() as {
+                    data?: { id: string; images?: { fixed_width_small?: { url?: string }; preview_gif?: { url?: string }; original?: { url?: string } }; analytics?: { onsent?: { url?: string } } }[];
+                    meta?: { status?: number; msg?: string };
+                };
+                if (!response.ok || (result.meta && result.meta.status !== 200)) throw new Error(result.meta?.msg || 'GIPHY could not load GIFs.');
+                if (cancelled) return;
+
+                setGifs((result.data ?? []).flatMap((gif) => {
+                    const url = gif.images?.original?.url;
+                    const preview = gif.images?.fixed_width_small?.url ?? gif.images?.preview_gif?.url;
+                    return url && preview ? [{ id: gif.id, preview, url, analyticsUrl: gif.analytics?.onsent?.url }] : [];
+                }));
+                setError('');
+            } catch (e) {
+                if (cancelled) return;
+                setGifs([]);
+                setError(e instanceof Error ? e.message : 'GIPHY could not load GIFs.');
+            }
         }, 350);
-        return () => clearTimeout(t);
-    }, [q]);
+        return () => { cancelled = true; window.clearTimeout(timeout); };
+    }, [apiKey, q]);
 
     return (
         <div className="space-y-2">
@@ -138,19 +191,20 @@ function GifPicker({ onPick }: { onPick: (url: string) => void }) {
                 <div className="space-y-2">
                     <p className="text-xs text-amber-300">{error}</p>
                     <form onSubmit={(e) => { e.preventDefault(); if (link.trim()) onPick(link.trim()); }} className="flex gap-2">
-                        <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://media.tenor.com/…gif" className={input} />
+                        <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="Paste a Tenor or GIPHY GIF URL" className={input} />
                         <button className="rounded bg-violet-600 px-3 text-xs font-semibold">Send</button>
                     </form>
                 </div>
             ) : (
                 <div className="grid max-h-56 grid-cols-3 gap-1 overflow-y-auto">
                     {gifs.map((g) => (
-                        <button key={g.id} onClick={() => onPick(g.url)} className="overflow-hidden rounded bg-neutral-800">
+                        <button key={g.id} onClick={() => onPick(g.url, g.analyticsUrl)} className="overflow-hidden rounded bg-neutral-800">
                             <img src={g.preview} alt="" loading="lazy" className="h-20 w-full object-cover" />
                         </button>
                     ))}
                 </div>
             )}
+            <a href="https://giphy.com" target="_blank" rel="noreferrer" className="block text-right text-[10px] font-semibold text-neutral-500 hover:text-neutral-300">Powered By GIPHY</a>
         </div>
     );
 }
@@ -173,6 +227,7 @@ export default function ChatPanel({
     onUser,
     onWhisper,
     mention,
+    onMentionConsumed,
     showBadges = true,
     highlightMentions = true,
     onPatchNotes,
@@ -194,6 +249,7 @@ export default function ChatPanel({
     onUser: (user: CardUser, anchor: DOMRect) => void; // open the quick-profile menu of a message's author
     onWhisper?: (userId: number) => void; // open the whisper box with that person
     mention: { name: string; n: number } | null; // "Mention" was chosen in that menu: put @name in the box
+    onMentionConsumed: () => void;
     showBadges?: boolean;
     highlightMentions?: boolean;
     onPatchNotes?: () => void; // opens the patch notes (the first line of the chat has a link to them)
@@ -224,7 +280,8 @@ export default function ChatPanel({
         if (!mention) return;
         setText((t) => `${t}${t && !t.endsWith(' ') ? ' ' : ''}@${mention.name} `);
         inputBox.current?.focus();
-    }, [mention?.n]);
+        onMentionConsumed();
+    }, [mention?.n, onMentionConsumed]);
 
     useEffect(() => () => window.clearTimeout(peekTimer.current), []);
 
@@ -299,7 +356,15 @@ export default function ChatPanel({
     };
 
     const sendSticker = (sticker: string) => post(route('rooms.message', slug), { sticker, ...extra() }).then(sent).catch(fail);
-    const sendGif = (gif: string) => post(route('rooms.message', slug), { gif, ...extra() }).then(sent).catch(fail);
+    const sendGif = (gif: string, analyticsUrl?: string) => {
+        if (analyticsUrl) {
+            const analytics = new URL(analyticsUrl);
+            analytics.searchParams.set('customer_id', String(userId));
+            analytics.searchParams.set('ts', String(Date.now()));
+            void fetch(analytics).catch(() => {});
+        }
+        post(route('rooms.message', slug), { gif, ...extra() }).then(sent).catch(fail);
+    };
 
     const sendImage = (file?: File) => {
         if (!file) return;

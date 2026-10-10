@@ -151,7 +151,7 @@ const sections: Section[] = [
                 <List
                     items={[
                         'Press Enter to send. Messages are up to 300 characters.',
-                        'Under the box: emojis, GIFs (Tenor), stickers, the room\'s own emojis, BetterTTV emotes, 7TV emotes and a picture button.',
+                        'Under the box: emojis, GIFs (GIPHY), stickers, the room\'s own emojis, BetterTTV emotes, 7TV emotes and a picture button.',
                         'Point at a message for quick Reply and Copy buttons and a ⋯ menu (right-click works too): quick profile, reply, mention, whisper, copy the text or delete it (your own, or any if you moderate).',
                         'Room emojis are written like :name:. BetterTTV and 7TV emotes: click one in the picker, or type its exact name.',
                         'Rest the mouse on a name or picture for a short preview. Click it for the quick profile: level, stats, bio, Whisper, Mention, Add friend, View full profile, and for moderators Mute, Kick and Ban. Messages that mention your name are highlighted.',
@@ -211,7 +211,7 @@ const sections: Section[] = [
             <List
                 items={[
                     'Friends: your friends with a green dot when they are online and the room they are in, people you may know, and search. Fans are people who woot or grab your songs. Requests holds what you received and sent.',
-                    'Events: community happenings with a countdown. Press “I\'m going” and use “Add to calendar” to get a reminder in your own calendar app. Staff add the events.',
+                    'Events: community happenings with a countdown. Members can create events, press “I\'m going” and use “Add to calendar” to get a reminder in their own calendar app. Event creators and staff can remove events.',
                     'Referral: share your link for +100 XP per friend, and climb the inviter leaderboard.',
                     'Avatar shop: try characters (whole people that stand, dance and DJ), badges (medals from bronze to gold starbursts), accessories (headphones, aviators, ears, a halo, a crown, wings, horns), frames (metal, neon, thorns, frost, hellfire, aurora, prism) and effects (sparkles, notes, sakura, thunder, cosmic dust, a void) on a live preview, then save your whole look in one click. Things cost SFD Coins and open at a level (level 1 things are free): you earn coins by levelling up, playing songs, getting grabs, inviting friends and taking the daily reward, and what you buy is yours for good. Coins are never sold for real money.',
                     'Profile: change your name, pronouns, flag, bio (up to 500 characters, as many lines as you like) and favourite genre, upload a photo and see a live preview. Everybody has a public profile page. Your flag shows next to your name on your profile, in the quick profile card and in the room\'s user list.',

@@ -3,6 +3,17 @@ export type Kind = 'new' | 'improved' | 'fixed';
 
 export const releases: { version: string; title: string; notes: [Kind, string][] }[] = [
     {
+        version: '1.37',
+        title: 'GIPHY, events and a better room on phones',
+        notes: [
+            ['fixed', 'Choosing Mention no longer leaves a stale request behind that could add the same @name again when reopening chat.'],
+            ['improved', 'On phones, switch between the room scene and full-screen Chat, Waitlist or Users views. Desktop keeps its side-by-side layout.'],
+            ['improved', 'Waitlist and room activity (joining or leaving, Woots, Grabs and song endings) appears briefly beside the chat. Other system messages stay in chat.'],
+            ['new', 'Any signed-in member can create events and delete their own; staff can still manage all events.'],
+            ['improved', 'The GIF picker searches GIPHY for trending GIFs and search terms, shows Powered By GIPHY, and accepts GIPHY links.'],
+        ],
+    },
+    {
         version: '1.36',
         title: 'Seasons, Plus and Premium, and no links to other sites',
         notes: [

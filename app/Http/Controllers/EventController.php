@@ -10,7 +10,7 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/** Community events. Anyone can look; logged-in people can say they are going; staff who may send announcements manage them. */
+/** Community events. Anyone can look; members can create and RSVP; creators and staff can delete. */
 class EventController extends Controller
 {
     public function index(Request $request): Response
@@ -26,6 +26,7 @@ class EventController extends Controller
             'room' => $e->room && $e->room->canEnter($me) ? $e->room->only('name', 'slug') : null,
             'going_count' => $e->attendees_count,
             'attendees' => $e->attendees()->limit(6)->get(['users.id', 'users.name', 'users.avatar'])->map->only('id', 'name', 'avatar')->values(),
+            'can_delete' => $me && ($manage || $me->id === $e->created_by),
             'is_live' => $e->starts_at->lte(now()) && ($e->ends_at ? $e->ends_at->gt(now()) : $e->starts_at->gt(now()->subHours(3))),
             'going' => $me ? $e->attendees()->whereKey($me->id)->exists() : false,
         ];
@@ -37,21 +38,21 @@ class EventController extends Controller
         return Inertia::render('Events', [
             'upcoming' => $events()->where($upcoming)->orderBy('starts_at')->get()->map($card)->values(),
             'past' => $events()->where($over)->orderByDesc('starts_at')->limit(10)->get()->map($card)->values(),
+            'canCreate' => (bool) $me,
             'canManage' => $manage,
-            'rooms' => $manage ? Room::visibleTo($me)->orderBy('name')->get(['id', 'name']) : [],
+            'rooms' => $me ? Room::visibleTo($me)->orderBy('name')->get(['id', 'name']) : [],
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->hasPermission('events.manage'), 403);
-
+        $rooms = Room::visibleTo($request->user())->pluck('id')->all();
         $data = $request->validate([
             'title' => ['required', 'string', 'max:120'],
             'description' => ['nullable', 'string', 'max:1000'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['nullable', 'date', 'after:starts_at'],
-            'room_id' => ['nullable', Rule::exists('rooms', 'id')],
+            'room_id' => ['nullable', Rule::in($rooms)],
         ]);
 
         SiteEvent::create($data + ['created_by' => $request->user()->id]);
@@ -61,7 +62,7 @@ class EventController extends Controller
 
     public function destroy(Request $request, SiteEvent $event): RedirectResponse
     {
-        abort_unless($request->user()->hasPermission('events.manage'), 403);
+        abort_unless($request->user()->hasPermission('events.manage') || $request->user()->id === $event->created_by, 403);
 
         $event->delete();
 

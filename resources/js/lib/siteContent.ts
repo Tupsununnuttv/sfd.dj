@@ -53,7 +53,7 @@ export const features: Feature[] = [
         tagline: 'Talk about the track while it plays.',
         intro: 'Live chat with all the things you expect, plus a quick profile on every name.',
         points: [
-            ['GIFs, stickers, pictures', 'Send a Tenor GIF, a big sticker, or a picture from your device.'],
+            ['GIFs, stickers, pictures', 'Search GIPHY GIFs, send a big sticker, or add a picture from your device.'],
             ['BetterTTV and 7TV', 'Use the emotes you know. Pick them from the BTTV and 7TV tabs, or type the name.'],
             ['Room emojis', 'Hosts can add their own custom emojis, used like :name:.'],
             ['Replies and mentions', 'Reply to a message, or @mention someone. Messages that mention you are highlighted.'],
@@ -175,7 +175,7 @@ export const legal: LegalDoc[] = [
             ['Who can see what', ['Chat messages are visible to everyone in the room, and to guests watching a public room. Whispers are visible only to the two people in them and to nobody else.', 'Your profile shows your name, level, stats and public rooms. Your email address is never shown to other users.']],
             ['Cookies and storage', ['We use a session cookie to keep you logged in, and your browser\'s local storage for things like your volume and your support chat.']],
             ['Your choices', ['You can change your name, email and picture in Settings, turn on two-factor login, and delete your account in your profile. Deleting removes your account and what belongs to it.']],
-            ['Other services', ['Songs and some emotes load from YouTube, BetterTTV, 7TV and Tenor. Those services get your IP address like any website you visit.', 'If you buy Plus or Premium, Stripe handles the payment and keeps your card details; we only keep which plan you have, until when, and the id Stripe gives your subscription.']],
+            ['Other services', ['Songs and some emotes load from YouTube, BetterTTV, 7TV and GIPHY. Those services get your IP address like any website you visit.', 'If you buy Plus or Premium, Stripe handles the payment and keeps your card details; we only keep which plan you have, until when, and the id Stripe gives your subscription.']],
             ['Contact', ['Questions about your data: use the Contact page.']],
         ],
     },

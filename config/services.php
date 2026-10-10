@@ -44,7 +44,12 @@ return [
         'client_secret' => env('DISCORD_CLIENT_SECRET'),
     ],
 
-    // GIF search in chat. Needs the Tenor API enabled for this Google API key.
+    'giphy' => [
+        'api_key' => env('GIPHY_API_KEY'),
+        'sdk_key' => env('GIPHY_SDK_API_KEY'),
+    ],
+
+    // Legacy Tenor endpoint; the chat GIF picker now uses GIPHY directly from the browser.
     // payments for SFD.DJ Plus and Premium (App\Support\Stripe): the secret key and the signing secret of the webhook /stripe/webhook
     'stripe' => [
         'secret' => env('STRIPE_SECRET'),

@@ -16,6 +16,7 @@ interface EventCard {
     room: { name: string; slug: string } | null;
     going_count: number;
     going: boolean;
+    can_delete: boolean;
     attendees: { id: number; name: string; avatar: string | null }[];
     is_live: boolean;
 }
@@ -23,6 +24,7 @@ interface EventCard {
 interface Props {
     upcoming: EventCard[];
     past: EventCard[];
+    canCreate: boolean;
     canManage: boolean;
     rooms: { id: number; name: string }[];
 }
@@ -99,7 +101,7 @@ function Countdown({ iso }: { iso: string }) {
     return <div className="flex gap-2">{box(c.d, 'days')}{box(c.h, 'hours')}{box(c.m, 'min')}{box(c.s, 'sec')}</div>;
 }
 
-function Featured({ e, guest, canManage }: { e: EventCard; guest: boolean; canManage: boolean }) {
+function Featured({ e, guest }: { e: EventCard; guest: boolean }) {
     return (
         <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-fuchsia-600/25 via-violet-600/15 to-sky-600/10 p-6 sm:p-8">
             <div className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 rounded-full bg-fuchsia-500/20 blur-3xl" />
@@ -121,7 +123,7 @@ function Featured({ e, guest, canManage }: { e: EventCard; guest: boolean; canMa
                 {e.room && <Link href={route('rooms.show', e.room.slug)} className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-neutral-900 hover:bg-neutral-200"><Radio size={15} /> {e.is_live ? 'Join' : 'Open'} {e.room.name}</Link>}
                 <GoingButton e={e} guest={guest} />
                 <button onClick={() => downloadIcs(e)} className={`${ghostBtn} flex items-center gap-2`}><CalendarPlus size={15} /> Add to calendar</button>
-                {canManage && <DeleteButton e={e} />}
+                {e.can_delete && <DeleteButton e={e} />}
             </div>
         </section>
     );
@@ -133,7 +135,7 @@ function DeleteButton({ e }: { e: EventCard }) {
     );
 }
 
-function EventItem({ e, past, guest, canManage }: { e: EventCard; past?: boolean; guest: boolean; canManage: boolean }) {
+function EventItem({ e, past, guest }: { e: EventCard; past?: boolean; guest: boolean }) {
     return (
         <Card className={`flex gap-4 p-4 ${past ? 'opacity-70' : ''}`}>
             <div className={`flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl ${e.is_live ? 'bg-red-500/80' : 'bg-gradient-to-br from-fuchsia-500/30 to-violet-500/30'}`}>
@@ -166,7 +168,7 @@ function EventItem({ e, past, guest, canManage }: { e: EventCard; past?: boolean
                                 )}
                             </>
                         )}
-                        {canManage && <DeleteButton e={e} />}
+                        {e.can_delete && <DeleteButton e={e} />}
                     </div>
                 </div>
             </div>
@@ -227,7 +229,7 @@ function NewEvent({ rooms, onClose }: { rooms: Props['rooms']; onClose: () => vo
     );
 }
 
-export default function Events({ upcoming, past, canManage, rooms }: Props) {
+export default function Events({ upcoming, past, canCreate, rooms }: Props) {
     const { guest } = usePage<PageProps>().props.auth;
     const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
     const [creating, setCreating] = useState(false);
@@ -246,7 +248,7 @@ export default function Events({ upcoming, past, canManage, rooms }: Props) {
         <AppLayout
             title="Events"
             subtitle="Listening parties, contests and meetups. Say you are going and find the room when it starts."
-            actions={canManage && <button onClick={() => setCreating(true)} className={`${primaryBtn} flex items-center gap-2`}><Plus size={16} /> New event</button>}
+            actions={canCreate && <button onClick={() => setCreating(true)} className={`${primaryBtn} flex items-center gap-2`}><Plus size={16} /> New event</button>}
         >
             <Head title="Events" />
 
@@ -255,15 +257,15 @@ export default function Events({ upcoming, past, canManage, rooms }: Props) {
             {tab === 'upcoming' && (
                 <>
                     {!featured ? (
-                        <EmptyState icon="📅" title="No events planned right now" text="Check back soon. Events are added by SFD.DJ staff." action={canManage ? <button onClick={() => setCreating(true)} className={primaryBtn}>Create the first one</button> : undefined} />
+                        <EmptyState icon="📅" title="No events planned right now" text="Create one or check back soon." action={canCreate ? <button onClick={() => setCreating(true)} className={primaryBtn}>Create the first one</button> : undefined} />
                     ) : (
-                        <Featured e={featured} guest={guest} canManage={canManage} />
+                        <Featured e={featured} guest={guest} />
                     )}
 
                     {groups.map(([name, items]) => (
                         <section key={name}>
                             <SectionTitle title={name} />
-                            <div className="space-y-3">{items.map((e) => <EventItem key={e.id} e={e} guest={guest} canManage={canManage} />)}</div>
+                            <div className="space-y-3">{items.map((e) => <EventItem key={e.id} e={e} guest={guest} />)}</div>
                         </section>
                     ))}
                     {guest && upcoming.length > 0 && <p className="text-sm text-neutral-500"><Link href={route('login')} className="text-violet-400 hover:underline">Log in</Link> to say you are going.</p>}
@@ -271,7 +273,7 @@ export default function Events({ upcoming, past, canManage, rooms }: Props) {
             )}
 
             {tab === 'past' && (
-                past.length === 0 ? <EmptyState icon="🕰️" title="No past events yet" /> : <div className="space-y-3">{past.map((e) => <EventItem key={e.id} e={e} past guest={guest} canManage={canManage} />)}</div>
+                past.length === 0 ? <EmptyState icon="🕰️" title="No past events yet" /> : <div className="space-y-3">{past.map((e) => <EventItem key={e.id} e={e} past guest={guest} />)}</div>
             )}
 
             {creating && <NewEvent rooms={rooms} onClose={() => setCreating(false)} />}

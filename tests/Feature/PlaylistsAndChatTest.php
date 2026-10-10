@@ -144,6 +144,7 @@ class PlaylistsAndChatTest extends TestCase
         $this->actingAs($guest)->post("/rooms/{$room->slug}/messages", ['sticker' => 'not-a-sticker'])->assertSessionHasErrors('sticker');
         $this->actingAs($guest)->post("/rooms/{$room->slug}/messages", ['gif' => 'https://evil.example/x.gif'])->assertSessionHasErrors('gif');
         $this->actingAs($guest)->post("/rooms/{$room->slug}/messages", ['gif' => 'https://media.tenor.com/abc/x.gif'])->assertNoContent();
+        $this->actingAs($guest)->post("/rooms/{$room->slug}/messages", ['gif' => 'https://media1.giphy.com/media/abc/giphy.gif'])->assertNoContent();
         $this->actingAs($guest)->post("/rooms/{$room->slug}/messages", [])->assertSessionHasErrors('body');
 
         // roles and badges must be present in chat (they were silently missing before)
@@ -151,7 +152,8 @@ class PlaylistsAndChatTest extends TestCase
         $page->assertInertia(fn ($p) => $p
             ->where('messages.0.role.key', 'owner')->where('messages.0.badges.0.icon', '👑')
             ->where('messages.1.sticker', '🔥')->where('messages.1.reply.user', $host->name)
-            ->where('messages.2.image_url', 'https://media.tenor.com/abc/x.gif'));
+            ->where('messages.2.image_url', 'https://media.tenor.com/abc/x.gif')
+            ->where('messages.3.image_url', 'https://media1.giphy.com/media/abc/giphy.gif'));
 
         // delete: your own, or anyone's with the permission
         $sticker = ChatMessage::where('sticker', '🔥')->first();
