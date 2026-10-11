@@ -39,6 +39,8 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
     const [loaded, setLoaded] = useState(false);
     const [selected, setSelected] = useState<number | null>(null);
     const [songs, setSongs] = useState<Song[]>([]);
+    const [availability, setAvailability] = useState<Record<number, boolean>>({});
+    const [checkingAvailability, setCheckingAvailability] = useState(false);
     const [notice, setNotice] = useState<{ text: string; n: number } | null>(null);
     const [busy, setBusy] = useState(false);
     const [sort, setSort] = useState<Sort>(storedSort);
@@ -81,6 +83,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
 
     const loadSongs = useCallback(async (id: number) => {
         setSongs(await getJson<Song[]>(route('api.playlists.show', id)));
+        setAvailability({});
     }, []);
 
     useEffect(() => {
@@ -247,6 +250,18 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
             await sendJson('DELETE', route('api.playlists.songs.remove', [current.id, song.id]));
             await refresh();
         });
+
+    const checkAvailability = (visibleSongs: Song[]) => current && visibleSongs.length > 0 && run(async () => {
+        setCheckingAvailability(true);
+        try {
+            const result = await sendJson<{ availability: Record<number, boolean> }>('POST', route('api.playlists.availability', current.id), { song_ids: visibleSongs.map((song) => song.id) });
+            setAvailability((currentAvailability) => ({ ...currentAvailability, ...result.availability }));
+            const unavailable = Object.values(result.availability).filter((isAvailable) => !isAvailable).length;
+            say(unavailable === 0 ? `All ${visibleSongs.length} visible songs are available.` : `${unavailable} of ${visibleSongs.length} visible songs are unavailable.`);
+        } finally {
+            setCheckingAvailability(false);
+        }
+    });
 
     const queueId = (videoId: string) =>
         run(async () => {
@@ -455,6 +470,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                             <div className="mt-3 flex min-h-0 flex-1 flex-col">
                                 <TrackList
                                     songs={songs}
+                                    availability={availability}
                                     filter={filter}
                                     isActive={current.is_active}
                                     roomSlug={roomSlug}
@@ -462,6 +478,8 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                                     onReorder={reorder}
                                     onQueue={(s) => queueId(s.youtube_id)}
                                     onRemove={removeSong}
+                                    onCheckAvailability={checkAvailability}
+                                    checkingAvailability={checkingAvailability}
                                     onNotice={say}
                                     empty="No tracks yet. Search above, paste a link, or import a list of links."
                                 />

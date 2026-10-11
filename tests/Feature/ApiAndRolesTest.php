@@ -163,6 +163,10 @@ class ApiAndRolesTest extends TestCase
 
         $this->withToken($token)->postJson('/api/v1/rooms/lobby-1/messages', ['body' => 'Hello, I am a bot'])->assertNoContent();
         $this->assertDatabaseHas('room_bot_presences', ['room_id' => $room->id, 'user_id' => $bot->id]);
+
+        $this->travel(91)->seconds();
+        $this->withToken($token)->getJson('/api/v1/rooms/lobby-1/messages')->assertOk();
+        $this->assertCount(1, RoomBotPresence::activeMembers($room), 'any room-scoped API request renews an active bot lease');
         $this->actingAs($host)->get('/rooms/lobby-1')->assertInertia(fn (Assert $page) => $page
             ->where('botMembers.0.id', $bot->id)
             ->where('botMembers.0.character', 'char:robo'));

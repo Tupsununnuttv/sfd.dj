@@ -14,10 +14,9 @@ import { useEffect, useState } from 'react';
  * In the middle who is playing what, and under it how far the song is. On the right our social media as small icons (Discord, YouTube and so on;
  * the room info is in More, in the bar at the bottom) and the volume.
  */
-export default function RoomHeader({ room, me, guest, listening, dj, title, playing, elapsed, receivedAt, duration, volume, muted, onVolume, onMute, social, onDj }: {
+export default function RoomHeader({ room, host, listening, dj, title, playing, elapsed, receivedAt, duration, volume, muted, onVolume, onMute, social, onDj }: {
     room: { name: string; badges: string[] | null };
-    me: { name: string; avatar: string | null; cosmetics?: Cosmetics | null };
-    guest: boolean;
+    host: { name: string; avatar: string | null; cosmetics?: Cosmetics | null };
     listening: number;
     dj: Dancer | null;
     title: string | null; // the song that is playing
@@ -60,9 +59,9 @@ export default function RoomHeader({ room, me, guest, listening, dj, title, play
                         </span>
                     </p>
                     <p className="mt-0.5 flex items-center gap-1.5 text-[11px] leading-tight text-neutral-400">
-                        <Avatar name={me.name} avatar={me.avatar} cosmetics={me.cosmetics} className="h-4 w-4 text-[9px]" />
-                        <span className="truncate">{me.name}</span>
-                        <span className="shrink-0 whitespace-nowrap text-green-400">{guest ? 'watching' : 'you are here'}</span>
+                        <Avatar name={host.name} avatar={host.avatar} cosmetics={host.cosmetics} className="h-4 w-4 text-[9px]" />
+                        <span className="truncate" title={host.name}>{host.name}</span>
+                        <span className="shrink-0 whitespace-nowrap text-amber-300">Room host</span>
                     </p>
                 </div>
             </div>

@@ -3,6 +3,17 @@ export type Kind = 'new' | 'improved' | 'fixed';
 
 export const releases: { version: string; title: string; notes: [Kind, string][] }[] = [
     {
+        version: '1.38',
+        title: 'Room roles, visible bots and clearer playlists',
+        notes: [
+            ['fixed', 'The Room header now names the room host, not the person viewing it.'],
+            ['improved', 'Room users are ordered by site role, from Owner down to User; people with the same role are alphabetical, room roles keep their existing groups, and API bots are always last. The Admin → Users → Set role list follows the same role order.'],
+            ['improved', 'API bots now appear on the room stage as full characters. Chat activity refreshes their room presence automatically; quiet bots can send a heartbeat and disappear when they disconnect.'],
+            ['new', 'Playlist → Check visible checks up to 50 songs at a time. Available videos are marked green; deleted, private or non-embeddable videos are marked Unavailable Song.'],
+            ['fixed', 'Profile photos no longer replace full-body characters. Missing pictures fall back to a character, and room playback avoids seeking for small timing differences.'],
+        ],
+    },
+    {
         version: '1.37',
         title: 'GIPHY, events and a better room on phones',
         notes: [

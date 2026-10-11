@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Room;
+use App\Models\RoomBotPresence;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,6 +19,10 @@ class EnsureRoomAccess
         if ($room instanceof Room && $user) {
             abort_unless($room->canEnter($user), 403, 'This room is private.');
             abort_if($room->bans()->where('user_id', $user->id)->exists(), 403, 'You are banned from this room.');
+
+            if ($request->routeIs('api.v1.*') && $user->is_bot && ! $request->routeIs('api.v1.presence.leave')) {
+                RoomBotPresence::touchFor($room, $user);
+            }
         }
 
         return $next($request);

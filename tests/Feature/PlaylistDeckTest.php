@@ -377,4 +377,32 @@ class PlaylistDeckTest extends TestCase
         $this->actingAs($me)->postJson("/api/playlists/{$list->id}/songs", ['video_id' => 'bbbbbbbbbbb'])->assertJson(['added' => 1]);
         $this->actingAs($me)->getJson("/api/playlists/{$list->id}")->assertJsonPath('1.channel', 'Prismo');
     }
+
+    public function test_playlist_availability_check_marks_working_unavailable_and_missing_videos(): void
+    {
+        config(['services.youtube.key' => 'test-key']);
+        $me = User::factory()->create();
+        $list = $this->list($me);
+        $songs = $list->songs()->get();
+        [$available, $notEmbeddable, $missing] = $songs->pluck('id')->all();
+        $youtubeIds = $songs->pluck('youtube_id')->all();
+
+        Http::fake(['googleapis.com/youtube/v3/videos*' => Http::response(['items' => [
+            ['id' => $youtubeIds[0], 'status' => ['embeddable' => true]],
+            ['id' => $youtubeIds[1], 'status' => ['embeddable' => false]],
+        ]])]);
+
+        $this->actingAs($me)->postJson("/api/playlists/{$list->id}/availability", ['song_ids' => [$available, $notEmbeddable, $missing]])
+            ->assertOk()
+            ->assertJsonPath("availability.{$available}", true)
+            ->assertJsonPath("availability.{$notEmbeddable}", false)
+            ->assertJsonPath("availability.{$missing}", false);
+
+        $other = User::factory()->create();
+        $this->actingAs($other)->postJson("/api/playlists/{$list->id}/availability", ['song_ids' => [$available]])->assertForbidden();
+        $this->actingAs($me)->postJson("/api/playlists/{$list->id}/availability", ['song_ids' => array_fill(0, 51, $available)])->assertUnprocessable();
+
+        config(['services.youtube.key' => null]);
+        $this->actingAs($me)->postJson("/api/playlists/{$list->id}/availability", ['song_ids' => [$available]])->assertStatus(503);
+    }
 }

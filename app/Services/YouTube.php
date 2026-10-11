@@ -64,6 +64,41 @@ class YouTube
             : null;
     }
 
+    /** @param array<int, string> $ids @return array<string, bool>|null null means the API could not give a reliable answer */
+    public function availability(array $ids): ?array
+    {
+        if (! $this->hasKey()) {
+            return null;
+        }
+
+        $ids = array_values(array_unique($ids));
+        $availability = [];
+
+        try {
+            foreach (array_chunk($ids, 50) as $batch) {
+                $response = Http::timeout(6)->get(self::API.'/videos', [
+                    'part' => 'status',
+                    'id' => implode(',', $batch),
+                    'key' => config('services.youtube.key'),
+                ]);
+
+                if (! $response->successful()) {
+                    return null;
+                }
+
+                $videos = collect($response->json('items', []))->keyBy('id');
+                foreach ($batch as $id) {
+                    $video = $videos->get($id);
+                    $availability[$id] = $video !== null && ($video['status']['embeddable'] ?? true) !== false;
+                }
+            }
+        } catch (ConnectionException) {
+            return null;
+        }
+
+        return $availability;
+    }
+
     /** @return array<int, array{id: string, title: string, channel: string, thumbnail: string}>|null null = search unavailable */
     public function search(string $query): ?array
     {

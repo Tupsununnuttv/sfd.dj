@@ -222,7 +222,7 @@ class RoomController extends Controller
                 'css' => $css['css'], // what everybody gets: only the harmless part, all of it inside the room
             ] + ($this->ownsCss($user, $room) ? ['css_source' => $room->custom_css, 'css_notes' => $css['notes']] : []), // the host sees what they wrote and what was left out
             'genres' => Room::GENRES,
-            'host' => $room->user->only('id', 'name', 'avatar') + ['primary_role' => $room->user->primary_role],
+            'host' => $room->user->only('id', 'name', 'avatar', 'cosmetics') + ['primary_role' => $room->user->primary_role],
             'can' => array_fill_keys($can, true),
             'roles' => $room->roles()->get(['id', 'name', 'color', 'rank', 'permissions', 'builtin']),
             'roleOrder' => array_map(fn (Role $role) => $role->value, Role::cases()),

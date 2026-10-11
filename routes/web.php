@@ -99,6 +99,7 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
         Route::post('/', [PlaylistController::class, 'store'])->name('store');
         Route::get('/deck', [PlaylistController::class, 'deck'])->name('deck');
         Route::get('/{playlist}', [PlaylistController::class, 'show'])->name('show');
+        Route::post('/{playlist}/availability', [PlaylistController::class, 'checkAvailability'])->middleware('throttle:10,1')->name('availability');
         Route::patch('/{playlist}', [PlaylistController::class, 'update'])->name('update');
         Route::delete('/{playlist}', [PlaylistController::class, 'destroy'])->name('destroy');
         Route::post('/{playlist}/activate', [PlaylistController::class, 'activate'])->name('activate');

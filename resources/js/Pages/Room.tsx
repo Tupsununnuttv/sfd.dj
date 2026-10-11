@@ -101,6 +101,7 @@ interface Host {
     id: number;
     name: string;
     avatar: string | null;
+    cosmetics?: Cosmetics | null;
     primary_role: RoleInfo;
 }
 
@@ -791,8 +792,7 @@ export default function Room({
 
                     <RoomHeader
                         room={room}
-                        me={user}
-                        guest={guest}
+                        host={host}
                         listening={guest ? listening : users.length}
                         dj={dj}
                         title={current?.title ?? null}

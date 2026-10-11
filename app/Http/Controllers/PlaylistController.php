@@ -121,6 +121,24 @@ class PlaylistController extends Controller
         return response()->json($playlist->songs()->get(self::SONG_FIELDS));
     }
 
+    public function checkAvailability(Request $request, Playlist $playlist, YouTube $youtube): JsonResponse
+    {
+        $this->own($request, $playlist);
+        $songIds = $request->validate([
+            'song_ids' => ['required', 'array', 'min:1', 'max:50'],
+            'song_ids.*' => ['required', 'integer', 'distinct'],
+        ])['song_ids'];
+        $songs = $playlist->songs()->whereIn('id', $songIds)->get(['id', 'youtube_id']);
+        abort_if($songs->count() !== count($songIds), 404);
+
+        $availability = $youtube->availability($songs->pluck('youtube_id')->all());
+        abort_if($availability === null, 503, 'Could not check YouTube availability. Try again later or configure YOUTUBE_API_KEY.');
+
+        return response()->json([
+            'availability' => $songs->mapWithKeys(fn (PlaylistSong $song) => [$song->id => $availability[$song->youtube_id] ?? false]),
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate(['name' => ['required', 'string', 'max:60']]);

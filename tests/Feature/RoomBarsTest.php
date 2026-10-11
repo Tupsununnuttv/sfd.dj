@@ -49,13 +49,14 @@ class RoomBarsTest extends TestCase
     {
         $bar = $this->source('Components/RoomHeader.tsx');
 
-        foreach (['you are here', 'watching', 'is playing:', 'Waiting for the next DJ', 'listening', 'RoomBadge', 'Leave the room', "route('dashboard')", '{room.name}', 'Our social media', 'SocialIcon'] as $text) {
+        foreach (['Room host', 'is playing:', 'Waiting for the next DJ', 'listening', 'RoomBadge', 'Leave the room', "route('dashboard')", '{room.name}', 'Our social media', 'SocialIcon'] as $text) {
             $this->assertStringContainsString($text, $bar);
         }
         // our social media took the place of the Room info button; Room info is still in More, in the footbar
         $this->assertStringNotContainsString('Room info', $bar);
         $this->assertStringContainsString("label: 'Room info'", $this->source('Components/RoomFootbar.tsx'));
         $this->assertStringContainsString('<RoomHeader', $this->source('Pages/Room.tsx'));
+        $this->assertStringContainsString('host={host}', $this->source('Pages/Room.tsx'));
     }
 
     public function test_the_footbar_shows_the_active_playlist_and_the_next_track_and_keeps_playback_and_skip(): void

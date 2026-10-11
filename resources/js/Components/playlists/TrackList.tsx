@@ -1,20 +1,23 @@
 import ContextMenu, { MenuAnchor, MenuItem } from '@/Components/ContextMenu';
 import { mmss, originLabel, Song, watchUrl } from '@/lib/playlists';
-import { ArrowDownToLine, ArrowUpToLine, ChevronLeft, ChevronRight, ExternalLink, GripVertical, Link2, ListPlus, MoreVertical, Music2, Trash2 } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpToLine, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink, GripVertical, Link2, ListPlus, MoreVertical, Music2, Trash2 } from 'lucide-react';
 import { DragEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 export const PAGE = 50;
 
 /** The tracks of one playlist in play order: drag one to move it, the menu moves it to the top or the bottom, 50 to a page. */
-export default function TrackList({ songs, filter, isActive, roomSlug, busy, onReorder, onQueue, onRemove, onNotice, empty }: {
+export default function TrackList({ songs, availability, filter, isActive, roomSlug, busy, checkingAvailability, onReorder, onQueue, onRemove, onCheckAvailability, onNotice, empty }: {
     songs: Song[];
+    availability: Record<number, boolean>;
     filter: string;
     isActive: boolean; // the first track of the active playlist is the next track
     roomSlug?: string;
     busy: boolean;
+    checkingAvailability: boolean;
     onReorder: (ids: number[]) => void;
     onQueue: (song: Song) => void;
     onRemove: (song: Song) => void;
+    onCheckAvailability: (songs: Song[]) => void;
     onNotice: (text: string) => void;
     empty: string;
 }) {
@@ -77,6 +80,13 @@ export default function TrackList({ songs, filter, isActive, roomSlug, busy, onR
 
     return (
         <div className="flex min-h-0 flex-1 flex-col">
+            {rows.length > 0 && (
+                <div className="flex shrink-0 justify-end pb-2">
+                    <button onClick={() => onCheckAvailability(rows)} disabled={busy || checkingAvailability} className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-semibold text-neutral-300 transition hover:bg-white/5 hover:text-white disabled:opacity-50">
+                        <CheckCircle2 size={14} /> {checkingAvailability ? 'Checking…' : `Check ${rows.length} visible`}
+                    </button>
+                </div>
+            )}
             <div ref={top} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
                 {rows.length === 0 ? (
                     <p className="px-3 py-10 text-center text-sm text-neutral-500">{q ? 'No track here matches that.' : empty}</p>
@@ -114,7 +124,10 @@ export default function TrackList({ songs, filter, isActive, roomSlug, busy, onR
                                             <span className="truncate font-semibold text-neutral-100" title={s.title}>{s.title}</span>
                                             {next && <span className="shrink-0 rounded bg-violet-500/25 px-1.5 text-[10px] font-bold uppercase leading-4 tracking-wider text-violet-200">Next</span>}
                                         </span>
-                                        <span className="block truncate text-xs text-neutral-500">{s.channel || originLabel[s.origin]}{s.channel && s.origin !== 'youtube' ? ` · ${originLabel[s.origin]}` : ''}</span>
+                                        <span className="flex min-w-0 items-center gap-2 text-xs">
+                                            <span className="min-w-0 truncate text-neutral-500">{s.channel || originLabel[s.origin]}{s.channel && s.origin !== 'youtube' ? ` · ${originLabel[s.origin]}` : ''}</span>
+                                            {availability[s.id] !== undefined && <span className={`shrink-0 font-semibold ${availability[s.id] ? 'text-emerald-400' : 'text-rose-400'}`}>{availability[s.id] ? 'Available' : 'Unavailable Song'}</span>}
+                                        </span>
                                     </span>
                                     {roomSlug && (
                                         <button onClick={() => onQueue(s)} disabled={busy} className="hidden shrink-0 rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 px-3 py-1.5 text-xs font-bold text-white opacity-0 transition hover:opacity-90 focus:opacity-100 group-hover:opacity-100 disabled:opacity-40 lg:block">
