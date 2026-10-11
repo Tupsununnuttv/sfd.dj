@@ -24,9 +24,10 @@ import { backgroundClass } from '@/lib/backgrounds';
 import { post, send, sendJson } from '@/lib/post';
 import { withDefaults } from '@/lib/prefs';
 import { PageProps, RoleInfo } from '@/types';
+import { roomUserWeight, sortRoomUsersByWeight } from '@/lib/roomUserSort';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { echo } from '@laravel/echo-react';
-import { Disc3, Footprints, Gavel, MessageCircle, ShieldCheck, UserCheck, UserPlus, VolumeX, X } from 'lucide-react';
+import { Disc3, Footprints, Gavel, MessageCircle, ShieldCheck, UserCheck, VolumeX, X } from 'lucide-react';
 import { FormEvent, lazy, ReactNode, Suspense, useEffect, useRef, useState } from 'react';
 
 const GrabDialog = lazy(() => import('@/Components/GrabDialog'));
@@ -64,7 +65,11 @@ interface Playback {
 interface Member {
     id: number;
     name: string;
+    username?: string | null;
     avatar: string | null;
+    character?: string | null;
+    is_bot?: boolean;
+    bot_seen_at?: string | null;
     cosmetics?: Cosmetics | null;
     role: RoleInfo;
     badges?: RoleInfo[];
@@ -101,6 +106,7 @@ interface Host {
 
 type Tab = 'room' | 'chat' | 'waitlist' | 'users';
 const transientNotificationKinds = new Set(['grab', 'woot', 'meh', 'ended', 'skip']);
+const BOT_PRESENCE_TTL_MS = 90_000;
 const isTransientActivity = (message: ChatMessageData) => message.type === 'system' && (
     transientNotificationKinds.has(message.kind ?? '')
     || ((message.kind === 'join' || message.kind === 'leave') && /(?:joined|left) the waitlist/i.test(message.body))
@@ -120,6 +126,8 @@ const stamp = (p: Playback) => ({ ...p, receivedAt: Date.now() });
 const HOST_ROLE: RoleInfo = { key: 'host', label: 'Host', color: '#facc15' };
 const USER_ROLE: RoleInfo = { key: 'member', label: 'User', color: '#a3a3a3' };
 const NO_VOTES: MyVotes = { woot: false, meh: false, grab: false };
+const SYNC_THRESHOLD_SECONDS = 8;
+const SYNC_COOLDOWN_MS = 15_000;
 const input =
     'w-full rounded border-neutral-700 bg-neutral-900 text-sm text-white placeholder-neutral-500 focus:border-violet-500 focus:ring-0';
 
@@ -155,12 +163,14 @@ function Panel({ title, onClose, children, wide = false, large = false, bare = f
 export default function Room({
     room,
     host,
+    roleOrder,
     genres,
     can,
     roles,
     members,
     memberList,
     friendIds: initialFriendIds,
+    botMembers,
     mod,
     permissionLabels,
     backgrounds,
@@ -176,11 +186,13 @@ export default function Room({
 }: PageProps<{
     room: RoomInfo;
     host: Host;
+    roleOrder: string[];
     genres: string[];
     can: Record<string, boolean>;
     roles: RoomRoleInfo[];
     members: Record<string, number>;
     friendIds: number[];
+    botMembers: Member[];
     memberList: MemberRow[];
     mod: ModData | null;
     permissionLabels: Record<string, string>;
@@ -202,7 +214,7 @@ export default function Room({
     const [notifications, setNotifications] = useState<{ id: number; kind: string; body: string }[]>([]);
     const [playback, setPlayback] = useState(() => stamp(initialPlayback));
     const [mine, setMine] = useState<MyVotes>(myVotes);
-    const [users, setUsers] = useState<Member[]>([]);
+    const [users, setUsers] = useState<Member[]>(botMembers);
     const [friendIds, setFriendIds] = useState(initialFriendIds);
     const [typers, setTypers] = useState<Record<number, string>>({});
     const [tab, setTab] = useState<Tab>(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'room' : 'chat');
@@ -245,6 +257,7 @@ export default function Room({
     const current = playback.current;
     const currentRef = useRef(current);
     currentRef.current = current;
+    const playbackSync = useRef({ songId: current?.id ?? null, receivedAt: playback.receivedAt, lastSeekAt: 0 });
     const lastResumeAttempt = useRef<{ songId: number; at: number } | null>(null);
     const resumePlaybackMuted = () => {
         const song = currentRef.current;
@@ -258,6 +271,20 @@ export default function Room({
         activePlayer.playVideo?.();
         setSilenced(true);
     };
+    const applyBotPresence = (presence: Member & { online: boolean }) => {
+        setUsers((currentUsers) => presence.online
+            ? [...currentUsers.filter((member) => member.id !== presence.id), presence]
+            : currentUsers.filter((member) => member.id !== presence.id));
+    };
+
+    useEffect(() => {
+        const timer = window.setInterval(() => {
+            const cutoff = Date.now() - BOT_PRESENCE_TTL_MS;
+            setUsers((currentUsers) => currentUsers.filter((member) => !member.is_bot || !member.bot_seen_at || Date.parse(member.bot_seen_at) >= cutoff));
+        }, 15_000);
+
+        return () => window.clearInterval(timer);
+    }, []);
     const channel = useRef<any>(null);
     const lastWhisper = useRef(0);
     const typingTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
@@ -376,6 +403,7 @@ export default function Room({
                 .listen('.message', receiveMessage)
                 .listen('.message-deleted', (d: { id: number }) => setMessages((p) => p.filter((m) => m.id !== d.id)))
                 .listen('.playback', (p: Playback) => setPlayback(stamp(p)))
+                .listen('.room-bot-presence', applyBotPresence)
                 .listen('.chat-cleared', () => setMessages([]))
                 .listen('.vote-cast', sayVote)
                 .listen('.room-updated', reloadRoom);
@@ -391,8 +419,9 @@ export default function Room({
         channel.current = ch;
 
         ch.here((list: Member[]) => {
-            setUsers(list);
-            notify('join', `You joined ${room.name}. ${list.length} ${list.length === 1 ? 'person is' : 'people are'} here.`);
+            setUsers((currentUsers) => [...new Map([...list, ...currentUsers.filter((member) => member.is_bot)].map((member) => [member.id, member])).values()]);
+            const count = list.length + users.filter((member) => member.is_bot).length;
+            notify('join', `You joined ${room.name}. ${count} ${count === 1 ? 'person is' : 'people are'} here.`);
         })
             .joining((m: Member) => {
                 setUsers((p) => [...p.filter((u) => u.id !== m.id), m]);
@@ -405,6 +434,7 @@ export default function Room({
             .listen('.message', receiveMessage)
             .listen('.message-deleted', (d: { id: number }) => setMessages((p) => p.filter((m) => m.id !== d.id)))
             .listen('.playback', (p: Playback) => setPlayback(stamp(p)))
+            .listen('.room-bot-presence', applyBotPresence)
             .listen('.chat-cleared', () => setMessages([]))
             .listen('.roles-updated', () => router.reload({ only: ['roles', 'members', 'memberList', 'can', 'bans', 'mod'] }))
             .listen('.room-updated', reloadRoom)
@@ -548,6 +578,30 @@ export default function Room({
     }, [ready, playbackOn, current?.id]);
 
     useEffect(() => {
+        if (!ready || !current) return;
+
+        const sync = playbackSync.current;
+        if (sync.songId !== current.id) {
+            playbackSync.current = { songId: current.id, receivedAt: playback.receivedAt, lastSeekAt: 0 };
+            return;
+        }
+        if (sync.receivedAt === playback.receivedAt) return;
+        sync.receivedAt = playback.receivedAt;
+        if (!playbackOn) return;
+
+        const activePlayer = player.current;
+        if (activePlayer?.getPlayerState?.() !== 1) return;
+
+        const target = Math.max(0, playback.elapsed + (Date.now() - playback.receivedAt) / 1000);
+        const drift = target - (activePlayer.getCurrentTime?.() ?? target);
+        const now = Date.now();
+        if (Math.abs(drift) < SYNC_THRESHOLD_SECONDS || now - sync.lastSeekAt < SYNC_COOLDOWN_MS) return;
+
+        sync.lastSeekAt = now;
+        activePlayer.seekTo?.(target, true);
+    }, [ready, current?.id, playback.elapsed, playback.receivedAt, playbackOn]);
+
+    useEffect(() => {
         const resumeWhenVisible = () => {
             if (document.visibilityState !== 'visible' || !playbackOnRef.current || !currentRef.current) return;
             const state = player.current?.getPlayerState?.();
@@ -660,14 +714,6 @@ export default function Room({
             .finally(stop);
     };
 
-    const addFriend = (userId: number, who: string) =>
-        router.post(route('friends.store'), { user_id: userId }, {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => setNotice(`Friend request sent to ${who}.`),
-            onError: (e) => setNotice(e.name ?? 'Could not send the request.'),
-        });
-
     const assign = (userId: number, roleId: string) =>
         send('PUT', route('rooms.members.assign', [room.slug, userId]), { room_role_id: roleId ? Number(roleId) : null })
             .catch((e: Error) => setNotice(e.message));
@@ -690,17 +736,20 @@ export default function Room({
         post(route('rooms.announce', room.slug), { message }).catch(() => setAnnouncement(message));
     };
 
-    // Keep site staff above room roles so an Owner who is also the host is never listed below Host.
-    const byName = (a: Member, b: Member) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
-    const staffRoleOrder = ['owner', 'developer', 'admin', 'lead_moderator', 'brand_ambassador', 'moderator', 'site_moderator', 'helper', 'promoter', 'translator'];
-    const isSiteTeam = (member: Member) => staffRoleOrder.includes(member.role.key);
-    const byTeamRank = (a: Member, b: Member) => staffRoleOrder.indexOf(a.role.key) - staffRoleOrder.indexOf(b.role.key) || byName(a, b);
+    const rankedUsers = sortRoomUsersByWeight(users, roleOrder);
+    const isSiteRanked = (member: Member) => !member.is_bot && roomUserWeight(member, roleOrder) < roleOrder.length;
     const roleGroups = [
-        { role: { key: 'site-team', label: 'SFD.DJ Team', color: '#a78bfa' }, people: users.filter(isSiteTeam).sort(byTeamRank) },
-        { role: HOST_ROLE, people: users.filter((u) => u.id === host.id && !isSiteTeam(u)) },
-        ...[...roles].sort((a, b) => a.rank - b.rank).map((r) => ({ role: { key: `room-${r.id}`, label: r.name, color: r.color }, people: users.filter((u) => !isSiteTeam(u) && u.id !== host.id && members[u.id] === r.id).sort(byName) })),
-        { role: { key: 'member', label: 'Users', color: '#a3a3a3' }, people: users.filter((u) => !isSiteTeam(u) && u.id !== host.id && !roles.some((r) => r.id === members[u.id])).sort(byName) },
-    ].filter((g) => g.people.length > 0);
+        { role: { key: 'site-team', label: 'Staff', color: '#a78bfa' }, people: rankedUsers.filter((member) => roomUserWeight(member, roleOrder) <= 10) },
+        { role: { key: 'creator-team', label: 'Creator / Contributor', color: '#f0abfc' }, people: rankedUsers.filter((member) => roomUserWeight(member, roleOrder) >= 11 && roomUserWeight(member, roleOrder) <= 13) },
+        { role: { key: 'community-team', label: 'Community / Status', color: '#67e8f9' }, people: rankedUsers.filter((member) => roomUserWeight(member, roleOrder) >= 14 && roomUserWeight(member, roleOrder) < roleOrder.length && !member.is_bot) },
+        { role: HOST_ROLE, people: rankedUsers.filter((member) => member.id === host.id && !isSiteRanked(member)) },
+        ...[...roles].sort((a, b) => a.rank - b.rank).map((roomRole) => ({
+            role: { key: `room-${roomRole.id}`, label: roomRole.name, color: roomRole.color },
+            people: rankedUsers.filter((member) => !isSiteRanked(member) && !member.is_bot && member.id !== host.id && members[member.id] === roomRole.id),
+        })),
+        { role: USER_ROLE, people: rankedUsers.filter((member) => !isSiteRanked(member) && !member.is_bot && member.id !== host.id && !roles.some((roomRole) => roomRole.id === members[member.id])) },
+        { role: { key: 'api-bot', label: 'API Bots', color: '#38bdf8' }, people: rankedUsers.filter((member) => member.is_bot) },
+    ].filter((group) => group.people.length > 0);
 
     // whoever is in the room right now is drawn as they are now: a new frame or a new flag shows in the chat lines they wrote before, too
     const here = new Map(users.map((u) => [u.id, u]));
@@ -926,7 +975,7 @@ export default function Room({
                                 <section key={role.key} className="mb-3" data-role-group={role.label}>
                                     <div className="mb-1.5 flex items-center justify-between gap-2">
                                         <span className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-bold uppercase leading-none tracking-wider" style={{ color: role.color, borderColor: `${role.color}59`, backgroundColor: `${role.color}1a` }}>
-                                            {role.key === 'site-team' ? <ShieldCheck size={13} /> : <RoleGlyph role={role} size={13} />} {role.label}
+                                            {role.key === 'site-team' ? <ShieldCheck size={13} /> : role.key === 'creator-team' ? '🎨' : role.key === 'community-team' ? '💎' : role.key === 'api-bot' ? '🤖' : <RoleGlyph role={role} size={13} />} {role.label}
                                         </span>
                                         <span className="rounded-md border border-white/10 bg-white/5 px-1.5 py-1 text-[11px] font-bold leading-none text-neutral-400">{people.length}</span>
                                     </div>
@@ -942,8 +991,8 @@ export default function Room({
                                                     <div className="min-w-0 flex-1">
                                                         <p className="flex items-center gap-1.5">
                                                             {rr && <RoleIcon role={rr} />}
-                                                            <button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} title="Quick profile" className="truncate font-semibold hover:underline" style={{ color: u.role.color }}>{u.name}</button>
-                                                            {u.id === host.id && isSiteTeam(u) && <span title="Room host" className="shrink-0 rounded bg-amber-400/10 px-1 py-0.5 text-[10px] font-semibold text-amber-300">Host</span>}
+                                                            <button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} title="Quick profile" className="min-w-0 max-w-full flex-1 truncate leading-5 font-semibold hover:underline" style={{ color: u.role.color }}>{u.name}</button>
+                                                            {u.id === host.id && <span title="Room host" className="shrink-0 rounded bg-amber-400/10 px-1 py-0.5 text-[10px] font-semibold text-amber-300">Host</span>}
                                                                     {friendIds.includes(u.id) && <span title="Already your friend" className="inline-flex shrink-0 items-center gap-0.5 rounded bg-emerald-500/10 px-1 py-0.5 text-[10px] font-semibold text-emerald-300"><UserCheck size={11} />Friend</span>}
                                                             <Flag flag={u.flag} className="h-3" />
                                                             {u.id === user.id && <span className="shrink-0 text-xs text-neutral-500">(you)</span>}
@@ -973,10 +1022,7 @@ export default function Room({
                                                                     </>
                                                                 )}
                                                                 {u.id !== user.id && (
-                                                                    <>
-                                                                        <button onClick={() => { setWhisperTo(u.id); setPanel('whispers'); }} title="Whisper" className={`${iconBtn} hover:text-violet-300`}><MessageCircle size={14} /></button>
-                                                                        <button onClick={() => addFriend(u.id, u.name)} title="Add friend" className={`${iconBtn} hover:text-white`}><UserPlus size={14} /></button>
-                                                                    </>
+                                                                    <button onClick={() => { setWhisperTo(u.id); setPanel('whispers'); }} title="Whisper" className={`${iconBtn} hover:text-violet-300`}><MessageCircle size={14} /></button>
                                                                 )}
                                                             </span>
                                                         </div>

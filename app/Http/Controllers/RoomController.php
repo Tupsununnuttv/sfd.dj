@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Role;
 use App\Events\ChatCleared;
 use App\Events\MessageDeleted;
 use App\Events\MessageSent;
@@ -15,6 +16,7 @@ use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use App\Models\Room;
 use App\Models\RoomBan;
+use App\Models\RoomBotPresence;
 use App\Models\RoomMember;
 use App\Models\SiteEvent;
 use App\Models\User;
@@ -223,7 +225,9 @@ class RoomController extends Controller
             'host' => $room->user->only('id', 'name', 'avatar') + ['primary_role' => $room->user->primary_role],
             'can' => array_fill_keys($can, true),
             'roles' => $room->roles()->get(['id', 'name', 'color', 'rank', 'permissions', 'builtin']),
+            'roleOrder' => array_map(fn (Role $role) => $role->value, Role::cases()),
             'members' => $room->members()->pluck('room_role_id', 'user_id'),
+            'botMembers' => RoomBotPresence::activeMembers($room),
             'friendIds' => $user ? $this->friendIds($user) : [],
             'memberList' => in_array('manage_roles', $can, true)
                 ? $room->members()->with('user:id,name,avatar')->get()->map(fn ($m) => ['user_id' => $m->user_id, 'name' => $m->user->name, 'avatar' => $m->user->avatar, 'room_role_id' => $m->room_role_id])->values()
@@ -489,6 +493,9 @@ class RoomController extends Controller
         $recent = $room->messages()->where('user_id', $me->id)->where('type', 'user')->where('created_at', '>', now()->subSeconds(10))->exists();
         $message = $room->messages()->create($fields + ['user_id' => $me->id]);
         $recent || $me->addXp(2); // at most one XP award per 10s, so spamming earns nothing
+        if ($me->is_bot) {
+            RoomBotPresence::touchFor($room, $me);
+        }
         MessageSent::dispatch($message->load([ChatMessage::WITH_USER, 'replyTo.user']));
 
         return response()->noContent();

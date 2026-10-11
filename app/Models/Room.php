@@ -364,7 +364,7 @@ class Room extends Model
     /** State sent to clients: what plays now, seconds already elapsed, and the queue. */
     public function playback(): array
     {
-        $models = $this->items()->with('user:id,name,avatar,cosmetics,roles,xp,is_bot,plan,plan_until')->get();
+        $models = $this->items()->with('user:id,name,avatar,character,cosmetics,roles,xp,is_bot,plan,plan_until')->get();
         $items = $models->map(fn (PlaylistItem $i) => [
             'id' => $i->id,
             'user_id' => $i->user_id,
@@ -378,7 +378,7 @@ class Room extends Model
         $current = $items->firstWhere('id', $this->current_item_id);
         if ($current) {
             $dj = $models->firstWhere('id', $this->current_item_id)->user;
-            $current['dj'] = ['id' => $dj->id, 'name' => $dj->name, 'avatar' => $dj->avatar, 'cosmetics' => $dj->cosmetics, 'role' => $dj->primary_role, 'badges' => $dj->badges, 'level' => $dj->level];
+            $current['dj'] = ['id' => $dj->id, 'name' => $dj->name, 'avatar' => $dj->avatar, 'character' => $dj->character, 'cosmetics' => $dj->cosmetics, 'role' => $dj->primary_role, 'badges' => $dj->badges, 'level' => $dj->level];
         }
 
         return [

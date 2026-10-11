@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApiController;
+use App\Http\Controllers\BotPresenceController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\RoomModerationController;
 use App\Http\Controllers\RoomRoleController;
@@ -24,6 +25,8 @@ Route::prefix('v1')->name('api.v1.')->middleware([BlockBannedIps::class, 'auth:s
     Route::get('/rooms/{room}', [ApiController::class, 'room'])->name('room');
     Route::get('/rooms/{room}/messages', [ApiController::class, 'messages'])->name('messages');
     Route::get('/rooms/{room}/members', [ApiController::class, 'members'])->name('members');
+    Route::post('/rooms/{room}/presence', [BotPresenceController::class, 'join'])->name('presence.join');
+    Route::delete('/rooms/{room}/presence', [BotPresenceController::class, 'leave'])->name('presence.leave');
 
     Route::post('/rooms/{room}/messages', [RoomController::class, 'message'])->middleware('throttle:60,1')->name('messages.send');
     Route::delete('/rooms/{room}/messages', [RoomController::class, 'clearChat'])->name('messages.clear');

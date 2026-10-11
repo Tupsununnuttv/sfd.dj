@@ -181,7 +181,8 @@ class ProfileRoomExtrasTest extends TestCase
         $me = User::factory()->create(['country' => 'ee', 'status' => 'busy']);
         $info = $me->presenceInfo();
 
-        $this->assertSame(['id', 'name', 'avatar', 'cosmetics', 'role', 'badges', 'level', 'flag', 'status'], array_keys($info));
+        $this->assertSame(['id', 'name', 'username', 'avatar', 'character', 'cosmetics', 'role', 'badges', 'level', 'flag', 'status'], array_keys($info));
+        $this->assertSame('char:foxy', $info['character']);
         $this->assertSame('ee', $info['flag']['code']);
         $this->assertSame('busy', $info['status']);
         $this->assertSame('offline', User::factory()->create(['status' => 'offline'])->presenceInfo()['status']);

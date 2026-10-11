@@ -127,7 +127,7 @@ class CharacterTest extends TestCase
                 && $avatars->where('character', true)->count() === count(AvatarController::charactersFor(User::first()))));
     }
 
-    public function test_a_character_is_worn_like_any_avatar_by_level_and_fits_the_avatar_column(): void
+    public function test_a_character_is_worn_separately_from_the_profile_avatar(): void
     {
         foreach (array_keys(AvatarController::characters()) as $name) {
             $this->assertLessThanOrEqual(16, strlen("char:{$name}"), "char:{$name} does not fit users.avatar");
@@ -135,17 +135,17 @@ class CharacterTest extends TestCase
 
         $user = $this->atLevel(1);
         $this->actingAs($user)->post('/shop/equip', ['avatar' => 'char:foxy'])->assertSessionHasNoErrors();
-        $this->assertSame('char:foxy', $user->refresh()->avatar);
+        $this->assertSame('char:foxy', $user->refresh()->character);
 
         $this->actingAs($user)->post('/shop/equip', ['avatar' => 'char:robo'])->assertSessionHasErrors('avatar'); // level 10
         $this->actingAs($user)->post('/shop/outfit', ['avatar' => 'char:robo'])->assertSessionHasErrors('avatar');
         $this->actingAs($user)->post('/shop/equip', ['avatar' => 'char:nobody'])->assertSessionHasErrors('avatar');
-        $this->assertSame('char:foxy', $user->refresh()->avatar);
+        $this->assertSame('char:foxy', $user->refresh()->character);
 
         $staff = User::factory()->create();
         $staff->forceFill(['roles' => ['admin']])->save();
         $this->actingAs($staff)->post('/shop/outfit', ['avatar' => 'char:robo', 'frame' => 'gold'])->assertSessionHasNoErrors();
-        $this->assertSame('char:robo', $staff->refresh()->avatar);
+        $this->assertSame('char:robo', $staff->refresh()->character);
     }
 
     private function withRole(?string $role): User
@@ -245,7 +245,8 @@ class CharacterTest extends TestCase
         $this->assertSame('char:echo', $user->refresh()->avatar);
 
         $user->forceFill(['roles' => ['moderator']])->save();
-        $this->assertNull($user->refresh()->avatar);
+        $this->assertSame('char:foxy', $user->refresh()->character);
+        $this->assertSame('char:foxy', $user->refresh()->avatar);
 
         // an avatar for everybody is never touched
         $user->forceFill(['avatar' => 'char:foxy', 'roles' => null])->save();
@@ -260,6 +261,21 @@ class CharacterTest extends TestCase
             $this->assertStringContainsString("'{$state}'", $source);
         }
         $this->assertStringContainsString("route('characters.show'", $source);
+        $this->assertStringContainsString('characterOf(user.character) ?? characterOf(user.avatar) ?? DEFAULT_CHARACTER', file_get_contents(resource_path('js/Components/RoomScene.tsx')));
+        $avatar = file_get_contents(resource_path('js/Components/Avatar.tsx'));
+        $this->assertStringContainsString('!avatar || photo ? DEFAULT_CHARACTER : null', $avatar);
+        $this->assertStringContainsString('onError={() => setFailedPhoto(photo)}', $avatar);
+    }
+
+    public function test_every_user_has_a_full_body_character_separate_from_the_profile_picture(): void
+    {
+        $plain = User::factory()->create();
+        $withPhoto = User::factory()->create(['avatar' => 'img:profile.webp']);
+
+        $this->assertSame('char:foxy', $plain->character);
+        $this->assertSame('char:foxy', $withPhoto->character);
+        $this->assertSame('img:profile.webp', $withPhoto->avatar);
+        $this->assertSame('char:foxy', $withPhoto->presenceInfo()['character']);
     }
 
     public function test_everybody_who_wooted_or_grabbed_the_song_dances_and_the_rest_stand(): void

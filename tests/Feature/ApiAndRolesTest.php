@@ -2,11 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Enums\Role;
+use App\Events\RoomBotPresenceChanged;
 use App\Models\Room;
 use App\Models\RoomBan;
+use App\Models\RoomBotPresence;
+use App\Models\Setting;
 use App\Models\SitePermission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -67,6 +72,24 @@ class ApiAndRolesTest extends TestCase
         $this->assertTrue($promoter->refresh()->hasPermission('events.manage'));
     }
 
+    public function test_room_and_admin_role_options_share_the_strict_authority_order(): void
+    {
+        $expected = [
+            'owner', 'developer', 'admin', 'lead_moderator', 'brand_ambassador',
+            'site_moderator', 'moderator', 'helper', 'promoter', 'translator',
+            'content_provider', 'music_producer', 'artist',
+            'partnership', 'vip', 'early_supporter', 'beta_tester', 'supporter', 'member',
+        ];
+        $this->assertSame($expected, array_map(fn (Role $role) => $role->value, Role::cases()));
+
+        $owner = $this->userWith('owner');
+        $room = $owner->rooms()->create(['name' => 'Ordered', 'slug' => 'ordered-room']);
+        $this->actingAs($owner)->get("/rooms/{$room->slug}")->assertInertia(fn (Assert $page) => $page->where('roleOrder', $expected));
+        $this->actingAs($owner)->get('/admin')->assertInertia(fn (Assert $page) => $page
+            ->where('roleOptions.5.key', 'site_moderator')
+            ->where('roleOptions.6.key', 'moderator'));
+    }
+
     public function test_community_page_is_for_everyone_and_editing_needs_community_manage(): void
     {
         $admin = $this->userWith('admin')->refresh();
@@ -84,6 +107,7 @@ class ApiAndRolesTest extends TestCase
 
         $this->assertTrue($bot->is_bot);
         $this->assertSame($owner->id, $bot->bot_owner_id);
+        $this->assertSame('char:robo', $bot->character);
         $this->assertStringContainsString('bot', $bot->username);
         $this->assertSame('bot', collect($bot->badges)->pluck('key')->last());
 
@@ -138,6 +162,11 @@ class ApiAndRolesTest extends TestCase
         $this->withToken($token)->getJson('/api/v1/rooms/lobby-1')->assertOk()->assertJsonPath('playback.current', null)->assertJsonPath('permissions', []);
 
         $this->withToken($token)->postJson('/api/v1/rooms/lobby-1/messages', ['body' => 'Hello, I am a bot'])->assertNoContent();
+        $this->assertDatabaseHas('room_bot_presences', ['room_id' => $room->id, 'user_id' => $bot->id]);
+        $this->actingAs($host)->get('/rooms/lobby-1')->assertInertia(fn (Assert $page) => $page
+            ->where('botMembers.0.id', $bot->id)
+            ->where('botMembers.0.character', 'char:robo'));
+        $this->app['auth']->forgetGuards();
         $messages = $this->withToken($token)->getJson('/api/v1/rooms/lobby-1/messages')->assertOk()->assertJsonPath('0.body', 'Hello, I am a bot')->assertJsonPath('0.user_id', $bot->id)->json();
         $this->assertSame('bot', collect($messages[0]['badges'])->pluck('key')->last());
 
@@ -159,6 +188,33 @@ class ApiAndRolesTest extends TestCase
         $this->withToken($token)->getJson('/api/v1/rooms/lobby-1')->assertJsonPath('permissions.0', fn ($p) => is_string($p));
         $this->withToken($token)->postJson("/api/v1/rooms/lobby-1/mute/{$troll->id}", ['for' => '10m'])->assertNoContent();
         $this->withToken($token)->getJson('/api/v1/rooms/lobby-1/members')->assertOk()->assertJsonPath('members.0.user_id', $bot->id);
+    }
+
+    public function test_bots_can_heartbeat_and_leave_visual_room_presence(): void
+    {
+        Event::fake([RoomBotPresenceChanged::class]);
+        $host = User::factory()->create();
+        $room = $host->rooms()->create(['name' => 'Lobby', 'slug' => 'lobby-1']);
+        [$bot, $token] = $this->makeBot($host);
+
+        $this->withToken($token)->postJson('/api/v1/rooms/lobby-1/presence')->assertOk()->assertJsonPath('online', true)->assertJsonPath('expires_in', RoomBotPresence::TTL_SECONDS);
+        $this->assertDatabaseHas('room_bot_presences', ['room_id' => $room->id, 'user_id' => $bot->id]);
+        Event::assertDispatched(RoomBotPresenceChanged::class, fn (RoomBotPresenceChanged $event) => $event->online && $event->member['id'] === $bot->id);
+
+        $this->travel(31)->seconds();
+        $this->withToken($token)->postJson('/api/v1/rooms/lobby-1/presence')->assertOk();
+        Event::assertDispatchedTimes(RoomBotPresenceChanged::class, 2);
+        $this->travel(91)->seconds();
+        $this->assertCount(0, RoomBotPresence::activeMembers($room));
+
+        $this->withToken($token)->deleteJson('/api/v1/rooms/lobby-1/presence')->assertNoContent();
+        $this->assertDatabaseMissing('room_bot_presences', ['room_id' => $room->id, 'user_id' => $bot->id]);
+        Event::assertDispatched(RoomBotPresenceChanged::class, fn (RoomBotPresenceChanged $event) => ! $event->online && $event->member['id'] === $bot->id);
+
+        $human = User::factory()->create();
+        $humanToken = $human->createToken('human')->plainTextToken;
+        $this->app['auth']->forgetGuards();
+        $this->withToken($humanToken)->postJson('/api/v1/rooms/lobby-1/presence')->assertForbidden();
     }
 
     public function test_private_rooms_are_hidden_and_banned_users_are_shut_out_everywhere(): void
@@ -186,7 +242,7 @@ class ApiAndRolesTest extends TestCase
     {
         $guy = User::factory()->create();
         $token = $guy->createToken('t')->plainTextToken;
-        \App\Models\Setting::put('maintenance', '1');
+        Setting::put('maintenance', '1');
 
         $this->withToken($token)->getJson('/api/v1/me')->assertStatus(503)->assertJsonPath('message', 'SFD.DJ is in maintenance mode.');
     }

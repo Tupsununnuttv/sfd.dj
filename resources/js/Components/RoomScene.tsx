@@ -2,7 +2,7 @@ import Avatar from '@/Components/Avatar';
 import SceneBackdrop from '@/Components/scene/Backdrop';
 import { BoothFront, DjBody } from '@/Components/scene/DjBooth';
 import Snow from '@/Components/scene/Snow';
-import { CHARACTER_RATIO, characterOf, characterUrl } from '@/lib/characters';
+import { CHARACTER_RATIO, characterOf, characterUrl, DEFAULT_CHARACTER } from '@/lib/characters';
 import { Cosmetics } from '@/lib/cosmetics';
 import { crowdSlots, paletteOf, SCENE } from '@/lib/scenes';
 import { RoleInfo } from '@/types';
@@ -12,6 +12,7 @@ export interface Dancer {
     id: number;
     name: string;
     avatar: string | null;
+    character?: string | null;
     cosmetics?: Cosmetics | null;
     role: RoleInfo;
     badges?: RoleInfo[];
@@ -68,10 +69,11 @@ export default function RoomScene({ background, image = null, users, dj, dancing
     const half = SCENE.crowdSize / 2;
     const crowdW = people.crowd * CHARACTER_RATIO;
     const djW = people.dj * CHARACTER_RATIO;
-    const djPerson = dj ? characterOf(dj.avatar) : null;
+    const personOf = (user: Dancer) => characterOf(user.character) ?? characterOf(user.avatar) ?? DEFAULT_CHARACTER;
+    const djPerson = dj ? personOf(dj) : null;
 
     // The pictures for dancing and for the stage load before anybody needs them, so a press on Woot changes the pose at once.
-    const names = [...new Set([...users, ...(dj ? [dj] : [])].map((u) => characterOf(u.avatar)).filter((n): n is string => !!n))].sort().join(',');
+    const names = [...new Set([...users, ...(dj ? [dj] : [])].map(personOf))].sort().join(',');
     useEffect(() => {
         for (const name of names ? names.split(',') : []) for (const state of ['dancing', 'djing'] as const) new Image().src = characterUrl(name, state);
     }, [names]);
@@ -127,7 +129,7 @@ export default function RoomScene({ background, image = null, users, dj, dancing
 
                 {/* the crowd: nearer the front, drawn later. Everybody stands until they press Woot or Grab. */}
                 {placed.map(({ u, x, y }) => {
-                    const person = characterOf(u.avatar);
+                    const person = personOf(u);
                     const moving = playing && dancing.has(u.id);
 
                     return (

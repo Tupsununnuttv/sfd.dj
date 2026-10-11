@@ -184,14 +184,15 @@ class PlaylistsAndChatTest extends TestCase
         $this->app['auth']->forgetGuards();
         $this->get(parse_url($url, PHP_URL_PATH))->assertOk(); // guests watching a public room may see pictures (random file names)
 
-        // profile photo replaces the avatar, and an avatar from the shop replaces the photo again
+        // the profile photo and full-body character are stored independently
         $this->actingAs($host)->post('/profile/photo', ['photo' => $this->png('me.png')])->assertRedirect();
         $this->assertStringStartsWith('img:', $host->refresh()->avatar);
         $file = substr($host->avatar, 4);
         Storage::disk('local')->assertExists("avatars/{$file}");
         $this->actingAs($host)->post('/shop/equip', ['avatar' => 'char:foxy']);
-        Storage::disk('local')->assertMissing("avatars/{$file}");
-        $this->assertSame('char:foxy', $host->refresh()->avatar);
+        Storage::disk('local')->assertExists("avatars/{$file}");
+        $this->assertSame('img:'.$file, $host->refresh()->avatar);
+        $this->assertSame('char:foxy', $host->refresh()->character);
 
         // only avatars from the shop list can be equipped (not someone else's photo name)
         $this->actingAs($host)->post('/shop/equip', ['avatar' => 'img:'.$file])->assertSessionHasErrors('avatar');

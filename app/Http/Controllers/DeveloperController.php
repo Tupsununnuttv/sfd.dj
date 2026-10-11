@@ -48,7 +48,7 @@ class DeveloperController extends Controller
         } while (User::whereRaw('lower(username) = ?', [$username])->exists());
 
         $bot = new User(['name' => $name, 'username' => $username, 'email' => $username.'@bots.invalid', 'password' => Str::random(48)]);
-        $bot->forceFill(['is_bot' => true, 'bot_owner_id' => $me->id, 'email_verified_at' => now()])->save();
+        $bot->forceFill(['is_bot' => true, 'bot_owner_id' => $me->id, 'character' => 'char:robo', 'email_verified_at' => now()])->save();
 
         return back()->with('new_token', ['for' => $bot->name, 'token' => $bot->createToken('first token')->plainTextToken]);
     }

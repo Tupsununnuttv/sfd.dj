@@ -261,7 +261,7 @@ class AvatarController extends Controller
             throw ValidationException::withMessages([$field ?? $slot => $need === Role::Owner ? 'Only the Owner can wear that.' : "Only {$need->label()} and above can wear that."]);
         }
 
-        if ($key === null || self::owns($user, $slot, $key) || ($slot === 'avatar' ? $user->avatar : ($user->cosmetics[$slot] ?? null)) === $key) {
+        if ($key === null || self::owns($user, $slot, $key) || ($slot === 'avatar' ? $user->character : ($user->cosmetics[$slot] ?? null)) === $key) {
             return;
         }
 
@@ -353,9 +353,8 @@ class AvatarController extends Controller
             }
         }
 
-        if (array_key_exists('avatar', $data) && $data['avatar'] !== $user->avatar) {
-            $user->clearAvatarImage(); // an emoji replaces an uploaded photo
-            $user->avatar = $data['avatar'];
+        if (array_key_exists('avatar', $data) && $data['avatar'] !== $user->character) {
+            $user->character = $data['avatar'];
         }
 
         $worn = $user->cosmetics ?? [];
@@ -424,15 +423,14 @@ class AvatarController extends Controller
         abort(404);
     }
 
-    /** Pick a character. This replaces an uploaded photo. */
+    /** Pick a full-body character without replacing the user's profile photo. */
     public function equip(Request $request): RedirectResponse
     {
         $data = $request->validate(['avatar' => ['required', Rule::in(self::avatarKeys())]]);
 
         $user = $request->user();
         $this->ensureOwned($user, 'avatar', $data['avatar']);
-        $user->clearAvatarImage();
-        $user->update($data);
+        $user->update(['character' => $data['avatar']]);
         $user->announce();
 
         return back();
@@ -453,12 +451,12 @@ class AvatarController extends Controller
         return back();
     }
 
-    /** Take the photo away: they are a character again (one of the free ones), not a letter in a circle. */
+    /** Take the photo away and show the user's currently selected character in the profile frame. */
     public function remove(Request $request): RedirectResponse
     {
         $user = $request->user();
         $user->clearAvatarImage();
-        $user->update(['avatar' => self::starterCharacter()]);
+        $user->update(['avatar' => $user->character ?? self::starterCharacter() ?? 'char:foxy']);
         $user->announce();
 
         return back();

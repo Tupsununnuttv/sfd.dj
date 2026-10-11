@@ -241,7 +241,7 @@ const sections: Section[] = [
                     ]}
                 />
                 <H>2. Call the API</H>
-                <P>Base address: <K>{`${origin()}/api/v1`}</K>. Send <K>Authorization: Bearer YOUR_TOKEN</K> and <K>Accept: application/json</K>. A room is addressed by its slug (the last part of its web address). Limits: 120 requests a minute per token, chat 60, whispers 30.</P>
+                <P>Base address: <K>{`${origin()}/api/v1`}</K>. Send <K>Authorization: Bearer YOUR_TOKEN</K> and <K>Accept: application/json</K>. A room is addressed by its slug (the last part of its web address). Posting a chat message makes a bot visible in the room automatically; for a quiet bot, heartbeat every 30 seconds and leave when it disconnects. Limits: 120 requests a minute per token, chat 60, whispers 30.</P>
                 <Code>{`curl ${origin()}/api/v1/rooms/my-room/messages \\
   -H "Authorization: Bearer YOUR_TOKEN" -H "Accept: application/json"
 
@@ -258,6 +258,8 @@ curl -X POST ${origin()}/api/v1/rooms/my-room/messages \\
                                 ['GET', '/rooms', 'Rooms you may see, with listeners and queue length'],
                                 ['GET', '/rooms/{room}', 'Settings, what is playing, waitlist, votes, your permissions'],
                                 ['GET', '/rooms/{room}/members', 'Room roles and who holds them'],
+                                ['POST', '/rooms/{room}/presence', 'Join or refresh a bot presence lease (expires after 90 seconds)'],
+                                ['DELETE', '/rooms/{room}/presence', 'Leave the visual room'],
                                 ['GET', '/rooms/{room}/messages?after=ID&limit=50', 'Chat history; after= returns only newer messages'],
                                 ['POST', '/rooms/{room}/messages', 'body, optional reply_to_id'],
                                 ['DELETE', '/rooms/{room}/messages/{id}', 'Delete a message (yours, or any with chat moderation)'],

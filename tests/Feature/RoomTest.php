@@ -88,7 +88,7 @@ class RoomTest extends TestCase
         Event::assertDispatched(ChatCleared::class);
 
         $this->actingAs($guest)->post('/shop/equip', ['avatar' => 'char:foxy']);
-        $this->assertSame('char:foxy', $guest->refresh()->avatar);
+        $this->assertSame('char:foxy', $guest->refresh()->character);
         $this->actingAs($guest)->post('/shop/equip', ['avatar' => '💩'])->assertSessionHasErrors('avatar');
         $this->actingAs($guest)->post('/shop/equip', ['avatar' => '🎧'])->assertSessionHasErrors('avatar'); // the plain emoji are not in the shop any more
     }

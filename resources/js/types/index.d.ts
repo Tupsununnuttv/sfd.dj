@@ -24,6 +24,7 @@ export interface User {
     email: string;
     email_verified_at?: string;
     avatar: string | null;
+    character: string | null;
     bio: string | null;
     favorite_genre: string | null;
     flag: FlagInfo | null;

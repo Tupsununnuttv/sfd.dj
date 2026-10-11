@@ -14,8 +14,8 @@ enum Role: string
     case Admin = 'admin';
     case LeadModerator = 'lead_moderator';
     case BrandAmbassador = 'brand_ambassador';
-    case Moderator = 'moderator';
     case SiteModerator = 'site_moderator';
+    case Moderator = 'moderator';
     case Helper = 'helper';
     case Promoter = 'promoter';
     case Translator = 'translator';

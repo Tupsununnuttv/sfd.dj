@@ -42,6 +42,7 @@ class RoomSceneTest extends TestCase
             ->where('playback.current.dj.id', $host->id)
             ->where('playback.current.dj.name', $host->name)
             ->where('playback.current.dj.avatar', '🎧')
+            ->where('playback.current.dj.character', $host->character)
             ->where('playback.current.dj.cosmetics', ['frame' => 'gold'])
             ->where('playback.current.dj.level', 3)
             ->where('playback.current.dj.role.label', 'VIP')

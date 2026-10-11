@@ -48,7 +48,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
     const level = user.level;
     const staff = user.is_staff;
 
-    const saved: Look = { avatar: user.avatar, badge: user.cosmetics?.badge ?? null, accessory: user.cosmetics?.accessory ?? null, frame: user.cosmetics?.frame ?? null, effect: user.cosmetics?.effect ?? null };
+    const saved: Look = { avatar: user.character ?? user.avatar, badge: user.cosmetics?.badge ?? null, accessory: user.cosmetics?.accessory ?? null, frame: user.cosmetics?.frame ?? null, effect: user.cosmetics?.effect ?? null };
     const [draft, setDraft] = useState<Look>(saved); // what is being tried on; only Save makes it real
     const [tab, setTab] = useState<Slot>('avatar');
     const [show, setShow] = useState<'all' | 'owned' | 'sale' | 'locked'>('all');

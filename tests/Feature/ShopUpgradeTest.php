@@ -253,7 +253,7 @@ class ShopUpgradeTest extends TestCase
         $this->assertSame(['badge' => 'rookie'], $user->refresh()->cosmetics);
     }
 
-    public function test_a_photo_is_only_replaced_when_a_new_avatar_is_picked(): void
+    public function test_a_character_change_does_not_replace_a_profile_photo(): void
     {
         $user = $this->atLevel(1);
         $user->forceFill(['avatar' => 'img:me.webp'])->save();
@@ -263,7 +263,8 @@ class ShopUpgradeTest extends TestCase
         $this->assertSame('img:me.webp', $user->refresh()->avatar);
 
         $this->actingAs($user)->post('/shop/outfit', ['avatar' => 'char:foxy'])->assertSessionHasNoErrors();
-        $this->assertSame('char:foxy', $user->refresh()->avatar);
+        $this->assertSame('img:me.webp', $user->refresh()->avatar);
+        $this->assertSame('char:foxy', $user->refresh()->character);
     }
 
     public function test_guests_cannot_save_an_outfit(): void
@@ -292,17 +293,17 @@ class ShopUpgradeTest extends TestCase
         $this->actingAs($user)->post('/shop/equip', ['avatar' => 'char:bun'])->assertSessionHasErrors('avatar'); // has to be bought first
         $this->actingAs($user)->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:bun']]])->assertSessionHasNoErrors();
         $this->actingAs($user)->post('/shop/equip', ['avatar' => 'char:bun'])->assertSessionHasNoErrors();
-        $this->assertSame('char:bun', $user->refresh()->avatar);
+        $this->assertSame('char:bun', $user->refresh()->character);
         $this->actingAs($user)->post('/shop/outfit', ['avatar' => 'char:panda'])->assertSessionHasErrors('avatar');
         $this->actingAs($user)->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:panda']]])->assertSessionHasErrors('items.0.key'); // level 5
 
         $staff = User::factory()->create();
         $staff->forceFill(['roles' => ['admin']])->save();
         $this->actingAs($staff)->post('/shop/outfit', ['avatar' => 'char:robo', 'frame' => 'prism'])->assertSessionHasNoErrors();
-        $this->assertSame('char:robo', $staff->refresh()->avatar);
+        $this->assertSame('char:robo', $staff->refresh()->character);
     }
 
-    public function test_a_character_replaces_an_uploaded_photo_and_the_photo_file_goes(): void
+    public function test_a_character_change_preserves_the_uploaded_photo_file(): void
     {
         Storage::fake('local');
         $user = $this->atLevel(5);
@@ -312,8 +313,9 @@ class ShopUpgradeTest extends TestCase
 
         $this->actingAs($user)->post('/shop/outfit', ['avatar' => 'char:panda'])->assertSessionHasNoErrors();
 
-        $this->assertSame('char:panda', $user->refresh()->avatar);
-        Storage::disk('local')->assertMissing('avatars/aaaaaaaaaaaaaaaaaaaaaaaa.gif');
+        $this->assertSame('img:aaaaaaaaaaaaaaaaaaaaaaaa.gif', $user->refresh()->avatar);
+        $this->assertSame('char:panda', $user->refresh()->character);
+        Storage::disk('local')->assertExists('avatars/aaaaaaaaaaaaaaaaaaaaaaaa.gif');
     }
 
     public function test_an_animated_gif_can_be_the_profile_photo_but_not_a_huge_one(): void

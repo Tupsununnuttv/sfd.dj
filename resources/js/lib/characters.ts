@@ -5,6 +5,7 @@ import { alwaysAnimate } from '@/lib/motion';
  * They are stored as "char:<name>" in users.avatar. Everybody stands until they press Woot or Grab; the DJ dances on the stage.
  */
 export type CharacterState = 'standing' | 'dancing' | 'djing';
+export const DEFAULT_CHARACTER = 'foxy';
 
 /** The pictures are 200 x 276 with the feet at the bottom, so a box of this shape (height first) fits one. */
 export const CHARACTER_RATIO = 200 / 276;

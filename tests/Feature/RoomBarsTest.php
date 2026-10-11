@@ -33,6 +33,18 @@ class RoomBarsTest extends TestCase
         }
     }
 
+    public function test_room_user_rows_use_authority_weights_username_ties_and_put_bots_last(): void
+    {
+        $room = $this->source('Pages/Room.tsx');
+        $sort = $this->source('lib/roomUserSort.ts');
+
+        $this->assertStringContainsString('sortRoomUsersByWeight(users, roleOrder)', $room);
+        $this->assertStringContainsString("label: 'API Bots'", $room);
+        $this->assertStringContainsString('if (user.is_bot) return roleOrder.length + 1;', $sort);
+        $this->assertStringContainsString('roleOrder.indexOf(key)', $sort);
+        $this->assertStringContainsString('localeCompare(b.username ?? b.name', $sort);
+    }
+
     public function test_the_top_bar_keeps_everything_it_had_and_gains_the_way_out_and_the_name_of_the_room(): void
     {
         $bar = $this->source('Components/RoomHeader.tsx');
@@ -121,6 +133,12 @@ class RoomBarsTest extends TestCase
         $this->assertStringContainsString("['pointerup', 'keydown', 'touchend']", $room);
         $this->assertStringContainsString('player.current?.unMute?.();', $room);
         $this->assertStringContainsString('Tap to start playback with sound', $room);
+        $this->assertStringContainsString('SYNC_THRESHOLD_SECONDS = 8', $room);
+        $this->assertStringContainsString('SYNC_COOLDOWN_MS = 15_000', $room);
+        $this->assertStringContainsString('activePlayer.seekTo?.(target, true)', $room);
+        $this->assertStringNotContainsString('title="Add friend"', $room);
+        $this->assertStringNotContainsString('addFriend(', $room);
+        $this->assertStringContainsString('min-w-0 max-w-full flex-1 truncate leading-5', $room);
         $this->assertStringNotContainsString('auto_join', $this->source('Pages/Settings/Audio.tsx'));
     }
 }

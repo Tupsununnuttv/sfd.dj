@@ -28,7 +28,7 @@ use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Throwable;
 
-#[Fillable(['name', 'username', 'email', 'password', 'avatar', 'cosmetics', 'bio', 'favorite_genre', 'country', 'pronouns', 'status'])]
+#[Fillable(['name', 'username', 'email', 'password', 'avatar', 'character', 'cosmetics', 'bio', 'favorite_genre', 'country', 'pronouns', 'status'])]
 #[Hidden(['discord_id', 'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'referral_code', 'referred_by', 'coins', 'daily_coins_on', 'stripe_customer_id', 'stripe_subscription_id'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -63,6 +63,9 @@ class User extends Authenticatable implements MustVerifyEmail
             } while (static::where('referral_code', $code)->exists());
 
             $user->referral_code ??= $code;
+            $user->character ??= str_starts_with((string) $user->avatar, 'char:')
+                ? $user->avatar
+                : (AvatarController::starterCharacter() ?? 'char:foxy');
         });
 
         static::deleting(fn (User $user) => $user->clearAvatarImage()); // the account goes, its photo too
@@ -73,8 +76,16 @@ class User extends Authenticatable implements MustVerifyEmail
                 $user->xp = self::XP_FOR_MAX_LEVEL;
             }
 
-            if ($user->isDirty('roles') && ($need = AvatarController::roleNeeded((string) $user->avatar)) && ! AvatarController::holds($user, $need)) {
-                $user->avatar = null;
+            if ($user->isDirty('avatar') && str_starts_with((string) $user->avatar, 'char:') && ! $user->isDirty('character')) {
+                $user->character = $user->avatar;
+            }
+
+            if ($user->isDirty('roles') && ($need = AvatarController::roleNeeded((string) $user->character)) && ! AvatarController::holds($user, $need)) {
+                $user->character = AvatarController::starterCharacter() ?? 'char:foxy';
+            }
+
+            if ($user->isDirty('character') && ! str_starts_with((string) $user->avatar, 'img:')) {
+                $user->avatar = $user->character;
             }
         });
     }
@@ -267,7 +278,9 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'username' => $this->username,
             'avatar' => $this->avatar,
+            'character' => $this->character,
             'cosmetics' => $this->cosmetics,
             'role' => $this->primary_role,
             'badges' => $this->badges,
