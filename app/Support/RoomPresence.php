@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\Room;
+use App\Models\User;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Cache;
 
@@ -38,6 +40,26 @@ class RoomPresence
     public static function roomsOf(int $userId): array
     {
         return self::locations()[$userId] ?? [];
+    }
+
+    /** The privacy-visible participants in one room, for guests watching its public view. */
+    public static function membersIn(Room $room): array
+    {
+        $ids = Cache::remember('room_presence_members:'.$room->id, 5, function () use ($room): array {
+            try {
+                $response = Broadcast::connection()->getPusher()->get("/channels/presence-room.{$room->id}/users", [], true);
+
+                return collect($response['users'] ?? [])->pluck('id')->map(fn ($id) => (int) $id)->all();
+            } catch (\Throwable) {
+                return [];
+            }
+        });
+
+        return User::query()->whereKey($ids)->get()
+            ->filter(fn (User $user) => $user->shownStatus() !== 'offline')
+            ->map(fn (User $user) => $user->presenceInfo())
+            ->values()
+            ->all();
     }
 
     /** Live listener count per room id, read from Reverb. Empty when Reverb is unreachable. */

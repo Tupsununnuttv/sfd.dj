@@ -1,18 +1,13 @@
 {
     "$schema": "https://www.schemastore.org/package.json",
     "private": true,
-    "workspaces": [
-        "apps/api"
-    ],
     "engines": {
         "node": "24.x"
     },
     "type": "module",
     "scripts": {
-        "build": "npm run build --workspace @sfddj/api && tsc && vite build --config vite.vercel.config.js",
-        "dev": "vite",
-        "dev:api": "npm run dev --workspace @sfddj/api",
-        "test:api": "npm run test --workspace @sfddj/api"
+        "build": "tsc && vite build",
+        "dev": "vite"
     },
     "devDependencies": {
         "@headlessui/react": "^2.0.0",
@@ -34,15 +29,11 @@
         "typescript": "^5.0.2",
         "vite": "^8.0.0"
     },
-    "optionalDependencies": {
-        "@laravel/multiplex": "^0.4.1"
-    },
     "dependencies": {
         "@laravel/echo-react": "^2.5.0",
         "laravel-echo": "^2.5.0",
         "lucide-react": "^1.52.0",
         "node": "^26.11.1",
-        "nodemon": "^3.1.14",
         "pusher-js": "^8.6.0",
         "qrcode": "^1.5.4"
     }

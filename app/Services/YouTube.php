@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -10,6 +12,8 @@ use Illuminate\Support\Str;
 class YouTube
 {
     private const API = 'https://www.googleapis.com/youtube/v3';
+
+    public function __construct(private YouTubeAccount $account) {}
 
     public function hasKey(): bool
     {
@@ -136,9 +140,10 @@ class YouTube
      *
      * @return array<int, array{id: string, title: string, channel: string|null, thumbnail: string, duration: int}>|null null = unavailable
      */
-    public function playlist(string $playlistId, int $max = 1000): ?array
+    public function playlist(string $playlistId, int $max = 1000, ?User $user = null): ?array
     {
-        if (! $this->hasKey()) {
+        $accessToken = $user && filled($user->youtube_refresh_token) ? $this->account->accessToken($user) : null;
+        if (! $accessToken && ! $this->hasKey()) {
             return null;
         }
 
@@ -151,14 +156,13 @@ class YouTube
                     'part' => 'contentDetails',
                     'playlistId' => $playlistId,
                     'maxResults' => min($max - count($ids), 50),
-                    'key' => config('services.youtube.key'),
                 ];
                 if ($pageToken) {
                     $parameters['pageToken'] = $pageToken;
                 }
 
-                $page = Http::timeout(6)->get(self::API.'/playlistItems', $parameters);
-                if (! $page->successful()) {
+                $page = $this->playlistRequest('playlistItems', $parameters, $user, $accessToken);
+                if (! $page) {
                     return null;
                 }
 
@@ -175,12 +179,11 @@ class YouTube
 
             $videos = collect();
             foreach (array_chunk($ids, 50) as $batch) {
-                $response = Http::timeout(6)->get(self::API.'/videos', [
+                $response = $this->playlistRequest('videos', [
                     'part' => 'snippet,contentDetails,status',
                     'id' => implode(',', $batch),
-                    'key' => config('services.youtube.key'),
-                ]);
-                if (! $response->successful()) {
+                ], $user, $accessToken);
+                if (! $response) {
                     return null;
                 }
                 $videos = $videos->concat($response->json('items', []));
@@ -205,6 +208,30 @@ class YouTube
                 'duration' => $this->seconds($video['contentDetails']['duration'] ?? ''),
             ];
         })->filter()->values()->all();
+    }
+
+    private function playlistRequest(string $resource, array $parameters, ?User $user, ?string &$accessToken): ?Response
+    {
+        if (! $accessToken) {
+            $parameters['key'] = config('services.youtube.key');
+        }
+
+        try {
+            $request = Http::timeout(6);
+            if ($accessToken) {
+                $request = $request->withToken($accessToken);
+            }
+
+            $response = $request->get(self::API.'/'.$resource, $parameters);
+            if ($response->status() === 401 && $user && $accessToken) {
+                $accessToken = $this->account->accessToken($user, true);
+                $response = Http::timeout(6)->withToken($accessToken)->get(self::API.'/'.$resource, $parameters);
+            }
+        } catch (ConnectionException) {
+            return null;
+        }
+
+        return $response->successful() ? $response : null;
     }
 
     /** ISO 8601 duration (PT3M33S) to seconds. Live streams ("P0D") give 0. */

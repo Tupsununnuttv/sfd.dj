@@ -15,6 +15,7 @@ import { FormEvent, MouseEvent, ReactNode, useEffect, useLayoutEffect, useRef, u
 
 export interface ChatMessageData {
     id: number;
+    created_at?: string;
     type: 'user' | 'system';
     kind: string | null;
     body: string;
@@ -420,6 +421,7 @@ export default function ChatPanel({
                     const rr = roomRoleOf(m.user_id);
                     const mine = m.user_id === userId;
                     const author = authorOf(m);
+                    const timestamp = m.created_at ? new Date(m.created_at) : null;
                     const openCard = (e: MouseEvent<HTMLElement>) => { e.stopPropagation(); hidePeek(); onUser(author, e.currentTarget.getBoundingClientRect()); };
                     const peekOn = { onMouseEnter: (e: MouseEvent<HTMLElement>) => showPeek(author, e.currentTarget), onMouseLeave: hidePeek };
                     const open = menu?.m.id === m.id;
@@ -441,6 +443,7 @@ export default function ChatPanel({
                                     {showBadges && <Badges badges={m.badges} level={m.level} />}
                                     <button onClick={openCard} {...peekOn} aria-label={`${m.user}: quick profile`} className="font-semibold hover:underline">{m.user}</button> <RoleBadge role={m.role} />
                                     {rr && <RoleBadge role={rr} />}
+                                    {timestamp && <time dateTime={m.created_at} title={timestamp.toLocaleString()} className="ml-1 font-normal text-neutral-500">{timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>}
                                 </p>
 
                                 {m.reply && (

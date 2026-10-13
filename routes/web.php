@@ -19,11 +19,13 @@ use App\Http\Controllers\RoomModerationController;
 use App\Http\Controllers\RoomRoleController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SiteController;
+use App\Http\Controllers\SpotifyController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\WhisperController;
+use App\Http\Controllers\YouTubeController;
 use App\Http\Middleware\EnsureRoomAccess;
 use App\Http\Middleware\VerifiedIfLoggedIn;
 use App\Support\Plans;
@@ -80,6 +82,7 @@ Route::get('/characters/{state}/{name}', [AvatarController::class, 'character'])
 Route::middleware(VerifiedIfLoggedIn::class)->group(function () {
     Route::get('/dashboard', [RoomController::class, 'index'])->name('dashboard');
     Route::get('/rooms/{room}', [RoomController::class, 'show'])->name('rooms.show');
+    Route::get('/rooms/{room}/members', [RoomController::class, 'members'])->middleware('throttle:60,1')->name('rooms.members');
     Route::get('/history', [RoomController::class, 'history'])->name('history');
     Route::get('/community', [CommunityController::class, 'index'])->name('community');
     Route::get('/users/{user}', [UserProfileController::class, 'show'])->name('users.show');
@@ -112,8 +115,12 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::get('/auth/discord', [DiscordController::class, 'connect'])->name('discord.connect');
     Route::get('/auth/discord/callback', [DiscordController::class, 'callback'])->name('discord.callback');
     Route::delete('/auth/discord', [DiscordController::class, 'disconnect'])->name('discord.disconnect');
-    Route::get('/auth/spotify', [PlaylistController::class, 'spotifyConnect'])->name('spotify.connect');
-    Route::get('/auth/spotify/callback', [PlaylistController::class, 'spotifyCallback'])->name('spotify.callback');
+    Route::get('/auth/spotify', [SpotifyController::class, 'connect'])->name('spotify.connect');
+    Route::get('/auth/spotify/callback', [SpotifyController::class, 'callback'])->name('spotify.callback');
+    Route::delete('/auth/spotify', [SpotifyController::class, 'disconnect'])->name('spotify.disconnect');
+    Route::get('/auth/youtube', [YouTubeController::class, 'connect'])->name('youtube.connect');
+    Route::get('/auth/youtube/callback', [YouTubeController::class, 'callback'])->name('youtube.callback');
+    Route::delete('/auth/youtube', [YouTubeController::class, 'disconnect'])->name('youtube.disconnect');
 
     Route::get('/whispers', [WhisperController::class, 'index'])->name('whispers');
     Route::get('/api/whispers', [WhisperController::class, 'conversations'])->name('api.whispers');
@@ -202,6 +209,7 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::put('/rooms/{room}/members/{user}', [RoomRoleController::class, 'assign'])->name('rooms.members.assign');
 
     Route::get('/settings/account', [SettingsController::class, 'account'])->name('settings.account');
+    Route::get('/settings/connections', [SettingsController::class, 'connections'])->name('settings.connections');
     Route::get('/settings/appearance', fn () => Inertia::render('Settings/Appearance'))->name('settings.appearance');
     Route::get('/settings/plus', [SubscriptionController::class, 'show'])->name('settings.plus');
     Route::post('/settings/plus/checkout', [SubscriptionController::class, 'checkout'])->middleware('throttle:10,1')->name('settings.plus.checkout');

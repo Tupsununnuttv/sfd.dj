@@ -21,7 +21,7 @@ import RoomScene from '@/Components/RoomScene';
 import VoteBar, { MyVotes, Votes } from '@/Components/VoteBar';
 import { SeatButton, WaitlistCard } from '@/Components/WaitlistCard';
 import { backgroundClass } from '@/lib/backgrounds';
-import { post, send, sendJson } from '@/lib/post';
+import { getJson, post, send, sendJson } from '@/lib/post';
 import { withDefaults } from '@/lib/prefs';
 import { PageProps, RoleInfo } from '@/types';
 import { roomUserWeight, sortRoomUsersByWeight } from '@/lib/roomUserSort';
@@ -397,7 +397,7 @@ export default function Room({
     // Presence channel: chat, playback, who is here, who is typing, role changes, kicks.
     useEffect(() => {
         if (guest) {
-            // Guests cannot join the presence channel; they watch the public viewing channel instead.
+            // Guests cannot join Presence, so poll only the privacy-filtered roster of a public room.
             const name = `room-view.${room.id}`;
             echo<'reverb'>()
                 .channel(name)
@@ -408,9 +408,18 @@ export default function Room({
                 .listen('.chat-cleared', () => setMessages([]))
                 .listen('.vote-cast', sayVote)
                 .listen('.room-updated', reloadRoom);
+            const refreshMembers = () => {
+                if (document.hidden) return;
+                getJson<Member[]>(route('rooms.members', room.slug))
+                    .then((list) => setUsers((current) => [...new Map([...list, ...current.filter((member) => member.is_bot)].map((member) => [member.id, member])).values()]))
+                    .catch(() => {});
+            };
+            void refreshMembers();
+            const timer = window.setInterval(refreshMembers, 15_000);
             say('join', `You are watching ${room.name} as a guest. Log in to chat, vote and play songs.`);
 
             return () => {
+                window.clearInterval(timer);
                 echo().leave(name);
             };
         }

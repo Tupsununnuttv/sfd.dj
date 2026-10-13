@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -103,6 +104,26 @@ class RoomBarsTest extends TestCase
         foreach (['My Playlists', 'Selected playlist', 'Drag tracks to define the play order', 'Set as active', 'Queue all', "route('api.playlists.order'", "route('api.playlists.shuffle'"] as $text) {
             $this->assertStringContainsString($text, $manager);
         }
+    }
+
+    public function test_guests_can_see_visible_public_room_characters_but_not_hidden_or_private_members(): void
+    {
+        $host = User::factory()->create();
+        $visible = User::factory()->create(['avatar' => 'char:foxy', 'character' => 'char:foxy']);
+        $hidden = User::factory()->create(['avatar' => 'char:panda', 'character' => 'char:panda']);
+        $hidden->forceFill(['preferences' => ['privacy' => ['show_online' => false]]])->save();
+        $publicRoom = $host->rooms()->create(['name' => 'Public', 'slug' => 'public-room']);
+        $privateRoom = $host->rooms()->create(['name' => 'Private', 'slug' => 'private-room', 'is_private' => true]);
+        Cache::put('room_presence_members:'.$publicRoom->id, [$visible->id, $hidden->id], 5);
+
+        $this->getJson("/rooms/{$publicRoom->slug}/members")
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.id', $visible->id)
+            ->assertJsonPath('0.character', 'char:foxy');
+        $this->getJson("/rooms/{$privateRoom->slug}/members")->assertForbidden();
+
+        Cache::forget('room_presence_members:'.$publicRoom->id);
     }
 
     public function test_the_home_page_names_the_partners(): void

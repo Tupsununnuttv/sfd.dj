@@ -15,7 +15,7 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
-    // where uploads (profile photos, chat images, room backgrounds and emojis) live: this computer, or Vercel Blob on the live site (UPLOADS_DISK=blob)
+    // Disk for user-uploaded media. Set UPLOADS_DISK to an attached cloud object-storage disk in production.
     'uploads' => env('UPLOADS_DISK', 'local'),
 
     /*
@@ -48,13 +48,6 @@ return [
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
-        ],
-
-        // Vercel Blob (App\Support\VercelBlob): the token comes with the Blob store of the Vercel project
-        'blob' => [
-            'driver' => 'vercel-blob',
-            'token' => env('BLOB_READ_WRITE_TOKEN'),
-            'throw' => true,
         ],
 
         's3' => [

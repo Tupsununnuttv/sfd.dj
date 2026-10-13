@@ -129,9 +129,12 @@ class GrabAndCharacterTest extends TestCase
 
         // a full list takes no more, but a song that is in it already is still a fine grab
         $now = now();
-        PlaylistSong::insert(array_map(fn ($i) => [
+        $rows = array_map(fn ($i) => [
             'playlist_id' => $list->id, 'youtube_id' => str_pad("f{$i}", 11, 'x'), 'title' => "Filler {$i}", 'duration' => 100, 'origin' => 'youtube', 'position' => $i, 'created_at' => $now, 'updated_at' => $now,
-        ], range(1, Playlist::MAX_SONGS)));
+        ], range(1, Playlist::MAX_SONGS));
+        foreach (array_chunk($rows, 500) as $batch) {
+            PlaylistSong::insert($batch);
+        }
         $this->grab($fan, $room->slug, ['item_id' => $song->id, 'playlist_id' => $list->id])->assertStatus(422)->assertJsonPath('errors.playlist_id.0', fn ($m) => str_contains($m, 'is full'));
         $this->assertSame(0, Vote::count());
         PlaylistSong::where('playlist_id', $list->id)->where('position', 1)->update(['youtube_id' => $song->youtube_id]);

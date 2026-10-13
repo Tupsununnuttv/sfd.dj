@@ -2,6 +2,7 @@ import Avatar from '@/Components/Avatar';
 import Badges from '@/Components/Badges';
 import Flag, { FlagInfo } from '@/Components/Flag';
 import RoleBadge from '@/Components/RoleBadge';
+import SocialIcon from '@/Components/SocialIcon';
 import StatusDot from '@/Components/StatusDot';
 import { ProgressBar } from '@/Components/ui';
 import { Cosmetics } from '@/lib/cosmetics';
@@ -41,6 +42,7 @@ export interface Profile {
     awards?: RoleInfo[];
     joined: string;
     discord: string | null;
+    youtube_channel: { title: string | null; url: string } | null;
     is_me: boolean;
     friendship: 'none' | 'friends' | 'sent' | 'received';
     stats: { xp: number; songs_played: number; woots: number; grabs: number; friends: number };
@@ -198,7 +200,7 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
                     <p className="px-4 pt-2 text-xs text-neutral-400">Could not load the profile. <button onClick={retry} className="font-semibold text-violet-300 hover:underline">Try again</button></p>
                 )}
                 {profile?.bio && <p className="mx-4 mt-3 line-clamp-4 whitespace-pre-line break-words rounded-xl bg-white/5 px-3 py-2 text-xs italic text-neutral-300">“{profile.bio}”</p>}
-                {joined && <p className="px-4 pt-2 text-[11px] text-neutral-500">Joined {joined}{profile?.discord && <> · Discord {profile.discord}</>}</p>}
+                {joined && <p className="flex flex-wrap items-center gap-2 px-4 pt-2 text-[11px] text-neutral-500">Joined {joined}{profile?.discord && <> · Discord {profile.discord}</>}{profile?.youtube_channel && <a href={profile.youtube_channel.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-red-300"><SocialIcon name="youtube" size={13} /> {profile.youtube_channel.title || 'YouTube channel'}</a>}</p>}
 
                 {/* what you can do */}
                 <div className="space-y-2 px-4 pb-4 pt-3">

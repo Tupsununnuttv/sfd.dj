@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Uploaded pictures (profile photos, chat images, room backgrounds, room emojis) live on the uploads disk and are reached through here, by their random file name:
- * on this computer the private local disk, on the live site Vercel Blob (config filesystems.uploads), where this sends the browser on to the file.
+ * on the configured uploads disk; local files are served by Laravel and remote disks redirect to their public URL.
  */
 class MediaController extends Controller
 {
@@ -66,7 +66,7 @@ class MediaController extends Controller
     {
         abort_unless(preg_match('/^[a-f0-9]{16,32}\.(png|jpe?g|webp|gif)$/', $file, $m), 404);
 
-        // on the live site the file is on Vercel Blob: send the browser there (a name is never reused, so the answer may be kept)
+        // Remote disks serve files directly, so redirect instead of proxying media through PHP.
         if (config('filesystems.disks.'.config('filesystems.uploads').'.driver') !== 'local') {
             return redirect()->away(self::disk()->url("{$dir}/{$file}"))->header('Cache-Control', 'public, max-age=604800');
         }

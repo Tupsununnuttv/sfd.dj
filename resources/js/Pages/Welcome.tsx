@@ -8,7 +8,7 @@ import { countdown, until, useNow } from '@/lib/time';
 import { useCountUp } from '@/lib/useCountUp';
 import { PageProps, RoleInfo } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowRight, Calendar, Check, ChevronDown, Code2, Heart, Sparkles, Trophy } from 'lucide-react';
+import { ArrowRight, Calendar, Check, ChevronDown, Code2, Heart, PlugZap, Sparkles, Trophy } from 'lucide-react';
 
 interface HomeRoom {
     id: number;
@@ -45,12 +45,14 @@ const badges: [string, string][] = [['Owner', '#f43f5e'], ['Admin', '#ef4444'], 
 const questions: [string, string][] = [
     ['Do I need an account?', 'Not to look around. As a guest you can open rooms, watch what is playing and read the chat. To chat, vote or DJ you need a free account.'],
     ['Where does the music come from?', 'Songs play through the official YouTube player. Paste a YouTube, SoundCloud or Spotify link and SFD.DJ finds the song for you.'],
-    ['Is it really free?', 'Yes. Rooms, chat, playlists, the avatar shop and the API cost nothing today. A paid Plus plan is planned and will be optional.'],
+    ['Is it really free?', 'Yes. Rooms, chat, playlists, the avatar shop and the API stay free. Plus and Premium are optional upgrades; nothing free becomes paid.'],
     ['Can I make my own room?', 'Yes. Pick a name and a genre, set the rules, give roles to friends, or make it private.'],
 ];
 
 /** The little picture on a partner's card: made for this page, not the partner's own logo. */
 function PartnerMark({ mark }: { mark: Partner['mark'] }) {
+    if (mark === 'plug') return <PlugZap size={28} className="text-emerald-300" />;
+
     return (
         <svg viewBox="0 0 48 48" width="28" height="28" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             {mark === 'aurora' && (

@@ -69,10 +69,19 @@ class PlaylistsAndChatTest extends TestCase
 
     public function test_soundcloud_and_spotify_links_are_matched_on_youtube_and_playlists_import(): void
     {
-        config(['services.youtube.key' => 'k', 'services.spotify.client_id' => null, 'services.spotify.client_secret' => null]);
+        config(['services.youtube.key' => 'k']);
+        config(['services.spotify.client_id' => 'spotify-client', 'services.spotify.client_secret' => 'spotify-secret']);
         Http::fake([
             'soundcloud.com/oembed*' => Http::response(['title' => 'Midnight City by M83']),
             'open.spotify.com/track/*' => Http::response('<html><meta property="og:title" content="Get Lucky"><meta property="og:description" content="Daft Punk · Random Access Memories · Song · 2013"></html>'),
+            'accounts.spotify.com/api/token' => Http::response(['access_token' => 'refreshed-spotify-token', 'refresh_token' => 'rotated-refresh-token', 'expires_in' => 3600]),
+            'api.spotify.com/v1/playlists/*/items*' => Http::sequence()
+                ->push(['items' => [
+                    ['item' => ['name' => 'Playlist Track', 'artists' => [['name' => 'Artist Name']]]],
+                ], 'next' => 'https://api.spotify.com/v1/playlists/0GBy7zKDS6HNBOwnZR1TCV/items?offset=50'])
+                ->push(['items' => [
+                    ['item' => ['name' => 'Second Track', 'artists' => [['name' => 'Another Artist']]]],
+                ], 'next' => null]),
             'googleapis.com/youtube/v3/search*' => Http::response(['items' => [
                 ['id' => ['videoId' => 'bbbbbbbbbbb'], 'snippet' => ['title' => 'Match', 'channelTitle' => 'c', 'thumbnails' => []]],
             ]]),
@@ -86,6 +95,11 @@ class PlaylistsAndChatTest extends TestCase
 
         $me = User::factory()->create();
         $list = $me->playlists()->create(['name' => 'Mix', 'kind' => 'custom']);
+        $me->forceFill([
+            'spotify_access_token' => 'linked-spotify-token',
+            'spotify_refresh_token' => 'linked-refresh-token',
+            'spotify_token_expires_at' => now()->subMinute(),
+        ])->save();
 
         $this->actingAs($me)->postJson("/api/playlists/{$list->id}/songs", ['url' => 'https://soundcloud.com/m83/midnight-city'])->assertJson(['added' => 1]);
         $this->assertSame('soundcloud', $list->songs()->first()->origin);
@@ -94,17 +108,45 @@ class PlaylistsAndChatTest extends TestCase
         $this->actingAs($me)->postJson("/api/playlists/{$list->id}/songs", ['url' => 'https://open.spotify.com/track/abc123'])->assertOk();
         Http::assertSent(fn ($r) => str_contains($r->url(), 'search') && str_contains(urldecode($r->url()), 'Daft Punk Get Lucky'));
 
-        // import: a YouTube playlist expands, unsupported things report an error per line
+        // Playlists expand through Spotify's API; unsupported things report an error per line.
         $res = $this->actingAs($me)->postJson("/api/playlists/{$list->id}/import", ['text' => implode("\n", [
             'https://www.youtube.com/playlist?list=PLabc',
             'https://soundcloud.com/m83/sets/some-set',
+            'https://open.spotify.com/playlist/0GBy7zKDS6HNBOwnZR1TCV?si=example',
             'https://open.spotify.com/playlist/xyz',
             'https://example.com/nope',
         ])])->assertOk();
 
         $this->assertSame(2, $res->json('added'));
         $this->assertCount(3, $res->json('errors'));
-        $this->assertStringContainsString('Connect your Spotify account', implode(' ', $res->json('errors')));
+        $this->assertStringContainsString('valid 22-character playlist ID', implode(' ', $res->json('errors')));
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/api/token'));
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/playlists/0GBy7zKDS6HNBOwnZR1TCV/items'));
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/playlists/0GBy7zKDS6HNBOwnZR1TCV/items') && $request->hasHeader('Authorization', 'Bearer refreshed-spotify-token'));
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'offset=50') && str_contains($request->url(), 'limit=50'));
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'search') && str_contains(urldecode($request->url()), 'Artist Name - Playlist Track'));
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'search') && str_contains(urldecode($request->url()), 'Another Artist - Second Track'));
+    }
+
+    public function test_forbidden_spotify_playlist_import_explains_owner_access_requirement(): void
+    {
+        config(['services.youtube.key' => 'k']);
+        config(['services.spotify.client_id' => 'spotify-client', 'services.spotify.client_secret' => 'spotify-secret']);
+        Http::fake(['api.spotify.com/v1/playlists/*/items*' => Http::response([], 403)]);
+
+        $user = User::factory()->create();
+        $list = $user->playlists()->create(['name' => 'Mix', 'kind' => 'custom']);
+        $user->forceFill([
+            'spotify_access_token' => 'linked-spotify-token',
+            'spotify_refresh_token' => 'linked-refresh-token',
+            'spotify_token_expires_at' => now()->addHour(),
+        ])->save();
+
+        $this->actingAs($user)->postJson("/api/playlists/{$list->id}/import", [
+            'text' => 'https://open.spotify.com/playlist/0GBy7zKDS6HNBOwnZR1TCV',
+        ])->assertOk()
+            ->assertJsonPath('found', 0)
+            ->assertJsonPath('errors.0', fn ($error) => str_contains($error, 'playlist owner or a collaborator'));
     }
 
     public function test_room_queue_accepts_links_and_whole_playlists(): void
@@ -150,6 +192,7 @@ class PlaylistsAndChatTest extends TestCase
         // roles and badges must be present in chat (they were silently missing before)
         $page = $this->actingAs($guest)->get("/rooms/{$room->slug}")->assertOk();
         $page->assertInertia(fn ($p) => $p
+            ->where('messages.0.created_at', $first->created_at->toIso8601String())
             ->where('messages.0.role.key', 'owner')->where('messages.0.badges.0.icon', '👑')
             ->where('messages.1.sticker', '🔥')->where('messages.1.reply.user', $host->name)
             ->where('messages.2.image_url', 'https://media.tenor.com/abc/x.gif')

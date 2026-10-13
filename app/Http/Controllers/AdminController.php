@@ -15,13 +15,16 @@ use App\Models\SupportTicket;
 use App\Models\User;
 use App\Models\Violation;
 use App\Support\Awards;
+use App\Support\DiscordRoleSync;
 use App\Support\MailStatus;
 use App\Support\Plans;
 use App\Support\RoomPresence;
+use App\Support\Stripe;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -146,16 +149,22 @@ class AdminController extends Controller
         $mail = config('mail.default');
         $mailLogged = ! MailStatus::configured();
         $maintenance = Setting::get('maintenance') === '1';
+        $discordLinking = DiscordController::configured();
+        $discordRoleSync = DiscordRoleSync::configured();
+        $spotifyLinking = SpotifyController::configured();
 
         return [
             ['Live updates ('.ucfirst((string) config('broadcasting.default')).')', $reverb ? 'ok' : 'warn', $reverb ? 'Chat, votes and music sync reach everyone live.' : (config('broadcasting.default') === 'reverb' ? 'Not reachable. Chat and sync will not update live. Start it with: php artisan reverb:start' : 'Not reachable. Chat and sync will not update live. Check the PUSHER_ keys.')],
             ['Email', $mailLogged ? 'warn' : 'ok', $mailLogged ? "No mail server is set up (MAIL_MAILER is \"{$mail}\"): messages are only written to the log, so nobody has to confirm their email. Admin panel → Email shows what to put in .env." : "Sending through {$mail}."],
             ['Song search (YouTube API)', config('services.youtube.key') ? 'ok' : 'warn', config('services.youtube.key') ? 'Search and song lengths work.' : 'No YOUTUBE_API_KEY: song search and lengths are unavailable. Pasting links still works.'],
             ['GIF search (GIPHY)', config('services.giphy.api_key') ? 'ok' : 'off', config('services.giphy.api_key') ? 'Direct browser search is enabled.' : 'No GIPHY_API_KEY.'],
-            ['Spotify playlist import', config('services.spotify.client_id') ? 'ok' : 'off', config('services.spotify.client_id') ? 'Playlists and albums can be imported.' : 'Only single Spotify tracks work without SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET.'],
-            ['Discord linking', config('services.discord.client_id') ? 'ok' : 'off', config('services.discord.client_id') ? 'People can link Discord.' : 'Add DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET to switch it on.'],
+            ['Discord linking', $discordLinking ? 'ok' : 'off', $discordLinking ? 'People can link their Discord account.' : 'Add DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET to switch it on.'],
+            ['Discord server roles', ! $discordLinking ? 'off' : ($discordRoleSync ? 'ok' : 'warn'), ! $discordLinking ? 'Discord linking must be configured first.' : ($discordRoleSync ? 'Role sync is configured; test a link to confirm bot permissions and role mappings.' : 'Add DISCORD_BOT_TOKEN and DISCORD_GUILD_ID to enable automatic server roles.')],
+            ['Stripe API (subscriptions)', ...array_values(Stripe::apiHealth())],
+            ['Stripe webhook', filled(config('services.stripe.webhook_secret')) ? 'ok' : 'warn', filled(config('services.stripe.webhook_secret')) ? 'Webhook signing secret is configured. Stripe delivery is confirmed only after a signed event is received.' : 'STRIPE_WEBHOOK_SECRET is missing. Subscription changes will not sync until the webhook secret is configured.'],
             ['Maintenance mode', $maintenance ? 'warn' : 'ok', $maintenance ? 'ON: visitors see the maintenance page.' : 'Off.'],
             ['Debug mode', config('app.debug') && app()->environment('production') ? 'warn' : 'ok', config('app.debug') ? 'APP_DEBUG is on'.(app()->environment('production') ? ': turn it off in production, errors can show private details.' : ' (fine for development).') : 'Off.'],
+            ['Spotify playlist import', $spotifyLinking ? 'ok' : 'off', $spotifyLinking ? 'Users can connect Spotify; playlist access still requires the connected account to own or collaborate on the playlist.' : 'Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET to allow people to connect Spotify.'],
         ];
     }
 
@@ -171,6 +180,9 @@ class AdminController extends Controller
         ]);
 
         $user->forceFill(['roles' => array_values(array_unique($data['roles']))])->save();
+        if ($user->discord_id && DiscordRoleSync::configured() && ($syncError = DiscordRoleSync::sync($user))) {
+            Log::warning('Discord role synchronization failed after an admin role change.', ['user_id' => $user->id, 'reason' => $syncError]);
+        }
 
         return back();
     }

@@ -250,6 +250,12 @@ class RoomController extends Controller
         ]);
     }
 
+    /** The privacy-visible participants for guests watching a public room. */
+    public function members(Room $room): JsonResponse
+    {
+        return response()->json(RoomPresence::membersIn($room));
+    }
+
     /** What the Room info window shows about the room's history. */
     private function stats(Room $room): array
     {
@@ -551,7 +557,7 @@ class RoomController extends Controller
             }
             $songs = [['youtube_id' => $data['video_id']] + $info];
         } elseif (isset($data['url'])) {
-            $songs = $music->resolve($data['url']);
+            $songs = $music->resolve($data['url'], $request->user());
         } else {
             throw ValidationException::withMessages(['url' => 'Paste a link or pick a song.']);
         }
@@ -647,8 +653,13 @@ class RoomController extends Controller
                 return false;
             }
 
-            $item = $lockedRoom->items()->whereKey($data['item_id'])->lockForUpdate()->first();
-            if (! $item || $item->duration > 0) {
+            /** @var PlaylistItem|null $item */
+            $item = PlaylistItem::query()
+                ->where('room_id', $lockedRoom->id)
+                ->whereKey($data['item_id'])
+                ->lockForUpdate()
+                ->first();
+            if ($item === null || $item->duration > 0) {
                 return false;
             }
 
@@ -704,7 +715,9 @@ class RoomController extends Controller
         ]);
         $type = $data['type'];
         $item = PlaylistItem::with('user')->find($room->current_item_id);
-        abort_unless($item, 409, 'Nothing is playing.');
+        if ($item === null) {
+            abort(409, 'Nothing is playing.');
+        }
         abort_if($item->user_id === $request->user()->id, 422, 'You cannot woot, meh or grab your own song.');
         abort_if(isset($data['item_id']) && (int) $data['item_id'] !== $item->id, 409, 'That song is not playing any more.');
 

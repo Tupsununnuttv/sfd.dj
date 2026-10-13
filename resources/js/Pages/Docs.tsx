@@ -116,11 +116,11 @@ const sections: Section[] = [
                         'Add a song by searching YouTube or pasting a YouTube, SoundCloud or Spotify link.',
                         'Drag the tracks into the order they should play in (or use a track\'s menu: move to the top or the bottom), shuffle the order, find a track in the list, rename or delete the list, and download its links as a text file.',
                         'One playlist is your active playlist. Its first track is your next track: the footbar of a room shows it, and it is the one that plays when your turn in the Waitlist comes. When a song has been played it goes to the bottom of its list and slowly moves up as other songs are played, so your next turn plays the next one. The Waitlist tab lists the people in the line, not songs. Chat tells when a song has ended, who joined or left the waitlist and so on, each in its own colour. Pick the active playlist in the footbar or in Playlists.',
-                        'Import: paste a YouTube playlist link, a Spotify playlist you own or collaborate on, or several links (one per line). Up to 1,000 songs are imported at a time. Connect your Spotify account first; Spotify tracks are matched to YouTube.',
+                        'Import: paste a YouTube or Spotify playlist link, or several links (one per line). Up to 1,000 songs are imported at a time. Public YouTube playlists use the site API key; private YouTube playlists need a connected YouTube account that can access them. Spotify playlist imports need a connected Spotify account that owns or collaborates on the playlist.',
                         'Inside a room, “Queue” adds one song to the waitlist and “Queue all” adds up to 50 songs of a playlist.',
                     ]}
                 />
-                <P>Songs always play from YouTube. A SoundCloud or Spotify link is matched to the same song on YouTube, so double-check the result. SoundCloud sets are not supported, and Spotify playlists only work when the site has Spotify credentials.</P>
+                <P>Songs always play from YouTube. A SoundCloud or Spotify track is matched to the same song on YouTube, so double-check the result. SoundCloud sets and Spotify albums are not supported. Manage account links in Settings → Connections. Connected YouTube accounts can import playlists they can access; Spotify playlist imports need access to that playlist, and public visibility alone does not guarantee API access.</P>
             </>
         ),
     },

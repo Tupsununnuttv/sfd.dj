@@ -7,7 +7,7 @@ use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Copies this computer's database onto the live site (Postgres on Vercel): every row, table by table, parents before the rows that point at them.
+ * Copies this computer's database onto the live Postgres database: every row, table by table, parents before the rows that point at them.
  * The live database must be migrated already. It is meant for once, before anybody uses the live site: the live rows of these tables are replaced.
  */
 class CopyToLive extends Command

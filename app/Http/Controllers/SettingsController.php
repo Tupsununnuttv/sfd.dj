@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ChatMessage;
 use App\Models\PlaylistItem;
 use App\Models\Whisper;
+use App\Support\DiscordRoleSync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,12 +24,6 @@ class SettingsController extends Controller
         $setup = ! $user->two_factor_enabled && $user->two_factor_secret;
 
         return Inertia::render('Settings/Account', [
-            'discord' => [
-                'configured' => DiscordController::configured(),
-                'username' => $user->discord_username,
-                'notice' => session('discord_notice'),
-                'redirect' => $user->is_staff ? route('discord.callback') : null, // staff need it for the Discord app settings
-            ],
             'sessions' => $this->sessions($request),
             'twoFactor' => [
                 'enabled' => $user->two_factor_enabled,
@@ -36,6 +31,37 @@ class SettingsController extends Controller
                 'pending' => (bool) $setup,
                 'secret' => $setup ? $user->two_factor_secret : null,
                 'otpauth' => $setup ? app(Google2FA::class)->getQRCodeUrl(config('app.name'), $user->email, $user->two_factor_secret) : null,
+            ],
+        ]);
+    }
+
+    public function connections(Request $request): Response
+    {
+        $user = $request->user();
+
+        return Inertia::render('Settings/Connections', [
+            'discord' => [
+                'configured' => DiscordController::configured(),
+                'role_sync_configured' => DiscordRoleSync::configured(),
+                'username' => $user->discord_username,
+                'notice' => session('discord_notice'),
+                'redirect' => $user->is_staff ? route('discord.callback') : null,
+                'login_redirect' => $user->is_staff ? route('discord.login.callback') : null,
+            ],
+            'spotify' => [
+                'configured' => SpotifyController::configured(),
+                'connected' => filled($user->spotify_refresh_token),
+                'display_name' => $user->spotify_display_name,
+                'notice' => session('spotify_notice'),
+                'redirect' => $user->is_staff ? route('spotify.callback') : null,
+            ],
+            'youtube' => [
+                'configured' => YouTubeController::configured(),
+                'connected' => filled($user->youtube_refresh_token),
+                'channel_title' => $user->youtube_channel_title,
+                'channel_url' => $user->youtube_channel_id ? 'https://www.youtube.com/channel/'.$user->youtube_channel_id : null,
+                'notice' => session('youtube_notice'),
+                'redirect' => $user->is_staff ? route('youtube.callback') : null,
             ],
         ]);
     }

@@ -10,14 +10,23 @@ import { AwardBadge, Cosmetics } from '@/lib/cosmetics';
 import { STATUS, statusOf } from '@/lib/status';
 import { PageProps, RoleInfo } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Headphones, Radio } from 'lucide-react';
+import { useEffect } from 'react';
 
-type Props = { profile: Profile & { avatar: string | null; cosmetics: Cosmetics | null; primary_role: RoleInfo; badges: RoleInfo[]; level: number } };
+type Props = { profile: Profile & { avatar: string | null; cosmetics: Cosmetics | null; primary_role: RoleInfo; badges: RoleInfo[]; level: number; activity: { online: boolean; listening: { name: string; slug: string } | null } | null } };
 
 /** Anyone's public profile. */
 export default function UserProfile({ profile: p }: Props) {
     const guest = usePage<PageProps>().props.auth.guest;
     const status = statusOf(p.status);
     const tiles: [string, number][] = [['Level', p.level], ['XP', p.stats.xp], ['Songs played', p.stats.songs_played], ['Woots', p.stats.woots], ['Grabs', p.stats.grabs], ['Friends', p.stats.friends]];
+
+    useEffect(() => {
+        const timer = window.setInterval(() => {
+            if (!document.hidden) router.reload({ only: ['profile'] });
+        }, 15000);
+        return () => window.clearInterval(timer);
+    }, [p.id]);
 
     return (
         <AppLayout title="Profile">
@@ -40,7 +49,14 @@ export default function UserProfile({ profile: p }: Props) {
                     <p className="mt-1 flex flex-wrap items-center gap-3 text-xs text-neutral-500">
                         <span>Joined {new Date(p.joined).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                         {p.discord && <span className="flex items-center gap-1"><SocialIcon name="discord" size={14} /> {p.discord}</span>}
+                        {p.youtube_channel && <a href={p.youtube_channel.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-red-300"><SocialIcon name="youtube" size={14} /> {p.youtube_channel.title || 'YouTube channel'}</a>}
                     </p>
+                    {p.activity && (p.activity.online || p.activity.listening) && (
+                        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-emerald-300" aria-label="SFD.DJ activity">
+                            {p.activity.online && <span className="flex items-center gap-1"><Radio size={14} /> On SFD.DJ</span>}
+                            {p.activity.listening && <Link href={route('rooms.show', p.activity.listening.slug)} className="flex items-center gap-1 hover:underline"><Headphones size={14} /> Listening in {p.activity.listening.name}</Link>}
+                        </p>
+                    )}
                 </div>
                 <div className="flex flex-wrap gap-2 text-sm">
                     {guest ? null : p.is_me ? (

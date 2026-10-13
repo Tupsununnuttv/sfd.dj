@@ -6,8 +6,8 @@ import { PageProps } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Check, X } from 'lucide-react';
 
-const visible = ['Your display name, username and picture', 'Your level, role badges and shop items', 'Your bio and favourite genre', 'When you joined, your song, woot and friend counts', 'Your public rooms', 'Your Discord name, if you linked it', 'Your chat messages, to everyone in the room'];
-const hidden = ['Your email address', 'Your password (nobody can see it, not even staff)', 'Your whispers: only you and the other person', 'Your private rooms', 'The devices you are logged in on'];
+const visible = ['Your display name, username and picture', 'Your level, role badges and shop items', 'Your bio and favourite genre', 'When you joined, your song, woot and friend counts', 'Your public rooms', 'Your Discord name, if you linked it', 'Your YouTube channel, if you connected it', 'Your chat messages, to everyone in the room'];
+const hidden = ['Your email address', 'Your password (nobody can see it, not even staff)', 'Your encrypted Spotify and YouTube OAuth tokens', 'Your whispers: only you and the other person', 'Your private rooms', 'The devices you are logged in on'];
 
 export default function Privacy() {
     const { privacy } = withDefaults(usePage<PageProps>().props.auth.user.preferences);

@@ -22,7 +22,7 @@ export const releases: { version: string; title: string; notes: [Kind, string][]
             ['improved', 'Waitlist and room activity (joining or leaving, Woots, Grabs and song endings) appears briefly beside the chat. Other system messages stay in chat.'],
             ['new', 'Any signed-in member can create events and delete their own; staff can still manage all events.'],
             ['improved', 'The GIF picker searches GIPHY for trending GIFs and search terms, shows Powered By GIPHY, and accepts GIPHY links.'],
-            ['improved', 'YouTube playlist imports now handle up to 1,000 songs at a time. Playlists hold at least 5,000 songs (more with Plus and Premium), and Spotify playlist imports work after connecting an account that owns or collaborates on the playlist.'],
+            ['improved', 'YouTube playlist imports now handle up to 1,000 songs at a time. Playlists hold at least 5,000 songs (more with Plus and Premium). Spotify playlist imports are unavailable without account authorization; individual Spotify tracks still work.'],
         ],
     },
     {

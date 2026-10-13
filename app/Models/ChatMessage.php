@@ -39,6 +39,7 @@ class ChatMessage extends Model
 
         return [
             'id' => $this->id,
+            'created_at' => $this->created_at->toIso8601String(),
             'type' => $this->type,
             'kind' => $this->kind,
             'body' => $this->body,

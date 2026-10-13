@@ -3,11 +3,11 @@
 namespace Tests\Feature;
 
 use App\Events\WhisperSent;
-use App\Models\Room;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Whisper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -62,7 +62,7 @@ class WhispersDiscordCommunityTest extends TestCase
 
         // not configured: a friendly notice, nothing happens
         config(['services.discord.client_id' => null, 'services.discord.client_secret' => null]);
-        $this->actingAs($me)->get('/auth/discord')->assertRedirect(route('settings.account'))->assertSessionHas('discord_notice');
+        $this->actingAs($me)->get('/auth/discord')->assertRedirect(route('settings.connections'))->assertSessionHas('discord_notice');
 
         config(['services.discord.client_id' => 'cid', 'services.discord.client_secret' => 'secret']);
         $res = $this->actingAs($me)->get('/auth/discord');
@@ -71,7 +71,7 @@ class WhispersDiscordCommunityTest extends TestCase
         $this->assertSame(40, strlen($state));
 
         // wrong state: refused
-        $this->get('/auth/discord/callback?code=abc&state=forged')->assertRedirect(route('settings.account'));
+        $this->get('/auth/discord/callback?code=abc&state=forged')->assertRedirect(route('settings.connections'));
         $this->assertNull($me->refresh()->discord_id);
 
         // right state: linked
@@ -79,10 +79,10 @@ class WhispersDiscordCommunityTest extends TestCase
             'discord.com/api/oauth2/token' => Http::response(['access_token' => 'tok']),
             'discord.com/api/users/@me' => Http::response(['id' => '123456', 'username' => 'kate', 'global_name' => 'Kate D']),
         ]);
-        $this->withSession(['discord_state' => 'goodstate'])->get('/auth/discord/callback?code=abc&state=goodstate')->assertRedirect(route('settings.account'));
+        $this->withSession(['discord_state' => 'goodstate'])->get('/auth/discord/callback?code=abc&state=goodstate')->assertRedirect(route('settings.connections'));
         $me->refresh();
         $this->assertSame(['123456', 'Kate D'], [$me->discord_id, $me->discord_username]);
-        $this->actingAs($me)->get('/settings/account')->assertInertia(fn (Assert $p) => $p->where('discord.username', 'Kate D')->where('discord.configured', true));
+        $this->actingAs($me)->get('/settings/connections')->assertInertia(fn (Assert $p) => $p->component('Settings/Connections')->where('discord.username', 'Kate D')->where('discord.configured', true));
         $this->assertArrayNotHasKey('discord_id', $me->toArray()); // the id never leaves the server
 
         // one Discord account cannot be on two SFD.DJ accounts
@@ -93,6 +93,127 @@ class WhispersDiscordCommunityTest extends TestCase
         $this->actingAs($me)->delete('/auth/discord')->assertRedirect();
         $this->assertNull($me->refresh()->discord_username);
         $this->assertSame('777', $other->refresh()->discord_id);
+    }
+
+    public function test_discord_login_authenticates_an_existing_linked_account(): void
+    {
+        $user = User::factory()->create(['discord_id' => 'discord-user-id']);
+        config(['services.discord.client_id' => 'client-id', 'services.discord.client_secret' => 'client-secret']);
+        Http::fake([
+            'discord.com/api/oauth2/token' => Http::response(['access_token' => 'access-token']),
+            'discord.com/api/users/@me' => Http::response(['id' => 'discord-user-id']),
+        ]);
+
+        $authorize = $this->get('/auth/discord/login');
+        parse_str((string) parse_url($authorize->headers->get('Location'), PHP_URL_QUERY), $query);
+        $this->assertSame('identify', $query['scope']);
+
+        $this->withSession(['discord_login_state' => $query['state']])
+            ->get('/auth/discord/login/callback?code=code&state='.$query['state'])
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_discord_login_does_not_create_or_link_an_account(): void
+    {
+        $user = User::factory()->create();
+        config(['services.discord.client_id' => 'client-id', 'services.discord.client_secret' => 'client-secret']);
+        Http::fake([
+            'discord.com/api/oauth2/token' => Http::response(['access_token' => 'access-token']),
+            'discord.com/api/users/@me' => Http::response(['id' => 'unlinked-discord-id']),
+        ]);
+
+        $this->withSession(['discord_login_state' => 'valid-state'])
+            ->get('/auth/discord/login/callback?code=code&state=valid-state')
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('discord_error');
+
+        $this->assertGuest();
+        $this->assertNull($user->refresh()->discord_id);
+    }
+
+    public function test_discord_login_still_requires_two_factor_authentication(): void
+    {
+        $user = User::factory()->create(['discord_id' => 'discord-user-id']);
+        $user->forceFill(['two_factor_confirmed_at' => now()])->save();
+        config(['services.discord.client_id' => 'client-id', 'services.discord.client_secret' => 'client-secret']);
+        Http::fake([
+            'discord.com/api/oauth2/token' => Http::response(['access_token' => 'access-token']),
+            'discord.com/api/users/@me' => Http::response(['id' => 'discord-user-id']),
+        ]);
+
+        $this->withSession(['discord_login_state' => 'valid-state'])
+            ->get('/auth/discord/login/callback?code=code&state=valid-state')
+            ->assertRedirect(route('two-factor.challenge'))
+            ->assertSessionHas('two_factor.id', $user->id);
+
+        $this->assertGuest();
+    }
+
+    public function test_discord_connect_joins_server_and_syncs_beta_tester_role(): void
+    {
+        $me = User::factory()->create();
+        $me->forceFill(['roles' => ['beta_tester']])->save();
+        config([
+            'services.discord.client_id' => 'client-id',
+            'services.discord.client_secret' => 'client-secret',
+            'services.discord.bot_token' => 'bot-token',
+            'services.discord.guild_id' => 'guild-id',
+        ]);
+        $memberReads = 0;
+        Http::fake(function (Request $request) use (&$memberReads) {
+            $url = $request->url();
+
+            if (str_ends_with($url, '/oauth2/token')) {
+                return Http::response(['access_token' => 'user-token']);
+            }
+            if (str_ends_with($url, '/users/@me')) {
+                return Http::response(['id' => 'discord-user-id', 'username' => 'beta', 'global_name' => 'Beta']);
+            }
+            if (str_ends_with($url, '/guilds/guild-id/roles')) {
+                return Http::response([
+                    ['id' => 'beta-role-id', 'name' => 'SFD.DJ | Beta Tester'],
+                    ['id' => 'other-role-id', 'name' => 'Community'],
+                ]);
+            }
+            if (str_ends_with($url, '/guilds/guild-id/members/discord-user-id') && $request->method() === 'GET') {
+                $memberReads++;
+
+                return $memberReads === 1 ? Http::response([], 404) : Http::response(['roles' => ['beta-role-id', 'other-role-id']]);
+            }
+            if (str_ends_with($url, '/guilds/guild-id/members/discord-user-id') && $request->method() === 'PUT') {
+                return Http::response([], 201);
+            }
+            if (str_ends_with($url, '/guilds/guild-id/members/discord-user-id') && $request->method() === 'PATCH') {
+                return Http::response(['roles' => $request['roles']]);
+            }
+            if (str_ends_with($url, '/oauth2/token/revoke')) {
+                return Http::response([], 200);
+            }
+
+            return Http::response([], 500);
+        });
+
+        $authorizeResponse = $this->actingAs($me)->get('/auth/discord');
+        $state = session('discord_state');
+        $authorizeUrl = $authorizeResponse->headers->get('Location');
+        parse_str((string) parse_url($authorizeUrl, PHP_URL_QUERY), $query);
+        $this->assertSame('identify guilds.join', $query['scope']);
+
+        $this->withSession(['discord_state' => $state])->get('/auth/discord/callback?code=abc&state='.$state)
+            ->assertRedirect(route('settings.connections'))
+            ->assertSessionHas('discord_notice', 'Discord linked and SFD.DJ roles synced.');
+
+        Http::assertSent(fn (Request $request) => $request->method() === 'PUT'
+            && str_ends_with($request->url(), '/guilds/guild-id/members/discord-user-id')
+            && $request['access_token'] === 'user-token'
+            && $request['roles'] === ['beta-role-id']);
+
+        $this->actingAs($me)->delete('/auth/discord')->assertRedirect();
+        Http::assertSent(fn (Request $request) => $request->method() === 'PATCH'
+            && str_ends_with($request->url(), '/guilds/guild-id/members/discord-user-id')
+            && $request['roles'] === ['other-role-id']);
     }
 
     public function test_social_links_and_donation_goal(): void
@@ -131,7 +252,7 @@ class WhispersDiscordCommunityTest extends TestCase
         $room = $host->rooms()->create(['name' => 'Lobby', 'slug' => 'lobby-1']);
         $song = ['youtube_id' => 'aaaaaaaaaaa', 'thumbnail' => null, 'duration' => 200];
         $room->enqueue(['title' => 'A'] + $song, $host->id);
-        $room->enqueue(['title' => 'B'] + $song, $host->id);
+        $room->enqueue(['youtube_id' => 'bbbbbbbbbbb', 'title' => 'B'] + $song, $host->id);
         $room->refresh();
 
         // fresh song: stays
@@ -148,6 +269,7 @@ class WhispersDiscordCommunityTest extends TestCase
         $room->forceFill(['current_started_at' => now()->subMinutes(10)])->save();
         $this->actingAs($host)->get("/rooms/{$room->slug}")->assertInertia(fn (Assert $p) => $p->where('playback.current', null));
     }
+
     public function test_pages_with_played_songs_render(): void
     {
         $host = User::factory()->create();

@@ -1,6 +1,7 @@
 import Checkbox from '@/Components/Checkbox';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SavedAccounts from '@/Components/SavedAccounts';
+import SocialIcon from '@/Components/SocialIcon';
 import TextInput from '@/Components/TextInput';
 import { Field } from '@/Components/ui';
 import GuestLayout from '@/Layouts/GuestLayout';
@@ -10,7 +11,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { AlertCircle, CheckCircle2, KeyRound, UserRound } from 'lucide-react';
 import { FormEventHandler, KeyboardEvent, useState } from 'react';
 
-export default function Login({ status, canResetPassword }: { status?: string; canResetPassword: boolean }) {
+export default function Login({ status, canResetPassword, discordLoginEnabled, discordError }: { status?: string; canResetPassword: boolean; discordLoginEnabled: boolean; discordError?: string }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -50,6 +51,9 @@ export default function Login({ status, canResetPassword }: { status?: string; c
             {status && (
                 <p className="mb-5 flex items-start gap-2 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300"><CheckCircle2 size={18} className="mt-0.5 shrink-0" /> {status}</p>
             )}
+            {discordError && (
+                <p className="mb-5 flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"><AlertCircle size={18} className="mt-0.5 shrink-0" /> {discordError}</p>
+            )}
             {wrong && (
                 <p key={shake} className="mb-5 flex animate-shake items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"><AlertCircle size={18} className="mt-0.5 shrink-0" /> {wrong}</p>
             )}
@@ -88,7 +92,14 @@ export default function Login({ status, canResetPassword }: { status?: string; c
                 <PrimaryButton className="w-full py-3 text-base" disabled={processing || !data.email || !data.password}>{processing ? 'Logging in…' : 'Log in'}</PrimaryButton>
             </form>
 
-            <div className="my-6 flex items-center gap-3 text-xs text-neutral-600"><span className="h-px flex-1 bg-white/10" /> or <span className="h-px flex-1 bg-white/10" /></div>
+            {discordLoginEnabled && (
+                <>
+                    <div className="my-6 flex items-center gap-3 text-xs text-neutral-600"><span className="h-px flex-1 bg-white/10" /> or <span className="h-px flex-1 bg-white/10" /></div>
+                    <a href={route('discord.login')} className="mb-5 flex w-full items-center justify-center gap-2 rounded-lg bg-[#5865F2] px-4 py-3 text-sm font-semibold text-white hover:opacity-90">
+                        <SocialIcon name="discord" size={18} /> Continue with Discord
+                    </a>
+                </>
+            )}
 
             <div className="grid gap-3 sm:grid-cols-2">
                 <Link href={route('register')} className="rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-center text-sm font-semibold hover:bg-white/10">Create an account</Link>

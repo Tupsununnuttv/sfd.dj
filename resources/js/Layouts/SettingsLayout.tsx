@@ -4,12 +4,12 @@ import { card } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { PageProps } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Bell, Code2, Gavel, Lock, Palette, ShieldCheck, Sparkles, UserRound, Volume2 } from 'lucide-react';
+import { Bell, Cable, Code2, Gavel, Lock, Palette, ShieldCheck, Sparkles, UserRound, Volume2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { PropsWithChildren, ReactNode } from 'react';
 
 const groups: { name: string; items: [string, string, LucideIcon][] }[] = [
-    { name: 'You', items: [['profile.edit', 'Profile', UserRound], ['settings.privacy', 'Privacy', Lock], ['settings.account', 'Account & security', ShieldCheck]] },
+    { name: 'You', items: [['profile.edit', 'Profile', UserRound], ['settings.connections', 'Connections', Cable], ['settings.privacy', 'Privacy', Lock], ['settings.account', 'Account & security', ShieldCheck]] },
     { name: 'Preferences', items: [['settings.appearance', 'Appearance', Palette], ['settings.audio', 'Audio', Volume2], ['settings.notifications', 'Notifications', Bell]] },
     { name: 'More', items: [['settings.plus', 'SFD.DJ Plus', Sparkles], ['settings.developers', 'Developers', Code2], ['settings.violations', 'Violations', Gavel]] },
 ];

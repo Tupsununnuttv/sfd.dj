@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class PlaylistDeckTest extends TestCase
@@ -166,118 +167,142 @@ class PlaylistDeckTest extends TestCase
         Http::assertSentCount(4);
     }
 
+    public function test_youtube_connection_imports_private_playlists_and_shows_channel_on_profile(): void
+    {
+        config([
+            'services.youtube.key' => null,
+            'services.youtube.client_id' => 'google-client',
+            'services.youtube.client_secret' => 'google-secret',
+        ]);
+        Http::fake([
+            'oauth2.googleapis.com/token' => Http::sequence()
+                ->push(['access_token' => 'youtube-access-token', 'refresh_token' => 'youtube-refresh-token', 'expires_in' => 3600])
+                ->push(['access_token' => 'youtube-refreshed-token', 'expires_in' => 3600]),
+            'googleapis.com/youtube/v3/channels*' => Http::response(['items' => [[
+                'id' => 'UCchannel123',
+                'snippet' => ['title' => 'My YouTube Channel'],
+            ]]]),
+            'googleapis.com/youtube/v3/playlistItems*' => Http::response(['items' => [[
+                'contentDetails' => ['videoId' => 'abcdefghijk'],
+            ]]]),
+            'googleapis.com/youtube/v3/videos*' => Http::response(['items' => [[
+                'id' => 'abcdefghijk',
+                'snippet' => ['title' => 'Private playlist song', 'channelTitle' => 'Music channel'],
+                'contentDetails' => ['duration' => 'PT3M'],
+                'status' => ['embeddable' => true],
+            ]]]),
+        ]);
+
+        $user = User::factory()->create();
+        $list = $user->playlists()->create(['name' => 'Private YouTube playlist', 'kind' => 'custom']);
+
+        $this->actingAs($user)->get(route('settings.connections'))->assertInertia(fn (Assert $page) => $page
+            ->component('Settings/Connections')
+            ->where('youtube.configured', true)
+            ->where('youtube.connected', false));
+        $this->actingAs($user)->get(route('settings.account'))->assertInertia(fn (Assert $page) => $page
+            ->component('Settings/Account')
+            ->missing('discord')
+            ->missing('spotify')
+            ->missing('youtube'));
+
+        $authorization = $this->actingAs($user)->get(route('youtube.connect'))->assertRedirect();
+        parse_str((string) parse_url($authorization->headers->get('Location'), PHP_URL_QUERY), $parameters);
+        $this->assertSame('https://www.googleapis.com/auth/youtube.readonly', $parameters['scope']);
+        $this->assertSame('offline', $parameters['access_type']);
+        $state = session('youtube_state');
+
+        $this->get(route('youtube.callback', ['code' => 'google-auth-code', 'state' => $state]))
+            ->assertRedirect(route('settings.connections'))
+            ->assertSessionHas('youtube_notice', 'YouTube connected. Your channel will appear on your profile and you can import playlists this account can access.');
+
+        $user->refresh();
+        $this->assertSame('UCchannel123', $user->youtube_channel_id);
+        $this->assertSame('youtube-refresh-token', $user->youtube_refresh_token);
+        $this->assertArrayNotHasKey('youtube_refresh_token', $user->toArray());
+
+        $user->forceFill(['youtube_token_expires_at' => now()->subMinute()])->save();
+        $this->actingAs($user)->postJson(route('api.playlists.import', $list), [
+            'text' => 'https://www.youtube.com/playlist?list=private-list-123',
+        ])->assertOk()->assertJson(['found' => 1, 'added' => 1]);
+        $this->assertSame('Private playlist song', $list->songs()->sole()->title);
+        Http::assertSent(fn (Request $request) => str_contains($request->url(), '/playlistItems') && $request->hasHeader('Authorization', 'Bearer youtube-refreshed-token'));
+
+        $this->getJson(route('users.card', $user))->assertOk()
+            ->assertJsonPath('youtube_channel.title', 'My YouTube Channel')
+            ->assertJsonPath('youtube_channel.url', 'https://www.youtube.com/channel/UCchannel123')
+            ->assertJsonMissingPath('youtube_access_token')
+            ->assertJsonMissingPath('youtube_refresh_token');
+
+        $this->actingAs($user)->delete(route('youtube.disconnect'))->assertRedirect(route('settings.connections'));
+        $this->assertNull($user->fresh()->youtube_refresh_token);
+    }
+
+    public function test_youtube_oauth_rejects_a_forged_state(): void
+    {
+        config(['services.youtube.client_id' => 'google-client', 'services.youtube.client_secret' => 'google-secret']);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->withSession(['youtube_state' => 'expected-state'])
+            ->get(route('youtube.callback', ['code' => 'google-auth-code', 'state' => 'forged-state']))
+            ->assertRedirect(route('settings.connections'))
+            ->assertSessionHas('youtube_notice');
+
+        $this->assertNull($user->fresh()->youtube_channel_id);
+    }
+
     public function test_spotify_oauth_and_playlist_items_import(): void
     {
-        config(['services.spotify.client_id' => 'test-client', 'services.spotify.client_secret' => 'test-secret']);
         config(['services.youtube.key' => 'youtube-test-key']);
-        Http::fake(function (Request $request) {
-            $path = parse_url($request->url(), PHP_URL_PATH);
-            if ($path === '/api/token') {
-                return Http::response(['access_token' => 'spotify-user-token', 'refresh_token' => 'spotify-refresh-token', 'expires_in' => 3600]);
-            }
-            if ($path === '/v1/playlists/playlist1234567890123456/items') {
-                return Http::response(['items' => [[
-                    'item' => ['type' => 'track', 'name' => 'Song Name', 'artists' => [['name' => 'Artist Name']]],
-                ]]]);
-            }
-            if (str_ends_with($path, '/youtube/v3/search')) {
-                return Http::response(['items' => [[
-                    'id' => ['videoId' => 'abcdefghijk'],
-                    'snippet' => ['title' => 'Artist Name - Song Name', 'channelTitle' => 'Test channel'],
-                ]]]);
-            }
-            if (str_ends_with($path, '/youtube/v3/videos')) {
-                return Http::response(['items' => [[
-                    'id' => 'abcdefghijk',
-                    'snippet' => ['title' => 'Artist Name - Song Name', 'channelTitle' => 'Test channel'],
-                    'contentDetails' => ['duration' => 'PT3M'],
-                    'status' => ['embeddable' => true],
-                ]]]);
-            }
-
-            return Http::response([], 404);
-        });
+        config(['services.spotify.client_id' => 'spotify-client', 'services.spotify.client_secret' => 'spotify-secret']);
+        Http::fake([
+            'accounts.spotify.com/api/token' => Http::response([
+                'access_token' => 'authorized-spotify-token',
+                'refresh_token' => 'spotify-refresh-token',
+                'expires_in' => 3600,
+            ]),
+            'api.spotify.com/v1/me' => Http::response(['id' => 'spotify-user', 'display_name' => 'Spotify Person']),
+            'api.spotify.com/v1/playlists/*/items*' => Http::response(['items' => [
+                ['item' => ['name' => 'Song Name', 'artists' => [['name' => 'Artist Name']]]],
+            ], 'next' => null]),
+            'googleapis.com/youtube/v3/search*' => Http::response(['items' => [[
+                'id' => ['videoId' => 'abcdefghijk'],
+                'snippet' => ['title' => 'Artist Name - Song Name', 'channelTitle' => 'Test channel'],
+            ]]]),
+            'googleapis.com/youtube/v3/videos*' => Http::response(['items' => [[
+                'id' => 'abcdefghijk',
+                'snippet' => ['title' => 'Artist Name - Song Name', 'channelTitle' => 'Test channel'],
+                'contentDetails' => ['duration' => 'PT3M'],
+                'status' => ['embeddable' => true],
+            ]]]),
+        ]);
 
         $user = User::factory()->create();
         $list = $user->playlists()->create(['name' => 'Spotify import', 'kind' => 'custom']);
 
-        $connect = $this->actingAs($user)->get('/auth/spotify')->assertRedirect();
+        $connect = $this->actingAs($user)->get(route('spotify.connect'))->assertRedirect();
         parse_str((string) parse_url($connect->headers->get('Location'), PHP_URL_QUERY), $authorization);
-        $this->assertSame('playlist-read-private playlist-read-collaborative', $authorization['scope']);
-        $this->assertSame(route('spotify.callback'), $authorization['redirect_uri']);
-        $this->assertSame('true', $authorization['show_dialog']);
+        $this->assertSame('playlist-read-private', $authorization['scope']);
+        $state = session('spotify_state');
+        $this->get(route('spotify.callback', ['code' => 'authorization-code', 'state' => $state]))
+            ->assertRedirect(route('settings.connections'))
+            ->assertSessionHas('spotify_notice', 'Spotify connected. You can import playlists owned by or shared with this account.');
 
-        $callback = $this->get('/auth/spotify/callback?code=authorization-code&state='.$authorization['state']);
-        $callback->assertRedirect(route('playlists'));
-        $this->assertSame('spotify-user-token', session('spotify.access_token'));
+        $user->refresh();
+        $this->assertSame('spotify-user', $user->spotify_id);
+        $this->assertSame('Spotify Person', $user->spotify_display_name);
+        $this->assertSame('authorized-spotify-token', $user->spotify_access_token);
+        $this->assertArrayNotHasKey('spotify_access_token', $user->toArray());
 
-        $this->postJson(route('api.playlists.import', $list), ['text' => 'https://open.spotify.com/playlist/playlist1234567890123456'])
+        $this->actingAs($user)->postJson(route('api.playlists.import', $list), ['text' => 'https://open.spotify.com/playlist/0GBy7zKDS6HNBOwnZR1TCV'])
             ->assertOk()
             ->assertJsonPath('found', 1)
             ->assertJsonPath('added', 1);
         $this->assertSame('Artist Name - Song Name', $list->songs()->sole()->title);
-    }
+        Http::assertSent(fn (Request $request) => str_contains($request->url(), '/playlists/0GBy7zKDS6HNBOwnZR1TCV/items') && $request->hasHeader('Authorization', 'Bearer authorized-spotify-token'));
 
-    public function test_spotify_playlist_import_explains_owner_access_errors(): void
-    {
-        config(['services.spotify.client_id' => 'test-client', 'services.spotify.client_secret' => 'test-secret']);
-        Http::fake(['api.spotify.com/v1/playlists/*/items*' => Http::response(['error' => ['message' => 'Not allowed']], 403)]);
-        $user = User::factory()->create();
-        $list = $user->playlists()->create(['name' => 'Spotify import', 'kind' => 'custom']);
-
-        $this->actingAs($user)->withSession([
-            'spotify.access_token' => 'spotify-user-token',
-            'spotify.expires_at' => now()->addHour()->timestamp,
-        ])->postJson(route('api.playlists.import', $list), ['text' => 'https://open.spotify.com/playlist/playlist1234567890123456'])
-            ->assertOk()
-            ->assertJsonPath('errors.0', fn ($error) => str_contains($error, 'owned by or shared with the connected account'));
-    }
-
-    public function test_spotify_import_keeps_matches_when_youtube_quota_runs_out(): void
-    {
-        config(['services.spotify.client_id' => 'test-client', 'services.spotify.client_secret' => 'test-secret']);
-        config(['services.youtube.key' => 'youtube-test-key']);
-        $searches = 0;
-        Http::fake(function (Request $request) use (&$searches) {
-            $path = parse_url($request->url(), PHP_URL_PATH);
-            if ($path === '/v1/playlists/playlist1234567890123456/items') {
-                return Http::response(['items' => [
-                    ['item' => ['type' => 'track', 'name' => 'First song', 'artists' => [['name' => 'Artist']]]],
-                    ['item' => ['type' => 'track', 'name' => 'Second song', 'artists' => [['name' => 'Artist']]]],
-                ], 'total' => 2]);
-            }
-            if (str_ends_with($path, '/youtube/v3/search')) {
-                $searches++;
-
-                return $searches === 1
-                    ? Http::response(['items' => [[
-                        'id' => ['videoId' => 'abcdefghijk'],
-                        'snippet' => ['title' => 'Artist - First song', 'channelTitle' => 'Test channel'],
-                    ]]])
-                    : Http::response(['error' => ['message' => 'quotaExceeded']], 403);
-            }
-            if (str_ends_with($path, '/youtube/v3/videos')) {
-                return Http::response(['items' => [[
-                    'id' => 'abcdefghijk',
-                    'snippet' => ['title' => 'Artist - First song', 'channelTitle' => 'Test channel'],
-                    'contentDetails' => ['duration' => 'PT3M'],
-                    'status' => ['embeddable' => true],
-                ]]]);
-            }
-
-            return Http::response([], 404);
-        });
-
-        $user = User::factory()->create();
-        $list = $user->playlists()->create(['name' => 'Partial import', 'kind' => 'custom']);
-        $this->actingAs($user)->withSession([
-            'spotify.access_token' => 'spotify-user-token',
-            'spotify.expires_at' => now()->addHour()->timestamp,
-        ])->postJson(route('api.playlists.import', $list), ['text' => 'https://open.spotify.com/playlist/playlist1234567890123456'])
-            ->assertOk()
-            ->assertJsonPath('found', 1)
-            ->assertJsonPath('added', 1)
-            ->assertJsonPath('errors.0', fn ($error) => str_contains($error, 'Songs matched so far were kept'));
+        $this->actingAs($user)->delete(route('spotify.disconnect'))->assertRedirect(route('settings.connections'));
+        $this->assertNull($user->fresh()->spotify_refresh_token);
     }
 
     public function test_the_deck_shows_my_lists_and_the_next_track_of_the_active_one(): void

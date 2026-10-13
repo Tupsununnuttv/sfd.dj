@@ -86,10 +86,10 @@ class CoinsTest extends TestCase
         $room->enqueue(['youtube_id' => 'aaaaaaaaaaa', 'title' => 'Gold Digger', 'thumbnail' => null, 'duration' => 200], $dj->id);
 
         foreach (User::factory()->count(5)->create() as $fan) {
-            Vote::create(['playlist_item_id' => $room->current_item_id, 'user_id' => $fan->id, 'type' => 'woot']);
+            Vote::create(['playlist_item_id' => $room->fresh()->current_item_id, 'user_id' => $fan->id, 'type' => 'woot']);
         }
         $this->travel(3)->minutes(); // it was heard
-        $room->advance();
+        $room->refresh()->advance();
 
         $this->assertSame(5 + 2, $dj->refresh()->coins, '5 coins, and 2 more for 5 woots');
         $this->assertSame('song', $dj->coinHistory()->first()->reason);

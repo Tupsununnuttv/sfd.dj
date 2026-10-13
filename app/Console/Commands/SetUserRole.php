@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Enums\Role;
 use App\Models\User;
+use App\Support\DiscordRoleSync;
 use Illuminate\Console\Command;
 
 class SetUserRole extends Command
@@ -27,6 +28,9 @@ class SetUserRole extends Command
         $user->forceFill(['roles' => ($this->option('remove') ? $roles : $roles->push($role->value))->values()->all()])->save();
 
         $this->info("{$user->name} is now: ".$user->role()->label());
+        if ($user->discord_id && DiscordRoleSync::configured() && ($syncError = DiscordRoleSync::sync($user))) {
+            $this->warn('Discord role sync failed: '.$syncError);
+        }
 
         return self::SUCCESS;
     }

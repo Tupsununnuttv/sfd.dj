@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\User;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -16,6 +17,34 @@ final class Stripe
     public static function on(): bool
     {
         return filled(config('services.stripe.secret'));
+    }
+
+    /** @return array{status: 'ok'|'warn', message: string} */
+    public static function apiHealth(): array
+    {
+        if (! self::on()) {
+            return ['status' => 'warn', 'message' => 'STRIPE_SECRET is missing. Add a test key locally or a live key to the production environment.'];
+        }
+
+        try {
+            $response = Http::withToken((string) config('services.stripe.secret'))
+                ->acceptJson()
+                ->connectTimeout(2)
+                ->timeout(3)
+                ->get(self::API.'account');
+        } catch (ConnectionException) {
+            return ['status' => 'warn', 'message' => 'Stripe could not be reached. Check the server connection and try again.'];
+        }
+
+        if ($response->successful()) {
+            return ['status' => 'ok', 'message' => 'Stripe accepted the API key and the account check succeeded. The key itself is never shown here.'];
+        }
+
+        return match ($response->status()) {
+            401 => ['status' => 'warn', 'message' => 'Stripe rejected STRIPE_SECRET. Check that it is current and belongs to this environment.'],
+            403 => ['status' => 'warn', 'message' => 'This restricted key cannot read the Stripe account. Grant Account: Read for this health check, and ensure Checkout Session and Billing Portal Session write permissions are enabled.'],
+            default => ['status' => 'warn', 'message' => 'Stripe returned HTTP '.$response->status().' during the account check. Check Stripe Workbench request logs.'],
+        };
     }
 
     /** A Stripe Checkout page where the person pays for the plan, by the month or the year. Returns its address. */

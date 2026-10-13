@@ -44,7 +44,7 @@ export default function MyStuff({ stats, rooms, playlists, recent, worn, account
         [account.email_verified, 'Email confirmed', 'So you can get back in if you forget your password', route('verification.notice')],
         [account.two_factor, 'Two-factor login', 'Protects your account even if your password leaks', route('settings.account')],
         [account.photo, 'Profile photo', 'Let people see who you are', route('profile.edit')],
-        [!!account.discord, 'Discord linked', account.discord ? `Linked as ${account.discord}` : 'Show your Discord name on your profile', route('settings.account')],
+        [!!account.discord, 'Discord linked', account.discord ? `Linked as ${account.discord}` : 'Show your Discord name on your profile', route('settings.connections')],
     ];
     const secure = checklist.filter(([ok]) => ok).length;
 

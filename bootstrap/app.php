@@ -14,11 +14,6 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // on the live site Vercel stands in front of the app (it sets VERCEL=1): trust what it says about the visitor (https, their IP). Here nobody stands in front, so nobody is trusted
-        if (getenv('VERCEL')) {
-            $middleware->trustProxies(at: '*');
-        }
-
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,

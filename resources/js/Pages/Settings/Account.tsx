@@ -1,4 +1,3 @@
-import SocialIcon from '@/Components/SocialIcon';
 import { card, Field, ghostBtn, ProgressBar, SettingsSection, fieldClass } from '@/Components/ui';
 import SettingsLayout from '@/Layouts/SettingsLayout';
 import { ago } from '@/lib/time';
@@ -10,13 +9,6 @@ import DeleteUserForm from '../Profile/Partials/DeleteUserForm';
 import TwoFactorForm, { TwoFactorState } from '../Profile/Partials/TwoFactorForm';
 import UpdatePasswordForm from '../Profile/Partials/UpdatePasswordForm';
 
-interface DiscordState {
-    configured: boolean;
-    username: string | null;
-    notice: string | null;
-    redirect: string | null;
-}
-
 interface Session {
     id: string;
     current: boolean;
@@ -25,36 +17,6 @@ interface Session {
     browser: string;
     os: string;
     mobile: boolean;
-}
-
-function DiscordCard({ discord }: { discord: DiscordState }) {
-    return (
-        <div className="space-y-3">
-            {discord.notice && <p className="rounded-lg bg-violet-500/10 px-3 py-2 text-sm text-violet-200">{discord.notice}</p>}
-
-            {discord.username ? (
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 p-4">
-                    <p className="flex items-center gap-2 text-sm"><SocialIcon name="discord" size={18} /> Linked as <span className="font-semibold text-indigo-300">{discord.username}</span></p>
-                    <button onClick={() => confirm('Unlink your Discord account?') && router.delete(route('discord.disconnect'), { preserveScroll: true })} className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20">Unlink</button>
-                </div>
-            ) : discord.configured ? (
-                <a href={route('discord.connect')} target="_top" className="inline-flex items-center gap-2 rounded-lg bg-[#5865F2] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90">
-                    <SocialIcon name="discord" /> Connect Discord
-                </a>
-            ) : (
-                <div className="space-y-2">
-                    <button disabled className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg bg-[#5865F2]/40 px-4 py-2.5 text-sm font-semibold text-white/70"><SocialIcon name="discord" /> Connect Discord</button>
-                    <p className="text-xs text-neutral-500">Discord linking is not switched on for this site yet.</p>
-                </div>
-            )}
-
-            {discord.redirect && !discord.configured && (
-                <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
-                    Staff: create an application at discord.com/developers, add <code>{discord.redirect}</code> under OAuth2 → Redirects, and put its ids in .env as DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET.
-                </p>
-            )}
-        </div>
-    );
 }
 
 /** Every device you are logged in on. */
@@ -102,7 +64,7 @@ function Sessions({ sessions }: { sessions: { supported: boolean; list: Session[
     );
 }
 
-export default function Account({ twoFactor, discord, sessions }: { twoFactor: TwoFactorState; discord: DiscordState; sessions: { supported: boolean; list: Session[] } }) {
+export default function Account({ twoFactor, sessions }: { twoFactor: TwoFactorState; sessions: { supported: boolean; list: Session[] } }) {
     const { user } = usePage<PageProps>().props.auth;
 
     const checks: [boolean, string, string][] = [
@@ -130,10 +92,6 @@ export default function Account({ twoFactor, discord, sessions }: { twoFactor: T
 
             <div className={`${card} p-6`}><UpdatePasswordForm className="max-w-xl" /></div>
             <div className={`${card} p-6`}><TwoFactorForm state={twoFactor} className="max-w-xl" /></div>
-
-            <SettingsSection title="Discord" text="Link your Discord account so people can tell it is really you. We only learn your Discord name, never your messages or servers.">
-                <DiscordCard discord={discord} />
-            </SettingsSection>
 
             <SettingsSection title="Where you are logged in" text="Every browser or device that has this account open. Log out the ones you do not recognise.">
                 <Sessions sessions={sessions} />

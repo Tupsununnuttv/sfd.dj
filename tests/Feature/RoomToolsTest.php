@@ -121,7 +121,7 @@ class RoomToolsTest extends TestCase
 
         // cycling: the song that was played comes back at the end of the line
         $room->enqueue($song, $host->id);
-        $room->enqueue(['title' => 'B'] + $song, $host->id);
+        $room->enqueue(['youtube_id' => 'bbbbbbbbbbb', 'title' => 'B'] + $song, $host->id);
         $room->refresh()->advance();
         $this->assertSame(['B', 'A'], $room->items()->pluck('title')->all());
         $this->assertSame(1, PlaylistItem::where('room_id', $room->id)->whereNotNull('played_at')->count());

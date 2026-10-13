@@ -8,12 +8,8 @@ use App\Models\User;
 use App\Services\Music;
 use App\Services\YouTube;
 use App\Support\Plans;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -32,70 +28,6 @@ class PlaylistController extends Controller
     public function index(): Response
     {
         return Inertia::render('Playlists');
-    }
-
-    public function spotifyConnect(Request $request): RedirectResponse
-    {
-        $clientId = config('services.spotify.client_id');
-        abort_unless($clientId && config('services.spotify.client_secret'), 503, 'Spotify playlist imports are not configured.');
-
-        $state = Str::random(48);
-        $request->session()->put('spotify.oauth_state', $state);
-        $returnTo = route('playlists');
-        $referer = $request->headers->get('referer');
-        if (! $request->boolean('resume_import') && is_string($referer)) {
-            $refererParts = parse_url($referer);
-            if (($refererParts['host'] ?? null) === $request->getHost()) {
-                $returnTo = ($refererParts['path'] ?? '/playlists').(isset($refererParts['query']) ? '?'.$refererParts['query'] : '');
-            }
-        }
-        $request->session()->put('spotify.return_to', $returnTo);
-        $redirectUri = config('services.spotify.redirect_uri') ?: route('spotify.callback');
-
-        return redirect('https://accounts.spotify.com/authorize?'.http_build_query([
-            'client_id' => $clientId,
-            'response_type' => 'code',
-            'redirect_uri' => $redirectUri,
-            'scope' => 'playlist-read-private playlist-read-collaborative',
-            'state' => $state,
-            'show_dialog' => 'true',
-        ]));
-    }
-
-    public function spotifyCallback(Request $request): RedirectResponse
-    {
-        $expectedState = $request->session()->pull('spotify.oauth_state');
-        $state = $request->query('state');
-        abort_unless(is_string($expectedState) && is_string($state) && hash_equals($expectedState, $state), 403, 'Spotify authorization state did not match. Try connecting again.');
-
-        if ($request->filled('error')) {
-            return redirect()->route('playlists');
-        }
-
-        $code = $request->query('code');
-        abort_unless(is_string($code) && $code !== '', 400, 'Spotify did not return an authorization code.');
-
-        try {
-            $response = Http::timeout(10)->asForm()->withBasicAuth(
-                config('services.spotify.client_id'),
-                config('services.spotify.client_secret'),
-            )->post('https://accounts.spotify.com/api/token', [
-                'grant_type' => 'authorization_code',
-                'code' => $code,
-                'redirect_uri' => config('services.spotify.redirect_uri') ?: route('spotify.callback'),
-            ]);
-        } catch (ConnectionException) {
-            abort(502, 'Could not reach Spotify to complete authorization.');
-        }
-        abort_unless($response->successful() && $response->json('access_token'), 502, 'Spotify authorization failed. Check the app credentials and registered redirect URL.');
-
-        $request->session()->put([
-            'spotify.access_token' => $response->json('access_token'),
-            'spotify.refresh_token' => $response->json('refresh_token'),
-            'spotify.expires_at' => now()->addSeconds((int) $response->json('expires_in', 3600))->timestamp,
-        ]);
-
-        return redirect()->to($request->session()->pull('spotify.return_to', route('playlists')));
     }
 
     public function list(Request $request): JsonResponse
@@ -211,8 +143,7 @@ class PlaylistController extends Controller
             $info = $youtube->video($data['video_id']) ?? throw ValidationException::withMessages(['url' => 'Video not found or cannot be embedded.']);
             $songs = [['youtube_id' => $data['video_id'], 'origin' => 'youtube'] + $info];
         } elseif (isset($data['url'])) {
-            $spotifyToken = preg_match('~open\.spotify\.com/(?:playlist|album)/~', $data['url']) ? $this->spotifyAccessToken($request) : null;
-            $songs = $music->resolve($data['url'], $spotifyToken);
+            $songs = $music->resolve($data['url'], $request->user());
         } else {
             throw ValidationException::withMessages(['url' => 'Paste a link or pick a song.']);
         }
@@ -220,14 +151,13 @@ class PlaylistController extends Controller
         return response()->json(['added' => $playlist->addSongs($songs), 'found' => count($songs)]);
     }
 
-    /** Import many links at once: one link per line (YouTube playlists are expanded, Spotify playlists need API credentials). */
+    /** Import many links at once: one link per line. YouTube playlists and Spotify playlists accessible to the user are expanded. */
     public function import(Request $request, Playlist $playlist, Music $music): JsonResponse
     {
         $this->own($request, $playlist);
         $text = $request->validate(['text' => ['required', 'string', 'max:100000']])['text'];
 
-        $spotifyToken = preg_match('~open\.spotify\.com/(?:playlist|album)/~', $text) ? $this->spotifyAccessToken($request) : null;
-        [$songs, $errors] = $music->resolveMany($text, $spotifyToken);
+        [$songs, $errors] = $music->resolveMany($text, $request->user());
 
         return response()->json(['added' => $playlist->addSongs($songs), 'found' => count($songs), 'errors' => $errors]);
     }
@@ -255,45 +185,5 @@ class PlaylistController extends Controller
     private function own(Request $request, Playlist $playlist): void
     {
         abort_unless($playlist->user_id === $request->user()->id, 403);
-    }
-
-    private function spotifyAccessToken(Request $request): ?string
-    {
-        $session = $request->session();
-        $accessToken = $session->get('spotify.access_token');
-        if (is_string($accessToken) && $session->get('spotify.expires_at', 0) > now()->addMinute()->timestamp) {
-            return $accessToken;
-        }
-
-        $refreshToken = $session->get('spotify.refresh_token');
-        if (! is_string($refreshToken) || ! config('services.spotify.client_id') || ! config('services.spotify.client_secret')) {
-            return null;
-        }
-
-        try {
-            $response = Http::timeout(8)->asForm()->withBasicAuth(
-                config('services.spotify.client_id'),
-                config('services.spotify.client_secret'),
-            )->post('https://accounts.spotify.com/api/token', [
-                'grant_type' => 'refresh_token',
-                'refresh_token' => $refreshToken,
-            ]);
-        } catch (ConnectionException) {
-            return null;
-        }
-
-        if (! $response->successful() || ! $response->json('access_token')) {
-            $session->forget(['spotify.access_token', 'spotify.refresh_token', 'spotify.expires_at']);
-
-            return null;
-        }
-
-        $session->put([
-            'spotify.access_token' => $response->json('access_token'),
-            'spotify.refresh_token' => $response->json('refresh_token', $refreshToken),
-            'spotify.expires_at' => now()->addSeconds((int) $response->json('expires_in', 3600))->timestamp,
-        ]);
-
-        return $response->json('access_token');
     }
 }

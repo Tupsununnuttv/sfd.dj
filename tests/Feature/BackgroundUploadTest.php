@@ -33,9 +33,19 @@ class BackgroundUploadTest extends TestCase
         return $host->rooms()->create(['name' => 'Lobby', 'slug' => 'lobby-bg']);
     }
 
+    private function fakeUploads(): string
+    {
+        $disk = 'room-uploads-'.bin2hex(random_bytes(8));
+        config(['filesystems.uploads' => $disk]);
+        config(["filesystems.disks.{$disk}.driver" => 'local']);
+        Storage::fake($disk);
+
+        return $disk;
+    }
+
     public function test_the_host_uploads_a_picture_and_it_goes_on_at_once(): void
     {
-        Storage::fake('local');
+        $disk = $this->fakeUploads();
         $host = User::factory()->create();
         $room = $this->room($host);
 
@@ -44,7 +54,7 @@ class BackgroundUploadTest extends TestCase
         $room->refresh();
         $this->assertSame('custom', $room->background);
         $this->assertMatchesRegularExpression('/^[a-f0-9]{24}\.png$/', $room->custom_background);
-        Storage::disk('local')->assertExists("room-backgrounds/{$room->custom_background}");
+        Storage::disk($disk)->assertExists("room-backgrounds/{$room->custom_background}");
 
         $this->actingAs($host)->get("/rooms/{$room->slug}")->assertInertia(fn (Assert $page) => $page
             ->where('room.background', 'custom')
@@ -58,26 +68,25 @@ class BackgroundUploadTest extends TestCase
         // a new picture replaces the old one and its file
         $old = $room->custom_background;
         $this->actingAs($host)->post("/rooms/{$room->slug}/background", ['image' => $this->png(1280, 720, 'wall2.jpg')])->assertSessionHasNoErrors();
-        Storage::disk('local')->assertMissing("room-backgrounds/{$old}");
+        Storage::disk($disk)->assertMissing("room-backgrounds/{$old}");
         $this->assertNotSame($old, $room->refresh()->custom_background);
     }
 
     public function test_room_settings_managers_can_upload_and_remove_pictures_but_other_members_cannot(): void
     {
-        Storage::fake('local');
+        $disk = $this->fakeUploads();
         $host = User::factory()->create();
         $room = $this->room($host);
         $manager = User::factory()->create();
         $role = $room->roles()->where('name', 'Manager')->first();
         RoomMember::create(['room_id' => $room->id, 'user_id' => $manager->id, 'room_role_id' => $role->id]);
 
-        Storage::fake('local');
         $this->actingAs($manager)->post("/rooms/{$room->slug}/background", ['image' => $this->png(1600, 900, 'wall.png')])->assertSessionHasNoErrors();
         $file = $room->refresh()->custom_background;
-        Storage::disk('local')->assertExists("room-backgrounds/{$file}");
+        Storage::disk($disk)->assertExists("room-backgrounds/{$file}");
         $this->actingAs($manager)->delete("/rooms/{$room->slug}/background")->assertRedirect();
         $this->assertNull($room->refresh()->custom_background);
-        Storage::disk('local')->assertMissing("room-backgrounds/{$file}");
+        Storage::disk($disk)->assertMissing("room-backgrounds/{$file}");
 
         $member = User::factory()->create();
         $room->members()->create(['user_id' => $member->id, 'room_role_id' => $room->roles()->where('name', 'Bouncer')->value('id')]);

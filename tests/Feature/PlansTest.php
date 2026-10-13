@@ -43,11 +43,11 @@ class PlansTest extends TestCase
     {
         $me = User::factory()->create();
         $this->assertNull($me->activePlan());
-        $this->assertSame(['playlists' => 30, 'songs' => 500, 'emojis' => 30], $me->limits());
+        $this->assertSame(['playlists' => 30, 'songs' => 5000, 'emojis' => 30], $me->limits());
 
         $me->forceFill(['plan' => 'plus', 'plan_until' => now()->addDays(3)])->save();
         $this->assertSame('plus', $me->refresh()->activePlan());
-        $this->assertSame(['playlists' => 60, 'songs' => 1000, 'emojis' => 50], $me->limits());
+        $this->assertSame(['playlists' => 60, 'songs' => 10000, 'emojis' => 50], $me->limits());
         $this->assertContains(['key' => 'sub:plus', 'label' => 'SFD.DJ Plus', 'color' => '#2dd4bf', 'icon' => '💎'], $me->badges);
         $me->addXp(100);
         $this->assertSame(125, $me->refresh()->xp);
@@ -68,11 +68,12 @@ class PlansTest extends TestCase
         // a plan given for good has no end
         $me->forceFill(['plan' => 'premium', 'plan_until' => null])->save();
         $this->assertSame('premium', $me->refresh()->activePlan());
-        $this->assertSame(2000, $me->limits()['songs']);
+        $this->assertSame(20000, $me->limits()['songs']);
     }
 
     public function test_the_pages_show_the_plans_and_their_prices(): void
     {
+        config(['services.stripe.secret' => null]);
         $this->assertSame('€2.99', Plans::catalog()[0]['month']);
         $this->assertSame('€59.99', Plans::catalog()[1]['year']);
 
@@ -80,11 +81,12 @@ class PlansTest extends TestCase
 
         $me = User::factory()->create();
         $this->actingAs($me)->get('/settings/plus')->assertInertia(fn (Assert $page) => $page->component('Settings/Plus')->where('mine', null)->where('payments', false)->has('plans', 2));
-        $this->actingAs($me)->get('/dashboard')->assertInertia(fn (Assert $page) => $page->where('auth.limits.songs', 500));
+        $this->actingAs($me)->get('/dashboard')->assertInertia(fn (Assert $page) => $page->where('auth.limits.songs', 5000));
     }
 
     public function test_buying_goes_to_stripe_checkout_only_when_payments_are_connected(): void
     {
+        config(['services.stripe.secret' => null]);
         $me = User::factory()->create();
         $this->actingAs($me)->post('/settings/plus/checkout', ['plan' => 'plus', 'interval' => 'month'])->assertStatus(503);
 
@@ -135,6 +137,35 @@ class PlansTest extends TestCase
         // the subscription ended
         $this->webhook(['type' => 'customer.subscription.deleted', 'data' => ['object' => $this->subscription($me, 'plus', ['status' => 'canceled'])]])->assertNoContent();
         $this->assertNull($me->refresh()->activePlan());
+    }
+
+    public function test_admin_overview_reports_stripe_api_and_webhook_health(): void
+    {
+        $admin = User::factory()->create(['roles' => ['admin']]);
+        config(['services.stripe.secret' => 'not-a-real-stripe-key', 'services.stripe.webhook_secret' => self::SECRET]);
+        Http::fakeSequence('api.stripe.com/v1/account')
+            ->push(['id' => 'acct_test'], 200)
+            ->push([], 401);
+
+        $this->actingAs($admin)->get('/admin')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('overview.health.6.0', 'Stripe API (subscriptions)')
+            ->where('overview.health.6.1', 'ok')
+            ->where('overview.health.7.0', 'Stripe webhook')
+            ->where('overview.health.7.1', 'ok'));
+
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://api.stripe.com/v1/account'
+            && $request->hasHeader('Authorization', 'Bearer not-a-real-stripe-key'));
+
+        $this->actingAs($admin)->get('/admin')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('overview.health.6.1', 'warn')
+            ->where('overview.health.6.2', 'Stripe rejected STRIPE_SECRET. Check that it is current and belongs to this environment.'));
+
+        config(['services.stripe.secret' => null, 'services.stripe.webhook_secret' => null]);
+        Http::fake();
+
+        $this->actingAs($admin)->get('/admin')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('overview.health.6.1', 'warn')
+            ->where('overview.health.7.1', 'warn'));
     }
 
     public function test_staff_give_and_take_a_plan_by_hand(): void

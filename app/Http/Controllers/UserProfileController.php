@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Friendship;
 use App\Models\PlaylistItem;
+use App\Models\Room;
 use App\Models\User;
 use App\Models\Vote;
 use App\Support\Awards;
+use App\Support\RoomPresence;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -33,12 +35,23 @@ class UserProfileController extends Controller
 
         $link = $me ? Friendship::where(fn ($q) => $q->where('user_id', $me->id)->where('friend_id', $user->id))
             ->orWhere(fn ($q) => $q->where('user_id', $user->id)->where('friend_id', $me->id))->first() : null;
+        $showActivity = $user->shownStatus() !== 'offline';
+        $roomId = $showActivity ? (RoomPresence::whereIs()[$user->id] ?? null) : null;
+        $room = $roomId ? Room::find($roomId) : null;
 
         return $user->only('id', 'name', 'username', 'avatar', 'cosmetics', 'primary_role', 'badges', 'level', 'bio', 'favorite_genre', 'pronouns', 'flag') + [
             'status' => $me?->id === $user->id ? $user->status : $user->shownStatus(), // you see what you chose, everybody else what you let them see
+            'activity' => $showActivity ? [
+                'online' => (bool) $user->last_seen_at?->gt(now()->subMinutes(5)),
+                'listening' => $room && $room->canEnter($me) ? $room->only('name', 'slug') : null,
+            ] : null,
             'awards' => array_map(Awards::badge(...), Awards::clean($user->awards)),
             'joined' => $user->created_at->toIso8601String(),
             'discord' => $user->discord_username,
+            'youtube_channel' => $user->youtube_channel_id ? [
+                'title' => $user->youtube_channel_title,
+                'url' => 'https://www.youtube.com/channel/'.$user->youtube_channel_id,
+            ] : null,
             'is_me' => $me?->id === $user->id,
             'friendship' => ! $link ? 'none' : ($link->status === 'accepted' ? 'friends' : ($link->user_id === $me->id ? 'sent' : 'received')),
             'friendship_id' => $link?->id,

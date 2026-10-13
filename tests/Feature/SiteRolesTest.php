@@ -31,8 +31,8 @@ class SiteRolesTest extends TestCase
             ['admin', '🔴', 'Admin', 'staff'],
             ['lead_moderator', '🟣', 'Lead Moderator', 'staff'],
             ['brand_ambassador', '💗', 'Brand Ambassador', 'staff'],
-            ['moderator', '🟠', 'Moderator', 'staff'],
             ['site_moderator', '🟢', 'Site Moderator', 'staff'],
+            ['moderator', '🟠', 'Moderator', 'staff'],
             ['helper', '🟡', 'Helper', 'staff'],
             ['promoter', '📢', 'Promoter', 'staff'],
             ['translator', '🌐', 'Translator', 'staff'],
@@ -187,9 +187,10 @@ class SiteRolesTest extends TestCase
 
         // the Users tab of a room: the host, then the room roles in their order, then everybody else
         $room = file_get_contents(resource_path('js/Pages/Room.tsx'));
-        $this->assertStringContainsString('{ role: HOST_ROLE, people: users.filter((u) => u.id === host.id) }', $room);
+        $this->assertStringContainsString('const roleGroups = [', $room);
+        $this->assertStringContainsString('people: rankedUsers.filter((member) => member.id === host.id && !isSiteRanked(member))', $room);
         $this->assertStringContainsString('[...roles].sort((a, b) => a.rank - b.rank)', $room);
-        $this->assertStringContainsString("label: 'Users'", $room);
+        $this->assertStringContainsString("type Tab = 'room' | 'chat' | 'waitlist' | 'users'", $room);
         $this->assertStringContainsString('data-role-group={role.label}', $room);
     }
 }

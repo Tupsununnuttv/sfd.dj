@@ -30,19 +30,22 @@ return [
 
     'youtube' => [
         'key' => env('YOUTUBE_API_KEY'),
+        'client_id' => env('YOUTUBE_CLIENT_ID'),
+        'client_secret' => env('YOUTUBE_CLIENT_SECRET'),
     ],
 
-    // Optional: lets people import whole Spotify playlists and albums (single tracks work without it).
     'spotify' => [
         'client_id' => env('SPOTIFY_CLIENT_ID'),
         'client_secret' => env('SPOTIFY_CLIENT_SECRET'),
-        'redirect_uri' => env('SPOTIFY_REDIRECT_URI'),
     ],
 
     // Lets people link their Discord account (Settings → Account). Create the app at discord.com/developers.
     'discord' => [
         'client_id' => env('DISCORD_CLIENT_ID'),
         'client_secret' => env('DISCORD_CLIENT_SECRET'),
+        'bot_token' => env('DISCORD_BOT_TOKEN'),
+        'guild_id' => env('DISCORD_GUILD_ID'),
+        'role_prefix' => env('DISCORD_ROLE_PREFIX', 'SFD.DJ | '),
     ],
 
     'giphy' => [
