@@ -52,8 +52,8 @@ export default function UserProfile({ profile: p }: Props) {
                         {p.youtube_channel && <a href={p.youtube_channel.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-red-300"><SocialIcon name="youtube" size={14} /> {p.youtube_channel.title || 'YouTube channel'}</a>}
                     </p>
                     {p.activity && (p.activity.online || p.activity.listening) && (
-                        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-emerald-300" aria-label="SFD.DJ activity">
-                            {p.activity.online && <span className="flex items-center gap-1"><Radio size={14} /> On SFD.DJ</span>}
+                        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-emerald-300" aria-label="SFD-DJ.EU activity">
+                            {p.activity.online && <span className="flex items-center gap-1"><Radio size={14} /> On SFD-DJ.EU</span>}
                             {p.activity.listening && <Link href={route('rooms.show', p.activity.listening.slug)} className="flex items-center gap-1 hover:underline"><Headphones size={14} /> Listening in {p.activity.listening.name}</Link>}
                         </p>
                     )}

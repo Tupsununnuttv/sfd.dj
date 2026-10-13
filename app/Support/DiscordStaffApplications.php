@@ -24,7 +24,7 @@ class DiscordStaffApplications
         $discordName = $user->discord_username ?: 'Discord user';
         $requirements = array_filter(array_map('trim', explode('|', (string) config('services.discord.staff_application_requirements'))));
         $questions = (array) config('services.discord.staff_application_questions');
-        $description = 'Submitted via the SFD.DJ website.';
+        $description = 'Submitted via the SFD-DJ.EU website.';
         if ($requirements !== []) {
             $description .= "\n\nRequirements: ".implode('; ', $requirements);
         }
@@ -34,7 +34,7 @@ class DiscordStaffApplications
                 'description' => $description,
                 'color' => 5793266,
                 'fields' => [
-                    ['name' => 'SFD.DJ account', 'value' => $user->username, 'inline' => true],
+                    ['name' => 'SFD-DJ.EU account', 'value' => $user->username, 'inline' => true],
                     ['name' => 'Discord account', 'value' => $discordName.' (`'.$user->discord_id.')', 'inline' => true],
                     ['name' => $questions['motivation'], 'value' => $answers['motivation']],
                     ['name' => $questions['experience'], 'value' => $answers['experience']],

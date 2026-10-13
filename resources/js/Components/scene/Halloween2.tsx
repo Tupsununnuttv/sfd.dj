@@ -443,8 +443,8 @@ export default function Halloween2Backdrop({ palette: p, live = false, withBooth
             <path d="M752 374L746 392M848 374L854 392" stroke="#3a3346" strokeWidth="3" strokeDasharray="4 2.4" />
             <rect x="722" y="390" width="156" height="36" rx="5" fill="#2a1712" stroke="#120806" strokeWidth="2" />
             <rect x="727" y="395" width="146" height="26" rx="3" fill="none" stroke="#5a3a26" strokeOpacity=".7" />
-            <text x="800" y="416" textAnchor="middle" fontFamily={font} fontWeight="900" fontSize="19" letterSpacing="2" fill="#d9f99d">SFD.DJ</text>
-            <text className="sc-flame" x="800" y="416" textAnchor="middle" fontFamily={font} fontWeight="900" fontSize="19" letterSpacing="2" fill="#a3e635" opacity=".45" filter={`url(#${u('soft')})`}>SFD.DJ</text>
+            <text x="800" y="416" textAnchor="middle" fontFamily={font} fontWeight="900" fontSize="19" letterSpacing="2" fill="#d9f99d">SFD-DJ.EU</text>
+            <text className="sc-flame" x="800" y="416" textAnchor="middle" fontFamily={font} fontWeight="900" fontSize="19" letterSpacing="2" fill="#a3e635" opacity=".45" filter={`url(#${u('soft')})`}>SFD-DJ.EU</text>
 
             {/* candles that float in the air */}
             {FLOATING.map(([x, y, h], i) => (

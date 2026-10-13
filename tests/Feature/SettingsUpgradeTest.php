@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Friendship;
+use App\Models\PlaylistItem;
 use App\Models\Room;
 use App\Models\SiteEvent;
 use App\Models\User;
+use App\Models\Vote;
 use App\Models\Whisper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -175,7 +177,7 @@ class SettingsUpgradeTest extends TestCase
         $room = $other->rooms()->create(['name' => 'Beats', 'slug' => 'beats-1', 'genre' => Room::GENRES[0]]);
         $room->enqueue(['youtube_id' => 'aaaaaaaaaaa', 'title' => 'Song A', 'thumbnail' => null, 'duration' => 200], $other->id);
         $room->refresh()->advance();
-        \App\Models\Vote::create(['playlist_item_id' => \App\Models\PlaylistItem::first()->id, 'user_id' => $me->id, 'type' => 'woot']);
+        Vote::create(['playlist_item_id' => PlaylistItem::first()->id, 'user_id' => $me->id, 'type' => 'woot']);
         $other->forceFill(['roles' => ['admin'], 'bio' => 'I run this place'])->save();
         SiteEvent::create(['title' => 'Party', 'starts_at' => now()->addDay()]);
 

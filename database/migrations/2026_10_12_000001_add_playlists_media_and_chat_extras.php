@@ -48,8 +48,8 @@ return new class extends Migration
 
         Schema::table('chat_messages', function (Blueprint $table) {
             foreach (['image' => fn () => $table->string('image')->nullable(),
-                      'sticker' => fn () => $table->string('sticker', 16)->nullable(),
-                      'reply_to_id' => fn () => $table->unsignedBigInteger('reply_to_id')->nullable()] as $column => $add) {
+                'sticker' => fn () => $table->string('sticker', 16)->nullable(),
+                'reply_to_id' => fn () => $table->unsignedBigInteger('reply_to_id')->nullable()] as $column => $add) {
                 if (! Schema::hasColumn('chat_messages', $column)) {
                     $add();
                 }

@@ -14,7 +14,7 @@ use App\Http\Middleware\MaintenanceMode;
 use Illuminate\Support\Facades\Route;
 
 /*
- * SFD.DJ public API, version 1. Authenticate with `Authorization: Bearer <token>`; make tokens (for yourself or for a bot)
+ * SFD-DJ.EU public API, version 1. Authenticate with `Authorization: Bearer <token>`; make tokens (for yourself or for a bot)
  * under Settings → Developers. Everything goes through the same permission checks as the website, so a bot can only do
  * what its room role allows. Room parameters are the room's slug.
  */

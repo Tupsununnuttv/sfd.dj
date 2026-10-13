@@ -74,7 +74,7 @@ interface Props { palette: ScenePalette; live?: boolean; withBooth?: boolean; he
 
 /**
  * Christmas V2 on a 1600 x 900 canvas: Christmas Eve inside a warm lodge. The video hangs in a gold frame on a stone chimney breast; under it a mantel with
- * candles, two nutcrackers and a garland, stockings, a wooden SFD.DJ sign and a fire in the hearth. On the left a tall window looks out on a snowy night
+ * candles, two nutcrackers and a garland, stockings, a wooden SFD-DJ.EU sign and a fire in the hearth. On the left a tall window looks out on a snowy night
  * (snow falling, Santa's sleigh across the moon) between red velvet curtains, with milk and cookies left out for Santa; on the right a big tree with warm
  * lights, red and gold baubles, a ribbon and presents. A wooden floor with a round braided rug under the booth, Santa's sack and a sleeping cat in a
  * Santa hat in one front corner, a toy train coming out of a snowy tunnel in the other.
@@ -657,7 +657,7 @@ export default function Christmas2Backdrop({ palette: p, live = false, withBooth
             <path d="M774 434L770 448M826 434L830 448" stroke="#d6c7a1" strokeWidth="1.6" />
             <rect x="746" y="446" width="108" height="28" rx="5" fill="#6b3f20" stroke="#2e170a" strokeWidth="2" />
             <rect x="750" y="450" width="100" height="20" rx="3" fill="none" stroke="#a26a3c" strokeOpacity=".6" />
-            <text x="800" y="466.4" textAnchor="middle" fontFamily={font} fontWeight="900" fontSize="16" letterSpacing="1" fill="#f7d774">SFD.DJ</text>
+            <text x="800" y="466.4" textAnchor="middle" fontFamily={font} fontWeight="900" fontSize="16" letterSpacing="1" fill="#f7d774">SFD-DJ.EU</text>
             {berries('sb', 754, 448)}
 
             {/* the tree */}

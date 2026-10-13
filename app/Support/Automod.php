@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Models\ChatMessage;
 use App\Models\Room;
 use App\Models\User;
 

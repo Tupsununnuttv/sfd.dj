@@ -480,7 +480,7 @@ export default function ChristmasBackdrop({ palette: p, live = false, withBooth 
             {Array.from({ length: 9 }, (_, i) => { const t = (i + 0.5) / 9; const x = 714 + t * 172; const y = 470 + 4 * 25 * t * (1 - t) + (t < 0.5 ? 0 : 0); return bulb(`gate${i}`, x, y + 6, i, 3.4, 12); })}
             <rect x="754" y="528" width="92" height="28" rx="6" fill="#102a1d" stroke="#fbbf24" strokeWidth="1.8" />
             <path d="M776 528V512M824 528V512" stroke="#c7d2dc" strokeWidth="1.4" />
-            <text x="800" y="548" textAnchor="middle" fontFamily={font} fontWeight="900" fontSize="17" letterSpacing="1" fill="#fde68a">SFD.DJ</text>
+            <text x="800" y="548" textAnchor="middle" fontFamily={font} fontWeight="900" fontSize="17" letterSpacing="1" fill="#fde68a">SFD-DJ.EU</text>
             {[700, 900].map((x) => <ellipse key={x} cx={x} cy="601" rx="26" ry="8" fill="#f8fcff" />)}
             {use('pineB', 650, 606, 0.78, 'gl')}{use('pineB', 950, 606, 0.78, 'gr')}
 

@@ -48,14 +48,14 @@ function downloadIcs(e: EventCard) {
     const esc = (t: string) => t.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
     const end = e.ends_at ?? new Date(new Date(e.starts_at).getTime() + 2 * 3600000).toISOString();
     const lines = [
-        'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//SFD.DJ//Events//EN', 'BEGIN:VEVENT',
+        'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//SFD-DJ.EU//Events//EN', 'BEGIN:VEVENT',
         `UID:sfddj-event-${e.id}@${window.location.host}`,
         `DTSTAMP:${stamp(new Date().toISOString())}`,
         `DTSTART:${stamp(e.starts_at)}`,
         `DTEND:${stamp(end)}`,
         `SUMMARY:${esc(e.title)}`,
         ...(e.description ? [`DESCRIPTION:${esc(e.description)}`] : []),
-        ...(e.room ? [`LOCATION:${esc(e.room.name)} on SFD.DJ`, `URL:${window.location.origin}/rooms/${e.room.slug}`] : []),
+        ...(e.room ? [`LOCATION:${esc(e.room.name)} on SFD-DJ.EU`, `URL:${window.location.origin}/rooms/${e.room.slug}`] : []),
         'END:VEVENT', 'END:VCALENDAR',
     ];
     const url = URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/calendar' }));

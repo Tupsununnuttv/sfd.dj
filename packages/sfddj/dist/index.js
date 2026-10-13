@@ -1,5 +1,5 @@
 /**
- * sfddj: the official JavaScript client for the SFD.DJ API.
+ * sfddj: the official JavaScript client for the SFD-DJ.EU API.
  * Works in Node 18+, Deno, Bun and browsers (browser extensions): it only needs `fetch`. No dependencies.
  */
 const FALLBACK = { 401: 'Bad or missing token.', 403: 'Not allowed: the account lacks the permission or room role for this.', 404: 'Not found.', 429: 'Too many requests, slow down.' };
@@ -15,7 +15,7 @@ export class SfdDjError extends Error {
 export class SfdDj {
     constructor(options) {
         if (!options?.token)
-            throw new Error('sfddj: a token is required (Settings → Developers on SFD.DJ).');
+            throw new Error('sfddj: a token is required (Settings → Developers on SFD-DJ.EU).');
         this.token = options.token;
         if (!options.baseUrl)
             throw new Error('sfddj: baseUrl is required, e.g. https://sfd.example.com');

@@ -17,7 +17,7 @@ export default function Pricing({ plans }: { plans: PlanInfo[] }) {
     return (
         <SiteLayout>
             <Head title="Pricing" />
-            <PageHeader crumbs={[['Pricing']]} title="Pricing" text="SFD.DJ is free, and it stays free. Plus and Premium are optional plans for people who want a gem next to their name, more XP and room for more." />
+            <PageHeader crumbs={[['Pricing']]} title="Pricing" text="SFD-DJ.EU is free, and it stays free. Plus and Premium are optional plans for people who want a gem next to their name, more XP and room for more." />
 
             <section className="mx-auto max-w-6xl space-y-6 px-6">
                 <div className="flex justify-center"><IntervalSwitch value={period} onChange={setPeriod} /></div>

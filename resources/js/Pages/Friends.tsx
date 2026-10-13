@@ -84,7 +84,7 @@ export default function Friends({ friends, incoming, outgoing, people, fans, sug
     return (
         <AppLayout
             title="Friends"
-            subtitle="Your people on SFD.DJ: see who is around, send a whisper, find new friends."
+            subtitle="Your people on SFD-DJ.EU: see who is around, send a whisper, find new friends."
             actions={<Link href={route('referral')} className="flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20"><UserPlus size={15} /> Invite friends</Link>}
         >
             <Head title="Friends" />
@@ -168,9 +168,9 @@ export default function Friends({ friends, incoming, outgoing, people, fans, sug
                     )}
 
                     <section>
-                        <SectionTitle title="Everyone on SFD.DJ" action={<div className="relative w-52"><Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search people" className={`${fieldClass} py-1.5 pl-8`} /></div>} />
+                        <SectionTitle title="Everyone on SFD-DJ.EU" action={<div className="relative w-52"><Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search people" className={`${fieldClass} py-1.5 pl-8`} /></div>} />
                         {shownPeople.length === 0 ? (
-                            <p className="text-sm text-neutral-500">{q ? 'Nobody matches.' : 'Everyone on SFD.DJ is already your friend or has a pending request.'}</p>
+                            <p className="text-sm text-neutral-500">{q ? 'Nobody matches.' : 'Everyone on SFD-DJ.EU is already your friend or has a pending request.'}</p>
                         ) : (
                             <Card className="divide-y divide-white/5">{shownPeople.map((p) => <Row key={p.id} p={p}>{addBtn(p.user_id)}</Row>)}</Card>
                         )}

@@ -121,7 +121,7 @@ export default function RetrowaveBackdrop({ palette: p, live = false, withBooth 
                 {Array.from({ length: 10 }, (_, i) => <rect key={i} x={left + 24 + i * 9} y={bottom + 30} width="4" height="14" rx="2" fill="#8c8068" />)}
                 {Array.from({ length: 10 }, (_, i) => <rect key={i} x={right - 24 - 90 + i * 9 - 80} y={bottom + 30} width="4" height="14" rx="2" fill="#8c8068" />)}
                 <rect x={(left + right) / 2 - 52} y={bottom + 28} width="104" height="18" rx="9" fill="#1a1030" stroke="#8c8068" strokeWidth="1.6" />
-                <text x="800" y={bottom + 41} textAnchor="middle" fontFamily={font} fontWeight="900" fontStyle="italic" fontSize="12" letterSpacing="2" fill="#ff9ad5">SFD.DJ</text>
+                <text x="800" y={bottom + 41} textAnchor="middle" fontFamily={font} fontWeight="900" fontStyle="italic" fontSize="12" letterSpacing="2" fill="#ff9ad5">SFD-DJ.EU</text>
                 {[right - 66, right - 36].map((x, i) => <g key={x}><circle cx={x} cy={bottom + 37} r="11" fill={f('chrome')} stroke="#5a5e6e" strokeWidth="1.4" /><path d={`M${x} ${bottom + 37}l${i ? 6 : -4} ${i ? -6 : -8}`} stroke="#2a2d3a" strokeWidth="2.4" strokeLinecap="round" /></g>)}
                 <circle className="sc-flame" cx={right - 98} cy={bottom + 37} r="3.4" fill="#ff3a5a" />
             </g>

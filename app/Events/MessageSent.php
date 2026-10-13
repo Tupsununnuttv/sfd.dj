@@ -2,8 +2,8 @@
 
 namespace App\Events;
 
-use App\Models\Room;
 use App\Models\ChatMessage;
+use App\Models\Room;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 

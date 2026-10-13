@@ -6,7 +6,7 @@ import { ShieldAlert } from 'lucide-react';
 
 export default function Violations({ violations }: { violations: { id: number; reason: string; created_at: string }[] }) {
     return (
-        <SettingsLayout title="Violations" subtitle="Warnings that SFD.DJ staff have given you. Following the community rules keeps this list empty.">
+        <SettingsLayout title="Violations" subtitle="Warnings that SFD-DJ.EU staff have given you. Following the community rules keeps this list empty.">
             <Head title="Violations" />
 
             {violations.length === 0 ? (

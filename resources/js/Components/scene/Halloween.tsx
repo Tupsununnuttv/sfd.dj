@@ -279,7 +279,7 @@ export default function HalloweenBackdrop({ palette: p, live = false, withBooth 
             </g>
             <circle cx="800" cy="466" r="9" fill="none" stroke="#06020c" strokeWidth="3" />
             <rect x="754" y="540" width="92" height="26" rx="5" fill="#0a0414" stroke="#ff7a1a" strokeOpacity=".7" strokeWidth="1.6" />
-            <text x="800" y="559" textAnchor="middle" fontFamily={font} fontWeight="900" fontSize="17" letterSpacing="1" fill="#ff9a3c" opacity=".95">SFD.DJ</text>
+            <text x="800" y="559" textAnchor="middle" fontFamily={font} fontWeight="900" fontSize="17" letterSpacing="1" fill="#ff9a3c" opacity=".95">SFD-DJ.EU</text>
             {/* the pillars, each with a jack-o'-lantern on top */}
             {[700, 900].map((x) => (
                 <g key={x}>

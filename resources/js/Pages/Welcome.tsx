@@ -44,7 +44,7 @@ const badges: [string, string][] = [['Owner', '#f43f5e'], ['Admin', '#ef4444'], 
 
 const questions: [string, string][] = [
     ['Do I need an account?', 'Not to look around. As a guest you can open rooms, watch what is playing and read the chat. To chat, vote or DJ you need a free account.'],
-    ['Where does the music come from?', 'Songs play through the official YouTube player. Paste a YouTube, SoundCloud or Spotify link and SFD.DJ finds the song for you.'],
+    ['Where does the music come from?', 'Songs play through the official YouTube player. Paste a YouTube, SoundCloud or Spotify link and SFD-DJ.EU finds the song for you.'],
     ['Is it really free?', 'Yes. Rooms, chat, playlists, the avatar shop and the API stay free. Plus and Premium are optional upgrades; nothing free becomes paid.'],
     ['Can I make my own room?', 'Yes. Pick a name and a genre, set the rules, give roles to friends, or make it private.'],
 ];
@@ -87,7 +87,7 @@ function Preview() {
     return (
         <div className="relative animate-float">
             <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-fuchsia-600/30 via-violet-600/20 to-sky-600/20 blur-2xl" />
-            <img src="/images/home-room.png" alt="A SFD.DJ room: the video, the DJ booth, the crowd on the dance floor and the chat" width={1909} height={923} className="relative w-full rounded-3xl border border-white/10 shadow-2xl" />
+            <img src="/images/home-room.png" alt="A SFD-DJ.EU room: the video, the DJ booth, the crowd on the dance floor and the chat" width={1909} height={923} className="relative w-full rounded-3xl border border-white/10 shadow-2xl" />
         </div>
     );
 }
@@ -341,7 +341,7 @@ export default function Welcome({ rooms, event, topDjs, genres, stats }: Props) 
             <section className="mx-auto mt-24 grid max-w-6xl grid-cols-1 gap-4 px-6 lg:grid-cols-2">
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-8">
                     <p className="text-violet-300"><Code2 size={28} /></p>
-                    <h2 className="mt-3 text-2xl font-black">Build on SFD.DJ</h2>
+                    <h2 className="mt-3 text-2xl font-black">Build on SFD-DJ.EU</h2>
                     <p className="mt-2 text-neutral-400">A public API, bot accounts and an npm package. Make a room bot or a browser extension in a few lines.</p>
                     <Link href={route('site.developers')} className="mt-5 inline-block text-sm font-semibold text-violet-400 hover:underline">For developers →</Link>
                 </div>

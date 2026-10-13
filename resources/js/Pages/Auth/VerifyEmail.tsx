@@ -44,7 +44,7 @@ export default function VerifyEmail({ status, mail, required }: { status?: strin
             <form onSubmit={submit} className="space-y-3">
                 {!required && (
                     <Link href={route('dashboard')} className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 py-3 text-sm font-semibold text-white transition hover:opacity-90" data-continue>
-                        Continue to SFD.DJ <ArrowRight size={16} />
+                        Continue to SFD-DJ.EU <ArrowRight size={16} />
                     </Link>
                 )}
                 {required ? (

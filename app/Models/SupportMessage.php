@@ -19,7 +19,7 @@ class SupportMessage extends Model
         return [
             'id' => $this->id,
             'sender' => $this->sender,
-            'who' => $this->sender === 'staff' ? ($this->staff?->name ?? 'SFD.DJ Support') : null,
+            'who' => $this->sender === 'staff' ? ($this->staff?->name ?? 'SFD-DJ.EU Support') : null,
             'body' => $this->body,
             'at' => $this->created_at->toIso8601String(),
         ];

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 /**
- * Link a Discord account and, with the member's consent, join the configured SFD.DJ guild and synchronize its mapped roles.
+ * Link a Discord account and, with the member's consent, join the configured SFD-DJ.EU guild and synchronize its mapped roles.
  * OAuth requests identify and guilds.join only; the site never reads Discord messages. Role synchronization also needs a bot in that guild.
  */
 class DiscordController extends Controller
@@ -82,7 +82,7 @@ class DiscordController extends Controller
         $this->revokeAccessToken($accessToken);
 
         if (! $user) {
-            return to_route('login')->with('discord_error', 'This Discord account is not linked to an SFD.DJ account. Log in with your password and connect Discord in Settings > Connections.');
+            return to_route('login')->with('discord_error', 'This Discord account is not linked to an SFD-DJ.EU account. Log in with your password and connect Discord in Settings > Connections.');
         }
 
         $request->session()->regenerate();
@@ -142,7 +142,7 @@ class DiscordController extends Controller
 
         $id = (string) $me->json('id');
         if (User::where('discord_id', $id)->where('id', '!=', $request->user()->id)->exists()) {
-            return $this->back('That Discord account is already linked to another SFD.DJ account.');
+            return $this->back('That Discord account is already linked to another SFD-DJ.EU account.');
         }
 
         $user = $request->user();
@@ -150,7 +150,7 @@ class DiscordController extends Controller
         $roleSyncError = DiscordRoleSync::sync($user, (string) $token->json('access_token'));
         $this->revokeAccessToken((string) $token->json('access_token'));
 
-        return $this->back($roleSyncError ? "Discord linked, but server role sync failed: {$roleSyncError}" : 'Discord linked and SFD.DJ roles synced.');
+        return $this->back($roleSyncError ? "Discord linked, but server role sync failed: {$roleSyncError}" : 'Discord linked and SFD-DJ.EU roles synced.');
     }
 
     public function disconnect(Request $request): RedirectResponse
@@ -159,7 +159,7 @@ class DiscordController extends Controller
         $roleSyncError = DiscordRoleSync::sync($user, clear: true);
         $user->forceFill(['discord_id' => null, 'discord_username' => null])->save();
 
-        return $this->back($roleSyncError ? "Discord unlinked, but server roles could not be removed: {$roleSyncError}" : 'Discord unlinked and SFD.DJ roles removed.');
+        return $this->back($roleSyncError ? "Discord unlinked, but server roles could not be removed: {$roleSyncError}" : 'Discord unlinked and SFD-DJ.EU roles removed.');
     }
 
     private function revokeAccessToken(string $accessToken): void

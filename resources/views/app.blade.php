@@ -17,8 +17,8 @@
         <link rel="manifest" href="/site.webmanifest">
 
         <meta property="og:type" content="website">
-        <meta property="og:site_name" content="SFD.DJ">
-        <meta property="og:title" content="SFD.DJ: your music room, live">
+        <meta property="og:site_name" content="SFD-DJ.EU">
+        <meta property="og:title" content="SFD-DJ.EU: your music room, live">
         <meta property="og:description" content="Everyone hears the same song at the same second. Join a room, queue a track, chat and woot.">
         <meta property="og:image" content="{{ url('/og-image.png') }}">
         <meta property="og:image:width" content="1200">

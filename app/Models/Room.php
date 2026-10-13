@@ -104,7 +104,7 @@ class Room extends Model
         }
     }
 
-    /** Private rooms are for their host and SFD.DJ staff only. */
+    /** Private rooms are for their host and SFD-DJ.EU staff only. */
     public function canEnter(?User $user): bool
     {
         return ! $this->is_private || ($user && ($user->id === $this->user_id || $user->is_staff));
@@ -157,7 +157,7 @@ class Room extends Model
         return $this->hasMany(RoomLog::class);
     }
 
-    /** Who may delete lines of the moderation log: the host and SFD.DJ staff, never the moderators whose actions it records. */
+    /** Who may delete lines of the moderation log: the host and SFD-DJ.EU staff, never the moderators whose actions it records. */
     public function clearsLogs(?User $user): bool
     {
         return $user && ($user->id === $this->user_id || $user->is_staff);

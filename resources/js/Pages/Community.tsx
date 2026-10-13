@@ -98,7 +98,7 @@ export default function Community({ stats, pulse, week, newest, genres, team, in
     const topGenre = Math.max(1, ...genres.map((g) => g.n));
 
     return (
-        <AppLayout title="Community" subtitle="The people, the songs and the leaderboards of SFD.DJ.">
+        <AppLayout title="Community" subtitle="The people, the songs and the leaderboards of SFD-DJ.EU.">
             <Head title="Community" />
 
             {/* today */}
@@ -140,7 +140,7 @@ export default function Community({ stats, pulse, week, newest, genres, team, in
                     {(links.length > 0 || goal || canEdit) && (
                         <Card className="space-y-4 p-5">
                             <div className="flex items-center justify-between gap-3">
-                                <h2 className="font-semibold">Follow SFD.DJ</h2>
+                                <h2 className="font-semibold">Follow SFD-DJ.EU</h2>
                                 {canEdit && <button onClick={() => setEditing(!editing)} className="rounded-md bg-white/10 px-3 py-1 text-xs hover:bg-white/20">{editing ? 'Close editor' : 'Edit links & donation goal'}</button>}
                             </div>
                             {links.length > 0 && (
@@ -200,7 +200,7 @@ export default function Community({ stats, pulse, week, newest, genres, team, in
                 <div className="space-y-8">
                     {topXp.length >= 3 && (
                         <Card className="p-6">
-                            <SectionTitle title="🏆 Top 3" hint="Most XP on SFD.DJ" />
+                            <SectionTitle title="🏆 Top 3" hint="Most XP on SFD-DJ.EU" />
                             <Podium people={topXp} />
                         </Card>
                     )}
@@ -213,7 +213,7 @@ export default function Community({ stats, pulse, week, newest, genres, team, in
                                     {topDjs.map((p, i) => <Row key={p.id} i={i} p={p} right={count(p.plays, 'song')} />)}
                                 </ul>
                             </Board>
-                            <Board title="Top inviters" hint="Friends brought to SFD.DJ">
+                            <Board title="Top inviters" hint="Friends brought to SFD-DJ.EU">
                                 <ul className="divide-y divide-white/5">
                                     {inviters.length === 0 && <li className="p-4 text-sm text-neutral-500">Nobody has invited anyone yet.</li>}
                                     {inviters.map((p, i) => <Row key={p.id} i={i} p={p} right={`${p.count} invited`} />)}
@@ -275,7 +275,7 @@ export default function Community({ stats, pulse, week, newest, genres, team, in
 
             {tab === 'team' && (
                 <section>
-                    <SectionTitle title="Meet the team" hint="The people who keep SFD.DJ running. Say hello in a room, or write to them through Contact." />
+                    <SectionTitle title="Meet the team" hint="The people who keep SFD-DJ.EU running. Say hello in a room, or write to them through Contact." />
                     {team.length === 0 ? <EmptyState icon="🛠️" title="No team listed yet" /> : (
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                             {team.map((p) => (

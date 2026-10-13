@@ -51,7 +51,7 @@ export default function PlanCards({ plans, interval, current, action, freeAction
                 >
                     {p.key === 'premium' && <span className="absolute right-4 top-4 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-black" style={{ backgroundColor: p.color }}>Best value</span>}
                     <h3 className="flex items-center gap-2 text-lg font-bold" style={{ color: p.color }}>
-                        <RoleIcon role={{ key: `sub:${p.key}`, label: `SFD.DJ ${p.name}`, color: p.color }} size={22} /> {p.name}
+                        <RoleIcon role={{ key: `sub:${p.key}`, label: `SFD-DJ.EU ${p.name}`, color: p.color }} size={22} /> {p.name}
                     </h3>
                     <p className="mt-2 text-4xl font-black">{interval === 'month' ? p.month : p.year}<span className="text-base font-semibold text-neutral-400"> / {interval}</span></p>
                     <p className="text-xs text-neutral-500">{interval === 'month' ? `or ${p.year} a year` : `instead of ${p.month} a month`}</p>

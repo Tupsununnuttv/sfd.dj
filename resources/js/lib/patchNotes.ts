@@ -30,9 +30,9 @@ export const releases: { version: string; title: string; notes: [Kind, string][]
         title: 'Seasons, Plus and Premium, and no links to other sites',
         notes: [
             ['new', 'Halloween and Christmas come by themselves: in October every room shows the Halloween background, from 1 December to 6 January the Christmas one. The host can pick the other one of the season (Halloween V2, Christmas V2) in Room settings → Background → Special, or any other background to switch it off in the room. When the season is over, the room shows its own background again.'],
-            ['new', 'SFD.DJ Plus (€2.99 a month or €29.99 a year) and Premium (€5.99 a month or €59.99 a year), both optional: a gem next to your name, +25% or +50% XP, 60 or 100 playlists with up to 1,000 or 2,000 songs each, and 50 or 100 emojis in the rooms you host. Buy, change or cancel in Settings → Plus; payments go through Stripe and are switched on as soon as the site has its Stripe keys. Staff can also give a plan by hand in the admin panel. The prices are on the Pricing page.'],
-            ['new', 'Links to other sites can no longer be shared: not in the chat, not in whispers, not in a bio or the texts of a room. SFD.DJ itself and our partners club.dj, borealise.com (and app.borealise.com) and cord.dj are fine. Addresses are found with or without https:// and www., also written as "name . dj" or "name(dot)dj", and other music sites are refused by their name too. A blocked chat message shows in the moderation log.'],
-            ['new', 'Room moderation → Moderation logs: the host and SFD.DJ staff can delete a line (its bin) or clear the whole log. Moderators cannot, as the log is how their actions are checked.'],
+            ['new', 'SFD-DJ.EU Plus (€2.99 a month or €29.99 a year) and Premium (€5.99 a month or €59.99 a year), both optional: a gem next to your name, +25% or +50% XP, 60 or 100 playlists with up to 1,000 or 2,000 songs each, and 50 or 100 emojis in the rooms you host. Buy, change or cancel in Settings → Plus; payments go through Stripe and are switched on as soon as the site has its Stripe keys. Staff can also give a plan by hand in the admin panel. The prices are on the Pricing page.'],
+            ['new', 'Links to other sites can no longer be shared: not in the chat, not in whispers, not in a bio or the texts of a room. SFD-DJ.EU itself and our partners club.dj, borealise.com (and app.borealise.com) and cord.dj are fine. Addresses are found with or without https:// and www., also written as "name . dj" or "name(dot)dj", and other music sites are refused by their name too. A blocked chat message shows in the moderation log.'],
+            ['new', 'Room moderation → Moderation logs: the host and SFD-DJ.EU staff can delete a line (its bin) or clear the whole log. Moderators cannot, as the log is how their actions are checked.'],
             ['improved', 'The home page shows a new picture of a room, and our partner is called by its right name: Borealise, with a link to borealise.com.'],
         ],
     },
@@ -67,7 +67,7 @@ export const releases: { version: string; title: string; notes: [Kind, string][]
         version: '1.33',
         title: 'Christmas V2',
         notes: [
-            ['new', 'A second Christmas background for the host (Room settings → Background → Custom backgrounds): Christmas V2, Christmas Eve inside a warm lodge. The video hangs in a gold frame on a stone chimney breast, over a mantel with candles, two nutcrackers and a garland, four stockings, a wooden SFD.DJ sign and a fire in the hearth. On the left a window looks out on a snowy night with Santa\'s sleigh across the moon, between red velvet curtains, with milk and cookies left out for Santa. On the right stands a big tree with warm lights, red and gold baubles, a ribbon and presents. Under the booth lies a round braided rug; in the front corners are Santa\'s sack, a cat asleep in a Santa hat and a toy train coming out of a snowy tunnel.'],
+            ['new', 'A second Christmas background for the host (Room settings → Background → Custom backgrounds): Christmas V2, Christmas Eve inside a warm lodge. The video hangs in a gold frame on a stone chimney breast, over a mantel with candles, two nutcrackers and a garland, four stockings, a wooden SFD-DJ.EU sign and a fire in the hearth. On the left a window looks out on a snowy night with Santa\'s sleigh across the moon, between red velvet curtains, with milk and cookies left out for Santa. On the right stands a big tree with warm lights, red and gold baubles, a ribbon and presents. Under the booth lies a round braided rug; in the front corners are Santa\'s sack, a cat asleep in a Santa hat and a toy train coming out of a snowy tunnel.'],
             ['new', 'While a song plays the fire and the candles flicker, the lights twinkle, it snows outside the window, the sleigh crosses the moon, the stockings sway, the train runs and gold glitter drifts down over the room. The booth has two candles in holly and a garland with warm lights. Also as a 1600 x 900 picture: public/backgrounds/christmas2.png.'],
         ],
     },
@@ -78,7 +78,7 @@ export const releases: { version: string; title: string; notes: [Kind, string][]
             ['fixed', 'Grab: a grabbed song used to go into a built-in list that nobody could see, so it looked as if grabbing did nothing. Now Grab asks which of your playlists the song goes in. With no playlist yet it asks you to make one first (type a name, and the song goes right into it). The old hidden Grabs lists became ordinary playlists called Grabs.'],
             ['new', 'Everybody has a character. A new account starts as a free character straight away, not as a letter in a coloured circle, and the Initial avatar is gone from the Avatar shop. People who had no avatar were given one. Taking your photo off gives you a character again.'],
             ['new', 'The chat tells you when somebody leaves the room, and when somebody woots, mehs or grabs the song (once per person and song), like it already told you about joins. They are not saved, and Settings → Appearance can switch the joins, leaves and votes off.'],
-            ['new', 'The first line of the chat, above the welcome message of the room, says: Welcome to SFD.DJ, Version 1.32, with a link to what is new.'],
+            ['new', 'The first line of the chat, above the welcome message of the room, says: Welcome to SFD-DJ.EU, Version 1.32, with a link to what is new.'],
         ],
     },
     {
@@ -86,7 +86,7 @@ export const releases: { version: string; title: string; notes: [Kind, string][]
         title: 'Confirming your email',
         notes: [
             ['new', 'The “confirm your email” message goes out when somebody signs up, when they press Send (on the confirm page or on the bar at the top of the site) and when they change their address in Profile. It has a proper look, one button and a link that works for an hour.'],
-            ['new', 'Nobody is stuck waiting for a message that cannot come. While the site cannot send email (no mail server in .env), or when staff leave the confirming optional, a new member gets in at once, and the confirm page says what is going on with a Continue to SFD.DJ button. A bar at the top invites them to confirm later.'],
+            ['new', 'Nobody is stuck waiting for a message that cannot come. While the site cannot send email (no mail server in .env), or when staff leave the confirming optional, a new member gets in at once, and the confirm page says what is going on with a Continue to SFD-DJ.EU button. A bar at the top invites them to confirm later.'],
             ['new', 'A mail server that is down no longer breaks signing up or the Send button: the account is made, and the page says the server did not take the message so they can try again.'],
             ['new', 'Admin panel → Email: whether the site can send email, how to turn it on (for example with a Gmail app password in .env), a button that sends a test email to you and tells you what happened, and a switch: confirming required or optional. The Users tab shows who has not confirmed and lets staff confirm somebody by hand.'],
         ],
@@ -109,7 +109,7 @@ export const releases: { version: string; title: string; notes: [Kind, string][]
         version: '1.29',
         title: 'SFD Coins',
         notes: [
-            ['new', 'SFD Coins: the money of the Avatar shop. Avatars, badges, accessories, frames and effects now cost coins and open at a level; the higher the level, the more they cost (a character costs a little more than a badge). What costs nothing at level 1 is free for everybody, what you buy is yours for good, and SFD.DJ staff still have everything.'],
+            ['new', 'SFD Coins: the money of the Avatar shop. Avatars, badges, accessories, frames and effects now cost coins and open at a level; the higher the level, the more they cost (a character costs a little more than a badge). What costs nothing at level 1 is free for everybody, what you buy is yours for good, and SFD-DJ.EU staff still have everything.'],
             ['new', 'You earn coins by playing: 10 coins times the level for every new level, 5 coins when a song of yours is played (and 1 more for every 2 woots; a song that is skipped at once pays nothing), 2 coins when somebody grabs it, 50 when a friend joins with your link (the first 20 friends) and 25 a day from the daily reward, on the dashboard and in the shop.'],
             ['new', 'The shop has a wallet with your coins, the daily reward, how to earn more and your latest coins. Every item shows its price: buy it on its card, or try things on and buy everything in your look in one go. The filters are All, Owned, For sale and Locked. Your coins also show next to Avatar shop in the menu.'],
             ['improved', 'Everybody who was here already got 100 coins plus the coins of every level they had reached, and keeps what they wear. Coins are private: only you see yours.'],
@@ -245,7 +245,7 @@ export const releases: { version: string; title: string; notes: [Kind, string][]
         version: '1.15',
         title: 'A Christmas room, and backgrounds only the host can pick',
         notes: [
-            ['new', 'A Christmas background for rooms (Room settings → Background): a snowy night with northern lights, a full moon with Santa\'s sleigh and reindeer across it, a big decorated tree, a log cabin with Santa stuck in the chimney, a snowman, a candy cane gate with SFD.DJ on it, and the video in a frame of fairy lights and icicles. A snowflake glows on the floor under the DJ booth.'],
+            ['new', 'A Christmas background for rooms (Room settings → Background): a snowy night with northern lights, a full moon with Santa\'s sleigh and reindeer across it, a big decorated tree, a log cabin with Santa stuck in the chimney, a snowman, a candy cane gate with SFD-DJ.EU on it, and the video in a frame of fairy lights and icicles. A snowflake glows on the floor under the DJ booth.'],
             ['new', 'While a song plays the lights twinkle, the sleigh flies across the sky, Santa kicks his legs, the northern lights shimmer, a shooting star passes now and then, and snow falls over the whole room, the crowd too (but not over the video). It is also a 1600 x 900 picture: public/backgrounds/christmas.png.'],
             ['new', 'Halloween and Christmas are custom backgrounds, and so will the next ones be. Only the host of a room sees them and can pick them: they have a box of their own, with a star, under the colour schemes in Room settings. Managers and others who can change the settings still choose between the six colour schemes, and everyone in the room sees what the host picked.'],
         ],
@@ -466,7 +466,7 @@ export const releases: { version: string; title: string; notes: [Kind, string][]
         title: 'Shop, friends and rooms',
         notes: [
             ['new', 'Avatar shop tabs: avatars, badges, accessories, frames and effects.'],
-            ['new', 'Friends: tabs for friends, fans and requests, plus everyone who joined SFD.DJ.'],
+            ['new', 'Friends: tabs for friends, fans and requests, plus everyone who joined SFD-DJ.EU.'],
             ['new', 'Create rooms with a genre or make them private (staff only).'],
             ['new', 'Dashboard shows featured rooms and the rooms you created.'],
             ['improved', 'Password fields have a show/hide eye.'],

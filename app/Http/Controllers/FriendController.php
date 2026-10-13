@@ -78,6 +78,7 @@ class FriendController extends Controller
         return User::where('is_bot', false)->whereIn('id', array_slice(array_keys($mutual), 0, 8))->get()
             ->map(fn (User $u) => $card($u) + ['mutual' => $mutual[$u->id]])->sortByDesc('mutual')->values()->all();
     }
+
     /** Send a friend request by exact user name. If they already asked you, this accepts. */
     public function store(Request $request): RedirectResponse
     {

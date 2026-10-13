@@ -39,7 +39,7 @@ class CommunityController extends Controller
                 'social' => collect(Setting::SOCIALS)->mapWithKeys(fn ($label, $key) => [$key => Setting::get("social.$key", '')])->all(),
                 'donation' => [
                     'enabled' => Setting::get('donation.enabled') === '1',
-                    'title' => Setting::get('donation.title', 'Keep SFD.DJ running'),
+                    'title' => Setting::get('donation.title', 'Keep SFD-DJ.EU running'),
                     'goal' => (float) Setting::get('donation.goal', '0'),
                     'current' => (float) Setting::get('donation.current', '0'),
                     'currency' => Setting::get('donation.currency', '€'),

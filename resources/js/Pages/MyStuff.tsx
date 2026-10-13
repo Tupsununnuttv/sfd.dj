@@ -53,7 +53,7 @@ export default function MyStuff({ stats, rooms, playlists, recent, worn, account
     return (
         <AppLayout
             title="My Stuff"
-            subtitle="Everything that is yours on SFD.DJ, in one place."
+            subtitle="Everything that is yours on SFD-DJ.EU, in one place."
             actions={<Link href={route('users.show', user.id)} className={ghostBtn}>View my public profile</Link>}
         >
             <Head title="My Stuff" />
@@ -145,7 +145,7 @@ export default function MyStuff({ stats, rooms, playlists, recent, worn, account
 
             {tab === 'achievements' && (
                 <>
-                    <p className="text-sm text-neutral-400">{done.length} of {achievements.length} unlocked. They are worked out from what you do on SFD.DJ.</p>
+                    <p className="text-sm text-neutral-400">{done.length} of {achievements.length} unlocked. They are worked out from what you do on SFD-DJ.EU.</p>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {achievements.map((a) => (
                             <Card key={a.key} className={`p-4 ${a.done ? 'border-amber-400/30 bg-amber-400/[0.06]' : ''}`}>

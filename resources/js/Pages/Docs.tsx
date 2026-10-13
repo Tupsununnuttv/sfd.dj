@@ -51,10 +51,10 @@ const sections: Section[] = [
         id: 'start',
         icon: '🚀',
         title: 'Getting started',
-        summary: 'What SFD.DJ is, and what a guest can do.',
+        summary: 'What SFD-DJ.EU is, and what a guest can do.',
         body: (
             <>
-                <P>SFD.DJ is a set of live music rooms. Everyone in a room hears the same song at the same second and can chat while it plays.</P>
+                <P>SFD-DJ.EU is a set of live music rooms. Everyone in a room hears the same song at the same second and can chat while it plays.</P>
                 <List
                     items={[
                         'Guests can open the dashboard, any public room, the community page, events and these docs. Guests can watch and read, nothing more.',
@@ -73,7 +73,7 @@ const sections: Section[] = [
         summary: 'Create rooms, join the queue, lock and cycle it.',
         body: (
             <>
-                <P>Create a room on the dashboard with a name, a description, a genre and, if you like, the private switch (only you and SFD.DJ staff can enter a private room).</P>
+                <P>Create a room on the dashboard with a name, a description, a genre and, if you like, the private switch (only you and SFD-DJ.EU staff can enter a private room).</P>
                 <H>The waitlist</H>
                 <List
                     items={[
@@ -86,11 +86,11 @@ const sections: Section[] = [
                 <H>The room</H>
                 <P>A room is a club. The video plays on the big screen at the back. The DJ booth is at the bottom, against the footbar: the DJ, whoever's song is playing, stands at the decks with their back to us, looking at the screen, Join Waitlist is to the left of the booth and Woot, Grab and Meh are to the right. Everybody else in the room stands on the floor above the stage until they press Woot or Grab; then they dance. Press Meh and you stand again. Click anyone for their quick profile. The host can change the colours of the club in Room settings → Background, and only the host can turn it into a custom scene: a Halloween graveyard, a witch's lair (Halloween V2), a Christmas night, Christmas Eve by the fireplace (Christmas V2) (these four are under Special), a winter, spring, Easter, summer or Midsummer scene, a synthwave or retrowave night, Midnight Definity, Anime, LATAM, Lightshow, Cat café, Gold Mine, Skull, Skulls, Ultra Music Festival, Foxy, Dragon, Tastycat, Tasty or Monstercat, or a picture of your own that you upload there (PNG, JPG or WebP, at least 800 × 450).</P>
                 <H>Room info and badges</H>
-                <P>Room info (open More in the bar at the bottom of the room) shows the room's banner, what is playing, how many people listen and how many songs were played, the host, who is on the room team, the welcome message and the rules, and lets you copy the room link. Rooms that SFD.DJ staff trust can carry the badges <K>◆ Official</K>, <K>✓ Verified</K> and <K>★ Partnered</K>, one or several at once. Staff switch them on and off in the admin panel, Rooms tab.</P>
+                <P>Room info (open More in the bar at the bottom of the room) shows the room's banner, what is playing, how many people listen and how many songs were played, the host, who is on the room team, the welcome message and the rules, and lets you copy the room link. Rooms that SFD-DJ.EU staff trust can carry the badges <K>◆ Official</K>, <K>✓ Verified</K> and <K>★ Partnered</K>, one or several at once. Staff switch them on and off in the admin panel, Rooms tab.</P>
                 <H>Room rules</H>
                 <P>Room settings → Rules (anyone who may edit the room settings): write up to ten rules, each with a short title and a few words under it. Everybody who comes into the room reads them first and presses “I agree”; “Do not show again in this room” keeps the window away until the rules change. When the host changes the rules, everybody in the room reads them again, at once. The host is never asked, and Preview shows the window as people see it.</P>
                 <H>Room CSS</H>
-                <P>Room settings → Room CSS (the host and SFD.DJ staff): your own CSS for the room. Everybody who comes in gets it the moment you save it, and nothing outside the room changes. Pick the parts of the room with these classes, with a dot in front, for example <K>.sfd-chat</K>; add <K>:hover</K>, <K>::before</K> or a tag below it (<K>.sfd-chat a</K>) if you like.</P>
+                <P>Room settings → Room CSS (the host and SFD-DJ.EU staff): your own CSS for the room. Everybody who comes in gets it the moment you save it, and nothing outside the room changes. Pick the parts of the room with these classes, with a dot in front, for example <K>.sfd-chat</K>; add <K>:hover</K>, <K>::before</K> or a tag below it (<K>.sfd-chat a</K>) if you like.</P>
                 <List items={CSS_HOOKS.map(([key, text]) => <><K>.sfd-{key}</K> {text}</>)} />
                 <List
                     items={[
@@ -160,7 +160,7 @@ const sections: Section[] = [
                 />
                 <H>Whispers</H>
                 <P>A whisper is a private message between two people. Open <b>Whispers</b> in the menu, or type <K>/w username message</K> in a room. Only the two of you can read it, and it arrives live.</P>
-                <P>System lines in italics tell you who joins and leaves the room, who woots, mehs and grabs a song, and about kicks, bans, mutes, role changes, skips, waitlist changes and announcements. The first line of the chat says which version of SFD.DJ you are on. Settings → Appearance can switch the joins, leaves and votes off.</P>
+                <P>System lines in italics tell you who joins and leaves the room, who woots, mehs and grabs a song, and about kicks, bans, mutes, role changes, skips, waitlist changes and announcements. The first line of the chat says which version of SFD-DJ.EU you are on. Settings → Appearance can switch the joins, leaves and votes off.</P>
             </>
         ),
     },
@@ -216,7 +216,7 @@ const sections: Section[] = [
                     'Avatar shop: try characters (whole people that stand, dance and DJ), badges (medals from bronze to gold starbursts), accessories (headphones, aviators, ears, a halo, a crown, wings, horns), frames (metal, neon, thorns, frost, hellfire, aurora, prism) and effects (sparkles, notes, sakura, thunder, cosmic dust, a void) on a live preview, then save your whole look in one click. Things cost SFD Coins and open at a level (level 1 things are free): you earn coins by levelling up, playing songs, getting grabs, inviting friends and taking the daily reward, and what you buy is yours for good. Coins are never sold for real money.',
                     'Profile: change your name, pronouns, flag, bio (up to 500 characters, as many lines as you like) and favourite genre, upload a photo and see a live preview. Everybody has a public profile page. Your flag shows next to your name on your profile, in the quick profile card and in the room\'s user list.',
                     'Status: Online, Busy, Away or Offline, from the menu under your picture or in Profile. It is the dot next to your picture in the menu, in rooms and on your profile. Busy means do not disturb: no pop-ups for whispers and friend requests. Offline makes you look offline to everybody, and you can still use the site.',
-                    'Special badges: Beta Tester, Founding Member, Bug Hunter, Contributor, Event Champion, Tastemaker and Community Hero are given by SFD.DJ staff (admin panel, Users tab) to people who earned them. They show in front of your name, and with what each one means on your profile.',
+                    'Special badges: Beta Tester, Founding Member, Bug Hunter, Contributor, Event Champion, Tastemaker and Community Hero are given by SFD-DJ.EU staff (admin panel, Users tab) to people who earned them. They show in front of your name, and with what each one means on your profile.',
                     'Everything you change shows at once: buy something in the Avatar shop (it opens inside the room) and put it on, change your status or your flag, and you and everybody in the room see it without a refresh.',
                     'Privacy: choose who may whisper you, whether people may send friend requests and whether your online status is shown.',
                     'My Stuff: your numbers, achievements, rooms, playlists, recent songs and equipped items on one page.',
@@ -231,7 +231,7 @@ const sections: Section[] = [
         summary: 'Tokens, endpoints and the npm package.',
         body: (
             <>
-                <P>SFD.DJ has a public JSON API. Use it to build room bots, browser extensions and tools. Everything passes the same permission checks as the website, so a bot can only do what its room role allows.</P>
+                <P>SFD-DJ.EU has a public JSON API. Use it to build room bots, browser extensions and tools. Everything passes the same permission checks as the website, so a bot can only do what its room role allows.</P>
                 <H>1. Get a token</H>
                 <List
                     items={[
@@ -351,7 +351,7 @@ export default function Docs() {
     const visible = useMemo(() => sections.filter((s) => !hits || hits.has(s.id)), [hits]);
 
     return (
-        <AppLayout title="Docs" subtitle={<>How SFD.DJ works. Short answers live in the <Link href={route('faq')} className="text-violet-400 hover:underline">FAQ</Link>.</>}>
+        <AppLayout title="Docs" subtitle={<>How SFD-DJ.EU works. Short answers live in the <Link href={route('faq')} className="text-violet-400 hover:underline">FAQ</Link>.</>}>
             <Head title="Docs" />
 
             <div className="relative max-w-xl">

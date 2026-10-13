@@ -52,7 +52,7 @@ class RoomModerationController extends Controller
         return response()->noContent();
     }
 
-    /** Take one line out of the moderation log. Only the host and SFD.DJ staff may: the log is how the others' actions are checked. */
+    /** Take one line out of the moderation log. Only the host and SFD-DJ.EU staff may: the log is how the others' actions are checked. */
     public function destroyLog(Request $request, Room $room, RoomLog $log): Response
     {
         abort_unless($room->clearsLogs($request->user()), 403);

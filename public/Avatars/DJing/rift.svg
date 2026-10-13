@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 276" width="200" height="276" role="img" aria-label="Rift, djing">
+<defs>
+<linearGradient id="j-cloak" x1=".15" y1="0" x2=".85" y2="1"><stop stop-color="#49388f"/><stop offset=".5" stop-color="#191943"/><stop offset="1" stop-color="#080b20"/></linearGradient>
+<linearGradient id="j-feather" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#34e2f4"/><stop offset=".38" stop-color="#4844b1"/><stop offset="1" stop-color="#090b24"/></linearGradient>
+<linearGradient id="j-gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe9a4"/><stop offset=".5" stop-color="#ce8d3b"/><stop offset="1" stop-color="#6c3c1c"/></linearGradient>
+<filter id="j-glow" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<style>.all,.head,.arm,.deck-light{transform-box:fill-box;transform-origin:center}@keyframes j-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}@keyframes j-head{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}@keyframes j-mix{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(10deg)}}@keyframes j-led{0%,100%{opacity:.3}50%{opacity:1}}.all{animation:j-bounce .7s ease-in-out infinite}.head{animation:j-head .7s ease-in-out infinite}.arm{animation:j-mix .7s ease-in-out infinite}.deck-light{animation:j-led .28s ease-in-out infinite}@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style>
+<ellipse cx="100" cy="254" rx="55" ry="8" fill="#05050c" opacity=".4"/>
+<g class="all" stroke="#090817" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+ <path d="M64 174 53 235H82L91 181ZM109 181 118 235H147L136 174Z" fill="#151530"/><path d="M50 237Q58 228 79 233L82 248H47Q45 242 50 237ZM150 237Q142 228 121 233L118 248H153Q155 242 150 237Z" fill="#090a18" stroke="url(#j-gold)"/>
+ <path d="M49 129Q61 108 100 108T151 129L158 204Q100 221 42 204Z" fill="url(#j-cloak)" stroke="url(#j-gold)"/>
+ <path d="M49 149 28 188 58 177 48 209 82 188M151 149 172 188 142 177 152 209 118 188" fill="url(#j-feather)"/>
+ <path d="M76 123 68 200M124 123 132 200" stroke="#2cdff4" stroke-width="3" fill="none" opacity=".7"/>
+ <g class="arm"><path d="M58 139Q50 166 69 184" fill="none" stroke="#1b193e" stroke-width="18"/><path d="M142 139Q150 166 131 184" fill="none" stroke="#1b193e" stroke-width="18"/><circle cx="69" cy="184" r="10" fill="#252545" stroke="url(#j-gold)"/><circle cx="131" cy="184" r="10" fill="#252545" stroke="url(#j-gold)"/></g>
+ <g class="head"><path d="M48 119Q51 55 100 30Q149 55 152 119L132 143Q100 155 68 143Z" fill="url(#j-cloak)" stroke="url(#j-gold)" stroke-width="4"/><path d="M56 115Q64 69 100 48Q136 69 144 115L128 136Q100 146 72 136Z" fill="#0a0b18"/><path d="M100 48 120 82 100 75 80 82Z" fill="#2adff5"/><path d="M100 53 111 75 100 90 89 75Z" fill="#191741" stroke="#59f0ff" stroke-width="2"/><path d="M63 114Q100 92 137 114L128 140Q100 150 72 140Z" fill="#161522"/><path d="M80 119Q100 104 120 119L114 132Q100 138 86 132Z" fill="#202135"/><path d="M100 116 112 130 100 140 88 130Z" fill="#3b4054"/></g>
+ <path d="M35 174Q100 148 165 174L176 212Q100 230 24 212Z" fill="#12142a" stroke="url(#j-gold)"/><ellipse cx="61" cy="191" rx="24" ry="14" fill="#090b16" stroke="#35e2f4"/><ellipse cx="139" cy="191" rx="24" ry="14" fill="#090b16" stroke="#35e2f4"/><circle cx="61" cy="191" r="8" fill="#2b1a62"/><circle cx="139" cy="191" r="8" fill="#2b1a62"/><rect x="91" y="178" width="18" height="27" rx="3" fill="#25264a" stroke="#4bdbf4"/><path d="M96 184H104M96 190H104M96 196H104" stroke="#d1fbff" stroke-width="2" stroke-linecap="round"/>
+ <g class="deck-light" filter="url(#j-glow)"><circle cx="42" cy="205" r="3" fill="#4df0ff"/><circle cx="51" cy="209" r="3" fill="#b99cff"/><circle cx="149" cy="209" r="3" fill="#4df0ff"/><circle cx="158" cy="205" r="3" fill="#b99cff"/></g>
+</g>
+</svg>

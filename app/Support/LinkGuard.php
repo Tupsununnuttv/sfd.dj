@@ -3,9 +3,9 @@
 namespace App\Support;
 
 /**
- * Nobody shares other sites on SFD.DJ: chat, whispers, bios and the texts of rooms may only point at SFD.DJ itself and at our partners. Web addresses
+ * Nobody shares other sites on SFD-DJ.EU: chat, whispers, bios and the texts of rooms may only point at SFD-DJ.EU itself and at our partners. Web addresses
  * are found with or without http:// or www., also when written as "plug . dj", "plug(dot)dj" or "plug[.]dj", and other music sites are refused by
- * their name too. SFD.DJ staff are never stopped (the callers check that).
+ * their name too. SFD-DJ.EU staff are never stopped (the callers check that).
  */
 final class LinkGuard
 {
@@ -21,7 +21,7 @@ final class LinkGuard
      */
     private const TLDS = 'com|net|org|info|biz|io|gg|tv|fm|dj|co|xyz|app|dev|live|club|site|online|store|shop|link|page|top|pro|fun|cool|vip|music|radio|stream|audio|video|tube|media|social|chat|space|world|zone|news|blog|tech|cloud|wtf|lol|ee|eu|uk|de|fr|nl|ru|ua|lv|lt|fi|se|dk|pl|cz|sk|ch|es|pt|ie|br|ar|mx|ca|au|nz|jp|kr|cn|tk|ml|ga|cf|ly|gl|gd|sh|ac|ai|cc|ws|vn|th|tr|gr|ro|hu|bg|rs|hr|si|ba|md|kz|il|ae|za|ng|ke|ph|lk|pk|nu|su|fyi|gs|ms|ps|vc|tw|hk|sg|cx';
 
-    public const MESSAGE = 'Links to other sites cannot be shared here. Only SFD.DJ and our partners: club.dj, borealise.com and cord.dj.';
+    public const MESSAGE = 'Links to other sites cannot be shared here. Only SFD-DJ.EU and our partners: club.dj, borealise.com and cord.dj.';
 
     /** Why the text may not go out (it points people at another site), or null when it may. */
     public static function check(?string $text): ?string
@@ -48,12 +48,12 @@ final class LinkGuard
         return array_values(array_unique(array_map(fn ($found) => preg_replace('/^www\./', '', rtrim(end($found) ?: '', '.')), $m)));
     }
 
-    /** SFD.DJ itself and our partners, and every address under them. */
+    /** SFD-DJ.EU itself and our partners, and every address under them. */
     public static function allowed(string $host): bool
     {
         $host = preg_replace('/^www\./', '', rtrim(strtolower($host), '.'));
 
-        foreach ([...self::PARTNERS, 'sfd.dj', ...array_filter([parse_url((string) config('app.url'), PHP_URL_HOST)])] as $ok) {
+        foreach ([...self::PARTNERS, 'sfd-dj.eu', ...array_filter([parse_url((string) config('app.url'), PHP_URL_HOST)])] as $ok) {
             if ($host === $ok || str_ends_with($host, '.'.$ok)) {
                 return true;
             }

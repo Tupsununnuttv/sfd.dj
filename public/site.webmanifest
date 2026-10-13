@@ -1,6 +1,6 @@
 {
-    "name": "SFD.DJ",
-    "short_name": "SFD.DJ",
+    "name": "SFD-DJ.EU",
+    "short_name": "SFD-DJ.EU",
     "description": "Live music rooms where everyone hears the same song at the same second.",
     "start_url": "/dashboard",
     "scope": "/",

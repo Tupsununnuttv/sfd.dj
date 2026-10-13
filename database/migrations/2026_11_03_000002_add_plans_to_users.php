@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * SFD.DJ Plus and Premium (App\Support\Plans): which plan someone has and until when (no end: given by staff for good), whether it renews by itself,
+ * SFD-DJ.EU Plus and Premium (App\Support\Plans): which plan someone has and until when (no end: given by staff for good), whether it renews by itself,
  * and their customer and subscription at Stripe when they paid there.
  */
 return new class extends Migration

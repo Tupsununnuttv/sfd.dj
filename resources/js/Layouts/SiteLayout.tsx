@@ -137,7 +137,7 @@ export default function SiteLayout({ children }: PropsWithChildren) {
                     <FooterColumn title="Community" links={[['Live rooms', route('dashboard')], ['Leaderboards', route('community')], ['Events', route('events')], ['Patch notes', route('patch-notes')]]} />
                     <FooterColumn title="Company" links={[['About', route('site.about')], ['Brand', route('site.brand')], ['Developers', route('site.developers')], ['Contact', route('site.contact')], ['FAQ', route('faq')], ...legal.map((d) => [d.title, route('site.legal', d.slug)] as [string, string])]} />
                 </div>
-                <p className="border-t border-white/5 py-5 text-center text-xs text-neutral-600">© {new Date().getFullYear()} SFD.DJ. Music plays through YouTube.</p>
+                <p className="border-t border-white/5 py-5 text-center text-xs text-neutral-600">© {new Date().getFullYear()} SFD-DJ.EU. Music plays through YouTube.</p>
             </footer>
 
             <SupportWidget />

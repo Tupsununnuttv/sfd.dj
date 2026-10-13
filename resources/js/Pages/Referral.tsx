@@ -37,8 +37,8 @@ export default function Referral({ link, code, reward, referrals, topInviters, r
         setTimeout(() => setCopied(null), 2000);
     };
 
-    const text = `Come listen to music with me on SFD.DJ: live rooms where everyone hears the same song at the same second.`;
-    const share = () => navigator.share?.({ title: 'SFD.DJ', text, url: link }).catch(() => {});
+    const text = `Come listen to music with me on SFD-DJ.EU: live rooms where everyone hears the same song at the same second.`;
+    const share = () => navigator.share?.({ title: 'SFD-DJ.EU', text, url: link }).catch(() => {});
     const targets: [string, string][] = [
         ['WhatsApp', `https://wa.me/?text=${encodeURIComponent(`${text} ${link}`)}`],
         ['Telegram', `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`],
@@ -47,7 +47,7 @@ export default function Referral({ link, code, reward, referrals, topInviters, r
     ];
 
     return (
-        <AppLayout title="Invite & earn" subtitle={<>Bring friends to SFD.DJ. Every friend who registers with your link gives you <span className="font-semibold text-violet-300">{reward} XP</span>.</>}>
+        <AppLayout title="Invite & earn" subtitle={<>Bring friends to SFD-DJ.EU. Every friend who registers with your link gives you <span className="font-semibold text-violet-300">{reward} XP</span>.</>}>
             <Head title="Referral" />
 
             {/* the link */}
@@ -74,7 +74,7 @@ export default function Referral({ link, code, reward, referrals, topInviters, r
                         {targets.map(([name, href]) => (
                             <a key={name} href={href} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20">{name}</a>
                         ))}
-                        <a href={`mailto:?subject=${encodeURIComponent('Join me on SFD.DJ')}&body=${encodeURIComponent(`${text}\n\n${link}`)}`} className="flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20"><Mail size={15} /> Email</a>
+                        <a href={`mailto:?subject=${encodeURIComponent('Join me on SFD-DJ.EU')}&body=${encodeURIComponent(`${text}\n\n${link}`)}`} className="flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20"><Mail size={15} /> Email</a>
                     </div>
                 </div>
             </section>

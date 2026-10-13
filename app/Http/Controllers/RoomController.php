@@ -353,7 +353,7 @@ class RoomController extends Controller
         return back();
     }
 
-    /** Only the host of a room and SFD.DJ staff write its CSS. */
+    /** Only the host of a room and SFD-DJ.EU staff write its CSS. */
     private function ownsCss(?User $user, Room $room): bool
     {
         return $user && ($user->id === $room->user_id || $user->is_staff);
@@ -880,7 +880,7 @@ class RoomController extends Controller
             ->map(fn ($r) => ['type' => 'room', 'at' => $r->created_at, 'user' => $r->user->only('id', 'name', 'avatar'), 'text' => "opened the room {$r->name}", 'slug' => $r->slug]);
 
         $joined = User::latest()->limit(5)->get()
-            ->map(fn ($u) => ['type' => 'join', 'at' => $u->created_at, 'user' => $u->only('id', 'name', 'avatar'), 'text' => 'joined SFD.DJ', 'slug' => null]);
+            ->map(fn ($u) => ['type' => 'join', 'at' => $u->created_at, 'user' => $u->only('id', 'name', 'avatar'), 'text' => 'joined SFD-DJ.EU', 'slug' => null]);
 
         return $songs->concat($rooms)->concat($joined)->sortByDesc('at')->take(10)->values()
             ->map(fn ($a) => ['at' => $a['at']->toIso8601String()] + $a)->all();

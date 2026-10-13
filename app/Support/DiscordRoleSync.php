@@ -16,7 +16,7 @@ final class DiscordRoleSync
         return filled(config('services.discord.bot_token')) && filled(config('services.discord.guild_id'));
     }
 
-    /** Return a user-safe error, or null after the SFD.DJ roles have been synchronized. */
+    /** Return a user-safe error, or null after the SFD-DJ.EU roles have been synchronized. */
     public static function sync(User $user, ?string $oauthAccessToken = null, bool $clear = false): ?string
     {
         if (! $user->discord_id) {
@@ -28,7 +28,7 @@ final class DiscordRoleSync
         }
 
         $guildId = (string) config('services.discord.guild_id');
-        $prefix = (string) config('services.discord.role_prefix', 'SFD.DJ | ');
+        $prefix = (string) config('services.discord.role_prefix', 'SFD-DJ.EU | ');
         $memberUrl = self::API."guilds/{$guildId}/members/{$user->discord_id}";
         $api = Http::withToken((string) config('services.discord.bot_token'))->acceptJson()->connectTimeout(3)->timeout(8);
 
@@ -101,8 +101,8 @@ final class DiscordRoleSync
         return match ($status) {
             401 => 'The Discord bot token is invalid. Ask site staff to check the bot configuration.',
             403 => $action === 'join the Discord server'
-                ? 'The Discord bot needs Create Instant Invite and Manage Roles, with its highest role above the SFD.DJ roles.'
-                : 'The Discord bot needs Manage Roles and must be ranked above the SFD.DJ roles.',
+                ? 'The Discord bot needs Create Instant Invite and Manage Roles, with its highest role above the SFD-DJ.EU roles.'
+                : 'The Discord bot needs Manage Roles and must be ranked above the SFD-DJ.EU roles.',
             404 => 'The Discord server or bot membership could not be found. Ask site staff to check the server setup.',
             429 => 'Discord is rate limiting role updates. Please try again shortly.',
             default => "Discord could not {$action} (HTTP {$status}). Please try again later.",

@@ -86,7 +86,7 @@ class WhispersDiscordCommunityTest extends TestCase
         $this->actingAs($me)->get('/settings/connections')->assertInertia(fn (Assert $p) => $p->component('Settings/Connections')->where('discord.username', 'Kate D')->where('discord.configured', true));
         $this->assertArrayNotHasKey('discord_id', $me->toArray()); // the id never leaves the server
 
-        // one Discord account cannot be on two SFD.DJ accounts
+        // one Discord account cannot be on two SFD-DJ.EU accounts
         Http::fake(['discord.com/api/oauth2/token' => Http::response(['access_token' => 't']), 'discord.com/api/users/@me' => Http::response(['id' => '777', 'username' => 'x'])]);
         $this->withSession(['discord_state' => 's2'])->get('/auth/discord/callback?code=abc&state=s2');
         $this->assertSame('123456', $me->refresh()->discord_id);
@@ -217,7 +217,7 @@ class WhispersDiscordCommunityTest extends TestCase
             }
             if (str_ends_with($url, '/guilds/guild-id/roles')) {
                 return Http::response([
-                    ['id' => 'beta-role-id', 'name' => 'SFD.DJ | Beta Tester'],
+                    ['id' => 'beta-role-id', 'name' => 'SFD-DJ.EU | Beta Tester'],
                     ['id' => 'other-role-id', 'name' => 'Community'],
                     ['id' => 'member-role-id', 'name' => 'Member'],
                 ]);
@@ -248,7 +248,7 @@ class WhispersDiscordCommunityTest extends TestCase
 
         $this->withSession(['discord_state' => $state])->get('/auth/discord/callback?code=abc&state='.$state)
             ->assertRedirect(route('settings.connections'))
-            ->assertSessionHas('discord_notice', 'Discord linked and SFD.DJ roles synced.');
+            ->assertSessionHas('discord_notice', 'Discord linked and SFD-DJ.EU roles synced.');
 
         Http::assertSent(fn (Request $request) => $request->method() === 'PUT'
             && str_ends_with($request->url(), '/guilds/guild-id/members/discord-user-id')

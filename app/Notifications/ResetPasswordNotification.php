@@ -16,9 +16,9 @@ class ResetPasswordNotification extends ResetPassword
         $minutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
 
         return (new MailMessage)
-            ->subject('Reset your SFD.DJ password')
+            ->subject('Reset your SFD-DJ.EU password')
             ->greeting("Hi {$notifiable->name},")
-            ->line('Someone asked to reset the password of this SFD.DJ account:')
+            ->line('Someone asked to reset the password of this SFD-DJ.EU account:')
             ->line("**Username:** {$notifiable->username}")
             ->line("**Email:** {$notifiable->email}")
             ->line('**Account created:** '.$notifiable->created_at->format('j M Y'))

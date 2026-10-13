@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
-/** SFD.DJ Plus and Premium: what they give, buying one on Stripe, what Stripe tells us back, and staff giving one by hand. */
+/** SFD-DJ.EU Plus and Premium: what they give, buying one on Stripe, what Stripe tells us back, and staff giving one by hand. */
 class PlansTest extends TestCase
 {
     use RefreshDatabase;
@@ -48,7 +48,7 @@ class PlansTest extends TestCase
         $me->forceFill(['plan' => 'plus', 'plan_until' => now()->addDays(3)])->save();
         $this->assertSame('plus', $me->refresh()->activePlan());
         $this->assertSame(['playlists' => 60, 'songs' => 10000, 'emojis' => 50], $me->limits());
-        $this->assertContains(['key' => 'sub:plus', 'label' => 'SFD.DJ Plus', 'color' => '#2dd4bf', 'icon' => '💎'], $me->badges);
+        $this->assertContains(['key' => 'sub:plus', 'label' => 'SFD-DJ.EU Plus', 'color' => '#2dd4bf', 'icon' => '💎'], $me->badges);
         $me->addXp(100);
         $this->assertSame(125, $me->refresh()->xp);
 

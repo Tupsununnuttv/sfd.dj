@@ -56,7 +56,7 @@ export default function Register({ inviter }: { inviter: { name: string; avatar:
             {inviter && (
                 <p className="mb-5 flex items-center gap-3 rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-sm text-violet-100">
                     <Avatar name={inviter.name} avatar={inviter.avatar} className="h-9 w-9" />
-                    <span><b>{inviter.name}</b> invited you to SFD.DJ. Welcome!</span>
+                    <span><b>{inviter.name}</b> invited you to SFD-DJ.EU. Welcome!</span>
                 </p>
             )}
 

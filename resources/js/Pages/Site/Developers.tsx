@@ -19,7 +19,7 @@ const cards = [
 ];
 
 const steps = [
-    ['Make an account', 'Developers use a normal SFD.DJ account.'],
+    ['Make an account', 'Developers use a normal SFD-DJ.EU account.'],
     ['Open Settings → Developers', 'Create a bot, or a personal token. The token is shown once.'],
     ['Call the API', 'Send Authorization: Bearer YOUR_TOKEN to /api/v1/…, or install the npm package.'],
     ['Give the bot a role', 'In your room: Room settings → Roles. Without a role it can only read and chat.'],
@@ -31,7 +31,7 @@ export default function Developers() {
     return (
         <SiteLayout>
             <Head title="Developers" />
-            <PageHeader crumbs={[['Developers']]} title="Build on SFD.DJ" text="A public JSON API, bot accounts and an npm package. Everything passes the same permission checks as the website." />
+            <PageHeader crumbs={[['Developers']]} title="Build on SFD-DJ.EU" text="A public JSON API, bot accounts and an npm package. Everything passes the same permission checks as the website." />
 
             <section className="mx-auto grid max-w-6xl gap-4 px-6 md:grid-cols-3">
                 {cards.map(([icon, title, text]) => (

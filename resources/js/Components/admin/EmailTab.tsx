@@ -10,7 +10,7 @@ MAIL_PORT=587
 MAIL_USERNAME=your.address@gmail.com
 MAIL_PASSWORD=the-16-letter-app-password
 MAIL_FROM_ADDRESS=your.address@gmail.com
-MAIL_FROM_NAME="SFD.DJ"`;
+MAIL_FROM_NAME="SFD-DJ.EU"`;
 
 /** The mail server of the site: is it set up, a test message, and whether people must confirm their email. */
 export default function EmailTab({ email, gotoTab }: { email: AdminProps['email']; gotoTab: (tab: 'Users') => void }) {
@@ -55,7 +55,7 @@ export default function EmailTab({ email, gotoTab }: { email: AdminProps['email'
                         <div className="mt-5">
                             <p className="text-sm font-semibold">How to turn it on (for example with Gmail)</p>
                             <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-neutral-400">
-                                <li>On the Google account: turn on 2-step verification, then Security → App passwords, and make one for SFD.DJ (16 letters).</li>
+                                <li>On the Google account: turn on 2-step verification, then Security → App passwords, and make one for SFD-DJ.EU (16 letters).</li>
                                 <li>Open the file <code className="rounded bg-white/10 px-1 text-violet-300">.env</code> in the project folder and put these lines in it, with your own address and the app password.</li>
                                 <li>Save the file and press the test button here.</li>
                             </ol>

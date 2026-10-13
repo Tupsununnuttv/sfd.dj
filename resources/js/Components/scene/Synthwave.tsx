@@ -122,8 +122,8 @@ export default function SynthwaveBackdrop({ palette: p, live = false, withBooth 
                 <path key={i} d={`M${x} ${y}h${34 * sx}M${x} ${y}v${-34 * sy}`} stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity=".85" />
             ))}
             <g className="sc-flame">
-                <text x="800" y="526" textAnchor="middle" fontFamily={font} fontWeight="900" fontStyle="italic" fontSize="38" letterSpacing="3" fill="none" stroke="#ff2fd0" strokeWidth="9" opacity=".35">SFD.DJ</text>
-                <text x="800" y="526" textAnchor="middle" fontFamily={font} fontWeight="900" fontStyle="italic" fontSize="38" letterSpacing="3" fill="#fff0fb" stroke="#ff2fd0" strokeWidth="1.6">SFD.DJ</text>
+                <text x="800" y="526" textAnchor="middle" fontFamily={font} fontWeight="900" fontStyle="italic" fontSize="38" letterSpacing="3" fill="none" stroke="#ff2fd0" strokeWidth="9" opacity=".35">SFD-DJ.EU</text>
+                <text x="800" y="526" textAnchor="middle" fontFamily={font} fontWeight="900" fontStyle="italic" fontSize="38" letterSpacing="3" fill="#fff0fb" stroke="#ff2fd0" strokeWidth="1.6">SFD-DJ.EU</text>
                 <path d="M708 540H892" stroke="#22d3ee" strokeWidth="3" strokeLinecap="round" /><path d="M708 540H892" stroke="#22d3ee" strokeWidth="9" strokeLinecap="round" opacity=".3" />
             </g>
 

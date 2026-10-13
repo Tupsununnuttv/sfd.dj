@@ -314,7 +314,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
             // the gem of a paid plan
             $plan = $this->activePlan();
-            $roles = $plan ? $roles->push(['key' => "sub:{$plan}", 'label' => 'SFD.DJ '.Plans::TIERS[$plan]['name'], 'color' => Plans::TIERS[$plan]['color'], 'icon' => '💎']) : $roles;
+            $roles = $plan ? $roles->push(['key' => "sub:{$plan}", 'label' => 'SFD-DJ.EU '.Plans::TIERS[$plan]['name'], 'color' => Plans::TIERS[$plan]['color'], 'icon' => '💎']) : $roles;
 
             // the special badges staff gave them (beta tester ...), then the one from the shop
             $held = $this->roles ?? [];

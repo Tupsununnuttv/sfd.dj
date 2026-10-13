@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Auth;
 
-use Closure;
 use App\Enums\Role;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Models\User;
+use Closure;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,7 +44,11 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'username' => ['required', 'string', 'min:3', 'max:20', 'regex:/^[A-Za-z0-9_]+$/', function (string $attribute, mixed $value, Closure $fail) { if (User::whereRaw('lower(username) = ?', [mb_strtolower($value)])->exists()) { $fail('That username is taken.'); } }],
+            'username' => ['required', 'string', 'min:3', 'max:20', 'regex:/^[A-Za-z0-9_]+$/', function (string $attribute, mixed $value, Closure $fail) {
+                if (User::whereRaw('lower(username) = ?', [mb_strtolower($value)])->exists()) {
+                    $fail('That username is taken.');
+                }
+            }],
             'name' => ['nullable', 'string', 'max:30'],
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],

@@ -22,7 +22,7 @@ const colours: [string, string, string][] = [
 ];
 
 const dos = ['Use it on dark backgrounds: that is where it looks best.', 'Leave empty space around it, at least half the height of the mark.', 'Use the small mark below 32 px.', 'Link to the full mark file or the social image: they are always the latest.'];
-const donts = ['Do not stretch, squash, rotate or recolour it.', 'Do not put the mark on a busy picture or a light background without its tile.', 'Do not add shadows or outlines of your own.', 'Do not suggest SFD.DJ made or approves your project, unless it did.'];
+const donts = ['Do not stretch, squash, rotate or recolour it.', 'Do not put the mark on a busy picture or a light background without its tile.', 'Do not add shadows or outlines of your own.', 'Do not suggest SFD-DJ.EU made or approves your project, unless it did.'];
 
 export default function Brand() {
     const [copied, setCopied] = useState<string | null>(null);
@@ -35,7 +35,7 @@ export default function Brand() {
     return (
         <SiteLayout>
             <Head title="Brand" />
-            <PageHeader crumbs={[['Brand']]} title="The SFD.DJ brand" text="A record, split by an S, ringed by a dial that ends in a playhead: the music, in sync, live. Use it to write about us or to link to us." />
+            <PageHeader crumbs={[['Brand']]} title="The SFD-DJ.EU brand" text="A record, split by an S, ringed by a dial that ends in a playhead: the music, in sync, live. Use it to write about us or to link to us." />
 
             <section className="mx-auto max-w-6xl px-6">
                 <div className="relative flex flex-col items-center overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-950 via-neutral-950 to-fuchsia-950 px-6 py-16">

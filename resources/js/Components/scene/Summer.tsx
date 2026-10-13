@@ -152,7 +152,7 @@ export default function SummerBackdrop({ palette: p, live = false, withBooth = f
                 {board(-16, '#f97316', '#fde047', 'sb1')}{board(16, '#14b8a6', '#ffffff', 'sb2')}
             </g>
             <rect x="752" y="542" width="96" height="30" rx="6" fill="#fff3d0" stroke="#a9733a" strokeWidth="2.4" />
-            <text x="800" y="563" textAnchor="middle" fontFamily={font} fontWeight="900" fontSize="18" letterSpacing="1" fill="#0e7490">SFD.DJ</text>
+            <text x="800" y="563" textAnchor="middle" fontFamily={font} fontWeight="900" fontSize="18" letterSpacing="1" fill="#0e7490">SFD-DJ.EU</text>
             <g className="sc-crab"><g transform="translate(560 610)">
                 <ellipse cx="0" cy="10" rx="22" ry="3.4" fill="#8a5a12" opacity=".35" />
                 <path d="M-18 4L-30 12M-12 7L-22 18M12 7L22 18M18 4L30 12" stroke="#b91c1c" strokeWidth="2.6" strokeLinecap="round" />

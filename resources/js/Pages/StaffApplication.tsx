@@ -23,7 +23,7 @@ export default function StaffApplication({ discord, configured, questions, requi
     return (
         <SiteLayout>
             <Head title="Staff application" />
-            <PageHeader crumbs={[["Community"], ["Staff application"]]} title="Staff application" text="Tell us how you would help keep SFD.DJ welcoming and running smoothly." />
+            <PageHeader crumbs={[["Community"], ["Staff application"]]} title="Staff application" text="Tell us how you would help keep SFD-DJ.EU welcoming and running smoothly." />
             <section className="mx-auto max-w-3xl space-y-6 px-6 pb-16">
                 {notice && <p role="status" className="border-l-2 border-green-400 pl-4 text-sm text-green-200">{notice}</p>}
                 {error && <p role="alert" className="border-l-2 border-red-400 pl-4 text-sm text-red-200">{error}</p>}
@@ -44,7 +44,7 @@ export default function StaffApplication({ discord, configured, questions, requi
                     <p className="text-sm text-neutral-400">Staff applications are not available right now. Please try again later.</p>
                 ) : (
                     <>
-                        <p className="text-sm text-neutral-400">Applying as {discord.username || 'your connected Discord account'}. Staff review applications in the private SFD.DJ Discord channel.</p>
+                        <p className="text-sm text-neutral-400">Applying as {discord.username || 'your connected Discord account'}. Staff review applications in the private SFD-DJ.EU Discord channel.</p>
                         <form onSubmit={submit} className="space-y-5">
                             <Field label={questions.motivation} htmlFor="motivation" error={errors.motivation}>
                                 <textarea id="motivation" value={data.motivation} onChange={(event) => setData('motivation', event.target.value)} maxLength={900} required rows={4} className={fieldClass} />

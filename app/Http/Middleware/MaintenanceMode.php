@@ -17,7 +17,7 @@ class MaintenanceMode
             && ! $request->user()?->hasPermission('admin.access')
             && ! $request->is('login', 'logout', 'two-factor-challenge', 'forgot-password', 'reset-password/*', 'up')) {
             if ($request->is('api/*')) {
-                return response()->json(['message' => 'SFD.DJ is in maintenance mode.'], 503);
+                return response()->json(['message' => 'SFD-DJ.EU is in maintenance mode.'], 503);
             }
 
             return Inertia::render('Maintenance')->toResponse($request)->setStatusCode(503);

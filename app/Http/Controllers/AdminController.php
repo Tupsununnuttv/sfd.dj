@@ -238,7 +238,7 @@ class AdminController extends Controller
         $configured = MailStatus::configured();
 
         try {
-            Mail::raw("This is a test message from the admin panel of SFD.DJ.\n\nIf you can read it, the site can send email.", fn ($m) => $m->to($actor->email)->subject('SFD.DJ test email'));
+            Mail::raw("This is a test message from the admin panel of SFD-DJ.EU.\n\nIf you can read it, the site can send email.", fn ($m) => $m->to($actor->email)->subject('SFD-DJ.EU test email'));
             $result = ['ok' => true, 'to' => $actor->email, 'message' => $configured ? "Sent to {$actor->email}. Look in the inbox, and in the Spam folder." : 'No mail server is set up, so the message was only written to storage/logs/laravel.log.'];
         } catch (Throwable $e) {
             report($e);

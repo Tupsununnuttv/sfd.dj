@@ -45,7 +45,7 @@ return [
         'client_secret' => env('DISCORD_CLIENT_SECRET'),
         'bot_token' => env('DISCORD_BOT_TOKEN'),
         'guild_id' => env('DISCORD_GUILD_ID'),
-        'role_prefix' => env('DISCORD_ROLE_PREFIX', 'SFD.DJ | '),
+        'role_prefix' => env('DISCORD_ROLE_PREFIX', 'SFD-DJ.EU | '),
         'member_role_id' => env('DISCORD_MEMBER_ROLE_ID'),
         'staff_applications_channel_id' => env('DISCORD_STAFF_APPLICATIONS_CHANNEL_ID'),
         'staff_role_id' => env('DISCORD_STAFF_ROLE_ID'),
@@ -64,7 +64,7 @@ return [
     ],
 
     // Legacy Tenor endpoint; the chat GIF picker now uses GIPHY directly from the browser.
-    // payments for SFD.DJ Plus and Premium (App\Support\Stripe): the secret key and the signing secret of the webhook /stripe/webhook
+    // payments for SFD-DJ.EU Plus and Premium (App\Support\Stripe): the secret key and the signing secret of the webhook /stripe/webhook
     'stripe' => [
         'secret' => env('STRIPE_SECRET'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),

@@ -295,7 +295,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
                                 <div className="mb-1.5 flex items-baseline justify-between text-xs"><span className="font-bold text-white">Level {level}</span><span className="text-neutral-400">{toNextText(user.xp, level)}</span></div>
                                 <ProgressBar value={levelPercent(user.xp, level)} />
                                 {staff ? (
-                                    <p className="mt-2 text-xs text-amber-300">You are SFD.DJ staff: everything is yours, free.</p>
+                                    <p className="mt-2 text-xs text-amber-300">You are SFD-DJ.EU staff: everything is yours, free.</p>
                                 ) : nextLevel ? (
                                     <p className="mt-2 text-xs text-neutral-400">
                                         At level {nextLevel} you can buy {nextItems.length} more {nextItems.length === 1 ? 'thing' : 'things'}: {nextItems.slice(0, 3).map((it) => it.label).join(', ')}{nextItems.length > 3 ? '…' : ''}

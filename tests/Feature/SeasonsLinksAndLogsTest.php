@@ -135,7 +135,7 @@ class SeasonsLinksAndLogsTest extends TestCase
         foreach (['go to plug.dj', 'https://www.youtube.com/watch?v=x', 'see plug . dj', 'plug(dot)dj', 'plug[.]dj', 'www.example.org', 't.me/someone', 'join WAVEZ', 'wavez.fm is better', 'plugdj forever', 'turntable.fm'] as $text) {
             $this->assertSame(LinkGuard::MESSAGE, LinkGuard::check($text), $text);
         }
-        foreach (['join club.dj', 'https://cord.dj/r/x', 'app.borealise.com/room', 'https://borealise.com', 'check sfd.dj/rooms', 'That was great. Live sets!', 'e.g. this', 'version 1.5', 'mail me at me@gmail.com', 'my turntable is broken', 'the dot com era', ''] as $text) {
+        foreach (['join club.dj', 'https://cord.dj/r/x', 'app.borealise.com/room', 'https://borealise.com', 'check sfd-dj.eu/rooms', 'That was great. Live sets!', 'e.g. this', 'version 1.5', 'mail me at me@gmail.com', 'my turntable is broken', 'the dot com era', ''] as $text) {
             $this->assertNull(LinkGuard::check($text), $text);
         }
     }

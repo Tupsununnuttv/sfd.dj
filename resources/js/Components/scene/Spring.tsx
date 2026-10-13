@@ -195,7 +195,7 @@ export default function SpringBackdrop({ palette: p, live = false, withBooth = f
             </g>
             {ROSES.map((r, i) => <g key={i}><circle cx={r1(r.x)} cy={r1(r.y)} r="8.4" fill={r.c} /><circle cx={r1(r.x)} cy={r1(r.y)} r="4.6" fill="none" stroke="#00000030" strokeWidth="1.2" /><circle cx={r1(r.x - 2)} cy={r1(r.y - 2)} r="1.6" fill="#fff" opacity=".6" /></g>)}
             <path d="M774 488V478M826 488V478" stroke="#8a5a2b" strokeWidth="2" /><rect x="754" y="488" width="92" height="28" rx="6" fill="#fff6e0" stroke="#8a5a2b" strokeWidth="2.2" />
-            <text x="800" y="508" textAnchor="middle" fontFamily={font} fontWeight="900" fontSize="17" letterSpacing="1" fill="#c2410c">SFD.DJ</text>
+            <text x="800" y="508" textAnchor="middle" fontFamily={font} fontWeight="900" fontSize="17" letterSpacing="1" fill="#c2410c">SFD-DJ.EU</text>
             {[704, 896].map((x) => <ellipse key={x} cx={x} cy="605" rx="24" ry="7" fill="#2f7a32" opacity=".5" />)}
 
             {/* the fence and the tulips along it */}

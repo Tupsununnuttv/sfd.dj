@@ -1,7 +1,7 @@
 import { useId } from 'react';
 
 /**
- * The SFD.DJ mark: a record split by an S, in a deep violet tile, ringed by a dial that ends in a playhead.
+ * The SFD-DJ.EU mark: a record split by an S, in a deep violet tile, ringed by a dial that ends in a playhead.
  * `detail="full"` is the whole picture (grooves, glow, sheen, dial); `"simple"` is the bold version that stays crisp when it is small.
  * `spin` turns the record slowly (full version). The same drawings live in public/logo.svg and public/favicon.svg.
  */

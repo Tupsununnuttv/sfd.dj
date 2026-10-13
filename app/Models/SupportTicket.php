@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Events\SupportMessageSent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
@@ -33,7 +34,7 @@ class SupportTicket extends Model
     {
         $message = $this->messages()->create(['sender' => $sender, 'staff_id' => $staff?->id, 'body' => $body]);
         $this->forceFill(['last_message_at' => now(), 'status' => 'open'])->save();
-        \App\Events\SupportMessageSent::dispatch($this, $message);
+        SupportMessageSent::dispatch($this, $message);
 
         return $message;
     }

@@ -1,5 +1,5 @@
 /**
- * sfddj: the official JavaScript client for the SFD.DJ API.
+ * sfddj: the official JavaScript client for the SFD-DJ.EU API.
  * Works in Node 18+, Deno, Bun and browsers (browser extensions): it only needs `fetch`. No dependencies.
  */
 
@@ -120,9 +120,9 @@ export type MuteLength = '10m' | '1h' | '24h' | 'forever';
 export type VoteType = 'woot' | 'meh' | 'grab';
 
 export interface ClientOptions {
-    /** A token from Settings → Developers on SFD.DJ. */
+    /** A token from Settings → Developers on SFD-DJ.EU. */
     token: string;
-    /** The address of the SFD.DJ site you talk to, e.g. https://sfd.example.com (no /api/v1 at the end). */
+    /** The address of the SFD-DJ.EU site you talk to, e.g. https://sfd.example.com (no /api/v1 at the end). */
     baseUrl: string;
     /** Bring your own fetch (tests, old runtimes). */
     fetch?: typeof fetch;
@@ -148,7 +148,7 @@ export class SfdDj {
     private doFetch: typeof fetch;
 
     constructor(options: ClientOptions) {
-        if (!options?.token) throw new Error('sfddj: a token is required (Settings → Developers on SFD.DJ).');
+        if (!options?.token) throw new Error('sfddj: a token is required (Settings → Developers on SFD-DJ.EU).');
         this.token = options.token;
         if (!options.baseUrl) throw new Error('sfddj: baseUrl is required, e.g. https://sfd.example.com');
         this.base = options.baseUrl.replace(/\/+$/, '') + '/api/v1';

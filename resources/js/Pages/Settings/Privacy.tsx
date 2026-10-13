@@ -16,7 +16,7 @@ export default function Privacy() {
         <SettingsLayout title="Privacy" subtitle="You decide who can reach you and what other people see about you.">
             <Head title="Privacy" />
 
-            <SettingsSection title="Who can whisper to you" text="Whispers are private messages. SFD.DJ staff can always reach you, so you can still get help.">
+            <SettingsSection title="Who can whisper to you" text="Whispers are private messages. SFD-DJ.EU staff can always reach you, so you can still get help.">
                 <Segmented
                     value={privacy.whispers}
                     onChange={(v) => savePrefs({ privacy: { whispers: v } })}

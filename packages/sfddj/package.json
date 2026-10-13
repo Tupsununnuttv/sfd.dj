@@ -1,8 +1,8 @@
 {
     "name": "sfddj",
     "version": "1.0.0",
-    "description": "Official JavaScript client for the SFD.DJ API: room bots, browser extensions and tools. No dependencies.",
-    "keywords": ["sfd.dj", "sfddj", "bot", "api", "music", "plug.dj", "room bot", "extension"],
+    "description": "Official JavaScript client for the SFD-DJ.EU API: room bots, browser extensions and tools. No dependencies.",
+    "keywords": ["sfd-dj.eu", "sfddj", "bot", "api", "music", "plug.dj", "room bot", "extension"],
     "license": "MIT",
     "type": "module",
     "main": "./dist/index.js",

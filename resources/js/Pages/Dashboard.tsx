@@ -94,7 +94,7 @@ function CreateRoom({ genres, onClose }: { genres: string[]; onClose: () => void
                 <input value={data.description} onChange={(e) => setData('description', e.target.value)} placeholder="Description (optional)" maxLength={140} className={input} />
                 <label className="flex items-center gap-2 text-sm text-neutral-300">
                     <input type="checkbox" checked={data.is_private} onChange={(e) => setData('is_private', e.target.checked)} className="rounded border-neutral-600 bg-neutral-800 text-violet-500 focus:ring-violet-500" />
-                    🔒 Private room <span className="text-xs text-neutral-500">(only you and SFD.DJ staff can enter)</span>
+                    🔒 Private room <span className="text-xs text-neutral-500">(only you and SFD-DJ.EU staff can enter)</span>
                 </label>
                 <button disabled={processing} className="w-full rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 py-2.5 text-sm font-semibold text-white disabled:opacity-50">Create room</button>
             </form>
@@ -160,7 +160,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                 {guest ? (
                     <div className="relative flex flex-wrap items-center justify-between gap-5">
                         <div className="max-w-xl">
-                            <h2 className="text-3xl font-black tracking-tight">Welcome to SFD.DJ 🎧</h2>
+                            <h2 className="text-3xl font-black tracking-tight">Welcome to SFD-DJ.EU 🎧</h2>
                             <p className="mt-2 text-neutral-300">You are browsing as a guest: watch rooms and read the chat. Log in to chat, vote, build playlists and DJ.</p>
                             <p className="mt-3 flex items-center gap-2 text-sm text-green-400"><Equalizer /> {online} listening right now</p>
                         </div>

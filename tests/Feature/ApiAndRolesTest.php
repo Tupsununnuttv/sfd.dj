@@ -248,6 +248,6 @@ class ApiAndRolesTest extends TestCase
         $token = $guy->createToken('t')->plainTextToken;
         Setting::put('maintenance', '1');
 
-        $this->withToken($token)->getJson('/api/v1/me')->assertStatus(503)->assertJsonPath('message', 'SFD.DJ is in maintenance mode.');
+        $this->withToken($token)->getJson('/api/v1/me')->assertStatus(503)->assertJsonPath('message', 'SFD-DJ.EU is in maintenance mode.');
     }
 }

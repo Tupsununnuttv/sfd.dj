@@ -17,7 +17,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 /**
  * The Avatar shop. Things cost SFD Coins (priceOf) and open up at a level (UNLOCK): you earn coins by playing songs, getting woots and grabs, levelling up and taking the daily
  * reward (User::award), and you buy what you can afford at your level. What you buy is yours for good (UserItem). What costs nothing (level 1) is free for everybody,
- * and SFD.DJ staff can wear everything.
+ * and SFD-DJ.EU staff can wear everything.
  * Avatars are characters (whole people); the plain emoji and the animated avatars that used to be here are gone from the shop. Somebody who picked one of them before
  * keeps seeing it (the page still draws it) but nobody can pick one now. Badges, accessories, frames and effects are drawn as pictures of their own.
  * ponytail: prices follow the level that unlocks an item (priceOf), so there is no price list to keep; give an item its own price there if one should ever differ.
@@ -85,7 +85,7 @@ class AvatarController extends Controller
 
     /** The level that unlocks an item. Everything not listed here is free from level 1. */
     public const UNLOCK = [
-        'avatar' => ['char:neko' => 2, 'char:bun' => 3, 'char:panda' => 5, 'char:wolfie' => 8, 'char:robo' => 10],
+        'avatar' => ['char:neko' => 2, 'char:bun' => 3, 'char:panda' => 5, 'char:wolfie' => 8, 'char:robo' => 10, 'char:rift' => 25],
         'badge' => ['digger' => 2, 'bassline' => 3, 'streak' => 4, 'nightowl' => 6, 'voltage' => 8, 'goldenear' => 10, 'diamond' => 13, 'spotlight' => 16, 'platinum' => 20, 'laureate' => 24, 'royal' => 28, 'cosmic' => 34, 'dragonseal' => 42, 'legend' => 55],
         'accessory' => ['cap' => 2, 'beanie' => 3, 'catears' => 4, 'foxears' => 5, 'flowers' => 7, 'halo' => 9, 'visor' => 10, 'laurel' => 12, 'horns' => 15, 'tophat' => 18, 'crown' => 22, 'wings' => 26, 'dragon' => 32, 'phoenix' => 45],
         'frame' => ['gold' => 2, 'neon' => 4, 'carbon' => 6, 'emerald' => 8, 'vinyl' => 11, 'equalizer' => 14, 'thorns' => 18, 'frost' => 22, 'hellfire' => 28, 'aurora' => 38, 'prism' => 50],
@@ -283,7 +283,7 @@ class AvatarController extends Controller
         $user = $request->user();
 
         if ($user->is_staff) {
-            throw ValidationException::withMessages(['items' => 'You are SFD.DJ staff: everything is already yours.']);
+            throw ValidationException::withMessages(['items' => 'You are SFD-DJ.EU staff: everything is already yours.']);
         }
 
         $bought = self::bought($user);

@@ -2,7 +2,7 @@ import SiteLayout, { PageHeader } from '@/Layouts/SiteLayout';
 import { Head, Link } from '@inertiajs/react';
 
 const values = [
-    ['Together', 'Music is better when everyone hears the same moment. Every part of SFD.DJ is built around that.'],
+    ['Together', 'Music is better when everyone hears the same moment. Every part of SFD-DJ.EU is built around that.'],
     ['Open to look at', 'Anyone can open a public room and watch. You only make an account when you want to join in.'],
     ['Safe by default', 'Hosts and moderators get real tools, and passwords are never stored in a readable form or sent to you.'],
     ['Open to build on', 'A public API and bot accounts, so the community can make the tools we did not think of.'],
@@ -12,10 +12,10 @@ export default function About() {
     return (
         <SiteLayout>
             <Head title="About" />
-            <PageHeader crumbs={[['About']]} title="About SFD.DJ" text="A place to share music live with people who care about the same song." />
+            <PageHeader crumbs={[['About']]} title="About SFD-DJ.EU" text="A place to share music live with people who care about the same song." />
 
             <section className="mx-auto max-w-3xl space-y-4 px-6 text-neutral-300">
-                <p>SFD.DJ is a set of live music rooms. In each room one person plays at a time while everyone else listens, chats and votes. When the song ends, the next person in the waitlist plays.</p>
+                <p>SFD-DJ.EU is a set of live music rooms. In each room one person plays at a time while everyone else listens, chats and votes. When the song ends, the next person in the waitlist plays.</p>
                 <p>Songs play through the official YouTube player, so there is nothing to download and no music is stored on our servers. SoundCloud and Spotify links are matched to the same song on YouTube.</p>
                 <p>The site is built to feel like the classic social DJ rooms: roles, levels, badges, emotes and communities that make a room feel like a place, not just a playlist.</p>
             </section>

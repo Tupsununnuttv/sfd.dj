@@ -61,7 +61,7 @@ final class Stripe
                     'currency' => 'eur',
                     'unit_amount' => $tier[$interval],
                     'recurring' => ['interval' => $interval],
-                    'product_data' => ['name' => "SFD.DJ {$tier['name']}"],
+                    'product_data' => ['name' => "SFD-DJ.EU {$tier['name']}"],
                 ],
             ]],
             'client_reference_id' => $user->id,

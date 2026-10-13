@@ -85,7 +85,7 @@ class YouTubeController extends Controller
 
         $user = $request->user();
         if (User::where('youtube_channel_id', $channelId)->where('id', '!=', $user->id)->exists()) {
-            return $this->back('That YouTube channel is already connected to another SFD.DJ account.');
+            return $this->back('That YouTube channel is already connected to another SFD-DJ.EU account.');
         }
 
         $user->forceFill([

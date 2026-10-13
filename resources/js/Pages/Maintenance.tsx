@@ -7,7 +7,7 @@ export default function Maintenance() {
             <Head title="Maintenance" />
             <ApplicationLogo className="text-5xl" detail="full" />
             <h1 className="text-2xl font-bold">We'll be right back</h1>
-            <p className="max-w-md text-neutral-400">SFD.DJ is down for maintenance. Please check again in a few minutes.</p>
+            <p className="max-w-md text-neutral-400">SFD-DJ.EU is down for maintenance. Please check again in a few minutes.</p>
         </div>
     );
 }

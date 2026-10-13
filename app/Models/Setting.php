@@ -36,7 +36,7 @@ class Setting extends Model
         return [
             'social' => collect(self::SOCIALS)->mapWithKeys(fn ($label, $key) => [$key => $all["social.$key"] ?? ''])->filter()->all(),
             'donation' => ($all['donation.enabled'] ?? '0') === '1' && $goal > 0 ? [
-                'title' => $all['donation.title'] ?? 'Keep SFD.DJ running',
+                'title' => $all['donation.title'] ?? 'Keep SFD-DJ.EU running',
                 'goal' => $goal,
                 'current' => $current,
                 'percent' => (int) min(100, round($current / $goal * 100)),

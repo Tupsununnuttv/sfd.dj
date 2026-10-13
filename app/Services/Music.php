@@ -142,7 +142,7 @@ class Music
     private function spotifyTrackQuery(string $url): string
     {
         try {
-            $html = Http::timeout(6)->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; SFD.DJ)'])->get($url)->body();
+            $html = Http::timeout(6)->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; SFD-DJ.EU)'])->get($url)->body();
         } catch (ConnectionException) {
             $this->fail('Could not reach Spotify.');
         }

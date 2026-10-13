@@ -146,10 +146,10 @@ const moderationCommands = [
         .addStringOption((option) => option.setName('reason').setDescription('Optional closing note').setMaxLength(300)),
     new SlashCommandBuilder()
         .setName('status')
-        .setDescription('Check whether the SFD.DJ website is responding'),
+        .setDescription('Check whether the SFD-DJ.EU website is responding'),
     new SlashCommandBuilder()
         .setName('profile')
-        .setDescription('Show your linked SFD.DJ level and achievements'),
+        .setDescription('Show your linked SFD-DJ.EU level and achievements'),
     new SlashCommandBuilder()
         .setName('boost-set')
         .setDescription('Set the server-boost announcement channel')
@@ -195,7 +195,7 @@ const moderationCommands = [
     new SlashCommandBuilder()
         .setName('updates-set')
         .setDescription('Set where website announcements are posted')
-        .addChannelOption((option) => option.setName('channel').setDescription('Channel for SFD.DJ updates').addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement).setRequired(true)),
+        .addChannelOption((option) => option.setName('channel').setDescription('Channel for SFD-DJ.EU updates').addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement).setRequired(true)),
     new SlashCommandBuilder()
         .setName('updates-clear')
         .setDescription('Stop posting website announcements in this server'),
@@ -218,7 +218,7 @@ const renderMemberMessage = (template, member) => template
 
 const ticketModal = () => new ModalBuilder()
     .setCustomId('ticket:submit')
-    .setTitle('Contact SFD.DJ staff')
+    .setTitle('Contact SFD-DJ.EU staff')
     .addComponents(
         new ActionRowBuilder().addComponents(new TextInputBuilder()
             .setCustomId('subject')
@@ -254,7 +254,7 @@ if (!token || !applicationId || !guildId) {
 } else {
     const applyCommand = new SlashCommandBuilder()
         .setName('apply')
-        .setDescription('Apply to join the SFD.DJ staff team');
+        .setDescription('Apply to join the SFD-DJ.EU staff team');
 
     const applicationStartButton = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('staff-application:start').setLabel('Start application').setStyle(ButtonStyle.Primary),
@@ -530,7 +530,7 @@ if (!token || !applicationId || !guildId) {
             await channel.send({
                 embeds: [new EmbedBuilder()
                     .setColor(warning ? 0xf59e0b : 0x5865f2)
-                    .setTitle(warning ? 'SFD.DJ notice' : 'SFD.DJ update')
+                    .setTitle(warning ? 'SFD-DJ.EU notice' : 'SFD-DJ.EU update')
                     .setDescription(String(announcement.message).slice(0, 3900))
                     .setTimestamp(new Date(announcement.created_at))],
                 allowedMentions: { parse: [] },
@@ -541,7 +541,7 @@ if (!token || !applicationId || !guildId) {
 
     const fetchLatestRelease = async (repository) => {
         const response = await fetch(`https://api.github.com/repos/${repository}/releases/latest`, {
-            headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'SFD.DJ-Discord-Bot' },
+            headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'SFD-DJ.EU-Discord-Bot' },
             signal: AbortSignal.timeout(8000),
         });
         if (response.status === 404) {
@@ -670,7 +670,7 @@ if (!token || !applicationId || !guildId) {
 
     const applicationModal = () => new ModalBuilder()
         .setCustomId('staff-application:submit')
-        .setTitle('SFD.DJ staff application')
+        .setTitle('SFD-DJ.EU staff application')
         .addComponents(
             new ActionRowBuilder().addComponents(new TextInputBuilder()
                 .setCustomId('motivation')
@@ -791,7 +791,7 @@ if (!token || !applicationId || !guildId) {
                 const requirements = staffApplicationRequirements.length
                     ? `Requirements:\n${staffApplicationRequirements.map((requirement) => `• ${requirement}`).join('\n')}`
                     : 'There are no additional requirements right now.';
-                await interaction.reply({ content: `SFD.DJ staff application\n${requirements}`, components: [applicationStartButton], flags: MessageFlags.Ephemeral });
+                await interaction.reply({ content: `SFD-DJ.EU staff application\n${requirements}`, components: [applicationStartButton], flags: MessageFlags.Ephemeral });
 
                 return;
             }
@@ -905,7 +905,7 @@ if (!token || !applicationId || !guildId) {
                 }
 
                 const channel = interaction.options.getChannel('channel', true);
-                await channel.send({ embeds: [new EmbedBuilder().setColor(0x5865f2).setTitle('Need help?').setDescription('Open a private ticket and the SFD.DJ staff team will help you.')], components: [ticketPanel] });
+                await channel.send({ embeds: [new EmbedBuilder().setColor(0x5865f2).setTitle('Need help?').setDescription('Open a private ticket and the SFD-DJ.EU staff team will help you.')], components: [ticketPanel] });
                 await interaction.reply({ content: `Ticket panel posted in ${channel}.`, flags: MessageFlags.Ephemeral });
 
                 return;
@@ -928,7 +928,7 @@ if (!token || !applicationId || !guildId) {
                 const status = await checkWebsiteStatus();
                 const embed = new EmbedBuilder()
                     .setColor(status.ok ? 0x22c55e : 0xef4444)
-                    .setTitle(status.ok ? 'SFD.DJ is responding' : 'SFD.DJ may be unavailable')
+                    .setTitle(status.ok ? 'SFD-DJ.EU is responding' : 'SFD-DJ.EU may be unavailable')
                     .setURL(status.url)
                     .addFields(
                         { name: 'HTTP', value: String(status.status), inline: true },
@@ -949,12 +949,12 @@ if (!token || !applicationId || !guildId) {
                 });
 
                 if (response.status === 404) {
-                    await interaction.editReply('Your Discord account is not linked to an SFD.DJ account yet. Connect it in Settings → Connections.');
+                    await interaction.editReply('Your Discord account is not linked to an SFD-DJ.EU account yet. Connect it in Settings → Connections.');
 
                     return;
                 }
                 if (!response.ok) {
-                    await interaction.editReply('Could not read your SFD.DJ profile right now. Please try again later.');
+                    await interaction.editReply('Could not read your SFD-DJ.EU profile right now. Please try again later.');
 
                     return;
                 }
@@ -992,7 +992,7 @@ if (!token || !applicationId || !guildId) {
                     const channel = interaction.options.getChannel('channel', true);
                     await updateGuildSetting(interaction.guildId, 'updatesChannelId', channel.id);
                     await pollWebsiteAnnouncements(interaction.guildId);
-                    await interaction.reply({ content: `New SFD.DJ announcements will be posted in ${channel}.`, flags: MessageFlags.Ephemeral });
+                    await interaction.reply({ content: `New SFD-DJ.EU announcements will be posted in ${channel}.`, flags: MessageFlags.Ephemeral });
 
                     return;
                 }
@@ -1111,7 +1111,7 @@ if (!token || !applicationId || !guildId) {
 
                     return;
                 }
-                const description = interaction.options.getString('description') || 'SFD.DJ community partner';
+                const description = interaction.options.getString('description') || 'SFD-DJ.EU community partner';
                 const existingIndex = partners.findIndex((partner) => partner.name.toLowerCase() === name.toLowerCase());
                 const partner = { name, url, description };
                 if (existingIndex >= 0) {
@@ -1127,7 +1127,7 @@ if (!token || !applicationId || !guildId) {
 
             if (interaction.isChatInputCommand() && interaction.commandName === 'partners') {
                 const partners = botSettings[interaction.guildId]?.partners ?? [];
-                const embed = new EmbedBuilder().setColor(0x2dd4bf).setTitle('SFD.DJ community partners');
+                const embed = new EmbedBuilder().setColor(0x2dd4bf).setTitle('SFD-DJ.EU community partners');
                 if (partners.length === 0) {
                     embed.setDescription('No community partners have been added yet.');
                 } else {

@@ -10,11 +10,11 @@ namespace App\Support;
 final class Awards
 {
     public const ALL = [
-        'beta' => ['Beta Tester', 'Tried SFD.DJ before it opened and helped make it better.', '#2dd4bf'],
+        'beta' => ['Beta Tester', 'Tried SFD-DJ.EU before it opened and helped make it better.', '#2dd4bf'],
         'founder' => ['Founding Member', 'Was here in the very first days, before the doors opened.', '#facc15'],
         'bughunter' => ['Bug Hunter', 'Found a bug and reported it, and it got fixed.', '#f87171'],
-        'contributor' => ['Contributor', 'Helped build SFD.DJ: code, art, music or words.', '#60a5fa'],
-        'champion' => ['Event Champion', 'Won an SFD.DJ event or contest.', '#fbbf24'],
+        'contributor' => ['Contributor', 'Helped build SFD-DJ.EU: code, art, music or words.', '#60a5fa'],
+        'champion' => ['Event Champion', 'Won an SFD-DJ.EU event or contest.', '#fbbf24'],
         'tastemaker' => ['Tastemaker', 'Plays the songs that everybody ends up asking for.', '#c084fc'],
         'hero' => ['Community Hero', 'Made the community a better place to be.', '#fb7185'],
     ];

@@ -52,7 +52,7 @@ function NewToken({ name, botId }: { name?: string; botId?: number }) {
     );
 }
 
-/** Settings → Developers: bots and API tokens for the SFD.DJ API. */
+/** Settings → Developers: bots and API tokens for the SFD-DJ.EU API. */
 export default function Developers({ tokens, bots, newToken, api }: Props) {
     const [name, setName] = useState('');
     const errors = usePage().props.errors as Record<string, string>;
@@ -63,12 +63,12 @@ export default function Developers({ tokens, bots, newToken, api }: Props) {
     };
 
     return (
-        <SettingsLayout title="Developers" subtitle="Bots, API tokens and the npm package for SFD.DJ.">
+        <SettingsLayout title="Developers" subtitle="Bots, API tokens and the npm package for SFD-DJ.EU.">
             <Head title="Developers" />
 
             <div className="max-w-3xl space-y-6">
                 <p className="text-sm text-neutral-400">
-                    Build room bots, browser extensions and tools on the SFD.DJ API at <code className="rounded bg-neutral-800 px-1 text-violet-300">{api}</code>.
+                    Build room bots, browser extensions and tools on the SFD-DJ.EU API at <code className="rounded bg-neutral-800 px-1 text-violet-300">{api}</code>.
                     Install the helper library with <code className="rounded bg-neutral-800 px-1 text-violet-300">npm install sfddj</code>. See Docs → Developers for every endpoint.
                 </p>
 

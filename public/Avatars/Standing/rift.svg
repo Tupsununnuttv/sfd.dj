@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 276" width="200" height="276" role="img" aria-label="Rift, standing">
+<defs>
+<linearGradient id="rift-cloak" x1=".15" y1="0" x2=".85" y2="1"><stop stop-color="#41327f"/><stop offset=".48" stop-color="#161638"/><stop offset="1" stop-color="#080b20"/></linearGradient>
+<linearGradient id="rift-feather" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#314cba"/><stop offset=".55" stop-color="#171b5d"/><stop offset="1" stop-color="#080b20"/></linearGradient>
+<linearGradient id="rift-gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe7a0"/><stop offset=".45" stop-color="#d29542"/><stop offset="1" stop-color="#70401f"/></linearGradient>
+<radialGradient id="rift-orb"><stop stop-color="#fff"/><stop offset=".18" stop-color="#b7f5ff"/><stop offset=".5" stop-color="#28c9ef"/><stop offset="1" stop-color="#5722ad"/></radialGradient>
+<filter id="rift-glow" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="2.4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<style>
+.all,.head,.orb,.staff,.star{transform-box:fill-box;transform-origin:center}@keyframes rift-breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}@keyframes rift-blink{0%,89%,100%{transform:scaleY(1)}93%{transform:scaleY(.1)}}@keyframes rift-orbit{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}@keyframes rift-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes rift-twinkle{0%,100%{opacity:.3;transform:scale(.6)}50%{opacity:1;transform:scale(1)}}.all{animation:rift-breathe 3.2s ease-in-out infinite}.head{animation:rift-breathe 3.2s ease-in-out infinite reverse}.blink{transform-box:fill-box;transform-origin:center;animation:rift-blink 4.8s infinite}.orb{animation:rift-orbit 5s linear infinite}.staff{animation:rift-float 3.2s ease-in-out infinite}.star{animation:rift-twinkle 1.8s ease-in-out infinite}@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<ellipse cx="100" cy="255" rx="53" ry="8" fill="#05050c" opacity=".42"/>
+<g class="all" stroke="#090817" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+  <g class="staff"><path d="M151 91 143 243" stroke="url(#rift-gold)" stroke-width="7"/><path d="M151 91 143 243" stroke="#3c1d62" stroke-width="2"/><path d="M151 75 166 94 151 113 136 94Z" fill="#1a1641" stroke="url(#rift-gold)"/><path d="M151 79 160 94 151 108 142 94Z" fill="#44e2ff" filter="url(#rift-glow)"/></g>
+  <path d="M53 159C27 166 19 189 30 205 43 201 54 193 64 179Z" fill="url(#rift-feather)"/><path d="M147 159C173 166 181 189 170 205 157 201 146 193 136 179Z" fill="url(#rift-feather)"/>
+  <path d="M61 171 37 202 62 194 46 222 74 208 72 231 100 218 128 231 126 208 154 222 138 194 163 202 139 171Z" fill="url(#rift-feather)"/>
+  <path d="M75 190V237H93V194ZM107 194V237H125V190Z" fill="#14142e"/><path d="M69 239Q75 229 94 235L96 249H65Q63 244 69 239ZM131 239Q125 229 106 235L104 249H135Q137 244 131 239Z" fill="#0a0b19" stroke="url(#rift-gold)"/>
+  <path d="M56 139Q65 117 100 117T144 139L155 205Q100 224 45 205Z" fill="url(#rift-cloak)" stroke="url(#rift-gold)"/>
+  <path d="M71 151 79 205M129 151 121 205" fill="none" stroke="#30d8f2" stroke-width="3" opacity=".75"/>
+  <path d="M100 140 114 161 100 184 86 161Z" fill="#171432" stroke="url(#rift-gold)"/><circle cx="100" cy="166" r="11" fill="url(#rift-orb)" filter="url(#rift-glow)"/><path d="M82 166Q100 150 118 166Q100 182 82 166Z" fill="none" stroke="#d6fbff" stroke-width="1.5"/>
+  <g class="head"><path d="M47 130Q49 57 100 31Q151 57 153 130L132 153Q100 164 68 153Z" fill="url(#rift-cloak)" stroke="url(#rift-gold)" stroke-width="4"/><path d="M54 126Q61 72 100 48Q139 72 146 126L130 147Q100 156 70 147Z" fill="#0a0b18"/><path d="M100 48 120 84 100 76 80 84Z" fill="#2adff5" opacity=".88"/><path d="M100 55 111 77 100 92 89 77Z" fill="#191741" stroke="#59f0ff" stroke-width="2"/>
+    <path d="M68 113Q100 92 132 113L124 137Q100 150 76 137Z" fill="#161522"/><g class="blink" filter="url(#rift-glow)"><path d="M76 113Q86 103 94 114Q86 124 76 113ZM106 114Q114 103 124 113Q114 124 106 114Z" fill="#c4b5fd" stroke="none"/></g><path d="M100 116 116 134 100 146 84 134Z" fill="#242431"/><path d="M100 120 111 134 100 140Z" fill="#596075"/><path d="M100 120 89 134 100 140Z" fill="#303448"/></g>
+  <g class="orb" filter="url(#rift-glow)"><ellipse cx="100" cy="166" rx="22" ry="7" fill="none" stroke="#7cf8ff" stroke-width="1.6" transform="rotate(-18 100 166)"/></g>
+  <path class="star" d="M43 102 46 109 53 112 46 115 43 122 40 115 33 112 40 109Z" fill="#6ef4ff" stroke="none"/><path class="star" style="animation-delay:.6s" d="M160 132 163 139 170 142 163 145 160 152 157 145 150 142 157 139Z" fill="#bda7ff" stroke="none"/>
+</g>
+</svg>

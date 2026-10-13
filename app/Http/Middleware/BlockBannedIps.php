@@ -11,7 +11,7 @@ class BlockBannedIps
 {
     public function handle(Request $request, Closure $next): Response
     {
-        abort_if(IpBan::where('ip', $request->ip())->exists(), 403, 'Your IP address has been banned from SFD.DJ.');
+        abort_if(IpBan::where('ip', $request->ip())->exists(), 403, 'Your IP address has been banned from SFD-DJ.EU.');
 
         return $next($request);
     }

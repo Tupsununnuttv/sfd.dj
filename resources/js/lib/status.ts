@@ -5,7 +5,7 @@ export const STATUS: Record<Status, { label: string; dot: string; text: string; 
     online: { label: 'Online', dot: 'bg-green-400', text: 'text-green-400', hint: 'Around, and happy to chat.' },
     busy: { label: 'Busy', dot: 'bg-red-500', text: 'text-red-400', hint: 'Do not disturb: no pop-ups for whispers and friend requests.' },
     away: { label: 'Away', dot: 'bg-amber-400', text: 'text-amber-300', hint: 'Not at the computer right now.' },
-    offline: { label: 'Offline', dot: 'bg-neutral-500', text: 'text-neutral-400', hint: 'You look offline to everybody. You can still use SFD.DJ.' },
+    offline: { label: 'Offline', dot: 'bg-neutral-500', text: 'text-neutral-400', hint: 'You look offline to everybody. You can still use SFD-DJ.EU.' },
 };
 
 export const STATUSES = Object.keys(STATUS) as Status[];

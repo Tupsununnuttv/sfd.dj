@@ -382,7 +382,7 @@ export default function ChatPanel({
         <div className="sfd-chat flex min-h-0 flex-1 flex-col">
             <p className="mx-3 mt-3 flex shrink-0 items-center gap-2 rounded-lg bg-white/[0.05] px-2.5 py-1.5 text-xs text-neutral-200" data-version>
                 <span aria-hidden>👋</span>
-                <span className="min-w-0 flex-1">Welcome to <span className="font-bold text-white">SFD.DJ</span>, Version {VERSION}</span>
+                <span className="min-w-0 flex-1">Welcome to <span className="font-bold text-white">SFD-DJ.EU</span>, Version {VERSION}</span>
                 {onPatchNotes && <button onClick={onPatchNotes} className="shrink-0 font-semibold text-violet-300 hover:underline">What's new</button>}
             </p>
             {welcome && (

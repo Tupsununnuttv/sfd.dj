@@ -14,9 +14,9 @@ class VerifyEmailNotification extends VerifyEmail
         $minutes = config('auth.verification.expire', 60);
 
         return (new MailMessage)
-            ->subject('Confirm your SFD.DJ email address')
+            ->subject('Confirm your SFD-DJ.EU email address')
             ->greeting("Hi {$notifiable->name},")
-            ->line("Welcome to SFD.DJ! Please confirm that **{$notifiable->email}** is your email address.")
+            ->line("Welcome to SFD-DJ.EU! Please confirm that **{$notifiable->email}** is your email address.")
             ->action('Confirm my email', $url)
             ->line("The link works for {$minutes} minutes and only for this account. You can ask for a new one on the confirm page of the site.")
             ->line('If you did not make an account, ignore this email: nothing happens until somebody opens the link.');

@@ -215,7 +215,7 @@ function ClubBackdrop({ palette: p, live = false, withBooth = false, height = 90
             {speaker(1430, 372)}
             {speaker(1430, 504)}
             <g filter={`url(#${u('neon')})`} fontFamily={font} fontWeight="900" textAnchor="middle">
-                <text x="278" y="300" fontSize="46" fill="none" stroke={p.accent} strokeWidth="2.6">SFD.DJ</text>
+                <text x="278" y="300" fontSize="46" fill="none" stroke={p.accent} strokeWidth="2.6">SFD-DJ.EU</text>
                 <text x="1322" y="300" fontSize="46" fill="none" stroke={p.accent2} strokeWidth="2.6">LIVE</text>
             </g>
             <g fill="none" strokeWidth="2.6" filter={`url(#${u('neon')})`}>

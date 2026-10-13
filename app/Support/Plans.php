@@ -7,7 +7,7 @@ use App\Http\Controllers\RoomEmojiController;
 use App\Models\Playlist;
 
 /**
- * The paid plans: SFD.DJ Plus and Premium, by the month or the year (prices in euro cents). Each gives a gem next to your name, more XP for everything
+ * The paid plans: SFD-DJ.EU Plus and Premium, by the month or the year (prices in euro cents). Each gives a gem next to your name, more XP for everything
  * you do, more playlists, more songs in each of them and more emojis in the rooms you host. They are optional: nothing that is free now becomes paid.
  * People pay through Stripe (App\Support\Stripe); staff can also give a plan by hand (Admin panel, Users).
  */

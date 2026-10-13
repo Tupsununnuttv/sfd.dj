@@ -63,7 +63,7 @@ class EmailConfirmationTest extends TestCase
         $this->assertSame('not-set-up', session('verification_mail'));
         $this->get('/dashboard')->assertOk()->assertInertia(fn (Assert $p) => $p->where('verification.required', false)->where('verification.mail', false));
         $this->assertCount(1, app('mailer')->getSymfonyTransport()->messages(), 'the message still lands where this site writes its mail');
-        $this->assertSame('Confirm your SFD.DJ email address', app('mailer')->getSymfonyTransport()->messages()->first()->getOriginalMessage()->getSubject());
+        $this->assertSame('Confirm your SFD-DJ.EU email address', app('mailer')->getSymfonyTransport()->messages()->first()->getOriginalMessage()->getSubject());
         $this->assertNull($user->refresh()->email_verified_at);
     }
 
@@ -112,7 +112,7 @@ class EmailConfirmationTest extends TestCase
         $user = User::factory()->unverified()->create(['name' => 'Kati', 'email' => 'kati@example.com']);
         $mail = (new VerifyEmailNotification)->toMail($user);
 
-        $this->assertSame('Confirm your SFD.DJ email address', $mail->subject);
+        $this->assertSame('Confirm your SFD-DJ.EU email address', $mail->subject);
         $this->assertSame('Confirm my email', $mail->actionText);
         $html = (string) $mail->render();
         $this->assertStringContainsString('Hi Kati,', $html);
@@ -245,7 +245,7 @@ class EmailConfirmationTest extends TestCase
         $this->actingAs($owner)->post('/admin/email/test')->assertSessionHas('mail_test.ok', true)->assertSessionHas('mail_test.configured', false);
         $sent = app('mailer')->getSymfonyTransport()->messages()->first()->getOriginalMessage();
         $this->assertSame($owner->email, $sent->getTo()[0]->getAddress());
-        $this->assertSame('SFD.DJ test email', $sent->getSubject());
+        $this->assertSame('SFD-DJ.EU test email', $sent->getSubject());
         $this->actingAs($owner)->get('/admin')->assertInertia(fn (Assert $p) => $p->where('email.test.ok', true)->where('email.test.to', $owner->email));
 
         // a mail server that is down: the answer is the reason, not an error page
@@ -265,7 +265,7 @@ class EmailConfirmationTest extends TestCase
     public function test_the_pages_have_the_buttons_and_the_words(): void
     {
         $page = file_get_contents(base_path('resources/js/Pages/Auth/VerifyEmail.tsx'));
-        foreach (['Send the confirm email', 'Send the email again', 'Continue to SFD.DJ', 'data-mail-state'] as $piece) {
+        foreach (['Send the confirm email', 'Send the email again', 'Continue to SFD-DJ.EU', 'data-mail-state'] as $piece) {
             $this->assertStringContainsString($piece, $page);
         }
         $this->assertStringContainsString('VerifyBanner', file_get_contents(base_path('resources/js/Layouts/AppLayout.tsx')));

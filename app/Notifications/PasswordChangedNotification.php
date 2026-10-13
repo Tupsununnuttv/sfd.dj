@@ -18,9 +18,9 @@ class PasswordChangedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Your SFD.DJ password was changed')
+            ->subject('Your SFD-DJ.EU password was changed')
             ->greeting("Hi {$notifiable->name},")
-            ->line('The password of this SFD.DJ account was just changed:')
+            ->line('The password of this SFD-DJ.EU account was just changed:')
             ->line("**Username:** {$notifiable->username}")
             ->line("**Email:** {$notifiable->email}")
             ->line('**Changed:** '.now()->format('j M Y, H:i').' (UTC), from IP '.$this->ip)

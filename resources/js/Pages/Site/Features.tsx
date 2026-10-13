@@ -6,7 +6,7 @@ export default function Features() {
     return (
         <SiteLayout>
             <Head title="Features" />
-            <PageHeader crumbs={[['Features']]} title="Features" text="Everything in SFD.DJ, in six parts. Open one for the details." />
+            <PageHeader crumbs={[['Features']]} title="Features" text="Everything in SFD-DJ.EU, in six parts. Open one for the details." />
             <section className="mx-auto grid max-w-6xl gap-4 px-6 sm:grid-cols-2 lg:grid-cols-3">
                 {features.map((f) => (
                     <Link key={f.slug} href={route('site.feature', f.slug)} className="rounded-xl border border-white/10 bg-white/5 p-6 transition hover:border-violet-500">

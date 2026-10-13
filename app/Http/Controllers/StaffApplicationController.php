@@ -42,6 +42,6 @@ class StaffApplicationController extends Controller
             return Redirect::route('staff-application.create')->with('staff_application_error', 'Your application could not be sent. Please try again later.');
         }
 
-        return to_route('staff-application.create')->with('staff_application_notice', 'Your application was sent to the SFD.DJ staff team.');
+        return to_route('staff-application.create')->with('staff_application_notice', 'Your application was sent to the SFD-DJ.EU staff team.');
     }
 }

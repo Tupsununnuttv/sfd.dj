@@ -6,7 +6,7 @@ use App\Support\LinkGuard;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
-/** The text may not point people at other sites: only SFD.DJ and our partners (App\Support\LinkGuard). SFD.DJ staff may write anything. */
+/** The text may not point people at other sites: only SFD-DJ.EU and our partners (App\Support\LinkGuard). SFD-DJ.EU staff may write anything. */
 class NoOtherSites implements ValidationRule
 {
     public function validate(string $attribute, mixed $value, Closure $fail): void

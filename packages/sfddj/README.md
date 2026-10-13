@@ -1,6 +1,6 @@
 # sfddj
 
-The official JavaScript / TypeScript client for the **SFD.DJ** API. Build room bots, browser extensions and tools.
+The official JavaScript / TypeScript client for the **SFD-DJ.EU** API. Build room bots, browser extensions and tools.
 No dependencies. Works in Node 18+, Deno, Bun and in the browser (it only needs `fetch`).
 
 ```sh
@@ -9,7 +9,7 @@ npm install sfddj
 
 ## Get a token
 
-1. Log in to SFD.DJ and open **Settings → Developers**.
+1. Log in to SFD-DJ.EU and open **Settings → Developers**.
 2. For a bot: **Create bot**, then copy its token (it is shown once). For your own scripts or extension: **New token** under *My personal tokens*.
 3. Never publish a token. A bot token acts as the bot, a personal token acts as *you*.
 
@@ -68,6 +68,6 @@ Errors are `SfdDjError` with `status` (HTTP status) and `errors` (field errors f
 * The `Bot` helper polls (about 30 requests a minute), so events arrive within a couple of seconds.
 * The API is versioned (`/api/v1`). Breaking changes will go to `/api/v2`.
 
-The plain HTTP API is documented under **Docs → Developers** on your SFD.DJ site if you would rather use another language.
+The plain HTTP API is documented under **Docs → Developers** on your SFD-DJ.EU site if you would rather use another language.
 
 MIT licensed.

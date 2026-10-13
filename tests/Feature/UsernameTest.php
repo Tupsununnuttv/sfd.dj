@@ -7,6 +7,7 @@ use App\Notifications\PasswordChangedNotification;
 use App\Notifications\ResetPasswordNotification;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Tests\TestCase;
@@ -65,6 +66,7 @@ class UsernameTest extends TestCase
         $this->actingAs($me)->post('/friends', ['name' => 'DJ_Kate'])->assertSessionHasNoErrors();
         $this->assertDatabaseHas('friendships', ['user_id' => $me->id, 'friend_id' => $kate->id]);
     }
+
     public function test_login_works_with_email_or_username(): void
     {
         $user = User::factory()->create(['username' => 'dj_kate', 'email' => 'kate@example.com', 'password' => 'password-123']);
@@ -79,6 +81,7 @@ class UsernameTest extends TestCase
         $this->post('/login', ['email' => 'nobody', 'password' => 'password-123'])->assertSessionHasErrors('email');
         $this->assertGuest();
     }
+
     public function test_password_emails_name_the_account_but_never_contain_the_password(): void
     {
         Notification::fake();
@@ -108,6 +111,7 @@ class UsernameTest extends TestCase
             return true;
         });
     }
+
     public function test_forgot_password_takes_a_username_and_shows_a_dev_link_only_on_your_own_computer_without_mail(): void
     {
         Notification::fake();
@@ -123,12 +127,12 @@ class UsernameTest extends TestCase
 
         // a real mailer: never shown
         $user->refresh();
-        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->delete();
+        DB::table('password_reset_tokens')->delete();
         config(['mail.default' => 'smtp']);
         $this->post('/forgot-password', ['email' => $user->email])->assertSessionMissing('dev_reset_link')->assertSessionHas('status');
 
         // someone else's computer: never shown
-        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->delete();
+        DB::table('password_reset_tokens')->delete();
         config(['mail.default' => 'log']);
         $this->withServerVariables(['REMOTE_ADDR' => '8.8.8.8'])->post('/forgot-password', ['email' => $user->email])->assertSessionMissing('dev_reset_link');
     }

@@ -26,7 +26,7 @@ export default function Notifications() {
             <Head title="Notifications" />
 
             <section>
-                <SectionTitle title="In SFD.DJ" />
+                <SectionTitle title="In SFD-DJ.EU" />
                 <Card className="divide-y divide-white/5 px-6">
                     <Toggle label="Friend requests" hint="Show the request counter next to Friends in the menu." checked={notifications.friend_requests} onChange={(v) => savePrefs({ notifications: { friend_requests: v } })} />
                     <Toggle label="Whisper pop-ups" hint="A small pop-up when someone whispers to you. The counter next to Whispers always stays." checked={notifications.whispers} onChange={(v) => savePrefs({ notifications: { whispers: v } })} />
@@ -36,7 +36,7 @@ export default function Notifications() {
             </section>
 
             <section>
-                <SectionTitle title="On your computer" hint="When SFD.DJ is open in a tab you are not looking at." />
+                <SectionTitle title="On your computer" hint="When SFD-DJ.EU is open in a tab you are not looking at." />
                 <Card className="px-6">
                     <Toggle label="Browser notifications for whispers" hint={supported ? 'Your browser shows a notification when a whisper arrives while this tab is in the background.' : 'This browser does not support notifications.'} checked={notifications.desktop && permission === 'granted'} onChange={desktop} />
                     {permission === 'denied' && supported && <p className="pb-4 text-sm text-amber-300">Notifications are blocked for this site in your browser. Allow them in the address bar's site settings, then switch this on.</p>}

@@ -171,7 +171,7 @@ function General({ room, genres, backgrounds: pickable, seasons, canLock, onSave
                 </select>
             </div>
             {canLock && (
-                <Toggle label="🔒 Private room" hint="Only the host and SFD.DJ staff can enter" checked={s.is_private} onChange={(v) => set({ is_private: v })} />
+                <Toggle label="🔒 Private room" hint="Only the host and SFD-DJ.EU staff can enter" checked={s.is_private} onChange={(v) => set({ is_private: v })} />
             )}
             <div>
                 <p className={label}>Background</p>
@@ -229,7 +229,7 @@ function MusicWaitlist({ slug, locked, cycle }: { slug: string; locked: boolean;
     );
 }
 
-/** Pick any SFD.DJ user by name and give them one of this room's roles. */
+/** Pick any SFD-DJ.EU user by name and give them one of this room's roles. */
 function GiveRoles({ slug, roles, memberList }: { slug: string; roles: RoomRoleInfo[]; memberList: MemberRow[] }) {
     const [q, setQ] = useState('');
     const [found, setFound] = useState<{ id: number; name: string; avatar: string | null }[]>([]);
