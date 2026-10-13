@@ -102,6 +102,14 @@ class PagesUpgradeTest extends TestCase
             ->where('account.email_verified', true)->where('account.two_factor', false)->where('account.photo', false));
     }
 
+    public function test_my_stuff_counts_a_selected_character_as_a_profile_picture(): void
+    {
+        $me = User::factory()->create(['avatar' => 'char:foxy']);
+
+        $this->actingAs($me)->get('/my-stuff')->assertOk()->assertInertia(fn (Assert $p) => $p
+            ->where('account.photo', true));
+    }
+
     public function test_admin_overview_filters_and_health(): void
     {
         $owner = $this->userWith('owner');

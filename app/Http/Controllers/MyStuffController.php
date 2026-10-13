@@ -39,7 +39,7 @@ class MyStuffController extends Controller
                 'email_verified' => $me->hasVerifiedEmail(),
                 'two_factor' => $me->two_factor_enabled,
                 'discord' => $me->discord_username,
-                'photo' => str_starts_with((string) $me->avatar, 'img:'),
+                'photo' => filled($me->avatar),
             ],
             'achievements' => $summary['achievements'],
         ]);

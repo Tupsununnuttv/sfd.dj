@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AllowSameOriginFrames;
 use App\Http\Middleware\BlockBannedIps;
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             BlockBannedIps::class,
             MaintenanceMode::class,
             TrackLastSeen::class,
+            AllowSameOriginFrames::class,
         ]);
 
         // Stripe calls the webhook from its own servers: it signs the call instead (SubscriptionController::webhook)

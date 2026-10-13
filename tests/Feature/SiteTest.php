@@ -27,6 +27,15 @@ class SiteTest extends TestCase
         $this->get('/legal/nonsense')->assertNotFound();
     }
 
+    public function test_friends_page_can_be_embedded_only_by_the_same_origin(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('/friends')
+            ->assertOk()
+            ->assertHeader('X-Frame-Options', 'SAMEORIGIN');
+    }
+
     public function test_home_shows_public_rooms_with_live_numbers_and_hides_private_ones(): void
     {
         $host = User::factory()->create();
