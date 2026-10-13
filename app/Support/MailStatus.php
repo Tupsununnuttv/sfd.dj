@@ -25,7 +25,7 @@ final class MailStatus
 
         $host = (string) config('mail.mailers.smtp.host');
 
-        return $host !== '' && (filled(config('mail.mailers.smtp.username')) || in_array($host, self::LOCAL_HOSTS, true));
+        return $host !== '' && ((filled(config('mail.mailers.smtp.username')) && filled(config('mail.mailers.smtp.password'))) || in_array($host, self::LOCAL_HOSTS, true));
     }
 
     /** What the admin panel shows. The login and the password are never part of it. */

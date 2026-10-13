@@ -86,14 +86,14 @@ export function LogoMark({ className = '', detail = 'simple', spin = false }: { 
     );
 }
 
-/** The mark, a small gap, then the name: SFD in white (dark with `onLight`), .DJ in colour. */
+/** The mark, a small gap, then the name: SFD in white (dark with `onLight`), -DJ.EU in colour. */
 export default function ApplicationLogo({ className = '', textClassName = '', detail = 'simple', spin = false, onLight = false }: { className?: string; textClassName?: string; detail?: 'full' | 'simple'; spin?: boolean; onLight?: boolean }) {
     return (
-        <span className={`inline-flex items-center gap-2.5 ${className}`}>
+        <span className={`inline-flex items-center gap-2.5 ${className}`} style={{ fontSize: '1.2em' }}>
             <LogoMark detail={detail} spin={spin} />
             <span className={`font-black tracking-tight ${textClassName}`}>
                 <span className={onLight ? 'text-neutral-950' : 'text-white'}>SFD</span>
-                <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-sky-400 bg-clip-text text-transparent">.DJ</span>
+                <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-sky-400 bg-clip-text text-transparent">-DJ.EU</span>
             </span>
         </span>
     );

@@ -96,6 +96,33 @@ class WhispersDiscordCommunityTest extends TestCase
         $this->assertSame('777', $other->refresh()->discord_id);
     }
 
+    public function test_discord_oauth_redirect_uses_the_forwarded_https_scheme(): void
+    {
+        $user = User::factory()->create();
+        config(['services.discord.client_id' => 'client-id', 'services.discord.client_secret' => 'client-secret']);
+
+        $response = $this->actingAs($user)
+            ->withHeader('X-Forwarded-Proto', 'https')
+            ->get('http://sfd-dj.eu/auth/discord');
+
+        parse_str((string) parse_url($response->headers->get('Location'), PHP_URL_QUERY), $query);
+
+        $this->assertSame('https://sfd-dj.eu/auth/discord/callback', $query['redirect_uri']);
+    }
+
+    public function test_discord_oauth_redirect_uses_http_for_localhost(): void
+    {
+        $user = User::factory()->create();
+        config(['services.discord.client_id' => 'client-id', 'services.discord.client_secret' => 'client-secret']);
+
+        $response = $this->actingAs($user)
+            ->get('http://localhost:8000/auth/discord');
+
+        parse_str((string) parse_url($response->headers->get('Location'), PHP_URL_QUERY), $query);
+
+        $this->assertSame('http://localhost:8000/auth/discord/callback', $query['redirect_uri']);
+    }
+
     public function test_discord_login_authenticates_an_existing_linked_account(): void
     {
         $user = User::factory()->create(['discord_id' => 'discord-user-id']);

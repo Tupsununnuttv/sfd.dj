@@ -198,6 +198,8 @@ class EmailConfirmationTest extends TestCase
         config(['mail.default' => 'smtp', 'mail.mailers.smtp.host' => 'smtp.gmail.com', 'mail.mailers.smtp.username' => null]);
         $this->assertFalse(MailStatus::configured(), 'Gmail with no login');
         config(['mail.mailers.smtp.username' => 'me@gmail.com']);
+        $this->assertFalse(MailStatus::configured(), 'Gmail with no password');
+        config(['mail.mailers.smtp.password' => 'topsecret']);
         $this->assertTrue(MailStatus::configured());
         config(['mail.mailers.smtp.host' => '127.0.0.1', 'mail.mailers.smtp.username' => null]);
         $this->assertTrue(MailStatus::configured(), 'a test inbox on this computer needs no login');
