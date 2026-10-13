@@ -9,8 +9,6 @@ interface DiscordState {
     role_sync_configured: boolean;
     username: string | null;
     notice: string | null;
-    redirect: string | null;
-    login_redirect: string | null;
 }
 
 interface SpotifyState {
@@ -18,7 +16,6 @@ interface SpotifyState {
     connected: boolean;
     display_name: string | null;
     notice: string | null;
-    redirect: string | null;
 }
 
 interface YouTubeState {
@@ -27,7 +24,6 @@ interface YouTubeState {
     channel_title: string | null;
     channel_url: string | null;
     notice: string | null;
-    redirect: string | null;
 }
 
 function DiscordConnection({ discord }: { discord: DiscordState }) {
@@ -49,7 +45,6 @@ function DiscordConnection({ discord }: { discord: DiscordState }) {
                     <p className="text-sm text-neutral-500">Discord linking is not configured on this site yet.</p>
                 )}
                 {discord.username && <p className="text-xs text-neutral-500">{discord.role_sync_configured ? 'Your SFD-DJ.EU roles sync to the SFD-DJ.EU Discord server.' : 'Automatic Discord server roles are not configured yet.'}</p>}
-                {discord.redirect && discord.login_redirect && <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">Staff: register both Discord OAuth redirect URIs: <code>{discord.redirect}</code> and <code>{discord.login_redirect}</code>.</p>}
             </div>
         </SettingsSection>
     );
@@ -71,12 +66,10 @@ function SpotifyConnection({ spotify }: { spotify: SpotifyState }) {
                     <p className="text-sm text-neutral-500">Spotify linking is not configured on this site yet.</p>
                 )}
                 {spotify.connected && <p className="text-xs text-neutral-500">Tokens are encrypted and used only for playlist imports.</p>}
-                {spotify.redirect && <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">Staff: register <code>{spotify.redirect}</code> as a Spotify app redirect URI.</p>}
             </div>
         </SettingsSection>
     );
 }
-
 function YouTubeConnection({ youtube }: { youtube: YouTubeState }) {
     return (
         <SettingsSection title="YouTube" text="Connect your channel to import playlists available to your account and show the channel on your public SFD-DJ.EU profile. We only request read-only access.">
@@ -96,7 +89,6 @@ function YouTubeConnection({ youtube }: { youtube: YouTubeState }) {
                     <p className="text-sm text-neutral-500">YouTube account linking is not configured on this site yet.</p>
                 )}
                 {youtube.connected && <p className="text-xs text-neutral-500">Your OAuth token is encrypted. SFD-DJ.EU uses read-only access to list playlists and channel information.</p>}
-                {youtube.redirect && <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">Staff: enable YouTube Data API v3, then register <code>{youtube.redirect}</code> as an authorized Google OAuth redirect URI. Set YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET in .env.</p>}
             </div>
         </SettingsSection>
     );

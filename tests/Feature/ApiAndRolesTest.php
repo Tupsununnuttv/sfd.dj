@@ -12,6 +12,8 @@ use App\Models\SitePermission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -50,6 +52,58 @@ class ApiAndRolesTest extends TestCase
 
         $member->forceFill(['roles' => []])->save();
         $this->actingAs($admin)->patch("/admin/users/{$member->id}/roles", ['roles' => ['owner']])->assertSessionHasErrors('roles.0');
+    }
+
+    public function test_staff_can_update_a_lower_ranked_account_and_reset_its_password(): void
+    {
+        Notification::fake();
+        $owner = $this->userWith('owner');
+        $person = User::factory()->create(['email_verified_at' => now()]);
+        $password = 'FreshPassword!42';
+
+        $this->actingAs($owner)->patch("/admin/users/{$person->id}/account", [
+            'name' => 'New Display Name',
+            'username' => 'new_handle',
+            'email' => 'new@example.test',
+            'password' => $password,
+            'password_confirmation' => $password,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $person->refresh();
+        $this->assertSame('New Display Name', $person->name);
+        $this->assertSame('new_handle', $person->username);
+        $this->assertSame('new@example.test', $person->email);
+        $this->assertNull($person->email_verified_at);
+        $this->assertTrue(Hash::check($password, $person->password));
+        $this->assertNotEmpty($person->remember_token);
+    }
+
+    public function test_account_changes_require_user_management_and_cannot_target_equal_or_higher_roles(): void
+    {
+        $member = User::factory()->create();
+        $admin = $this->userWith('admin');
+        $anotherAdmin = $this->userWith('admin');
+        $owner = $this->userWith('owner');
+        $changes = ['name' => 'Changed', 'username' => 'changed_user', 'email' => 'changed@example.test'];
+
+        $this->actingAs($member)->patch("/admin/users/{$admin->id}/account", $changes)->assertForbidden();
+        $this->actingAs($admin)->patch("/admin/users/{$owner->id}/account", $changes)->assertForbidden();
+        $this->actingAs($admin)->patch("/admin/users/{$anotherAdmin->id}/account", $changes)->assertForbidden();
+    }
+
+    public function test_account_updates_reject_duplicate_usernames_and_invalid_passwords(): void
+    {
+        $owner = $this->userWith('owner');
+        User::factory()->create(['username' => 'taken_handle']);
+        $person = User::factory()->create(['username' => 'available_handle']);
+
+        $this->actingAs($owner)->patch("/admin/users/{$person->id}/account", [
+            'name' => $person->name,
+            'username' => 'TAKEN_HANDLE',
+            'email' => $person->email,
+            'password' => 'short',
+            'password_confirmation' => 'different',
+        ])->assertSessionHasErrors(['username', 'password']);
     }
 
     public function test_matrix_has_events_and_community_permissions_and_can_be_reset(): void

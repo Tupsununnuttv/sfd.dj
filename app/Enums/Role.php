@@ -36,7 +36,7 @@ enum Role: string
     /** Site-wide abilities that can be switched per role in the admin Permissions Matrix. */
     public const PERMISSIONS = [
         'admin.access' => 'Open the admin panel',
-        'users.manage' => 'Assign roles and issue violations',
+        'users.manage' => 'Manage user accounts, assign roles and issue violations',
         'rooms.moderate' => 'Moderate chat and queue in any room',
         'rooms.manage' => 'Edit, badge and delete any room',
         'broadcast.send' => 'Send site-wide announcements',

@@ -157,6 +157,7 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::patch('/admin/users/{user}/awards', [AdminController::class, 'updateAwards'])->name('admin.awards');
     Route::patch('/admin/users/{user}/plan', [AdminController::class, 'updatePlan'])->name('admin.plan');
     Route::patch('/admin/users/{user}/email', [AdminController::class, 'confirmEmail'])->name('admin.users.confirm-email');
+    Route::patch('/admin/users/{user}/account', [AdminController::class, 'updateAccount'])->name('admin.users.account');
     Route::put('/admin/email', [AdminController::class, 'emailSettings'])->name('admin.email');
     Route::post('/admin/email/test', [AdminController::class, 'testMail'])->middleware('throttle:10,1')->name('admin.email.test');
     Route::post('/admin/users/{user}/violations', [AdminController::class, 'warn'])->name('admin.warn');

@@ -1,4 +1,5 @@
 import EmailTab from '@/Components/admin/EmailTab';
+import AccountsTab from '@/Components/admin/AccountsTab';
 import { BroadcastTab, IpBansTab, MaintenanceTab } from '@/Components/admin/MiscTabs';
 import MatrixTab from '@/Components/admin/MatrixTab';
 import Overview from '@/Components/admin/Overview';
@@ -10,15 +11,16 @@ import { Tabs } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { PageProps } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
-import { Ban, Disc3, KeyRound, LayoutDashboard, LifeBuoy, Mail, Megaphone, Users, Wrench } from 'lucide-react';
+import { Ban, Disc3, KeyRound, LayoutDashboard, LifeBuoy, Mail, Megaphone, UserRound, Users, Wrench } from 'lucide-react';
 import { useState } from 'react';
 
-type Tab = 'Overview' | 'Users' | 'Rooms' | 'Support' | 'Permissions' | 'Broadcast' | 'Email' | 'IP bans' | 'Maintenance';
+type Tab = 'Overview' | 'Users' | 'Accounts' | 'Rooms' | 'Support' | 'Permissions' | 'Broadcast' | 'Email' | 'IP bans' | 'Maintenance';
 
 // each tab needs its own permission; the ones you may not use stay hidden
 const needs: Record<Tab, string> = {
     Overview: 'admin.access',
     Users: 'admin.access',
+    Accounts: 'users.manage',
     Rooms: 'rooms.manage',
     Support: 'admin.access',
     Permissions: 'admin.access',
@@ -35,6 +37,7 @@ export default function Admin(props: AdminProps) {
     const tabs = ([
         { key: 'Overview', label: 'Overview', icon: LayoutDashboard },
         { key: 'Users', label: 'Users', icon: Users, count: props.stats.users },
+        { key: 'Accounts', label: 'Accounts', icon: UserRound },
         { key: 'Rooms', label: 'Rooms', icon: Disc3, count: props.stats.rooms },
         { key: 'Support', label: 'Support', icon: LifeBuoy, alert: props.openTickets || undefined },
         { key: 'Permissions', label: 'Permissions', icon: KeyRound },
@@ -57,6 +60,7 @@ export default function Admin(props: AdminProps) {
 
             {tab === 'Overview' && <Overview data={props.overview} openTickets={props.openTickets} totalUsers={props.stats.users} gotoTab={setTab} />}
             {tab === 'Users' && <UsersTab q={props.q} filters={props.filters} users={props.users} roleOptions={props.roleOptions} assignable={props.assignable} groups={props.roleGroups} awardList={props.awardList} planList={props.planList} />}
+            {tab === 'Accounts' && <AccountsTab q={props.q} filters={props.filters} users={props.users} />}
             {tab === 'Rooms' && <RoomsTab rooms={props.rooms} counts={props.counts} />}
             {tab === 'Support' && <SupportInbox />}
             {tab === 'Permissions' && <MatrixTab matrix={props.matrix} groups={props.roleGroups} />}

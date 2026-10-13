@@ -24,10 +24,12 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -254,6 +256,50 @@ class AdminController extends Controller
         $this->allow($request, 'users.manage');
 
         $user->hasVerifiedEmail() || $user->markEmailAsVerified();
+
+        return back();
+    }
+
+    /** Update a lower-ranked user's account details and optionally replace their password. */
+    public function updateAccount(Request $request, User $user): RedirectResponse
+    {
+        $actor = $this->allow($request, 'users.manage');
+        abort_unless($actor->outranks($user), 403);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:30'],
+            'username' => ['nullable', 'string', 'min:3', 'max:20', 'regex:/^[A-Za-z0-9_]+$/', function (string $attribute, mixed $value, \Closure $fail) use ($user) {
+                if (User::whereRaw('lower(username) = ?', [mb_strtolower($value)])->where('id', '!=', $user->id)->exists()) {
+                    $fail('That username is taken.');
+                }
+            }],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($user->id)],
+            'password' => ['nullable', Password::defaults(), 'confirmed'],
+        ]);
+
+        $emailChanged = $user->email !== $data['email'];
+        $changes = [
+            'name' => $data['name'],
+            'username' => $data['username'] ?? null,
+            'email' => $data['email'],
+        ];
+
+        if ($emailChanged) {
+            $changes['email_verified_at'] = null;
+        }
+
+        if (filled($data['password'] ?? null)) {
+            $changes['password'] = Hash::make($data['password']);
+            $changes['remember_token'] = Str::random(60);
+        }
+
+        $user->forceFill($changes)->save();
+
+        if ($emailChanged) {
+            $user->sendEmailVerificationNotification();
+        }
+
+        $user->announce();
 
         return back();
     }
