@@ -10,8 +10,10 @@ import { PropsWithChildren, ReactNode } from 'react';
 
 const groups: { name: string; items: [string, string, LucideIcon][] }[] = [
     { name: 'You', items: [['profile.edit', 'Profile', UserRound], ['settings.connections', 'Connections', Cable], ['settings.privacy', 'Privacy', Lock], ['settings.account', 'Account & security', ShieldCheck]] },
+    { name: 'Account status', items: [['settings.violations', 'Violations', Gavel]] },
     { name: 'Preferences', items: [['settings.appearance', 'Appearance', Palette], ['settings.audio', 'Audio', Volume2], ['settings.notifications', 'Notifications', Bell]] },
-    { name: 'More', items: [['settings.plus', 'SFD.DJ Plus', Sparkles], ['settings.developers', 'Developers', Code2], ['settings.violations', 'Violations', Gavel]] },
+    { name: 'More', items: [['settings.plus', 'SFD.DJ Plus', Sparkles]] },
+    { name: 'Developer tools', items: [['settings.developers', 'Developers', Code2]] },
 ];
 
 /** Settings: a menu on the left (a scrolling row on small screens) and the page on the right. */

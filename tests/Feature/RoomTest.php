@@ -15,6 +15,24 @@ class RoomTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_created_rooms_use_clean_unique_slugs_and_old_urls_redirect(): void
+    {
+        $owner = User::factory()->create();
+
+        $this->actingAs($owner)->post('/rooms', ['name' => 'Chillzone'])
+            ->assertRedirect('/rooms/chillzone');
+        $this->assertDatabaseHas('rooms', ['name' => 'Chillzone', 'slug' => 'chillzone']);
+
+        $this->actingAs(User::factory()->create())->post('/rooms', ['name' => 'Chillzone'])
+            ->assertRedirect('/rooms/chillzone-2');
+
+        $legacyRoom = $owner->rooms()->create(['name' => 'Old Chillzone', 'slug' => 'old-chillzone']);
+        $legacyRoom->forceFill(['legacy_slug' => 'old-chillzone-ciwy'])->save();
+        $this->assertDatabaseHas('rooms', ['id' => $legacyRoom->id, 'legacy_slug' => 'old-chillzone-ciwy']);
+
+        $this->actingAs($owner)->get('/rooms/old-chillzone-ciwy')->assertRedirect('/rooms/old-chillzone');
+    }
+
     public function test_queue_plays_in_order_and_skip_ignores_stale_items(): void
     {
         Event::fake([PlaybackUpdated::class, MessageSent::class]);

@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
 
         // every {room} route (chat, queue, ...) refuses people who may not enter a private room
         Route::bind('room', function (string $slug) {
-            $room = Room::where('slug', $slug)->firstOrFail();
+            $room = Room::where(fn ($query) => $query->where('slug', $slug)->orWhere('legacy_slug', $slug))->firstOrFail();
             abort_unless($room->canEnter(request()->user()), 403, 'This room is private.');
 
             return $room;

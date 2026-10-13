@@ -197,15 +197,25 @@ class RoomController extends Controller
             'is_private' => ['boolean'],
         ]);
 
-        $room = $request->user()->rooms()->create($data + [
-            'slug' => Str::slug($data['name']).'-'.Str::lower(Str::random(4)),
-        ]);
+        $baseSlug = Str::slug($data['name']) ?: 'room';
+        $slug = $baseSlug;
+        $suffix = 2;
+
+        while (Room::where('slug', $slug)->orWhere('legacy_slug', $slug)->exists()) {
+            $slug = $baseSlug.'-'.$suffix++;
+        }
+
+        $room = $request->user()->rooms()->create($data + ['slug' => $slug]);
 
         return to_route('rooms.show', $room);
     }
 
-    public function show(Request $request, Room $room): InertiaResponse
+    public function show(Request $request, Room $room): InertiaResponse|RedirectResponse
     {
+        if ($request->route()->originalParameter('room') !== $room->slug) {
+            return to_route('rooms.show', $room, 301);
+        }
+
         $room->syncCurrent();
         $user = $request->user(); // null for guests: they can watch and read, nothing more
         abort_if($user && $room->bans()->where('user_id', $user->id)->exists(), 403, 'You are banned from this room.');

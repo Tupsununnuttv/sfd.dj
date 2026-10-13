@@ -39,12 +39,12 @@ function DiscordConnection({ discord }: { discord: DiscordState }) {
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 p-4">
                         <p className="flex items-center gap-2 text-sm"><SocialIcon name="discord" size={18} /> Connected as <span className="font-semibold text-indigo-300">{discord.username}</span></p>
                         <div className="flex items-center gap-2">
-                            {discord.configured && <a href={route('discord.connect')} target="_top" className="rounded-lg bg-[#5865F2] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90">Sync server roles</a>}
+                            {discord.configured && <a href={route('discord.connect')} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-[#5865F2] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90">Sync server roles</a>}
                             <button onClick={() => confirm('Unlink Discord and remove SFD.DJ server roles?') && router.delete(route('discord.disconnect'), { preserveScroll: true })} className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20">Disconnect</button>
                         </div>
                     </div>
                 ) : discord.configured ? (
-                    <a href={route('discord.connect')} target="_top" className="inline-flex items-center gap-2 rounded-lg bg-[#5865F2] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"><SocialIcon name="discord" /> Connect Discord</a>
+                    <a href={route('discord.connect')} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-[#5865F2] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"><SocialIcon name="discord" /> Connect Discord</a>
                 ) : (
                     <p className="text-sm text-neutral-500">Discord linking is not configured on this site yet.</p>
                 )}
@@ -66,7 +66,7 @@ function SpotifyConnection({ spotify }: { spotify: SpotifyState }) {
                         <button onClick={() => confirm('Disconnect Spotify from SFD.DJ?') && router.delete(route('spotify.disconnect'), { preserveScroll: true })} className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20">Disconnect</button>
                     </div>
                 ) : spotify.configured ? (
-                    <a href={route('spotify.connect')} target="_top" className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-500"><Music2 size={17} /> Connect Spotify</a>
+                    <a href={route('spotify.connect')} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-500"><Music2 size={17} /> Connect Spotify</a>
                 ) : (
                     <p className="text-sm text-neutral-500">Spotify linking is not configured on this site yet.</p>
                 )}

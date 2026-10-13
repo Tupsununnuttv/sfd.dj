@@ -41,6 +41,8 @@ class Room extends Model
 
     protected $fillable = ['user_id', 'name', 'slug', 'description', 'current_item_id', 'current_started_at', 'badges', 'background', 'genre', 'is_private', 'is_featured', 'custom_background', 'welcome_message', 'rules', 'rule_list', 'custom_css', 'waitlist_locked', 'waitlist_cycle', 'automod'];
 
+    protected $hidden = ['legacy_slug'];
+
     protected static function booted(): void
     {
         static::created(fn (Room $room) => $room->ensureDefaultRoles());
