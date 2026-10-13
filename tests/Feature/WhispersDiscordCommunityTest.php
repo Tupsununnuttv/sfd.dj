@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Events\WhisperSent;
+use App\Models\Announcement;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Whisper;
@@ -151,6 +152,48 @@ class WhispersDiscordCommunityTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_discord_bot_can_only_read_stats_for_linked_accounts_with_its_token(): void
+    {
+        $user = User::factory()->create(['discord_id' => '12345678901234567', 'xp' => 1280]);
+        config(['services.discord.bot_token' => 'private-bot-token']);
+
+        $this->getJson('/api/discord/members/12345678901234567')
+            ->assertUnauthorized();
+
+        $this->withHeader('Authorization', 'Bot wrong-token')->getJson('/api/discord/members/12345678901234567')
+            ->assertUnauthorized();
+
+        $this->withHeader('Authorization', 'Bot private-bot-token')->getJson('/api/discord/members/12345678901234567')
+            ->assertOk()
+            ->assertJsonPath('user.level', 9)
+            ->assertJsonPath('achievements.13.key', 'level-5')
+            ->assertJsonPath('achievements.13.done', true)
+            ->assertJsonMissingPath('user.email');
+
+        $this->withHeader('Authorization', 'Bot private-bot-token')->getJson('/api/discord/members/12345678901234568')
+            ->assertNotFound();
+    }
+
+    public function test_discord_bot_can_poll_new_site_announcements_with_its_token(): void
+    {
+        $user = User::factory()->create();
+        $announcement = Announcement::create(['user_id' => $user->id, 'message' => 'New listening rooms are live.', 'level' => 'info']);
+        config(['services.discord.bot_token' => 'private-bot-token']);
+
+        $this->getJson('/api/discord/announcements')->assertUnauthorized();
+
+        $this->withHeader('Authorization', 'Bot private-bot-token')
+            ->getJson('/api/discord/announcements')
+            ->assertOk()
+            ->assertJsonPath('latest_id', $announcement->id)
+            ->assertJsonCount(0, 'announcements');
+
+        $this->withHeader('Authorization', 'Bot private-bot-token')
+            ->getJson('/api/discord/announcements?after=0')
+            ->assertOk()
+            ->assertJsonPath('announcements.0.message', 'New listening rooms are live.');
+    }
+
     public function test_discord_connect_joins_server_and_syncs_beta_tester_role(): void
     {
         $me = User::factory()->create();
@@ -160,6 +203,7 @@ class WhispersDiscordCommunityTest extends TestCase
             'services.discord.client_secret' => 'client-secret',
             'services.discord.bot_token' => 'bot-token',
             'services.discord.guild_id' => 'guild-id',
+            'services.discord.member_role_id' => 'member-role-id',
         ]);
         $memberReads = 0;
         Http::fake(function (Request $request) use (&$memberReads) {
@@ -175,12 +219,13 @@ class WhispersDiscordCommunityTest extends TestCase
                 return Http::response([
                     ['id' => 'beta-role-id', 'name' => 'SFD.DJ | Beta Tester'],
                     ['id' => 'other-role-id', 'name' => 'Community'],
+                    ['id' => 'member-role-id', 'name' => 'Member'],
                 ]);
             }
             if (str_ends_with($url, '/guilds/guild-id/members/discord-user-id') && $request->method() === 'GET') {
                 $memberReads++;
 
-                return $memberReads === 1 ? Http::response([], 404) : Http::response(['roles' => ['beta-role-id', 'other-role-id']]);
+                return $memberReads === 1 ? Http::response([], 404) : Http::response(['roles' => ['beta-role-id', 'other-role-id', 'member-role-id']]);
             }
             if (str_ends_with($url, '/guilds/guild-id/members/discord-user-id') && $request->method() === 'PUT') {
                 return Http::response([], 201);
@@ -208,12 +253,12 @@ class WhispersDiscordCommunityTest extends TestCase
         Http::assertSent(fn (Request $request) => $request->method() === 'PUT'
             && str_ends_with($request->url(), '/guilds/guild-id/members/discord-user-id')
             && $request['access_token'] === 'user-token'
-            && $request['roles'] === ['beta-role-id']);
+            && $request['roles'] === ['beta-role-id', 'member-role-id']);
 
         $this->actingAs($me)->delete('/auth/discord')->assertRedirect();
         Http::assertSent(fn (Request $request) => $request->method() === 'PATCH'
             && str_ends_with($request->url(), '/guilds/guild-id/members/discord-user-id')
-            && $request['roles'] === ['other-role-id']);
+            && $request['roles'] === ['other-role-id', 'member-role-id']);
     }
 
     public function test_social_links_and_donation_goal(): void

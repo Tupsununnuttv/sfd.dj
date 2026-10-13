@@ -20,6 +20,7 @@ use App\Http\Controllers\RoomRoleController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\SpotifyController;
+use App\Http\Controllers\StaffApplicationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TwoFactorController;
@@ -95,6 +96,9 @@ Route::middleware(VerifiedIfLoggedIn::class)->group(function () {
 
 // Everything else needs a verified email address.
 Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function () {
+    Route::get('/staff/apply', [StaffApplicationController::class, 'create'])->name('staff-application.create');
+    Route::post('/staff/apply', [StaffApplicationController::class, 'store'])->middleware('throttle:3,60')->name('staff-application.store');
+
     Route::get('/playlists', [PlaylistController::class, 'index'])->name('playlists');
     // JSON used by the playlist manager (on the Playlists page and inside rooms)
     Route::prefix('api/playlists')->name('api.playlists.')->group(function () {

@@ -50,6 +50,14 @@ final class DiscordRoleSync
             }
 
             $desiredIds = $assignedNames->map(fn (string $name) => $rolesByName[$name])->all();
+            $memberRoleId = (string) config('services.discord.member_role_id');
+            if (! $clear && $memberRoleId !== '') {
+                if (! $rolesByName->contains(fn (string $id) => $id === $memberRoleId)) {
+                    return 'Create the Discord member role and check DISCORD_MEMBER_ROLE_ID.';
+                }
+
+                $desiredIds[] = $memberRoleId;
+            }
             $managedNames = $siteRoles->values()->all();
             $managedIds = $rolesByName->filter(fn (string $id, string $name) => in_array($name, $managedNames, true))->values()->all();
             $member = $api->get($memberUrl);

@@ -25,6 +25,7 @@ const menu = (): (Group | Item)[] => [
             { label: 'Leaderboards', href: route('community') },
             { label: 'Events', href: route('events') },
             { label: 'Community rules', href: route('site.legal', 'rules') },
+            { label: 'Staff application', href: route('staff-application.create') },
         ],
     },
     {

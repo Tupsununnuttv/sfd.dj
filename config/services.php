@@ -46,6 +46,16 @@ return [
         'bot_token' => env('DISCORD_BOT_TOKEN'),
         'guild_id' => env('DISCORD_GUILD_ID'),
         'role_prefix' => env('DISCORD_ROLE_PREFIX', 'SFD.DJ | '),
+        'member_role_id' => env('DISCORD_MEMBER_ROLE_ID'),
+        'staff_applications_channel_id' => env('DISCORD_STAFF_APPLICATIONS_CHANNEL_ID'),
+        'staff_role_id' => env('DISCORD_STAFF_ROLE_ID'),
+        'approved_staff_role_id' => env('DISCORD_APPROVED_STAFF_ROLE_ID'),
+        'staff_application_requirements' => env('DISCORD_STAFF_APPLICATION_REQUIREMENTS', ''),
+        'staff_application_questions' => [
+            'motivation' => env('DISCORD_STAFF_QUESTION_MOTIVATION', 'Why do you want to join the staff team?'),
+            'experience' => env('DISCORD_STAFF_QUESTION_EXPERIENCE', 'What relevant experience do you have?'),
+            'availability' => env('DISCORD_STAFF_QUESTION_AVAILABILITY', 'When are you usually available?'),
+        ],
     ],
 
     'giphy' => [

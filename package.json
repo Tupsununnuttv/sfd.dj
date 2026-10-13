@@ -7,7 +7,9 @@
     "type": "module",
     "scripts": {
         "build": "tsc && vite build",
-        "dev": "vite"
+        "dev": "concurrently --names web,bot \"vite\" \"npm:bot:dev\"",
+        "bot:dev": "node --watch bot/index.js",
+        "bot:start": "node bot/index.js"
     },
     "devDependencies": {
         "@headlessui/react": "^2.0.0",
@@ -31,6 +33,7 @@
     },
     "dependencies": {
         "@laravel/echo-react": "^2.5.0",
+        "discord.js": "^14.27.0",
         "laravel-echo": "^2.5.0",
         "lucide-react": "^1.52.0",
         "node": "^26.11.1",

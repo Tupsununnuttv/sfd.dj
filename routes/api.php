@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ApiController;
 use App\Http\Controllers\BotPresenceController;
+use App\Http\Controllers\DiscordBotController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\RoomModerationController;
 use App\Http\Controllers\RoomRoleController;
@@ -17,6 +18,14 @@ use Illuminate\Support\Facades\Route;
  * under Settings → Developers. Everything goes through the same permission checks as the website, so a bot can only do
  * what its room role allows. Room parameters are the room's slug.
  */
+Route::get('/discord/members/{discordId}', [DiscordBotController::class, 'member'])
+    ->where('discordId', '[0-9]{17,20}')
+    ->middleware('throttle:60,1')
+    ->name('api.discord.members.show');
+Route::get('/discord/announcements', [DiscordBotController::class, 'announcements'])
+    ->middleware('throttle:60,1')
+    ->name('api.discord.announcements');
+
 Route::prefix('v1')->name('api.v1.')->middleware([BlockBannedIps::class, 'auth:sanctum', MaintenanceMode::class, 'throttle:120,1', EnsureRoomAccess::class])->group(function () {
     Route::get('/me', [ApiController::class, 'me'])->name('me');
     Route::get('/users/{user}', [UserProfileController::class, 'card'])->name('users.show');
