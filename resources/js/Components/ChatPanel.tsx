@@ -47,13 +47,13 @@ const EMOJIS: Record<string, string[]> = {
 
 const systemIcon: Record<string, string> = {
     grab: '💾', kick: '🥾', ban: '🔨', promote: '⬆️', demote: '⬇️', skip: '⏭️',
-    remove: '🗑️', leave: '🚪', exit: '🚪', woot: '👍', meh: '👎', join: '👋', announcement: '📣', broadcast: '📢', welcome: '🎉', mute: '🔇', waitlist: '🔒', ended: '⏹️',
+    remove: '🗑️', leave: '🚪', exit: '🚪', woot: '👍', meh: '👎', join: '👋', announcement: '📣', broadcast: '📢', welcome: '🎉', mute: '🔇', waitlist: '🔒', ended: '⏹️', donation: '💖',
 };
 
 // every kind of system line has its own colour (full class names, so Tailwind keeps them)
 const systemTone: Record<string, string> = {
     join: 'text-emerald-400', promote: 'text-emerald-400', leave: 'text-orange-400', demote: 'text-orange-400', waitlist: 'text-sky-400',
-    ended: 'text-cyan-300', skip: 'text-yellow-400', remove: 'text-rose-400', grab: 'text-pink-400', exit: 'text-neutral-500', woot: 'text-lime-400', meh: 'text-rose-400', kick: 'text-red-400', ban: 'text-red-500', mute: 'text-fuchsia-400',
+    ended: 'text-cyan-300', skip: 'text-yellow-400', remove: 'text-rose-400', grab: 'text-pink-400', exit: 'text-neutral-500', woot: 'text-lime-400', meh: 'text-rose-400', kick: 'text-red-400', ban: 'text-red-500', mute: 'text-fuchsia-400', donation: 'text-pink-300',
 };
 
 export function RoomNotifications({ notifications, onDismiss }: {

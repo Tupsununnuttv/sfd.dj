@@ -8,6 +8,7 @@ use App\Events\PlaybackUpdated;
 use App\Events\UserKicked;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
+use App\Models\RoomBotPresence;
 use App\Models\User;
 use App\Models\Vote;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -122,6 +123,44 @@ class RoomSocialTest extends TestCase
         // removing a role is logged too
         $this->actingAs($host)->put("/rooms/{$room->slug}/members/{$mod->id}", ['room_role_id' => null])->assertNoContent();
         $this->assertDatabaseHas('chat_messages', ['kind' => 'demote']);
+    }
+
+    public function test_a_kicked_or_banned_person_leaves_the_waitlist_and_the_booth_at_once(): void
+    {
+        Event::fake([UserKicked::class, MessageSent::class, PlaybackUpdated::class]);
+        $host = User::factory()->create();
+        $dj = User::factory()->create();
+        $waiter = User::factory()->create();
+        [$room, $song] = $this->roomWithSong($host, $dj);
+        $room->enqueue(['youtube_id' => 'bbbbbbbbbbb', 'title' => 'Song B', 'thumbnail' => null, 'duration' => 200], $waiter->id);
+        $room->enqueue(['youtube_id' => 'ccccccccccc', 'title' => 'Song C', 'thumbnail' => null, 'duration' => 200], $host->id);
+
+        // the DJ is kicked: their song stops and the next person plays
+        $this->actingAs($host)->post("/rooms/{$room->slug}/kick/{$dj->id}")->assertNoContent();
+        $this->assertNotSame($song->id, $room->refresh()->current_item_id);
+        $this->assertSame($waiter->id, $room->items()->whereKey($room->current_item_id)->value('user_id'));
+        $this->assertSame(0, $room->items()->where('user_id', $dj->id)->count());
+        Event::assertDispatched(PlaybackUpdated::class);
+
+        // somebody waiting is banned: their song leaves the line
+        $this->actingAs($host)->post("/rooms/{$room->slug}/ban/{$waiter->id}")->assertNoContent();
+        $this->assertSame(0, $room->items()->where('user_id', $waiter->id)->count());
+        Event::assertDispatched(UserKicked::class, fn ($e) => $e->userId === $waiter->id && $e->banned);
+
+        // a bot has no page to leave: the Auto Host bot is taken out of the room and stops being the Auto Host
+        $bot = User::factory()->create();
+        $bot->forceFill(['is_bot' => true, 'bot_owner_id' => $host->id])->save();
+        $list = $host->playlists()->create(['name' => 'Night', 'kind' => 'custom']);
+        $list->songs()->create(['youtube_id' => 'ddddddddddd', 'title' => 'Song D', 'duration' => 200, 'position' => 0]);
+        $room->refresh()->update(['auto_host_bot_id' => $bot->id, 'auto_host_playlist_id' => $list->id]);
+        RoomBotPresence::hold($room, $bot);
+        $room->takeOut($host);
+        $this->assertSame($bot->id, $room->refresh()->items()->whereKey($room->current_item_id)->value('user_id'));
+
+        $this->actingAs($host)->post("/rooms/{$room->slug}/ban/{$bot->id}")->assertNoContent();
+        $this->assertNull($room->refresh()->auto_host_bot_id);
+        $this->assertNull($room->current_item_id);
+        $this->assertDatabaseMissing('room_bot_presences', ['room_id' => $room->id, 'user_id' => $bot->id]);
     }
 
     public function test_song_search_and_adding_use_the_youtube_api(): void

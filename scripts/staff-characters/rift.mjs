@@ -1,6 +1,6 @@
 // Rift: a raven mage. A deep violet hood with a gold arch and a glowing diamond on the brow, purple glowing eyes and a big grey beak, a feather mantle
 // with cyan tips, a galaxy amulet with a ring, a robe stitched with glowing runes, a feather cape that turns to starlight at the bottom, raven feet with
-// gold cuffs, and a twisted staff whose crescent holds a galaxy orb. Crystals and sparks float around him. Everybody can wear him from level 25.
+// gold cuffs, and a twisted staff whose crescent holds a galaxy orb. Crystals and sparks float around him. For the Owner only.
 import { kf, lin, mirror, origins, picture, play, pose, rad, shadow } from './kit.mjs';
 
 const r1 = (n) => Math.round(n * 10) / 10;

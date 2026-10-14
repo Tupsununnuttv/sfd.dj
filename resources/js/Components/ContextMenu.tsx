@@ -1,10 +1,10 @@
 import type { LucideIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ComponentType, ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export interface MenuItem {
     label: string;
-    icon: LucideIcon;
+    icon: LucideIcon | ComponentType<{ size?: number; className?: string }>;
     onSelect: () => void;
     danger?: boolean;
     keepOpen?: boolean; // stay open after choosing (the item changes its own label, e.g. "Copied!")
@@ -23,7 +23,7 @@ export interface MenuAnchor {
  * elsewhere, on scrolling or resizing, and the arrow keys move between the items. Anything marked `data-menu-trigger` (the button
  * that opened it) is left alone, so clicking it again can close the menu.
  */
-export default function ContextMenu({ anchor, header, groups, label, onClose }: { anchor: MenuAnchor; header?: ReactNode; groups: MenuItem[][]; label: string; onClose: () => void }) {
+export default function ContextMenu({ anchor, header, groups, titles = [], label, onClose }: { anchor: MenuAnchor; header?: ReactNode; groups: MenuItem[][]; titles?: (string | undefined)[]; label: string; onClose: () => void }) {
     const box = useRef<HTMLDivElement>(null);
     const close = useRef(onClose);
     close.current = onClose;
@@ -96,6 +96,7 @@ export default function ContextMenu({ anchor, header, groups, label, onClose }: 
             {header && <div className="px-2 pb-1.5 pt-1">{header}</div>}
             {groups.map((group, g) => (
                 <div key={g} className={g > 0 || header ? 'mt-1 border-t border-white/10 pt-1' : ''}>
+                    {titles[g] && <p className="px-2.5 pb-0.5 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500">{titles[g]}</p>}
                     {group.map((item) => (
                         <button
                             key={item.label}

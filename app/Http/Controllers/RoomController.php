@@ -824,13 +824,8 @@ class RoomController extends Controller
     public function leaveWaitlist(Request $request, Room $room): Response
     {
         $me = $request->user();
-        $mine = $room->items()->where('user_id', $me->id)->pluck('id');
 
-        if ($mine->isNotEmpty()) {
-            $wasPlaying = $mine->contains($room->current_item_id);
-            PlaylistItem::whereIn('id', $mine)->where('id', '!=', $room->current_item_id ?? 0)->delete();
-            $wasPlaying && $room->advance(false); // leaving: with cycling too, the DJ does not go to the back of the line
-
+        if ($room->takeOut($me)) {
             ChatMessage::system($room, 'leave', "{$me->name} left the waitlist", $me);
             PlaybackUpdated::dispatch($room->refresh());
         }
@@ -863,9 +858,22 @@ class RoomController extends Controller
 
         $room->log($actor, 'kick', $user);
         ChatMessage::system($room, 'kick', "{$actor->name} kicked {$user->name}", $actor);
-        UserKicked::dispatch($room->id, $user->id, false);
+        $this->sendAway($room, $user, false);
 
         return response()->noContent();
+    }
+
+    /**
+     * A kicked or banned person leaves at once: out of the waitlist and the booth, and their page is told to go (UserKicked; every other page drops them
+     * from the room too). A bot has no page: it is taken out of the room here, and stops being the Auto Host.
+     */
+    private function sendAway(Room $room, User $user, bool $banned): void
+    {
+        $room->auto_host_bot_id === $user->id && $room->update(['auto_host_bot_id' => null, 'auto_host_playlist_id' => null]);
+        $room->takeOut($user) && PlaybackUpdated::dispatch($room->refresh());
+        $user->is_bot && RoomBotPresence::leave($room, $user);
+
+        UserKicked::dispatch($room->id, $user->id, $banned);
     }
 
     public function ban(Request $request, Room $room, User $user): Response
@@ -877,7 +885,7 @@ class RoomController extends Controller
 
         $room->log($actor, 'ban', $user);
         ChatMessage::system($room, 'ban', "{$actor->name} banned {$user->name}", $actor);
-        UserKicked::dispatch($room->id, $user->id, true);
+        $this->sendAway($room, $user, true);
 
         return response()->noContent();
     }

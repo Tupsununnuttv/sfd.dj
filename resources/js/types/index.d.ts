@@ -69,5 +69,6 @@ export type PageProps<
 
 export interface Community {
     social: Record<string, string>;
+    donate: boolean; // can the Donate button take a donation (Stripe is connected, or staff set a donation page)
     donation: { title: string; goal: number; current: number; percent: number; currency: string; url: string } | null;
 }

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Donation;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -72,6 +73,31 @@ final class Stripe
             'success_url' => route('settings.plus', ['paid' => 1]),
             'cancel_url' => route('settings.plus'),
         ])['url'];
+    }
+
+    /**
+     * A Stripe Checkout page for one donation of the amount the person chose (its button says Donate). Paid, it comes back to `$back` with
+     * ?donated=1; the webhook (checkout.session.completed) then counts it. Returns the session: its id and address.
+     *
+     * @return array{id: string, url: string}
+     */
+    public static function donation(Donation $donation, string $back): array
+    {
+        $session = self::post('checkout/sessions', [
+            'mode' => 'payment',
+            'submit_type' => 'donate',
+            'line_items' => [[
+                'quantity' => 1,
+                'price_data' => ['currency' => 'eur', 'unit_amount' => $donation->amount, 'product_data' => ['name' => 'Donation to SFD-DJ.EU']],
+            ]],
+            'client_reference_id' => $donation->user_id,
+            'customer_email' => $donation->user?->email,
+            'metadata' => ['kind' => 'donation', 'donation_id' => $donation->id],
+            'success_url' => $back.(str_contains($back, '?') ? '&' : '?').'donated=1',
+            'cancel_url' => $back,
+        ]);
+
+        return ['id' => $session['id'], 'url' => $session['url']];
     }
 
     /** Stripe's own page where the person changes the card, switches between month and year, or cancels. Returns its address. */

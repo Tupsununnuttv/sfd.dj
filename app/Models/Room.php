@@ -304,10 +304,29 @@ class Room extends Model
             return collect();
         }
 
-        PlaylistItem::whereIn('id', $gone->pluck('id'))->where('id', '!=', $this->current_item_id ?? 0)->delete();
-        $gone->contains('id', $this->current_item_id) && $this->advance(false);
+        $this->takeOutItems($gone);
 
         return $gone->pluck('user')->unique('id')->values();
+    }
+
+    /** Take somebody out of the waitlist and the booth: they left, or were kicked or banned. True when they had a song in the line. */
+    public function takeOut(User $user): bool
+    {
+        $theirs = $this->items()->where('user_id', $user->id)->get(['id']);
+        $theirs->isNotEmpty() && $this->takeOutItems($theirs);
+
+        return $theirs->isNotEmpty();
+    }
+
+    /**
+     * The waiting songs among these are deleted; if one of them is playing it is skipped (not to the back of the line, even with cycling).
+     *
+     * @param  Collection<int, PlaylistItem>  $items
+     */
+    private function takeOutItems(Collection $items): void
+    {
+        PlaylistItem::whereIn('id', $items->pluck('id'))->where('id', '!=', $this->current_item_id ?? 0)->delete();
+        $items->contains('id', $this->current_item_id) && $this->advance(false);
     }
 
     /** Auto Host: when nobody is waiting, the host's bot plays the top song of the chosen playlist (the song then goes to the bottom of it, so the list goes round). */

@@ -20,8 +20,16 @@ const write = (v: string | null) => { try { v ? localStorage.setItem(KEY, v) : l
  * "Live support" bubble for visitors, no account needed. The first message starts a conversation; the secret token
  * that identifies it stays in this browser, so closing the page does not lose it. Staff answer from the admin panel.
  */
-export default function SupportWidget() {
+export default function SupportWidget({ launcher = true }: { launcher?: boolean }) {
     const [open, setOpen] = useState(false);
+
+    // anything on the page can open it: window.dispatchEvent(new Event('sfd:support')) (the room's More → Contact support, which has no bubble)
+    useEffect(() => {
+        const show = () => setOpen(true);
+        window.addEventListener('sfd:support', show);
+
+        return () => window.removeEventListener('sfd:support', show);
+    }, []);
     const [token, setToken] = useState<string | null>(read);
     const [lines, setLines] = useState<Line[]>([]);
     const [closed, setClosed] = useState(false);
@@ -126,13 +134,15 @@ export default function SupportWidget() {
                 </div>
             )}
 
-            <button
-                onClick={() => { setOpen(!open); setUnread(0); }}
-                className="relative ml-auto flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-3 font-semibold shadow-lg hover:opacity-90"
-            >
-                <LifeBuoy size={18} /> Live support
-                {unread > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-red-500 px-1.5 text-[10px] font-bold">{unread}</span>}
-            </button>
+            {launcher && (
+                <button
+                    onClick={() => { setOpen(!open); setUnread(0); }}
+                    className="relative ml-auto flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-3 font-semibold shadow-lg hover:opacity-90"
+                >
+                    <LifeBuoy size={18} /> Live support
+                    {unread > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-red-500 px-1.5 text-[10px] font-bold">{unread}</span>}
+                </button>
+            )}
         </div>
     );
 }

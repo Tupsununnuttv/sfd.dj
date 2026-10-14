@@ -1,7 +1,7 @@
 // Skully: a skeleton DJ, drawn bone by bone. The skull has deep eye sockets with a cold blue spark in each, the nose opening, cheekbones, sutures, a crack
 // over one brow and a full row of teeth, and the jaw hangs on its own so it can chatter. Below it: the neck, collarbones, a rib cage (cartilage at the front
 // of each rib, the back ribs seen through the gaps), the breastbone, the spine, a pelvis, and arms and legs in separate bones (two in each forearm and
-// shin, every finger and toe). At the decks he wears headphones. Everybody can wear him from level 18.
+// shin, every finger and toe). At the decks he wears headphones. For the Owner only.
 // Every limb is a chain of joints (shoulder, elbow, wrist; hip, knee, ankle) and each joint moves a beat after the one before it, so the bones swing and settle.
 import { kf, lin, mirror, origins, picture, play, pose, rad, shadow } from './kit.mjs';
 

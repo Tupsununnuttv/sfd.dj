@@ -3,6 +3,19 @@ export type Kind = 'new' | 'improved' | 'fixed';
 
 export const releases: { version: string; title: string; notes: [Kind, string][] }[] = [
     {
+        version: '1.40',
+        title: 'A new logo, donations and four new characters',
+        notes: [
+            ['new', 'SFD-DJ.EU has a new logo: a bold S in a glossy tile that runs from violet to cyan, ringed by a sound spectrum with a playhead. It is in the menu, on the browser tab, on phones and on shared links.'],
+            ['fixed', 'Kick and ban work at once: the person disappears from the room for everybody, leaves the waitlist and the decks (their song stops), and their own page leaves the room before it tells them why. A banned person cannot come back until a moderator lifts the ban. A kicked or banned bot leaves the room too, and is no longer the Auto Host.'],
+            ['new', 'Donate: a new button in the room footbar opens the Donation Goal. It shows the goal and how far along it is, and you can give any amount from €1, with your name or anonymously. Payments go through Stripe. The room says thank you, and the goal goes up by itself.'],
+            ['new', 'When a newer version of the site is out, a "New update available" button appears in the room footbar. Press it to reload and get the newest version.'],
+            ['improved', 'The More menu in the room footbar has Community (Events, our Discord and the other links set in Community settings) and Help (FAQ, Contact support and Patch notes).'],
+            ['new', 'Four new characters in the Avatar shop. Milky (level 6), a milk carton that squashes and stretches as it dances. Panda Bear (level 12), who munches bamboo and waves it like a glow stick. Two Legendary dragons: Ember Dragon (level 30), with a flame on his tail and smoke from his nose, and Frost Dragon (level 35), with crystal horns and falling snow. The dragons\' wings flap and their tails whip in three parts.'],
+            ['improved', 'Rift and Skully are now for the Owner only. Anyone else who had bought one got their SFD Coins back.'],
+        ],
+    },
+    {
         version: '1.39',
         title: 'Auto Host, Autowoot, Compact and two spooky characters',
         notes: [

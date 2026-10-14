@@ -13,11 +13,11 @@ const files: [string, string, string, string][] = [
 ];
 
 const colours: [string, string, string][] = [
-    ['Fuchsia', '#d946ef', 'text-white'],
-    ['Violet', '#7c3aed', 'text-white'],
-    ['Sky', '#38bdf8', 'text-neutral-950'],
-    ['Pink glow', '#f0abfc', 'text-neutral-950'],
-    ['Deep violet', '#170b33', 'text-white'],
+    ['Violet', '#6d28d9', 'text-white'],
+    ['Magenta', '#c026d3', 'text-white'],
+    ['Pink', '#db2777', 'text-white'],
+    ['Sky', '#0ea5e9', 'text-white'],
+    ['Cyan glow', '#22d3ee', 'text-neutral-950'],
     ['Ink', '#0a0a0a', 'text-white'],
 ];
 
@@ -35,7 +35,7 @@ export default function Brand() {
     return (
         <SiteLayout>
             <Head title="Brand" />
-            <PageHeader crumbs={[['Brand']]} title="The SFD-DJ.EU brand" text="A record, split by an S, ringed by a dial that ends in a playhead: the music, in sync, live. Use it to write about us or to link to us." />
+            <PageHeader crumbs={[['Brand']]} title="The SFD-DJ.EU brand" text="A bold S in a glossy tile that runs from violet to cyan, ringed by a sound spectrum with a playhead: the music, in sync, live. Use it to write about us or to link to us." />
 
             <section className="mx-auto max-w-6xl px-6">
                 <div className="relative flex flex-col items-center overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-950 via-neutral-950 to-fuchsia-950 px-6 py-16">
@@ -54,7 +54,7 @@ export default function Brand() {
                 </div>
                 <div className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-white p-8">
                     <ApplicationLogo className="text-4xl" detail="full" onLight />
-                    <p className="mt-5 text-center text-sm text-neutral-500">On a light page, keep the dark tile and write SFD in dark.</p>
+                    <p className="mt-5 text-center text-sm text-neutral-500">On a light page, keep the tile and write SFD in dark.</p>
                 </div>
                 <div className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-fuchsia-600 to-violet-700 p-8">
                     <ApplicationLogo className="text-4xl" detail="full" />

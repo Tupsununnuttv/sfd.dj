@@ -1,12 +1,105 @@
 import ContextMenu, { MenuAnchor, MenuItem } from '@/Components/ContextMenu';
-import { socialLabels } from '@/Components/SocialIcon';
+import SocialIcon, { socialLabels } from '@/Components/SocialIcon';
 import { Deck, mmss, originLabel } from '@/lib/playlists';
 import { getJson, sendJson } from '@/lib/post';
+import { useNewVersion } from '@/lib/version';
 import { Community } from '@/types';
-import { Check, ChevronUp, ExternalLink, Heart, Info, ListMusic, Monitor, MonitorOff, MoreHorizontal, Music2, SkipForward } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { router } from '@inertiajs/react';
+import { CalendarDays, Check, ChevronUp, CircleHelp, HandCoins, Info, LifeBuoy, ListMusic, Monitor, MonitorOff, MoreHorizontal, Music2, RefreshCw, ScrollText, SkipForward, X } from 'lucide-react';
+import { FormEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const iconBtn = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-neutral-300 transition hover:bg-white/10 hover:text-white';
+const money = (currency: string, amount: number) => `${currency}${amount.toFixed(2)}`;
+
+/** Closes a popover on a click outside `box` or on Esc. */
+function useDismiss(open: boolean, box: React.RefObject<HTMLElement | null>, close: () => void) {
+    useEffect(() => {
+        if (!open) return;
+        const away = (e: MouseEvent) => !box.current?.contains(e.target as Node) && close();
+        const esc = (e: KeyboardEvent) => e.key === 'Escape' && (e.preventDefault(), close());
+        document.addEventListener('mousedown', away);
+        document.addEventListener('keydown', esc);
+
+        return () => { document.removeEventListener('mousedown', away); document.removeEventListener('keydown', esc); };
+    }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+/**
+ * The donation panel: the goal (when staff set one) and a Donate form for any amount from €1, named or anonymous. With Stripe the payment page opens
+ * here and comes back to the room; with a donation page set by staff (Ko-fi, PayPal ...) that page opens in a new tab.
+ */
+function DonatePanel({ community, slug, onClose }: { community: Community; slug: string; onClose: () => void }) {
+    const goal = community.donation;
+    const [amount, setAmount] = useState('');
+    const [anonymous, setAnonymous] = useState(false);
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+
+    const donate = (e: FormEvent) => {
+        e.preventDefault();
+        setBusy(true);
+        setError('');
+        sendJson<{ url: string; stripe: boolean }>('POST', route('donations.store'), { amount: Number(amount.replace(',', '.')), anonymous, room: slug })
+            .then(({ url, stripe }) => {
+                if (stripe) return window.location.assign(url); // Stripe's payment page, then back here
+                window.open(url, '_blank', 'noopener,noreferrer');
+                setBusy(false);
+            })
+            .catch((err: Error) => { setError(err.message); setBusy(false); });
+    };
+
+    return (
+        <div role="dialog" aria-label="Donation goal" className="absolute bottom-full right-0 z-40 mb-3 w-[22rem] max-w-[calc(100vw-1.5rem)] animate-menu rounded-2xl border border-white/10 bg-neutral-900/95 p-3 shadow-2xl shadow-black/60 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-sky-300"><HandCoins size={18} /></span>
+                <p className="flex-1 text-[15px] font-bold text-white">Donation Goal</p>
+                <button onClick={onClose} aria-label="Close" className="rounded-lg border border-white/10 p-1.5 text-neutral-400 transition hover:bg-white/10 hover:text-white"><X size={16} /></button>
+            </div>
+
+            <form onSubmit={donate} className="mt-3 space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                {goal && (
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <span className="rounded-md border border-sky-400/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-300">Global goal</span>
+                            <span className="rounded-md border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[11px] font-bold tabular-nums text-neutral-200">{goal.percent}%</span>
+                        </div>
+                        <p className="mt-2 text-[13px] font-extrabold uppercase tracking-wide text-white">{goal.title}</p>
+                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-sky-400 to-cyan-300" style={{ width: `${goal.percent}%` }} /></div>
+                        <p className="mt-1.5 text-xs tabular-nums text-neutral-400">{money(goal.currency, goal.current)} of {money(goal.currency, goal.goal)}</p>
+                    </div>
+                )}
+                {!goal && <p className="text-[13px] text-neutral-300">Help the project grow &lt;3 Every euro keeps the music going.</p>}
+
+                <div className="flex gap-2">
+                    <label className="flex h-11 min-w-0 flex-1 items-center rounded-xl border border-white/10 bg-black/30 focus-within:border-sky-400/60">
+                        <span className="pl-3 pr-1 text-sm font-bold text-neutral-400">€</span>
+                        <input
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                            inputMode="decimal"
+                            placeholder="Enter donation amount"
+                            aria-label="Donation amount in euro"
+                            className="min-w-0 flex-1 border-0 bg-transparent px-1 text-sm text-white placeholder-neutral-500 focus:ring-0"
+                        />
+                    </label>
+                    <button disabled={busy || !community.donate || !(Number(amount.replace(',', '.')) >= 1)} className="h-11 shrink-0 rounded-xl bg-sky-500 px-5 text-sm font-bold text-white transition hover:bg-sky-400 disabled:opacity-40">{busy ? '…' : 'Donate'}</button>
+                </div>
+
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-white/30 bg-transparent text-sky-500 focus:ring-sky-400" />
+                    <span>
+                        <span className="block text-[13px] font-bold text-white">Donate anonymously</span>
+                        <span className="block text-xs text-neutral-400">Your name will not appear in the donation announcement.</span>
+                    </span>
+                </label>
+
+                {error && <p className="text-xs text-red-400">{error}</p>}
+                {!community.donate && <p className="text-xs text-amber-300">Donations open soon. Thank you for wanting to help!</p>}
+                {community.donate && <p className="text-[11px] text-neutral-500">Any amount from €1 to €1,000. Payments are handled securely by Stripe.</p>}
+            </form>
+        </div>
+    );
+}
 
 /** How wide the footbar is, so it can leave things out when there is no room (the room is narrower when the window is small or the menu is open). */
 function useWidth() {
@@ -27,18 +120,20 @@ function useWidth() {
 }
 
 /**
- * The bar under the room. On the left the playlist I play from and the next track of it, on the right the buttons (the video on or off, skip, and More).
- * The volume and how far the song is are in the bar at the top (RoomHeader); the playlists open from the menu, or from the two cards here.
- * It leaves things out step by step as it gets narrower.
+ * The bar under the room. On the left the playlist I play from and the next track of it, on the right the buttons ("New update available" when the
+ * site has a newer build, Donate, the video on or off, skip, and More). The volume and how far the song is are in the bar at the top (RoomHeader);
+ * the playlists open from the menu, or from the two cards here. It leaves things out step by step as it gets narrower.
  */
-export default function RoomFootbar({ guest, playbackOn, onPlayback, canSkip, onSkip, onPlaylists, onRoomInfo, community, refreshKey }: {
+export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSkip, onSkip, onPlaylists, onRoomInfo, onOpenPage, community, refreshKey }: {
     guest: boolean;
+    slug: string;
     playbackOn: boolean;
     onPlayback: () => void;
     canSkip: boolean;
     onSkip: () => void;
     onPlaylists: () => void;
     onRoomInfo: () => void;
+    onOpenPage: (url: string, title: string) => void; // a page of the site in the room's overlay (Events, FAQ, Patch notes)
     community: Community;
     refreshKey: string | number; // when this changes the playlists are read again
 }) {
@@ -47,7 +142,12 @@ export default function RoomFootbar({ guest, playbackOn, onPlayback, canSkip, on
     const [deck, setDeck] = useState<Deck | null>(null);
     const [pick, setPick] = useState(false);
     const [more, setMore] = useState<MenuAnchor | null>(null);
+    const [giving, setGiving] = useState(false);
     const picker = useRef<HTMLDivElement>(null);
+    const giver = useRef<HTMLDivElement>(null);
+    const update = useNewVersion();
+
+    useDismiss(giving, giver, () => setGiving(false));
 
     useEffect(() => {
         if (guest) return;
@@ -57,15 +157,7 @@ export default function RoomFootbar({ guest, playbackOn, onPlayback, canSkip, on
         return () => { alive = false; };
     }, [guest, refreshKey]);
 
-    useEffect(() => {
-        if (!pick) return;
-        const away = (e: MouseEvent) => !picker.current?.contains(e.target as Node) && setPick(false);
-        const esc = (e: KeyboardEvent) => e.key === 'Escape' && (e.preventDefault(), setPick(false));
-        document.addEventListener('mousedown', away);
-        document.addEventListener('keydown', esc);
-
-        return () => { document.removeEventListener('mousedown', away); document.removeEventListener('keydown', esc); };
-    }, [pick]);
+    useDismiss(pick, picker, () => setPick(false));
 
     const activate = (id: number) => {
         setPick(false);
@@ -76,11 +168,22 @@ export default function RoomFootbar({ guest, playbackOn, onPlayback, canSkip, on
     const next = deck?.next ?? null;
     const goal = community.donation;
 
+    // More: the room, then the community (events, our Discord and the other links staff set in Community settings), then help
+    const socials = Object.entries(community.social).map(([key, url]): MenuItem => ({
+        label: socialLabels[key] ?? key,
+        icon: ({ size, className }: { size?: number; className?: string }) => <span className={className}><SocialIcon name={key} size={size} /></span>,
+        onSelect: () => window.open(url, '_blank', 'noopener,noreferrer'),
+    }));
     const moreItems: MenuItem[][] = [
         [{ label: 'Room info', icon: Info, onSelect: onRoomInfo }],
-        ...(Object.keys(community.social).length ? [Object.entries(community.social).map(([key, url]): MenuItem => ({ label: socialLabels[key] ?? key, icon: ExternalLink, onSelect: () => window.open(url, '_blank', 'noopener,noreferrer') }))] : []),
-        ...(goal ? [[{ label: `${goal.title}: ${goal.percent}%`, icon: Heart, onSelect: () => goal.url && window.open(goal.url, '_blank', 'noopener,noreferrer') }]] : []),
+        [{ label: 'Events', icon: CalendarDays, onSelect: () => onOpenPage(route('events'), 'Events') }, ...socials],
+        [
+            { label: 'FAQ', icon: CircleHelp, onSelect: () => onOpenPage(route('faq'), 'FAQ') },
+            { label: 'Contact support', icon: LifeBuoy, onSelect: () => window.dispatchEvent(new Event('sfd:support')) },
+            { label: 'Patch notes', icon: ScrollText, onSelect: () => onOpenPage(route('patch-notes'), 'Patch notes') },
+        ],
     ];
+    const giveTip = goal ? `Donation Goal\n${goal.title}\n${goal.percent}%` : 'Donate\nHelp the project grow <3';
 
     return (
         <footer ref={bar} className="sfd-footbar relative flex h-[68px] shrink-0 items-center gap-3 border-t border-white/10 bg-gradient-to-b from-neutral-950/95 to-black px-3 text-sm sm:px-4">
@@ -149,6 +252,32 @@ export default function RoomFootbar({ guest, playbackOn, onPlayback, canSkip, on
 
             {/* the buttons */}
             <div className="flex shrink-0 items-center gap-2">
+                {update && (
+                    <button
+                        onClick={() => window.location.reload()}
+                        title="A new version of SFD-DJ.EU is out. Click to reload the page and get it."
+                        className="flex h-10 shrink-0 items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-3 text-[13px] font-semibold text-emerald-100 transition hover:bg-emerald-500/25"
+                    >
+                        <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" /></span>
+                        <RefreshCw size={15} />
+                        {tier >= 2 && 'New update available'}
+                    </button>
+                )}
+                {!guest && (
+                    <div ref={giver} className="group/give relative shrink-0">
+                        <button
+                            onClick={() => { setGiving(!giving); !giving && router.reload({ only: ['community'] }); /* the newest total */ }}
+                            aria-label="Donation goal"
+                            aria-expanded={giving}
+                            className={`${iconBtn} relative ${giving ? '!border-sky-400/50 !bg-sky-500/20 !text-sky-200' : 'hover:!text-sky-300'}`}
+                        >
+                            <HandCoins size={18} />
+                            {goal && <span className="absolute inset-x-1.5 bottom-1 h-0.5 overflow-hidden rounded-full bg-white/15"><span className="block h-full bg-sky-400" style={{ width: `${goal.percent}%` }} /></span>}
+                        </button>
+                        {!giving && <span role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 mb-2 hidden -translate-x-1/2 whitespace-pre rounded-lg border border-white/10 bg-neutral-950/95 px-3 py-2 text-center text-xs font-semibold leading-5 text-neutral-100 shadow-xl group-hover/give:block">{giveTip}</span>}
+                        {giving && <DonatePanel community={community} slug={slug} onClose={() => setGiving(false)} />}
+                    </div>
+                )}
                 <button
                     onClick={onPlayback}
                     aria-label={playbackOn ? 'Turn the video off' : 'Turn the video on'}
@@ -169,7 +298,7 @@ export default function RoomFootbar({ guest, playbackOn, onPlayback, canSkip, on
                 </button>
             </div>
 
-            {more && <ContextMenu anchor={more} label="More" groups={moreItems} onClose={() => setMore(null)} />}
+            {more && <ContextMenu anchor={more} label="More" groups={moreItems} titles={[undefined, 'Community', 'Help']} onClose={() => setMore(null)} />}
         </footer>
     );
 }

@@ -24,9 +24,8 @@ Draw the person standing, feet at the bottom, in a picture about 200 x 276 (a bi
 | `foxy`, `neko`, `bun`, `panda`, `wolfie`, `robo` | `node scripts/make-characters.mjs` | everybody, unlocked by level |
 | `ice`, `azure`, `sun`, `nebula` (astronauts) and their slim `...mini` builds, `fedora`, `blaze`, `echo`, `blazeref`, `echoref` | `node scripts/make-staff-characters.mjs` | Brand Ambassador and above |
 | `zoos02` (the Zoo S02 fox) | `node scripts/make-staff-characters.mjs` | the Owner only |
-| `spooky` (the jack-o'-lantern scarecrow) | `node scripts/make-staff-characters.mjs` | everybody, from level 14 |
-| `skully` (the skeleton DJ) | `node scripts/make-staff-characters.mjs` | everybody, from level 18 |
-| `rift` (the raven mage) | `node scripts/make-staff-characters.mjs` | everybody, from level 25 |
+| `milky` (the milk carton), `pandabear`, `spooky` (the jack-o'-lantern scarecrow), `emberdragon`, `frostdragon` | `node scripts/make-staff-characters.mjs` | everybody, from level 6, 12, 14, 30 and 35 |
+| `skully` (the skeleton DJ), `rift` (the raven mage) | `node scripts/make-staff-characters.mjs` | the Owner only |
 
 Changing a file here by hand is fine, but running its script again writes those files again (`node scripts/make-staff-characters.mjs ice fedora` redraws only the ones named).
 

@@ -74,11 +74,7 @@ class AutoHostController extends Controller
         }
 
         RoomBotPresence::leave($room, $bot);
-        $room->items()->where('user_id', $bot->id)->where('id', '!=', $room->current_item_id ?? 0)->delete();
-
-        if ($room->current_item_id && $room->items()->whereKey($room->current_item_id)->where('user_id', $bot->id)->exists()) {
-            $room->advance(false);
-        }
+        $room->takeOut($bot);
 
         PlaybackUpdated::dispatch($room->refresh());
     }

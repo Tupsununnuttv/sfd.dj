@@ -32,6 +32,7 @@ import { FormEvent, lazy, ReactNode, Suspense, useEffect, useRef, useState } fro
 
 const GrabDialog = lazy(() => import('@/Components/GrabDialog'));
 const PageOverlay = lazy(() => import('@/Components/PageOverlay'));
+const SupportWidget = lazy(() => import('@/Components/SupportWidget'));
 const PlaylistManager = lazy(() => import('@/Components/PlaylistManager'));
 const UserCard = lazy(() => import('@/Components/UserCard'));
 const WhisperBox = lazy(() => import('@/Components/WhisperBox'));
@@ -300,6 +301,15 @@ export default function Room({
         const line: ChatMessageData = { id: --localId.current - 1, type: 'system', kind, body, user: 'System', user_id: 0, avatar: null, role: HOST_ROLE };
         setMessages((p) => [...p, line].slice(-200));
     };
+    // back from Stripe after a donation (?donated=1): say thank you, and take the mark off the address
+    useEffect(() => {
+        const here = new URL(window.location.href);
+        if (!here.searchParams.has('donated')) return;
+        here.searchParams.delete('donated');
+        window.history.replaceState(window.history.state, '', here);
+        say('donation', 'Thank you for your donation! It counts towards the goal as soon as Stripe confirms the payment.');
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
     const notify = (kind: string, body: string) => {
         const id = --localId.current - 1;
         setNotifications((p) => [...p, { id, kind, body }].slice(-3));
@@ -465,9 +475,13 @@ export default function Room({
                 if (m.id === user.id) router.reload({ only: ['auth'] }); // my own menu, coins and name
             })
             .listen('.user-kicked', (k: { user_id: number; banned: boolean }) => {
-                if (k.user_id !== user.id) return;
-                alert(k.banned ? 'You were banned from this room.' : 'You were kicked from this room.');
-                router.visit(route('dashboard'));
+                if (k.user_id !== user.id) {
+                    setUsers((p) => p.filter((u) => u.id !== k.user_id)); // gone from the room for everybody at once, not when their page gets round to leaving
+                    return;
+                }
+                // leave first (the room unmounts and drops off the live channel), then say why: an alert first would keep a tab in the background in the room
+                const why = k.banned ? 'You were banned from this room.' : 'You were kicked from this room.';
+                router.visit(route('dashboard'), { onFinish: () => alert(why) });
             })
             .listenForWhisper('typing', (m: Member) => {
                 setTypers((p) => ({ ...p, [m.id]: m.name }));
@@ -916,6 +930,8 @@ export default function Room({
 
                     <RoomFootbar
                         guest={guest}
+                        slug={room.slug}
+                        onOpenPage={(url, title) => setPage({ url, title })}
                         playbackOn={playbackOn}
                         onPlayback={() => setPlaybackOn(!playbackOn)}
                         canSkip={!!current && canSkip(current)}
@@ -1122,6 +1138,7 @@ export default function Room({
             )}
 
             {page && <Suspense fallback={null}><PageOverlay url={page.url} title={page.title} onClose={() => setPage(null)} /></Suspense>}
+            <Suspense fallback={null}><SupportWidget launcher={false} /></Suspense>{/* no bubble in the room: More → Contact support opens it */}
 
             {grabbing && current && (
                 <Suspense fallback={null}>

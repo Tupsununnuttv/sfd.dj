@@ -7,6 +7,7 @@ use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\DeveloperController;
 use App\Http\Controllers\DiscordController;
+use App\Http\Controllers\DonationController;
 use App\Http\Controllers\EmoteController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FriendController;
@@ -49,6 +50,9 @@ Route::name('site.')->group(function () {
 
 // Stripe tells the site about paid plans here (signed with STRIPE_WEBHOOK_SECRET; no session, no CSRF token)
 Route::post('/stripe/webhook', [SubscriptionController::class, 'webhook'])->name('stripe.webhook');
+
+// the build the site runs now: an open page compares it with its own and offers "New update available" when they differ
+Route::get('/version', fn () => response()->json(['version' => Inertia::getVersion()])->header('Cache-Control', 'no-store'))->middleware('throttle:30,1')->name('version');
 
 // is this username free? (the register and profile forms ask while you type)
 Route::get('/api/username-available', UsernameController::class)->middleware('throttle:40,1')->name('username.available');
@@ -171,6 +175,7 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::delete('/admin/ip-bans/{ipBan}', [AdminController::class, 'unbanIp'])->name('admin.ipbans.destroy');
     Route::put('/admin/permissions/reset', [AdminController::class, 'resetPermissions'])->name('admin.permissions.reset');
     Route::put('/community', [CommunityController::class, 'update'])->name('community.update');
+    Route::post('/donations', [DonationController::class, 'store'])->middleware('throttle:10,1')->name('donations.store');
     Route::put('/admin/maintenance', [AdminController::class, 'maintenance'])->name('admin.maintenance');
 
     Route::get('/youtube/search', [RoomController::class, 'search'])->middleware('throttle:30,1')->name('youtube.search');

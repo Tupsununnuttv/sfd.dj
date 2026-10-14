@@ -54,7 +54,7 @@ export default function CommunityTab({ community }: { community: CommunityAdmin 
                     <label className="text-xs text-neutral-400">Currency
                         <input value={d.currency} onChange={(e) => setD({ ...d, currency: e.target.value })} maxLength={3} className={`${field} mt-1`} />
                     </label>
-                    <label className="text-xs text-neutral-400">Raised so far
+                    <label className="text-xs text-neutral-400">Raised elsewhere
                         <input type="number" min={0} step="0.01" value={d.current} onChange={(e) => setD({ ...d, current: Number(e.target.value) })} className={`${field} mt-1`} />
                     </label>
                     <label className="text-xs text-neutral-400">Goal
@@ -62,12 +62,12 @@ export default function CommunityTab({ community }: { community: CommunityAdmin 
                     </label>
                 </div>
                 <div>
-                    <input value={d.url} onChange={(e) => setD({ ...d, url: e.target.value })} placeholder="Where people donate, e.g. https://ko-fi.com/yourname" className={field} />
+                    <input value={d.url} onChange={(e) => setD({ ...d, url: e.target.value })} placeholder="Donation page when Stripe is off, e.g. https://ko-fi.com/yourname" className={field} />
                     {errors['donation.url'] && <p className="mt-1 text-xs text-red-400">{errors['donation.url']}</p>}
                 </div>
                 <div>
                     <div className="h-2 overflow-hidden rounded-full bg-neutral-800"><div className="h-full bg-gradient-to-r from-pink-500 to-fuchsia-500" style={{ width: `${percent}%` }} /></div>
-                    <p className="mt-1 text-xs text-neutral-500">{d.currency}{d.current} of {d.currency}{d.goal} ({percent}%). Payments happen on the page you link to; update "Raised so far" yourself.</p>
+                    <p className="mt-1 text-xs text-neutral-500">{d.currency}{d.current} of {d.currency}{d.goal} ({percent}%), before the donations made on the site. People donate any amount with the Donate button in a room's footbar: with Stripe connected they pay on Stripe and it is added to the goal by itself; without it, the page above opens. Put money raised anywhere else in "Raised elsewhere".</p>
                 </div>
             </section>
 

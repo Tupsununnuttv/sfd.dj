@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Donation;
 use App\Support\Plans;
 use App\Support\Stripe;
 use Illuminate\Http\Request;
@@ -66,6 +67,7 @@ class SubscriptionController extends Controller
         match ($event['type'] ?? '') {
             'customer.subscription.created', 'customer.subscription.updated' => Stripe::apply($object),
             'customer.subscription.deleted' => Stripe::apply($object, deleted: true),
+            'checkout.session.completed', 'checkout.session.async_payment_succeeded' => ($object['metadata']['kind'] ?? '') === 'donation' ? Donation::settle($object) : null,
             default => null,
         };
 

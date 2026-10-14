@@ -1,86 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
-  <defs>
-    <linearGradient id="tile" x1="12" y1="4" x2="118" y2="126" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#3b1a6e"/>
-      <stop offset=".5" stop-color="#170b33"/>
-      <stop offset="1" stop-color="#06020f"/>
-    </linearGradient>
-    <radialGradient id="halo" cx="64" cy="66" r="62" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#d946ef" stop-opacity=".5"/>
-      <stop offset=".55" stop-color="#7c3aed" stop-opacity=".2"/>
-      <stop offset="1" stop-color="#7c3aed" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="a" x1="20" y1="18" x2="104" y2="110" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#fdf2f8"/>
-      <stop offset=".28" stop-color="#f0abfc"/>
-      <stop offset=".62" stop-color="#c026d3"/>
-      <stop offset="1" stop-color="#6b21a8"/>
-    </linearGradient>
-    <linearGradient id="b" x1="108" y1="18" x2="24" y2="110" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#e0f2fe"/>
-      <stop offset=".28" stop-color="#7dd3fc"/>
-      <stop offset=".62" stop-color="#6366f1"/>
-      <stop offset="1" stop-color="#3b0f8c"/>
-    </linearGradient>
-    <linearGradient id="ring" x1="8" y1="8" x2="120" y2="120" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#22d3ee"/>
-      <stop offset=".5" stop-color="#a855f7"/>
-      <stop offset="1" stop-color="#f472b6"/>
-    </linearGradient>
-    <radialGradient id="shade" cx="64" cy="64" r="44" gradientUnits="userSpaceOnUse">
-      <stop offset=".5" stop-color="#000" stop-opacity="0"/>
-      <stop offset="1" stop-color="#000" stop-opacity=".5"/>
-    </radialGradient>
-    <radialGradient id="sheen" cx="64" cy="64" r="44" gradientUnits="userSpaceOnUse">
-      <stop offset=".1" stop-color="#fff" stop-opacity="0"/>
-      <stop offset=".6" stop-color="#fff" stop-opacity=".1"/>
-      <stop offset="1" stop-color="#fff" stop-opacity=".3"/>
-    </radialGradient>
-    <linearGradient id="gloss" x1="34" y1="22" x2="62" y2="64" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#fff" stop-opacity=".5"/>
-      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
-    </linearGradient>
-    <clipPath id="disc"><circle cx="64" cy="64" r="44"/></clipPath>
-    <filter id="blur" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="6"/></filter>
-    <filter id="dot" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.2"/></filter>
-  </defs>
-
-  <!-- tile -->
-  <rect width="128" height="128" rx="30" fill="url(#tile)"/>
-  <rect width="128" height="128" rx="30" fill="url(#halo)"/>
-  <rect x=".6" y=".6" width="126.8" height="126.8" rx="29.4" stroke="#fff" stroke-opacity=".16" stroke-width="1.2"/>
-
-  <!-- the dial around the record, like a progress ring that ends in a playhead -->
-  <circle cx="64" cy="64" r="53.5" stroke="#fff" stroke-opacity=".07" stroke-width="3"/>
-  <circle cx="64" cy="64" r="53.5" stroke="url(#ring)" stroke-width="3" stroke-linecap="round" stroke-dasharray="236 100" transform="rotate(70 64 64)"/>
-  <circle cx="107.8" cy="33.3" r="4.4" fill="#67e8f9" filter="url(#dot)"/>
-  <circle cx="107.8" cy="33.3" r="2.7" fill="#ecfeff"/>
-
-  <!-- glow under the record -->
-  <circle cx="64" cy="72" r="42" fill="#c026d3" opacity=".55" filter="url(#blur)"/>
-
-  <!-- the record: two halves, divided by an S -->
-  <g clip-path="url(#disc)">
-    <g class="logo-disc">
-      <circle cx="64" cy="64" r="44" fill="url(#a)"/>
-      <path d="M64 20A44 44 0 0 1 64 108A22 22 0 0 0 64 64A22 22 0 0 1 64 20Z" fill="url(#b)"/>
-      <g stroke="#000" stroke-opacity=".17" stroke-width="1">
-        <circle cx="64" cy="64" r="39.5"/><circle cx="64" cy="64" r="35"/><circle cx="64" cy="64" r="30.5"/><circle cx="64" cy="64" r="26"/><circle cx="64" cy="64" r="21.5"/><circle cx="64" cy="64" r="17"/>
-      </g>
-      <g stroke="#fff" stroke-opacity=".1" stroke-width=".8">
-        <circle cx="64" cy="64" r="37.2"/><circle cx="64" cy="64" r="32.7"/><circle cx="64" cy="64" r="28.2"/><circle cx="64" cy="64" r="23.7"/><circle cx="64" cy="64" r="19.2"/>
-      </g>
-      <path d="M64 20A22 22 0 0 0 64 64A22 22 0 0 1 64 108" stroke="#fff" stroke-opacity=".8" stroke-width="2" stroke-linecap="round"/>
-    </g>
-    <circle cx="64" cy="64" r="44" fill="url(#shade)"/>
-    <path d="M64 64 86 25.9A44 44 0 0 1 102.1 42Z" fill="url(#sheen)"/>
-    <path d="M64 64 42 102.1A44 44 0 0 1 25.9 86Z" fill="url(#sheen)"/>
-    <ellipse cx="46" cy="38" rx="28" ry="12" transform="rotate(-38 46 38)" fill="url(#gloss)"/>
-  </g>
-  <circle cx="64" cy="64" r="44" stroke="#fff" stroke-opacity=".42" stroke-width="1.2"/>
-
-  <!-- spindle -->
-  <circle cx="64" cy="64" r="8.5" fill="#0a0418"/>
-  <circle cx="64" cy="64" r="8.5" stroke="#fff" stroke-opacity=".92" stroke-width="2.2"/>
-  <circle cx="64" cy="64" r="2.6" fill="#fff"/>
+    <defs><linearGradient id="tile" x1="6" y1="0" x2="122" y2="128" gradientUnits="userSpaceOnUse"><stop stop-color="#6d28d9"/><stop offset=".42" stop-color="#c026d3"/><stop offset=".72" stop-color="#db2777"/><stop offset="1" stop-color="#0ea5e9"/></linearGradient>
+    <radialGradient id="cyan" cx="110" cy="118" r="62" gradientUnits="userSpaceOnUse"><stop stop-color="#22d3ee" stop-opacity=".85"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></radialGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse"><stop stop-color="#fff" stop-opacity=".34"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="s" x1="0" y1="36" x2="0" y2="92" gradientUnits="userSpaceOnUse"><stop stop-color="#fff"/><stop offset="1" stop-color="#f5e8ff"/></linearGradient>
+    <filter id="drop" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="3.5" stdDeviation="3.2" flood-color="#3b0764" flood-opacity=".6"/></filter>
+    <filter id="soft" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.4"/></filter></defs>
+    <rect width="128" height="128" rx="32" fill="url(#tile)"/><rect width="128" height="128" rx="32" fill="url(#cyan)"/><path d="M0 32A32 32 0 0 1 32 0H96A32 32 0 0 1 128 32V54C96 66 32 66 0 54Z" fill="url(#gloss)"/><rect x=".75" y=".75" width="126.5" height="126.5" rx="31.25" stroke="#fff" stroke-opacity=".28" stroke-width="1.5"/>
+    <g><path d="M64 25L64 17.5M69.09 25.33L70.07 17.9M74.09 26.33L75.63 20.61M78.92 27.97L81.3 22.24M83.5 30.23L88.14 22.19M87.74 33.06L94.97 23.63M91.58 36.42L99.24 28.76M94.94 40.26L100.84 35.73M97.77 44.5L102.65 41.69M100.03 49.08L106.23 46.51M101.67 53.91L109.25 51.88M102.67 58.91L109.02 58.07M103 64L106.97 64M102.67 69.09L106.83 69.64M101.67 74.09L109.06 76.07M100.03 78.92L109.94 83.03M97.77 83.5L106.79 88.71M94.94 87.74L101.4 92.69M91.58 91.58L96.89 96.89M87.74 94.94L93.3 102.18M83.5 97.77L88.4 106.26M78.92 100.03L81.72 106.77M74.09 101.67L75.09 105.39M69.09 102.67L69.53 105.99M64 103L64 109.14M58.91 102.67L57.78 111.23M53.91 101.67L51.76 109.66M49.08 100.03L46.45 106.37M44.5 97.77L40.67 104.41M40.26 94.94L33.88 103.25M36.42 91.58L28.18 99.82M33.06 87.74L25.81 93.3M30.23 83.5L25.47 86.25M27.97 78.92L23.77 80.66M26.33 74.09L20.19 75.74M25.33 69.09L17.9 70.07M25 64L18.9 64M25.33 58.91L20.8 58.31M26.33 53.91L20.46 52.33M27.97 49.08L18.9 45.32M30.23 44.5L20.03 38.61M33.06 40.26L25.09 34.14M36.42 36.42L31.28 31.28M40.26 33.06L36.08 27.61M44.5 30.23L40.32 22.99M49.08 27.97L45.89 20.29M53.91 26.33L52.46 20.95M58.91 25.33L58.49 22.18" stroke="#fff" stroke-opacity=".62" stroke-width="2.6" stroke-linecap="round"/><circle cx="99.5" cy="29" r="6" fill="#fff" opacity=".55" filter="url(#soft)"/><circle cx="99.5" cy="29" r="3.6" fill="#fff"/><path d="M75.3 44.5A13 13 0 1 0 64 64A13 13 0 1 1 52.7 83.5" stroke="url(#s)" stroke-width="13.5" stroke-linecap="round" filter="url(#drop)"/></g>
 </svg>

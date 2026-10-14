@@ -2,8 +2,8 @@
 //   - eight astronauts: Ice, Azure, Sun and Nebula, each in a standard and a slimmer "mini" build
 //   - the people: Fedora (with a boombox), Blaze and Echo (DJs with headphones) and their referee-shirt versions Blaze Ref and Echo Ref
 //   - the Zoo S02 fox
-//   - Rift, the raven mage (not a staff one: everybody can wear him from level 25)
-//   - Skully, a skeleton DJ (everybody, from level 18), and Spooky, a jack-o'-lantern scarecrow (everybody, from level 14)
+//   - Rift, the raven mage, and Skully, a skeleton DJ (the Owner only)
+//   - for everybody, by level: Milky the milk carton (6), Panda Bear (12), Spooky the jack-o'-lantern scarecrow (14), Ember Dragon (30), Frost Dragon (35)
 // The others are for the roles named in AvatarController::ROLE_ONLY. The six simple characters everybody can wear are drawn by make-characters.mjs.
 // Run it with `node scripts/make-staff-characters.mjs`, or name the ones to redraw: `node scripts/make-staff-characters.mjs ice fedora`.
 import fs from 'node:fs';
@@ -11,9 +11,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { astronaut } from './staff-characters/astronaut.mjs';
 import { dj } from './staff-characters/djs.mjs';
+import { dragon } from './staff-characters/dragon.mjs';
 import { fedora } from './staff-characters/fedora.mjs';
 import { fox } from './staff-characters/fox.mjs';
 import { STATES } from './staff-characters/kit.mjs';
+import { milky } from './staff-characters/milky.mjs';
+import { panda } from './staff-characters/panda.mjs';
 import { rift } from './staff-characters/rift.mjs';
 import { skully } from './staff-characters/skully.mjs';
 import { spooky } from './staff-characters/spooky.mjs';
@@ -38,6 +41,10 @@ const characters = {
     rift,
     skully,
     spooky,
+    pandabear: panda,
+    emberdragon: (state) => dragon('ember', state),
+    frostdragon: (state) => dragon('frost', state),
+    milky,
 };
 
 const only = process.argv.slice(2);
