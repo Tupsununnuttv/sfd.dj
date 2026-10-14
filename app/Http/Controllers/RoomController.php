@@ -48,10 +48,10 @@ use Inertia\Response as InertiaResponse;
 class RoomController extends Controller
 {
     /** Keys of the room backdrops; the page maps each one to its gradient. */
-    public const BACKGROUNDS = ['midnight', 'sunset', 'neon', 'forest', 'club', 'halloween', 'halloween2', 'christmas', 'christmas2', 'winter', 'spring', 'easter', 'summer', 'midsummer', 'synthwave', 'retrowave', 'definity', 'anime', 'latam', 'lightshow', 'cats', 'goldmine', 'skull', 'skulls', 'ultra', 'foxy', 'dragon', 'tastycat', 'tasty', 'monstercat', 'custom'];
+    public const BACKGROUNDS = ['midnight', 'sunset', 'neon', 'forest', 'club', 'halloween', 'halloween2', 'christmas', 'christmas2', 'winter', 'spring', 'easter', 'summer', 'midsummer', 'synthwave', 'retrowave', 'synthwave2', 'retrowave2', 'definity', 'anime', 'latam', 'lightshow', 'cats', 'goldmine', 'skull', 'skulls', 'ultra', 'foxy', 'dragon', 'tastycat', 'tasty', 'monstercat', 'custom'];
 
     /** The custom (seasonal) backdrops: only the host of a room sees them in Room settings and can pick them. Everybody who comes into the room sees the one that is on. */
-    public const HOST_BACKGROUNDS = ['halloween', 'halloween2', 'christmas', 'christmas2', 'winter', 'spring', 'easter', 'summer', 'midsummer', 'synthwave', 'retrowave', 'definity', 'anime', 'latam', 'lightshow', 'cats', 'goldmine', 'skull', 'skulls', 'ultra', 'foxy', 'dragon', 'tastycat', 'tasty', 'monstercat', 'custom'];
+    public const HOST_BACKGROUNDS = ['halloween', 'halloween2', 'christmas', 'christmas2', 'winter', 'spring', 'easter', 'summer', 'midsummer', 'synthwave', 'retrowave', 'synthwave2', 'retrowave2', 'definity', 'anime', 'latam', 'lightshow', 'cats', 'goldmine', 'skull', 'skulls', 'ultra', 'foxy', 'dragon', 'tastycat', 'tasty', 'monstercat', 'custom'];
 
     /** Big-emoji "stickers" for chat. */
     public const STICKERS = ['🎉', '🔥', '💃', '🕺', '🤘', '😎', '🥳', '😂', '😍', '🤯', '👏', '🙌', '💯', '❤️', '💜', '🎧', '🎸', '🥁', '🎤', '🎶', '🚀', '👑', '😴', '🙈'];
@@ -236,6 +236,7 @@ class RoomController extends Controller
             'can' => array_fill_keys($can, true),
             'roles' => $room->roles()->get(['id', 'name', 'color', 'rank', 'permissions', 'builtin']),
             'roleOrder' => array_map(fn (Role $role) => $role->value, Role::cases()),
+            'roleGroupOf' => collect(Role::cases())->mapWithKeys(fn (Role $role) => [$role->value => $role->group()]),
             'members' => $room->members()->pluck('room_role_id', 'user_id'),
             'botMembers' => RoomBotPresence::activeMembers($room),
             'friendIds' => $user ? $this->friendIds($user) : [],
@@ -541,14 +542,42 @@ class RoomController extends Controller
     }
 
     /** Song search for the "add a song" box. Needs YOUTUBE_API_KEY. */
+    /**
+     * Find songs by their name. First the songs already on SFD-DJ.EU (in somebody's playlist) whose title has every word typed: that needs no YouTube quota,
+     * so it works even when YouTube search has used up its daily limit. Then YouTube's own results (YouTube::search, kept for a day per search).
+     * Every result is a YouTube video that plays through YouTube's own player, as any link would.
+     */
     public function search(Request $request, YouTube $youtube): JsonResponse
     {
         $q = trim($request->validate(['q' => ['required', 'string', 'max:100']])['q']);
+        $library = $this->librarySongs($q);
         $results = $youtube->search($q);
 
-        abort_if($results === null, 503, 'Song search is not available right now. Paste a YouTube link instead.');
+        abort_if($results === null && $library === [], 503, 'YouTube search is not available right now (its daily limit may be used up). Paste a YouTube link instead, or try again tomorrow.');
 
-        return response()->json($results);
+        return response()->json(collect($library)->concat($results ?? [])->unique('id')->values());
+    }
+
+    /** Up to five YouTube songs already on SFD-DJ.EU whose title contains every word of `$q`, the most used first. */
+    private function librarySongs(string $q): array
+    {
+        $words = collect(preg_split('/\s+/u', mb_strtolower($q)))->filter(fn ($word) => mb_strlen($word) >= 2)->take(6);
+
+        if ($words->isEmpty()) {
+            return [];
+        }
+
+        $query = DB::table('playlist_songs')->whereRaw('length(youtube_id) = 11');
+        $words->each(fn ($word) => $query->whereLike('title', '%'.addcslashes($word, '%_\\').'%'));
+
+        return $query->select('youtube_id', DB::raw('max(title) as title'), DB::raw('max(channel) as channel'), DB::raw('max(thumbnail) as thumbnail'), DB::raw('count(*) as uses'))
+            ->groupBy('youtube_id')->orderByDesc('uses')->limit(5)->get()
+            ->map(fn ($song) => [
+                'id' => $song->youtube_id,
+                'title' => $song->title,
+                'channel' => trim(($song->channel ? $song->channel.' · ' : '').'on SFD-DJ.EU'),
+                'thumbnail' => $song->thumbnail ?: "https://i.ytimg.com/vi/{$song->youtube_id}/mqdefault.jpg",
+            ])->all();
     }
 
     /** Add to the waitlist: a search result (`video_id`) or a YouTube / SoundCloud / Spotify link (`url`). */
@@ -722,6 +751,7 @@ class RoomController extends Controller
             'item_id' => ['nullable', 'integer'],
             'playlist_id' => ['nullable', 'integer'],
             'new_playlist' => ['nullable', 'string', 'max:60'],
+            'auto' => ['sometimes', 'boolean'], // Autowoot: only ever adds a woot, never takes back a woot or a meh the person gave themselves
         ]);
         $type = $data['type'];
         $item = PlaylistItem::with('user')->find($room->current_item_id);
@@ -747,6 +777,8 @@ class RoomController extends Controller
             }
 
             $answer = response()->json(['playlist' => $list->only('id', 'name'), 'added' => $added > 0, 'songs' => $list->songs()->count()]);
+        } elseif (($data['auto'] ?? false) && ($type !== 'woot' || Vote::where($key)->whereIn('type', ['woot', 'meh'])->exists())) {
+            return $answer;
         } else {
             Vote::where($key)->where('type', $type === 'woot' ? 'meh' : 'woot')->delete();
             $existing = Vote::where($key)->where('type', $type)->first();
@@ -802,6 +834,25 @@ class RoomController extends Controller
             ChatMessage::system($room, 'leave', "{$me->name} left the waitlist", $me);
             PlaybackUpdated::dispatch($room->refresh());
         }
+
+        return response()->noContent();
+    }
+
+    /**
+     * Somebody in the waitlist (or the DJ) has dropped off the room's live channel: the pages still in the room ask for this.
+     * The server checks with the live server itself, so nobody can be taken out who is still there.
+     */
+    public function sweep(Room $room): Response
+    {
+        Cache::lock("room-sweep:{$room->id}", 3)->get(function () use ($room) {
+            $gone = $room->dropAbsent();
+
+            foreach ($gone as $user) {
+                ChatMessage::system($room, 'leave', "{$user->name} left the waitlist (left the room)", $user);
+            }
+
+            $gone->isNotEmpty() && PlaybackUpdated::dispatch($room->refresh());
+        });
 
         return response()->noContent();
     }

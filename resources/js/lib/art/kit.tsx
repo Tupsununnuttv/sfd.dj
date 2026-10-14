@@ -38,8 +38,15 @@ export const arc = (a0: number, a1: number, r: number) => {
     return `M${x0} ${y0}A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1} ${y1}`;
 };
 
-/** A four-pointed sparkle, `s` times 8 units from its middle to a tip. */
-export const sparkle = (s = 1) => `M0 ${-8 * s}L${r1(1.9 * s)} ${r1(-1.9 * s)}L${8 * s} 0L${r1(1.9 * s)} ${r1(1.9 * s)}L0 ${8 * s}L${r1(-1.9 * s)} ${r1(1.9 * s)}L${-8 * s} 0L${r1(-1.9 * s)} ${r1(-1.9 * s)}Z`;
+/**
+ * A four-pointed sparkle, `s` times 8 units from its middle to a tip, with its middle at (x, y).
+ * Place a twinkling one with x and y, never with a transform on the same element: the animation's transform replaces it and the sparkle jumps to 0, 0.
+ */
+export const sparkle = (s = 1, x = 0, y = 0) => {
+    const p = (dx: number, dy: number) => `${r1(x + dx * s)} ${r1(y + dy * s)}`;
+
+    return `M${p(0, -8)}L${p(1.9, -1.9)}L${p(8, 0)}L${p(1.9, 1.9)}L${p(0, 8)}L${p(-1.9, 1.9)}L${p(-8, 0)}L${p(-1.9, -1.9)}Z`;
+};
 
 /** A star with `n` points, tips `ro` and valleys `ri` from the middle, one tip straight up. */
 export const star = (n: number, ro: number, ri: number) =>

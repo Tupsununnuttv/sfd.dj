@@ -53,7 +53,8 @@ class SettingsController extends Controller
                 'connected' => filled($user->spotify_refresh_token),
                 'display_name' => $user->spotify_display_name,
                 'notice' => session('spotify_notice'),
-                'redirect' => $user->is_staff ? route('spotify.callback') : null,
+                'notice_ok' => (bool) session('spotify_notice_ok'),
+                'redirect' => $user->is_staff && $request->getHost() !== 'localhost' ? route('spotify.callback') : null, // what to add under Redirect URIs in the Spotify app (not shown for "localhost": Spotify refuses it)
             ],
             'youtube' => [
                 'configured' => YouTubeController::configured(),
@@ -164,6 +165,8 @@ class SettingsController extends Controller
             'appearance.chat_size' => ['sometimes', Rule::in(['small', 'normal', 'large'])],
             'appearance.show_avatars' => ['sometimes', 'boolean'],
             'appearance.always_animate' => ['sometimes', 'boolean'],
+            'appearance.compact' => ['sometimes', 'boolean'],
+            'room.autowoot' => ['sometimes', 'boolean'],
             'audio.default_volume' => ['sometimes', 'integer', 'between:0,100'],
             'audio.mute_on_join' => ['sometimes', 'boolean'],
             'notifications.friend_requests' => ['sometimes', 'boolean'],

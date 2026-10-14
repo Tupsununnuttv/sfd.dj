@@ -64,7 +64,7 @@ export default function AddBar({ disabled, roomSlug, onAdd, onQueue, onNotice }:
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     disabled={disabled}
-                    placeholder="Search on YouTube or paste a YouTube, SoundCloud or Spotify link"
+                    placeholder="Search songs by name, or paste a YouTube, SoundCloud or Spotify link"
                     aria-label="Add a song"
                     className="min-w-0 flex-1 border-0 bg-transparent px-1 py-3 text-sm text-neutral-100 placeholder-neutral-600 focus:ring-0"
                 />

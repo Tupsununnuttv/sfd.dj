@@ -34,6 +34,9 @@ class Spotify
                 }
             }
 
+            if ($response->status() === 403 && str_contains(strtolower($response->body()), 'premium')) {
+                $this->fail('Spotify has paused this site\'s Spotify app: its owner needs an active Spotify Premium subscription. Try again a few hours after that is fixed.');
+            }
             if ($response->status() === 403) {
                 $this->fail('Spotify only allows playlist tracks to be read by the playlist owner or a collaborator. Connect the account that has access to this playlist.');
             }

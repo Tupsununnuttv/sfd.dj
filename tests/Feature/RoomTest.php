@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class RoomTest extends TestCase
@@ -31,6 +32,28 @@ class RoomTest extends TestCase
         $this->assertDatabaseHas('rooms', ['id' => $legacyRoom->id, 'legacy_slug' => 'old-chillzone-ciwy']);
 
         $this->actingAs($owner)->get('/rooms/old-chillzone-ciwy')->assertRedirect('/rooms/old-chillzone');
+    }
+
+    public function test_a_live_update_server_that_is_down_does_not_break_the_chat(): void
+    {
+        // Reverb is set up but nothing answers on its port: the way a server that is not running looks
+        config([
+            'broadcasting.default' => 'reverb',
+            'broadcasting.connections.reverb.key' => 'key',
+            'broadcasting.connections.reverb.secret' => 'secret',
+            'broadcasting.connections.reverb.app_id' => '1',
+            'broadcasting.connections.reverb.options' => ['host' => '127.0.0.1', 'port' => 1, 'scheme' => 'http', 'useTLS' => false],
+            'broadcasting.connections.reverb.client_options' => ['connect_timeout' => 1, 'timeout' => 2],
+        ]);
+        Log::spy();
+
+        $user = User::factory()->create();
+        $room = $user->rooms()->create(['name' => 'Lobby', 'slug' => 'lobby-down']);
+
+        $this->actingAs($user)->post("/rooms/{$room->slug}/messages", ['body' => 'still here'])->assertSuccessful();
+
+        $this->assertDatabaseHas('chat_messages', ['room_id' => $room->id, 'body' => 'still here']);
+        Log::shouldHaveReceived('error')->withArgs(fn ($message) => str_contains((string) $message, 'Pusher error'))->atLeast()->once(); // reported, not thrown
     }
 
     public function test_queue_plays_in_order_and_skip_ignores_stale_items(): void

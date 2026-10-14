@@ -482,7 +482,7 @@ export default function ChristmasBackdrop({ palette: p, live = false, withBooth 
             <path d="M776 528V512M824 528V512" stroke="#c7d2dc" strokeWidth="1.4" />
             <text x="800" y="548" textAnchor="middle" fontFamily={font} fontWeight="900" fontSize="17" letterSpacing="1" fill="#fde68a">SFD-DJ.EU</text>
             {[700, 900].map((x) => <ellipse key={x} cx={x} cy="601" rx="26" ry="8" fill="#f8fcff" />)}
-            {use('pineB', 650, 606, 0.78, 'gl')}{use('pineB', 950, 606, 0.78, 'gr')}
+            {use('pineB', 650, 606, 0.78, 'pgl')}{use('pineB', 950, 606, 0.78, 'pgr')}
 
             {/* the fence, snow on the posts */}
             <rect x="0" y="556" width="640" height="40" fill={f('fence')} /><rect x="960" y="556" width="640" height="40" fill={f('fence')} />

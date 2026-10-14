@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\RoomPresence;
 use App\Support\Season;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class Room extends Model
@@ -39,7 +41,7 @@ class Room extends Model
 
     public const GENRES = ['Pop', 'Rock', 'Hip-Hop', 'R&B', 'Electronic', 'House', 'Techno', 'Drum & Bass', 'Dubstep', 'Lo-fi', 'Jazz', 'Classical', 'Metal', 'Indie', 'Country', 'Reggae', 'Latin', 'K-Pop', 'Mixed'];
 
-    protected $fillable = ['user_id', 'name', 'slug', 'description', 'current_item_id', 'current_started_at', 'badges', 'background', 'genre', 'is_private', 'is_featured', 'custom_background', 'welcome_message', 'rules', 'rule_list', 'custom_css', 'waitlist_locked', 'waitlist_cycle', 'automod'];
+    protected $fillable = ['user_id', 'name', 'slug', 'description', 'current_item_id', 'current_started_at', 'badges', 'background', 'genre', 'is_private', 'is_featured', 'custom_background', 'welcome_message', 'rules', 'rule_list', 'custom_css', 'waitlist_locked', 'waitlist_cycle', 'automod', 'auto_host_bot_id', 'auto_host_playlist_id'];
 
     protected $hidden = ['legacy_slug'];
 
@@ -61,7 +63,7 @@ class Room extends Model
 
     protected function casts(): array
     {
-        return ['current_item_id' => 'integer', 'current_started_at' => 'datetime', 'is_private' => 'boolean', 'is_featured' => 'boolean', 'waitlist_locked' => 'boolean', 'waitlist_cycle' => 'boolean', 'automod' => 'array', 'badges' => 'array', 'rule_list' => 'array'];
+        return ['current_item_id' => 'integer', 'auto_host_bot_id' => 'integer', 'auto_host_playlist_id' => 'integer', 'current_started_at' => 'datetime', 'is_private' => 'boolean', 'is_featured' => 'boolean', 'waitlist_locked' => 'boolean', 'waitlist_cycle' => 'boolean', 'automod' => 'array', 'badges' => 'array', 'rule_list' => 'array'];
     }
 
     /** Channels that carry a room's live events: the presence channel for people inside, plus a public viewing channel for guests (never for private rooms). */
@@ -125,6 +127,17 @@ class Room extends Model
     public function items(): HasMany
     {
         return $this->hasMany(PlaylistItem::class)->whereNull('played_at')->orderBy('position')->orderBy('id');
+    }
+
+    /** Auto Host: the host's bot that plays while nobody else is in the waitlist, and the playlist it plays from. */
+    public function autoHostBot(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'auto_host_bot_id');
+    }
+
+    public function autoHostPlaylist(): BelongsTo
+    {
+        return $this->belongsTo(Playlist::class, 'auto_host_playlist_id');
     }
 
     public function messages(): HasMany
@@ -236,19 +249,81 @@ class Room extends Model
      */
     public function advance(bool $requeue = true): void
     {
+        $present = $this->presentUserIds(); // asked once: who is still here, for cycling and for the next DJ
+
         // ponytail: skipping a song also pays its owner; track skips separately if XP gets farmed
         if ($played = PlaylistItem::with('user')->find($this->current_item_id)) {
             $played->update(['played_at' => now()]);
             // a song that came from somebody's active playlist goes to the bottom of it, so their next turn plays the next song
             $played->playlist_song_id && PlaylistSong::find($played->playlist_song_id)?->sendToBottom();
-            $requeue && $this->waitlist_cycle && $this->requeue($played);
+            // cycling puts the DJ at the back of the line, but only a DJ who is still in the room: somebody who left does not go round for ever
+            $requeue && $this->waitlist_cycle && ($present === null || in_array($played->user_id, $present, true)) && $this->requeue($played);
             $woots = Vote::where('playlist_item_id', $played->id)->where('type', 'woot')->count();
             $played->user->addXp(10 + $woots); // +1 XP per woot
             // and 5 SFD Coins, and one more for every two woots, but only for a song that was really heard: one that is skipped at once pays nothing
             $heard = $this->current_started_at ? $this->current_started_at->diffInSeconds(now()) : 0;
             $heard >= min(30, $played->duration ?: 30) && $played->user->award(5 + intdiv($woots, 2), 'song', $played->title);
         }
-        $this->start($this->nextReady());
+        $this->start($this->nextReady($present) ?? $this->autoHostItem());
+    }
+
+    /**
+     * Who is in the room right now: the people on its live channel, the bots that checked in, and the Auto Host bot.
+     * null when that cannot be known (the live server does not answer): then nobody is taken out of the line.
+     */
+    public function presentUserIds(): ?array
+    {
+        $people = RoomPresence::idsIn($this);
+
+        if ($people === null) {
+            return null;
+        }
+
+        $bots = RoomBotPresence::where('room_id', $this->id)->where('last_seen_at', '>=', now()->subSeconds(RoomBotPresence::TTL_SECONDS))->pluck('user_id')->all();
+
+        return array_values(array_unique([...$people, ...$bots, ...array_filter([$this->auto_host_bot_id])]));
+    }
+
+    /**
+     * Take everybody who is no longer in the room out of the waitlist, and a DJ who left out of the booth (their song is skipped, with cycling too).
+     * For a tab that was closed, a computer that went to sleep or a lost connection, where the page could not say goodbye itself. Returns who was taken out.
+     *
+     * @return Collection<int, User>
+     */
+    public function dropAbsent(): Collection
+    {
+        $present = $this->presentUserIds();
+
+        if ($present === null) {
+            return collect();
+        }
+
+        $gone = $this->items()->with('user:id,name')->whereNotIn('user_id', $present)->get();
+
+        if ($gone->isEmpty()) {
+            return collect();
+        }
+
+        PlaylistItem::whereIn('id', $gone->pluck('id'))->where('id', '!=', $this->current_item_id ?? 0)->delete();
+        $gone->contains('id', $this->current_item_id) && $this->advance(false);
+
+        return $gone->pluck('user')->unique('id')->values();
+    }
+
+    /** Auto Host: when nobody is waiting, the host's bot plays the top song of the chosen playlist (the song then goes to the bottom of it, so the list goes round). */
+    private function autoHostItem(): ?PlaylistItem
+    {
+        $song = $this->auto_host_bot_id ? $this->autoHostPlaylist?->songs()->first() : null;
+
+        return $song ? $this->items()->create(['user_id' => $this->auto_host_bot_id, 'position' => ($this->items()->max('position') ?? 0) + 1] + $this->fromSong($song)) : null;
+    }
+
+    /** Auto Host was just switched on: if the booth is empty, the bot starts at once. */
+    public function startAutoHostIfIdle(): void
+    {
+        if (! $this->current_item_id && $this->items()->doesntExist()) {
+            $this->start($this->autoHostItem());
+        }
     }
 
     private function fromSong(PlaylistSong $song): array
@@ -273,10 +348,19 @@ class Room extends Model
         $this->enqueue($data, $played->user_id);
     }
 
-    /** The next DJ in line plays the top song of their active playlist as it is now, not the one it was when they joined. */
-    private function nextReady(): ?PlaylistItem
+    /**
+     * The next DJ in line plays the top song of their active playlist as it is now, not the one it was when they joined.
+     * Somebody who is no longer in the room (`$present`, when known) is taken out of the line instead.
+     */
+    private function nextReady(?array $present = null): ?PlaylistItem
     {
         while ($item = $this->items()->first()) {
+            if ($present !== null && ! in_array($item->user_id, $present, true)) {
+                $item->delete();
+
+                continue;
+            }
+
             if (! $item->playlist_song_id) {
                 return $item;
             }

@@ -3,9 +3,29 @@ export type Kind = 'new' | 'improved' | 'fixed';
 
 export const releases: { version: string; title: string; notes: [Kind, string][] }[] = [
     {
+        version: '1.39',
+        title: 'Auto Host, Autowoot, Compact and two spooky characters',
+        notes: [
+            ['new', 'Spooky, a jack-o\'-lantern scarecrow, is a new Epic character in the Avatar shop (level 14). His carved pumpkin head glows with a flickering candle, he wears a torn cloak, a striped scarf and curled boots, and he carries an iron lantern with a green ghost flame. Bats and will-o\'-wisps float around him. The lantern swings, and his cloak and scarf move a moment after he does.'],
+            ['new', 'Skully, a skeleton DJ, is a new Epic character in the Avatar shop (level 18). Every bone is drawn separately, from the cracked skull with its chattering jaw down to the toes. He stands with a hand on his hip and dances the old skeleton dance: knees knocking, arms swinging up in turn. At the decks he puts on headphones and pumps a fist.'],
+            ['new', 'Two new room backgrounds for hosts: Synthwave V2, a neon city at night with light trails on the highway and a sports car, and Retrowave V2, an 80s beach at sunset with palms, a neon flamingo and a Ferris wheel that turns while a song plays.'],
+            ['new', 'Auto Host: in Room settings → Music & Waitlist, the host can pick one of their bots and a playlist. When the waitlist is empty, the bot plays songs from that playlist. As soon as somebody joins the waitlist, the bot steps aside. Make a bot first in Settings → Developers.'],
+            ['new', 'Autowoot: point at Woot (or press its ⋯ on a phone) and switch on Autowoot. You then woot every new song automatically, in every room, until you switch it off. An AUTO tag on Woot shows that it is on.'],
+            ['new', 'Settings → Appearance → Compact: tighter spacing everywhere, so more chat lines, people and songs fit on the screen.'],
+            ['improved', 'Song search in a room also finds songs by their title among the songs already saved in playlists on SFD-DJ.EU. Search therefore still works when YouTube\'s daily search limit is used up. YouTube search results are now kept for a day.'],
+            ['fixed', 'When you leave a room or close the site, you also leave the waitlist and the decks, even with Cycle waitlist on. Somebody whose connection drops is taken out of the line, not given a turn.'],
+            ['improved', 'Translators, Promoters and Helpers have their own Staff 2 group in the room\'s user list.'],
+        ],
+    },
+    {
         version: '1.38',
         title: 'Room roles, visible bots and clearer playlists',
         notes: [
+            ['new', 'Eight new frames in the Avatar shop. Fireflies (level 3): three fireflies circle a golden ring. Comic Pop (level 5): a comic-book border with action lines, a star and a "!" bubble. Spider Web (level 9): a spider bobs on its thread. Candlelight (level 12): candles flicker on an iron ring. Skull Ring (level 16): neon skulls with glowing eyes. Lanterns (level 20): red lanterns sway on a red and gold ring. Crystal Grove (level 25): amethyst crystals that glint. Rift Portal (level 32): swirling rings of energy.'],
+            ['fixed', 'When the live-update server (Reverb or Pusher) is down, a chat line, vote or song is still saved and no error page appears. Others see the change at their next refresh instead.'],
+            ['fixed', 'Forgot password no longer shows an error page when the email cannot be sent. It says so and asks you to try again later. A new password is always saved, even when the "your password was changed" email cannot go out.'],
+            ['fixed', 'The twinkling sparkles on frames, accessories and effects now stay in place. While they moved, they used to jump to the top-left corner of the avatar.'],
+            ['new', 'Rift, a raven mage, is a new Legendary character in the Avatar shop (level 25). He wears a violet hood with glowing purple eyes, a feather cape that turns to starlight, and a galaxy amulet, and he carries a staff with a galaxy orb. Crystals float around him. He stands, dances with his wings, and at the decks he raises a fist.'],
             ['fixed', 'The Room header now names the room host, not the person viewing it.'],
             ['improved', 'Room users are ordered by site role, from Owner down to User; people with the same role are alphabetical, room roles keep their existing groups, and API bots are always last. The Admin → Users → Set role list follows the same role order.'],
             ['improved', 'API bots now appear on the room stage as full characters. Chat activity refreshes their room presence automatically; quiet bots can send a heartbeat and disappear when they disconnect.'],

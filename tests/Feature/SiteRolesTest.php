@@ -33,9 +33,9 @@ class SiteRolesTest extends TestCase
             ['brand_ambassador', '💗', 'Brand Ambassador', 'staff'],
             ['site_moderator', '🟢', 'Site Moderator', 'staff'],
             ['moderator', '🟠', 'Moderator', 'staff'],
-            ['helper', '🟡', 'Helper', 'staff'],
-            ['promoter', '📢', 'Promoter', 'staff'],
-            ['translator', '🌐', 'Translator', 'staff'],
+            ['helper', '🟡', 'Helper', 'staff2'],
+            ['promoter', '📢', 'Promoter', 'staff2'],
+            ['translator', '🌐', 'Translator', 'staff2'],
             ['content_provider', '📝', 'Content Provider', 'creator'],
             ['music_producer', '🎵', 'Music Producer', 'creator'],
             ['artist', '🎤', 'Artist', 'creator'],
@@ -53,7 +53,7 @@ class SiteRolesTest extends TestCase
         $actual = array_map(fn (Role $r) => [$r->value, $r->icon(), $r->label(), $r->group()], Role::cases());
 
         $this->assertSame($this->list(), $actual);
-        $this->assertSame(['staff', 'creator', 'community'], array_keys(Role::GROUPS));
+        $this->assertSame(['staff', 'staff2', 'creator', 'community'], array_keys(Role::GROUPS));
         $this->assertSame('🛡️', Role::GROUPS['staff']['icon']);
         $this->assertSame('Creator / Contributor', Role::GROUPS['creator']['label']);
         $this->assertSame('Community / Status', Role::GROUPS['community']['label']);
@@ -68,7 +68,7 @@ class SiteRolesTest extends TestCase
 
         $this->actingAs($this->userWith('owner'))->get('/admin')->assertInertia(fn (Assert $page) => $page
             ->component('Admin')
-            ->where('roleGroups', fn ($groups) => $groups->keys()->all() === ['staff', 'creator', 'community'])
+            ->where('roleGroups', fn ($groups) => $groups->keys()->all() === ['staff', 'staff2', 'creator', 'community'])
             ->where('matrix.roles', fn ($roles) => $roles->pluck('key')->all() === $keys
                 && $roles->last() === ['key' => 'member', 'label' => 'User', 'color' => '#a3a3a3', 'rank' => 18, 'icon' => '👤', 'group' => 'community'])
             ->where('roleOptions', fn ($roles) => $roles->pluck('key')->all() === $withoutUser)

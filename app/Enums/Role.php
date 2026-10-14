@@ -4,7 +4,7 @@ namespace App\Enums;
 
 /**
  * Declaration order is the rank order: first = most powerful. Everyone without a role is a User (the "member" case).
- * The cases are written in three groups (Staff, Creator / Contributor, Community / Status); group() says which is which.
+ * The cases are written in groups (Staff, Staff 2, Creator / Contributor, Community / Status); group() says which is which.
  */
 enum Role: string
 {
@@ -16,6 +16,8 @@ enum Role: string
     case BrandAmbassador = 'brand_ambassador';
     case SiteModerator = 'site_moderator';
     case Moderator = 'moderator';
+
+    // Staff 2
     case Helper = 'helper';
     case Promoter = 'promoter';
     case Translator = 'translator';
@@ -46,9 +48,10 @@ enum Role: string
         'maintenance.toggle' => 'Switch maintenance mode',
     ];
 
-    /** The three headings the roles are listed under, in this order. */
+    /** The headings the roles are listed under, in this order. Staff 2 is the support team (Helper, Promoter, Translator): only the heading differs, the rights are set in the permissions matrix as before. */
     public const GROUPS = [
         'staff' => ['icon' => '🛡️', 'label' => 'Staff'],
+        'staff2' => ['icon' => '🧩', 'label' => 'Staff 2'],
         'creator' => ['icon' => '🎨', 'label' => 'Creator / Contributor'],
         'community' => ['icon' => '💎', 'label' => 'Community / Status'],
     ];
@@ -120,11 +123,12 @@ enum Role: string
         };
     }
 
-    /** Which heading the role is listed under: staff, creator or community. */
+    /** Which heading the role is listed under: staff, staff2, creator or community. */
     public function group(): string
     {
         return match ($this) {
-            self::Owner, self::Developer, self::Admin, self::LeadModerator, self::BrandAmbassador, self::Moderator, self::SiteModerator, self::Helper, self::Promoter, self::Translator => 'staff',
+            self::Owner, self::Developer, self::Admin, self::LeadModerator, self::BrandAmbassador, self::Moderator, self::SiteModerator => 'staff',
+            self::Helper, self::Promoter, self::Translator => 'staff2',
             self::ContentProvider, self::MusicProducer, self::Artist => 'creator',
             default => 'community',
         };

@@ -98,7 +98,7 @@ class ShopUpgradeTest extends TestCase
         }
         $this->assertSame(16, count(AvatarController::BADGES));
         $this->assertSame(16, count(AvatarController::ACCESSORIES));
-        $this->assertSame(13, count(AvatarController::FRAMES));
+        $this->assertSame(21, count(AvatarController::FRAMES));
         $this->assertSame(12, count(AvatarController::EFFECTS));
 
         // the old things somebody wore are taken off; what they already picked from the new shop stays, and nobody is given anything
@@ -126,7 +126,9 @@ class ShopUpgradeTest extends TestCase
             ->has('catalog.effect', count(AvatarController::EFFECTS))
             ->where('catalog.avatar.0', ['key' => 'char:foxy', 'label' => 'Foxy', 'icon' => null, 'level' => 1, 'rarity' => 'common', 'price' => 0, 'owned' => true, 'character' => true])
             ->where('catalog.frame.0', ['key' => 'bronze', 'label' => 'Bronze', 'icon' => null, 'level' => 1, 'rarity' => 'common', 'price' => 0, 'owned' => true])
-            ->where('catalog.frame.12', ['key' => 'prism', 'label' => 'Prism', 'icon' => null, 'level' => 50, 'rarity' => 'legendary', 'price' => 1940, 'owned' => false])
+            ->where('catalog.frame.3', ['key' => 'fireflies', 'label' => 'Fireflies', 'icon' => null, 'level' => 3, 'rarity' => 'common', 'price' => 50, 'owned' => false])
+            ->where('catalog.frame.18', ['key' => 'portal', 'label' => 'Rift Portal', 'icon' => null, 'level' => 32, 'rarity' => 'legendary', 'price' => 1090, 'owned' => false])
+            ->where('catalog.frame.20', ['key' => 'prism', 'label' => 'Prism', 'icon' => null, 'level' => 50, 'rarity' => 'legendary', 'price' => 1940, 'owned' => false])
             ->where('catalog.badge.15', ['key' => 'legend', 'label' => 'Legend', 'icon' => null, 'level' => 55, 'rarity' => 'legendary', 'price' => 1760, 'owned' => false])
             ->where('catalog.accessory.1.key', 'shades')
             ->where('catalog.effect.11.key', 'void'));

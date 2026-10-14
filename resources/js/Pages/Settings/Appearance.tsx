@@ -51,6 +51,7 @@ export default function Appearance() {
             </SettingsSection>
 
             <Card className="divide-y divide-white/5 px-6">
+                <Toggle label="Compact" hint="Tighter spacing everywhere: more chat lines, people and songs fit on the screen, with smaller pictures and slimmer bars in the rooms." checked={appearance.compact} onChange={(v) => savePrefs({ appearance: { compact: v } })} />
                 <Toggle label="Show avatars in chat" hint="Turn off for a denser chat." checked={appearance.show_avatars} onChange={(v) => savePrefs({ appearance: { show_avatars: v } })} />
                 <Toggle label="Show badges and levels in chat" hint="The little role icons and Lv numbers in front of names." checked={appearance.show_badges} onChange={(v) => savePrefs({ appearance: { show_badges: v } })} />
                 <Toggle label="Show who joins, leaves and votes in chat" hint="The lines like “Kati wooted this song” and “Mike left the room”. Turn off in a very busy room." checked={appearance.show_activity} onChange={(v) => savePrefs({ appearance: { show_activity: v } })} />

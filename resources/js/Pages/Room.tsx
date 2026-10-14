@@ -165,6 +165,7 @@ export default function Room({
     room,
     host,
     roleOrder,
+    roleGroupOf,
     genres,
     can,
     roles,
@@ -188,6 +189,7 @@ export default function Room({
     room: RoomInfo;
     host: Host;
     roleOrder: string[];
+    roleGroupOf: Record<string, string>; // role key => staff, staff2, creator or community
     genres: string[];
     can: Record<string, boolean>;
     roles: RoomRoleInfo[];
@@ -342,6 +344,8 @@ export default function Room({
     const canSkip = (s: Song) => can.skip || s.user_id === user.id;
     const waitlist = [...(current ? [current] : []), ...playback.queue];
     const myPosition = waitlist.findIndex((s) => s.user_id === user.id);
+    const lineRef = useRef<number[]>([]); // who is in the line (the DJ first), for the channel's "left the room" callback
+    lineRef.current = waitlist.map((s) => s.user_id);
 
     // How far into the song we are: server's elapsed time plus what passed since it arrived.
     const rawPosition = current ? Math.max(0, playback.elapsed + (Date.now() - playback.receivedAt) / 1000) : 0;
@@ -427,6 +431,7 @@ export default function Room({
         const name = `room.${room.id}`;
         const ch = echo<'reverb'>().join(name) as any;
         channel.current = ch;
+        let sweepTimer: ReturnType<typeof setTimeout> | undefined;
 
         ch.here((list: Member[]) => {
             setUsers((currentUsers) => [...new Map([...list, ...currentUsers.filter((member) => member.is_bot)].map((member) => [member.id, member])).values()]);
@@ -440,6 +445,12 @@ export default function Room({
             .leaving((m: Member) => {
                 setUsers((p) => p.filter((u) => u.id !== m.id));
                 activity.current && notify('exit', `${m.name} left the room`);
+                // gone from the room without saying so (tab closed, computer asleep, connection lost) but still in the line or at the booth:
+                // ask the server to take them out; it checks with the live server itself, so it never takes out somebody who is still here
+                if (lineRef.current.includes(m.id)) {
+                    clearTimeout(sweepTimer);
+                    sweepTimer = setTimeout(() => void post(route('rooms.waitlist.sweep', room.slug), {}).catch(() => {}), 4000);
+                }
             })
             .listen('.message', receiveMessage)
             .listen('.message-deleted', (d: { id: number }) => setMessages((p) => p.filter((m) => m.id !== d.id)))
@@ -468,6 +479,7 @@ export default function Room({
             });
 
         return () => {
+            clearTimeout(sweepTimer);
             echo().leave(name);
             channel.current = null;
         };
@@ -503,6 +515,28 @@ export default function Room({
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Autowoot (the menu on Woot): a moment after a new song starts, woot it, unless it is mine or I have already wooted or mehed it.
+    // The server's `auto` vote only ever adds a woot, so it can never take back one I gave myself.
+    const [autowoot, setAutowootState] = useState(prefs.room.autowoot);
+    const mineRef = useRef(mine);
+    mineRef.current = mine;
+    const setAutowoot = (on: boolean) => {
+        setAutowootState(on);
+        router.patch(route('settings.preferences'), { room: { autowoot: on } }, { preserveScroll: true, preserveState: true, only: ['auth'] });
+    };
+    useEffect(() => {
+        if (!autowoot || guest || !current || current.user_id === user.id) return;
+        const songId = current.id;
+        const timer = setTimeout(() => {
+            if (currentRef.current?.id !== songId || mineRef.current.woot || mineRef.current.meh) return;
+            setMine((m) => ({ ...m, woot: true, meh: false }));
+            post(route('rooms.vote', room.slug), { type: 'woot', item_id: songId, auto: true }).catch(() => setMine((m) => ({ ...m, woot: false })));
+        }, 1200 + Math.random() * 2300);
+
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [autowoot, guest, current?.id]);
 
     // A new song means new votes: forget what I voted on the last one, and the window for grabbing the last one closes.
     useEffect(() => setGrabbing(false), [current?.id]);
@@ -748,10 +782,13 @@ export default function Room({
 
     const rankedUsers = sortRoomUsersByWeight(users, roleOrder);
     const isSiteRanked = (member: Member) => !member.is_bot && roomUserWeight(member, roleOrder) < roleOrder.length;
+    // the heading of a person's highest site role (Role::group); plain users and bots have none
+    const teamOf = (member: Member) => (isSiteRanked(member) ? roleGroupOf[roleOrder[roomUserWeight(member, roleOrder) - 1]] : null);
     const roleGroups = [
-        { role: { key: 'site-team', label: 'Staff', color: '#a78bfa' }, people: rankedUsers.filter((member) => roomUserWeight(member, roleOrder) <= 10) },
-        { role: { key: 'creator-team', label: 'Creator / Contributor', color: '#f0abfc' }, people: rankedUsers.filter((member) => roomUserWeight(member, roleOrder) >= 11 && roomUserWeight(member, roleOrder) <= 13) },
-        { role: { key: 'community-team', label: 'Community / Status', color: '#67e8f9' }, people: rankedUsers.filter((member) => roomUserWeight(member, roleOrder) >= 14 && roomUserWeight(member, roleOrder) < roleOrder.length && !member.is_bot) },
+        { role: { key: 'site-team', label: 'Staff', color: '#a78bfa' }, people: rankedUsers.filter((member) => teamOf(member) === 'staff') },
+        { role: { key: 'staff2-team', label: 'Staff 2', color: '#facc15' }, people: rankedUsers.filter((member) => teamOf(member) === 'staff2') },
+        { role: { key: 'creator-team', label: 'Creator / Contributor', color: '#f0abfc' }, people: rankedUsers.filter((member) => teamOf(member) === 'creator') },
+        { role: { key: 'community-team', label: 'Community / Status', color: '#67e8f9' }, people: rankedUsers.filter((member) => teamOf(member) === 'community') },
         { role: HOST_ROLE, people: rankedUsers.filter((member) => member.id === host.id && !isSiteRanked(member)) },
         ...[...roles].sort((a, b) => a.rank - b.rank).map((roomRole) => ({
             role: { key: `room-${roomRole.id}`, label: roomRole.name, color: roomRole.color },
@@ -829,7 +866,7 @@ export default function Room({
                         onUser={(u, anchor) => setCard({ user: u, anchor })}
                         waitlist={<WaitlistCard inList={inList} etaSeconds={etaSeconds} etaSince={etaSince} locked={closed} full={waitlist.length >= playback.max} busy={leaving} onClick={joinOrLeave} />}
                         seat={<SeatButton locked={closed} onClick={joinOrLeave} />}
-                        votes={<VoteBar votes={playback.votes} mine={mine} disabled={!current || current.user_id === user.id} ownSong={!!current && current.user_id === user.id} onVote={vote} />}
+                        votes={<VoteBar votes={playback.votes} mine={mine} disabled={!current || current.user_id === user.id} ownSong={!!current && current.user_id === user.id} onVote={vote} autowoot={autowoot} onAutowoot={guest ? undefined : setAutowoot} />}
                         screen={
                             <>
                                 <div ref={box} className="pointer-events-none absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
@@ -984,7 +1021,7 @@ export default function Room({
                                 <section key={role.key} className="mb-3" data-role-group={role.label}>
                                     <div className="mb-1.5 flex items-center justify-between gap-2">
                                         <span className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-bold uppercase leading-none tracking-wider" style={{ color: role.color, borderColor: `${role.color}59`, backgroundColor: `${role.color}1a` }}>
-                                            {role.key === 'site-team' ? <ShieldCheck size={13} /> : role.key === 'creator-team' ? '🎨' : role.key === 'community-team' ? '💎' : role.key === 'api-bot' ? '🤖' : <RoleGlyph role={role} size={13} />} {role.label}
+                                            {role.key === 'site-team' ? <ShieldCheck size={13} /> : role.key === 'staff2-team' ? '🧩' : role.key === 'creator-team' ? '🎨' : role.key === 'community-team' ? '💎' : role.key === 'api-bot' ? '🤖' : <RoleGlyph role={role} size={13} />} {role.label}
                                         </span>
                                         <span className="rounded-md border border-white/10 bg-white/5 px-1.5 py-1 text-[11px] font-bold leading-none text-neutral-400">{people.length}</span>
                                     </div>

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Auth\UsernameController;
+use App\Http\Controllers\AutoHostController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\DeveloperController;
@@ -205,6 +206,9 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::delete('/rooms/{room}/logs/{log}', [RoomModerationController::class, 'destroyLog'])->name('rooms.logs.destroy');
     Route::delete('/rooms/{room}/logs', [RoomModerationController::class, 'clearLogs'])->name('rooms.logs.clear');
     Route::patch('/rooms/{room}/waitlist-settings', [RoomController::class, 'waitlistSettings'])->name('rooms.waitlist.settings');
+    Route::post('/rooms/{room}/waitlist/sweep', [RoomController::class, 'sweep'])->middleware('throttle:30,1')->name('rooms.waitlist.sweep');
+    Route::get('/rooms/{room}/auto-host', [AutoHostController::class, 'show'])->name('rooms.auto-host');
+    Route::put('/rooms/{room}/auto-host', [AutoHostController::class, 'update'])->name('rooms.auto-host.update');
     Route::get('/rooms/{room}/find-users', [RoomRoleController::class, 'search'])->name('rooms.find-users');
     Route::get('/emotes', [EmoteController::class, 'index'])->name('emotes');
     Route::get('/emotes/search', [EmoteController::class, 'search'])->middleware('throttle:30,1')->name('emotes.search');

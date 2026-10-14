@@ -22,8 +22,14 @@ if (embedded) {
     });
 }
 
-// "Always play animations" (Settings, Appearance) is kept on the page for the style sheet and the character pictures
-const motion = (page: { props: unknown }) => applyMotion((page.props as PageProps).auth?.user?.preferences?.appearance?.always_animate);
+// "Always play animations" (Settings, Appearance) is kept on the page for the style sheet and the character pictures,
+// and "Compact" puts data-density="compact" on it, which the style sheet follows (app.css)
+const motion = (page: { props: unknown }) => {
+    const appearance = (page.props as PageProps).auth?.user?.preferences?.appearance;
+    applyMotion(appearance?.always_animate);
+    if (appearance?.compact) document.documentElement.dataset.density = 'compact';
+    else delete document.documentElement.dataset.density;
+};
 router.on('navigate', (event) => motion(event.detail.page));
 router.on('success', (event) => motion(event.detail.page)); // saving the setting reloads the same page, and that is not a "navigate"
 

@@ -192,7 +192,7 @@ export default function SkullBackdrop({ palette: p, live = false, withBooth = fa
             {/* the floor: black stone with cracks that glow */}
             <rect y={FLOOR} width="1600" height={height - FLOOR} fill={f('floor')} />
             {floorGrid(height).map(({ i, j }) => <polygon key={`${i}-${j}`} points={tile(i, j)} fill={(i + j) % 2 ? '#7a1a22' : '#000'} opacity={(i * 5 + j * 11 + 100) % 7 < 3 ? 0.1 : 0.05} />)}
-            {LIT.filter(([, j]) => rowY(j + 1) < height + 120).map(([i, j]) => <polygon key={`lit${i}-${j}`} className="sc-tile" style={after((((i + 20) * 13 + j * 7) % 24) / 10)} points={tile(i, j)} fill={(i + j) % 2 ? '#ef4444' : '#f97316'} opacity=".34" />)}
+            {LIT.filter(([, j]) => rowY(j + 1) < height + 120).map(([i, j], k) => <polygon key={`lit${k}`} className="sc-tile" style={after((((i + 20) * 13 + j * 7) % 24) / 10)} points={tile(i, j)} fill={(i + j) % 2 ? '#ef4444' : '#f97316'} opacity=".34" />)}
             <g className="sc-shimmer" stroke="#ef4444" strokeOpacity=".4" strokeWidth="1.6">
                 {Array.from({ length: 29 }, (_, k) => k - 14).map((i) => <line key={i} x1={lineX(i, FLOOR)} y1={FLOOR} x2={lineX(i, height)} y2={height} />)}
                 {Array.from({ length: 12 }, (_, j) => j).filter((j) => rowY(j) < height).map((j) => <line key={`r${j}`} x1="0" x2="1600" y1={rowY(j)} y2={rowY(j)} />)}

@@ -21,6 +21,8 @@ export const backgrounds: Record<string, { label: string; className: string; hos
     midsummer: { label: 'Midsummer', className: 'bg-gradient-to-b from-indigo-950 via-orange-400 to-green-950', host: true },
     synthwave: { label: 'Synthwave', className: 'bg-gradient-to-b from-purple-950 via-fuchsia-800 to-black', host: true },
     retrowave: { label: 'Retrowave', className: 'bg-gradient-to-b from-violet-900 via-pink-600 to-slate-950', host: true },
+    synthwave2: { label: 'Synthwave V2', className: 'bg-gradient-to-b from-black via-fuchsia-900 to-orange-500', host: true },
+    retrowave2: { label: 'Retrowave V2', className: 'bg-gradient-to-b from-violet-950 via-rose-500 to-teal-900', host: true },
     definity: { label: 'Midnight Definity', className: 'bg-gradient-to-b from-slate-950 via-indigo-950 to-black', host: true },
     anime: { label: 'Anime', className: 'bg-gradient-to-b from-indigo-700 via-pink-400 to-orange-200', host: true },
     latam: { label: 'LATAM', className: 'bg-gradient-to-b from-purple-900 via-rose-500 to-amber-400', host: true },

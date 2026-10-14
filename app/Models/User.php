@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Events\UserUpdated;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\MediaController;
+use App\Notifications\PasswordChangedNotification;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
 use App\Support\Awards;
@@ -148,6 +149,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new ResetPasswordNotification($token));
+    }
+
+    /** Tell them their password was changed (`$ip` is where from). It never throws: the password is changed already, a mail server that is down must not turn that into an error page. */
+    public function sendPasswordChangedNotification(string $ip): void
+    {
+        try {
+            $this->notify(new PasswordChangedNotification($ip));
+        } catch (Throwable $e) {
+            report($e);
+        }
     }
 
     public function referrer(): BelongsTo

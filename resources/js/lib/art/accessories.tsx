@@ -161,7 +161,7 @@ export const accessoryArt: Record<string, Art> = {
                     <ellipse cx="50" cy="-12" rx="29" ry="9" fill="none" stroke="#fde68a" strokeOpacity=".28" strokeWidth="11" />
                     <ellipse cx="50" cy="-12" rx="29" ry="9" fill="none" stroke={ref(u, 'g')} strokeWidth="4.6" />
                     <ellipse cx="50" cy="-12.6" rx="29" ry="9" fill="none" stroke="#fff" strokeOpacity=".85" strokeWidth="1.2" />
-                    <path className="cos-twinkle" style={after(-0.6)} d={sparkle(0.8)} transform="translate(80 -17)" fill="#fff" />
+                    <path className="cos-twinkle" style={after(-0.6)} d={sparkle(0.8, 80, -17)} fill="#fff" />
                 </g>
             </>
         ),
@@ -257,7 +257,7 @@ export const accessoryArt: Record<string, Art> = {
                 {[[17, -8], [50, -20], [83, -8]].map(([x, y]) => <circle key={x} cx={x} cy={y} r="4.2" fill={ref(u, 'g')} stroke="#7a4a05" strokeWidth=".9" />)}
                 <circle cx="50" cy="17" r="5.4" fill={ref(u, 'r')} stroke="#4a0a0a" strokeWidth=".9" /><circle cx="48" cy="15" r="1.5" fill="#fff" opacity=".85" />
                 <circle cx="30" cy="20" r="3.6" fill={ref(u, 's')} stroke="#0f1f5a" strokeWidth=".8" /><circle cx="70" cy="20" r="3.6" fill={ref(u, 'e')} stroke="#0a3a1a" strokeWidth=".8" />
-                <path className="cos-twinkle" style={after(-0.4)} d={sparkle(0.8)} transform="translate(75 -14)" fill="#fff" /><path className="cos-twinkle" style={after(-1.4)} d={sparkle(0.55)} transform="translate(24 -8)" fill="#fff" />
+                <path className="cos-twinkle" style={after(-0.4)} d={sparkle(0.8, 75, -14)} fill="#fff" /><path className="cos-twinkle" style={after(-1.4)} d={sparkle(0.55, 24, -8)} fill="#fff" />
             </g>
         ),
     },
@@ -326,7 +326,7 @@ export const accessoryArt: Record<string, Art> = {
                 ))}
                 <path d="M34 26C40 32 60 32 66 26L62 36C54 40 46 40 38 36Z" fill="#f7c948" stroke="#7a4a05" strokeWidth="1" strokeLinejoin="round" />
                 <circle cx="50" cy="29" r="5" fill={ref(u, 'r')} stroke="#4a0a0a" strokeWidth=".9" /><circle cx="48.4" cy="27.4" r="1.4" fill="#fff" opacity=".85" />
-                <path className="cos-twinkle" d={sparkle(0.7)} transform="translate(84 -6)" fill="#fff" /><path className="cos-twinkle" style={after(-1)} d={sparkle(0.5)} transform="translate(14 -2)" fill="#fff" />
+                <path className="cos-twinkle" d={sparkle(0.7, 84, -6)} fill="#fff" /><path className="cos-twinkle" style={after(-1)} d={sparkle(0.5, 14, -2)} fill="#fff" />
             </>
         ),
     },

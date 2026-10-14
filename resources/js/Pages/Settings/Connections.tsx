@@ -16,6 +16,8 @@ interface SpotifyState {
     connected: boolean;
     display_name: string | null;
     notice: string | null;
+    notice_ok: boolean;
+    redirect: string | null;
 }
 
 interface YouTubeState {
@@ -54,7 +56,7 @@ function SpotifyConnection({ spotify }: { spotify: SpotifyState }) {
     return (
         <SettingsSection title="Spotify" text="Connect Spotify to import playlists that account owns or collaborates on. Public visibility alone does not guarantee API access.">
             <div className="space-y-3">
-                {spotify.notice && <p className="rounded-lg bg-green-500/10 px-3 py-2 text-sm text-green-200">{spotify.notice}</p>}
+                {spotify.notice && <p className={`rounded-lg px-3 py-2 text-sm ${spotify.notice_ok ? 'bg-green-500/10 text-green-200' : 'bg-red-500/10 text-red-200'}`}>{spotify.notice}</p>}
                 {spotify.connected ? (
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 p-4">
                         <p className="flex items-center gap-2 text-sm"><Music2 size={18} className="text-green-400" /> Connected as <span className="font-semibold text-green-300">{spotify.display_name || 'Spotify user'}</span></p>
@@ -66,6 +68,7 @@ function SpotifyConnection({ spotify }: { spotify: SpotifyState }) {
                     <p className="text-sm text-neutral-500">Spotify linking is not configured on this site yet.</p>
                 )}
                 {spotify.connected && <p className="text-xs text-neutral-500">Tokens are encrypted and used only for playlist imports.</p>}
+                {spotify.redirect && <p className="text-xs text-neutral-500">Staff: add this under Redirect URIs in the Spotify app, exactly as it is: <code className="select-all rounded bg-white/10 px-1.5 py-0.5 text-neutral-300">{spotify.redirect}</code></p>}
             </div>
         </SettingsSection>
     );

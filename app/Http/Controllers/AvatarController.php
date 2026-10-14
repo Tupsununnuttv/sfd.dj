@@ -70,10 +70,10 @@ class AvatarController extends Controller
     ];
 
     public const FRAMES = [
-        'bronze' => 'Bronze', 'silver' => 'Silver', 'gold' => 'Gold',
-        'neon' => 'Neon Pulse', 'carbon' => 'Carbon', 'emerald' => 'Emerald',
-        'vinyl' => 'Vinyl', 'equalizer' => 'Equalizer', 'thorns' => 'Rose Thorns', 'frost' => 'Frostbite',
-        'hellfire' => 'Hellfire', 'aurora' => 'Aurora', 'prism' => 'Prism',
+        'bronze' => 'Bronze', 'silver' => 'Silver', 'gold' => 'Gold', 'fireflies' => 'Fireflies',
+        'neon' => 'Neon Pulse', 'comic' => 'Comic Pop', 'carbon' => 'Carbon', 'emerald' => 'Emerald', 'web' => 'Spider Web',
+        'vinyl' => 'Vinyl', 'candles' => 'Candlelight', 'equalizer' => 'Equalizer', 'skulls' => 'Skull Ring', 'thorns' => 'Rose Thorns', 'lanterns' => 'Lanterns', 'frost' => 'Frostbite',
+        'crystals' => 'Crystal Grove', 'hellfire' => 'Hellfire', 'portal' => 'Rift Portal', 'aurora' => 'Aurora', 'prism' => 'Prism',
     ];
 
     public const EFFECTS = [
@@ -85,10 +85,10 @@ class AvatarController extends Controller
 
     /** The level that unlocks an item. Everything not listed here is free from level 1. */
     public const UNLOCK = [
-        'avatar' => ['char:neko' => 2, 'char:bun' => 3, 'char:panda' => 5, 'char:wolfie' => 8, 'char:robo' => 10, 'char:rift' => 25],
+        'avatar' => ['char:neko' => 2, 'char:bun' => 3, 'char:panda' => 5, 'char:wolfie' => 8, 'char:robo' => 10, 'char:spooky' => 14, 'char:skully' => 18, 'char:rift' => 25],
         'badge' => ['digger' => 2, 'bassline' => 3, 'streak' => 4, 'nightowl' => 6, 'voltage' => 8, 'goldenear' => 10, 'diamond' => 13, 'spotlight' => 16, 'platinum' => 20, 'laureate' => 24, 'royal' => 28, 'cosmic' => 34, 'dragonseal' => 42, 'legend' => 55],
         'accessory' => ['cap' => 2, 'beanie' => 3, 'catears' => 4, 'foxears' => 5, 'flowers' => 7, 'halo' => 9, 'visor' => 10, 'laurel' => 12, 'horns' => 15, 'tophat' => 18, 'crown' => 22, 'wings' => 26, 'dragon' => 32, 'phoenix' => 45],
-        'frame' => ['gold' => 2, 'neon' => 4, 'carbon' => 6, 'emerald' => 8, 'vinyl' => 11, 'equalizer' => 14, 'thorns' => 18, 'frost' => 22, 'hellfire' => 28, 'aurora' => 38, 'prism' => 50],
+        'frame' => ['gold' => 2, 'fireflies' => 3, 'neon' => 4, 'comic' => 5, 'carbon' => 6, 'emerald' => 8, 'web' => 9, 'vinyl' => 11, 'candles' => 12, 'equalizer' => 14, 'skulls' => 16, 'thorns' => 18, 'lanterns' => 20, 'frost' => 22, 'crystals' => 25, 'hellfire' => 28, 'portal' => 32, 'aurora' => 38, 'prism' => 50],
         'effect' => ['waves' => 2, 'sparkles' => 4, 'notes' => 6, 'hearts' => 8, 'petals' => 11, 'snow' => 15, 'flames' => 19, 'lightning' => 23, 'toxic' => 27, 'cosmic' => 36, 'void' => 48],
     ];
 

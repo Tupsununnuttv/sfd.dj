@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class SpotifyController extends Controller
@@ -20,6 +22,11 @@ class SpotifyController extends Controller
     {
         if (! self::configured()) {
             return $this->back('Spotify linking is not configured on this site yet.');
+        }
+
+        // Spotify takes only https return addresses, or http://127.0.0.1 and http://[::1] on your own computer: never "localhost"
+        if ($request->getHost() === 'localhost') {
+            return $this->back('Spotify does not accept "localhost". Open this site as '.str_replace('localhost', '127.0.0.1', $request->getSchemeAndHttpHost()).' (same port), log in there and press Connect Spotify again.');
         }
 
         $request->session()->put('spotify_state', $state = Str::random(40));
@@ -61,7 +68,7 @@ class SpotifyController extends Controller
         $accessToken = $token->json('access_token');
         $refreshToken = $token->json('refresh_token');
         if (! $token->successful() || ! is_string($accessToken) || ! is_string($refreshToken)) {
-            return $this->back('Spotify did not authorize the connection. Check that the callback URL is registered in the Spotify app.');
+            return $this->refused('Spotify did not authorize the connection. Check that the callback URL is registered in the Spotify app.', $token);
         }
 
         try {
@@ -72,7 +79,9 @@ class SpotifyController extends Controller
 
         $spotifyId = $profile->json('id');
         if (! $profile->successful() || ! is_string($spotifyId) || $spotifyId === '') {
-            return $this->back('Spotify did not return an account profile. Please try connecting again.');
+            return $this->refused('Spotify did not return an account profile.'.($profile->status() === 403
+                ? ' The Spotify app is in Development Mode: this Spotify account must be listed under User Management in the Spotify Dashboard, and the owner of the app needs Spotify Premium.'
+                : ' Please try connecting again.'), $profile);
         }
 
         $user = $request->user();
@@ -88,7 +97,7 @@ class SpotifyController extends Controller
             'spotify_token_expires_at' => now()->addSeconds(max(1, (int) $token->json('expires_in', 3600))),
         ])->save();
 
-        return $this->back('Spotify connected. You can import playlists owned by or shared with this account.');
+        return $this->back('Spotify connected. You can import playlists owned by or shared with this account.', ok: true);
     }
 
     public function disconnect(Request $request): RedirectResponse
@@ -101,11 +110,23 @@ class SpotifyController extends Controller
             'spotify_token_expires_at' => null,
         ])->save();
 
-        return $this->back('Spotify disconnected.');
+        return $this->back('Spotify disconnected.', ok: true);
     }
 
-    private function back(string $notice): RedirectResponse
+    /** Back to Settings → Connections with a message: green when it worked ($ok), red when it did not. */
+    private function back(string $notice, bool $ok = false): RedirectResponse
     {
-        return to_route('settings.connections')->with('spotify_notice', $notice);
+        return to_route('settings.connections')->with('spotify_notice', $notice)->with('spotify_notice_ok', $ok);
+    }
+
+    /** Spotify said no: write what it answered to the log (never a token) and show it after our own words, so the cause is not a guess. */
+    private function refused(string $notice, Response $response): RedirectResponse
+    {
+        $why = $response->json('error_description') ?? $response->json('error.message') ?? $response->json('error');
+        $why = is_string($why) ? $why : Str::limit(trim($response->body()), 200);
+
+        Log::warning('Spotify linking: '.$notice, ['status' => $response->status(), 'spotify_said' => $why]);
+
+        return $this->back($notice.' (Spotify answered '.$response->status().($why !== '' ? ': '.$why : '').')');
     }
 }

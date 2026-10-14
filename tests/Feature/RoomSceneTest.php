@@ -83,7 +83,7 @@ class RoomSceneTest extends TestCase
         }
 
         // Halloween and Christmas are sceneries of their own, not the club in other colours
-        foreach (['halloween' => 'Halloween', 'christmas' => 'Christmas', 'halloween2' => 'Halloween2', 'christmas2' => 'Christmas2', 'winter' => 'Winter', 'spring' => 'Spring', 'easter' => 'Easter', 'summer' => 'Summer', 'midsummer' => 'Midsummer', 'synthwave' => 'Synthwave', 'retrowave' => 'Retrowave', 'definity' => 'Definity', 'anime' => 'Anime', 'latam' => 'Latam', 'lightshow' => 'Lightshow', 'cats' => 'Cats', 'goldmine' => 'GoldMine', 'skull' => 'Skull', 'skulls' => 'Skulls', 'ultra' => 'Ultra', 'foxy' => 'Foxy', 'dragon' => 'Dragon', 'tastycat' => 'Tastycat', 'tasty' => 'Tasty', 'monstercat' => 'Monstercat', 'custom' => 'Custom'] as $key => $file) {
+        foreach (['halloween' => 'Halloween', 'christmas' => 'Christmas', 'halloween2' => 'Halloween2', 'christmas2' => 'Christmas2', 'winter' => 'Winter', 'spring' => 'Spring', 'easter' => 'Easter', 'summer' => 'Summer', 'midsummer' => 'Midsummer', 'synthwave' => 'Synthwave', 'retrowave' => 'Retrowave', 'synthwave2' => 'Synthwave2', 'retrowave2' => 'Retrowave2', 'definity' => 'Definity', 'anime' => 'Anime', 'latam' => 'Latam', 'lightshow' => 'Lightshow', 'cats' => 'Cats', 'goldmine' => 'GoldMine', 'skull' => 'Skull', 'skulls' => 'Skulls', 'ultra' => 'Ultra', 'foxy' => 'Foxy', 'dragon' => 'Dragon', 'tastycat' => 'Tastycat', 'tasty' => 'Tasty', 'monstercat' => 'Monstercat', 'custom' => 'Custom'] as $key => $file) {
             $this->assertStringContainsString("theme: '{$key}'", $scenes);
             $this->assertFileExists(resource_path("js/Components/scene/{$file}.tsx"));
         }

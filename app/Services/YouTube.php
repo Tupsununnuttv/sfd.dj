@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -110,6 +111,20 @@ class YouTube
             return null;
         }
 
+        // a search costs 100 of the 10,000 quota points a day: the same words searched again within a day are answered from the cache (failures are not kept)
+        $key = 'youtube-search:'.md5(mb_strtolower(trim($query)));
+        if (is_array($cached = Cache::get($key))) {
+            return $cached;
+        }
+
+        $found = $this->searchNow($query);
+        $found === null || Cache::put($key, $found, now()->addDay());
+
+        return $found;
+    }
+
+    private function searchNow(string $query): ?array
+    {
         try {
             $res = Http::timeout(5)->get(self::API.'/search', [
                 'part' => 'snippet',

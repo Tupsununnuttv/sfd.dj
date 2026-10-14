@@ -16,11 +16,13 @@ import LightshowBackdrop from '@/Components/scene/Lightshow';
 import MidsummerBackdrop from '@/Components/scene/Midsummer';
 import MonstercatBackdrop from '@/Components/scene/Monstercat';
 import RetrowaveBackdrop from '@/Components/scene/Retrowave';
+import Retrowave2Backdrop from '@/Components/scene/Retrowave2';
 import SkullBackdrop from '@/Components/scene/Skull';
 import SkullsBackdrop from '@/Components/scene/Skulls';
 import SpringBackdrop from '@/Components/scene/Spring';
 import SummerBackdrop from '@/Components/scene/Summer';
 import SynthwaveBackdrop from '@/Components/scene/Synthwave';
+import Synthwave2Backdrop from '@/Components/scene/Synthwave2';
 import TastyBackdrop from '@/Components/scene/Tasty';
 import TastycatBackdrop from '@/Components/scene/Tastycat';
 import UltraBackdrop from '@/Components/scene/Ultra';
@@ -59,6 +61,10 @@ export default function SceneBackdrop(props: Props) {
             return <MidsummerBackdrop {...props} />;
         case 'synthwave':
             return <SynthwaveBackdrop {...props} />;
+        case 'synthwave2':
+            return <Synthwave2Backdrop {...props} />;
+        case 'retrowave2':
+            return <Retrowave2Backdrop {...props} />;
         case 'retrowave':
             return <RetrowaveBackdrop {...props} />;
         case 'definity':

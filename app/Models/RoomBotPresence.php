@@ -38,7 +38,7 @@ class RoomBotPresence extends Model
         $presence = self::query()->firstOrNew(['room_id' => $room->id, 'user_id' => $bot->id]);
         $now = now();
         $broadcast = ! $presence->exists || ! $presence->last_broadcast_at || $presence->last_broadcast_at->lt($now->copy()->subSeconds(self::BROADCAST_INTERVAL_SECONDS));
-        $presence->last_seen_at = $now;
+        $presence->last_seen_at = $presence->last_seen_at?->isFuture() ? $presence->last_seen_at : $now; // an Auto Host bot is held in the room (hold): a call of its own does not cut that short
         if ($broadcast) {
             $presence->last_broadcast_at = $now;
         }
@@ -47,6 +47,14 @@ class RoomBotPresence extends Model
         if ($broadcast) {
             RoomBotPresenceChanged::dispatch($room->id, self::memberInfo($bot, $now), true);
         }
+    }
+
+    /** Keep a bot in the room with no check-ins of its own: the Auto Host, which the site runs itself. It stays until leave(). */
+    public static function hold(Room $room, User $bot): void
+    {
+        $until = now()->addYears(10);
+        self::query()->updateOrCreate(['room_id' => $room->id, 'user_id' => $bot->id], ['last_seen_at' => $until, 'last_broadcast_at' => now()]);
+        RoomBotPresenceChanged::dispatch($room->id, self::memberInfo($bot, $until), true);
     }
 
     public static function leave(Room $room, User $bot): void

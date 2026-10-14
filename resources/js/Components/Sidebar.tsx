@@ -51,7 +51,7 @@ function useOverlayClick(url: string, title: string) {
         : undefined;
 }
 
-const item = 'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition [@media(max-height:900px)]:py-1 [@media(max-height:780px)]:py-0.5';
+const item = 'sfd-nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition [@media(max-height:900px)]:py-1 [@media(max-height:780px)]:py-0.5';
 const divider = 'my-3 border-t border-white/10 [@media(max-height:900px)]:my-1';
 const idle = 'text-neutral-400 hover:bg-white/5 hover:text-white';
 

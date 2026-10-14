@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -280,9 +281,10 @@ class PlaylistDeckTest extends TestCase
         $user = User::factory()->create();
         $list = $user->playlists()->create(['name' => 'Spotify import', 'kind' => 'custom']);
 
-        $connect = $this->actingAs($user)->get(route('spotify.connect'))->assertRedirect();
+        $connect = $this->actingAs($user)->get('http://127.0.0.1:8000/auth/spotify')->assertRedirect();
         parse_str((string) parse_url($connect->headers->get('Location'), PHP_URL_QUERY), $authorization);
         $this->assertSame('playlist-read-private', $authorization['scope']);
+        $this->assertSame('http://127.0.0.1:8000/auth/spotify/callback', $authorization['redirect_uri']);
         $state = session('spotify_state');
         $this->get(route('spotify.callback', ['code' => 'authorization-code', 'state' => $state]))
             ->assertRedirect(route('settings.connections'))
@@ -303,6 +305,57 @@ class PlaylistDeckTest extends TestCase
 
         $this->actingAs($user)->delete(route('spotify.disconnect'))->assertRedirect(route('settings.connections'));
         $this->assertNull($user->fresh()->spotify_refresh_token);
+    }
+
+    public function test_spotify_saying_no_is_logged_and_shown_in_its_own_words(): void
+    {
+        config(['services.spotify.client_id' => 'client-id', 'services.spotify.client_secret' => 'client-secret']);
+        Log::spy();
+        Http::fake([
+            'accounts.spotify.com/api/token' => Http::response(['access_token' => 'the-access-token', 'refresh_token' => 'the-refresh-token', 'expires_in' => 3600]),
+            'api.spotify.com/v1/me' => Http::response(['error' => ['status' => 403, 'message' => 'Check settings on developer.spotify.com/dashboard, the user may not be registered.']], 403),
+        ]);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('http://127.0.0.1:8000/auth/spotify')->assertRedirect();
+
+        // the token came, the profile did not (a Development Mode app and somebody who is not listed): say why, in red, and keep nothing
+        $this->get(route('spotify.callback', ['code' => 'authorization-code', 'state' => session('spotify_state')]))
+            ->assertRedirect(route('settings.connections'))
+            ->assertSessionHas('spotify_notice', fn ($notice) => str_contains($notice, 'User Management') && str_contains($notice, 'Spotify answered 403: Check settings on developer.spotify.com/dashboard'))
+            ->assertSessionHas('spotify_notice_ok', false);
+        $this->assertNull($user->fresh()->spotify_id);
+        $this->assertNull($user->fresh()->spotify_refresh_token);
+
+        // the log has what Spotify answered and no token
+        Log::shouldHaveReceived('warning')->withArgs(fn ($message, $context) => $context['status'] === 403 && str_contains($context['spotify_said'], 'not be registered') && ! str_contains(json_encode($context), 'token'))->once();
+    }
+
+    public function test_spotify_linking_never_starts_from_localhost_and_says_where_to_go_instead(): void
+    {
+        config(['services.spotify.client_id' => 'client-id', 'services.spotify.client_secret' => 'client-secret']);
+        $user = User::factory()->create();
+
+        // Spotify refuses "localhost" as a return address, so nothing is sent to Spotify: the person is told to use 127.0.0.1
+        $this->actingAs($user)->get('http://localhost:8000/auth/spotify')
+            ->assertRedirect(route('settings.connections'))
+            ->assertSessionHas('spotify_notice', fn ($notice) => str_contains($notice, 'http://127.0.0.1:8000'));
+        $this->assertNull(session('spotify_state'));
+
+        // on the live site the address is https (behind the proxy) and is what the Spotify app has to list
+        $live = $this->actingAs($user)->withHeader('X-Forwarded-Proto', 'https')->get('http://sfd-dj.eu/auth/spotify');
+        parse_str((string) parse_url($live->headers->get('Location'), PHP_URL_QUERY), $query);
+        $this->assertSame('https://sfd-dj.eu/auth/spotify/callback', $query['redirect_uri']);
+    }
+
+    public function test_the_connections_page_tells_staff_what_to_add_in_the_spotify_app_but_not_for_localhost(): void
+    {
+        $staff = User::factory()->create();
+        $staff->forceFill(['roles' => ['admin']])->save();
+
+        $this->actingAs($staff)->get('http://127.0.0.1:8000/settings/connections')->assertInertia(fn (Assert $page) => $page->where('spotify.redirect', 'http://127.0.0.1:8000/auth/spotify/callback'));
+        $this->actingAs($staff)->get('http://localhost:8000/settings/connections')->assertInertia(fn (Assert $page) => $page->where('spotify.redirect', null));
+        $this->actingAs(User::factory()->create())->get('http://127.0.0.1:8000/settings/connections')->assertInertia(fn (Assert $page) => $page->where('spotify.redirect', null));
     }
 
     public function test_the_deck_shows_my_lists_and_the_next_track_of_the_active_one(): void

@@ -28,7 +28,7 @@ export const effectArt: Record<string, (u: Ids) => ReactNode> = {
             <defs>{halo(u('g'), '#fde68a', 0.22, 0.62)}</defs>
             <circle cx="50" cy="50" r="80" fill={ref(u, 'g')} />
             {[[-6, 18, 9, '#fff'], [106, 12, 7, '#fde68a'], [12, -20, 6, '#a5f3fc'], [90, -26, 8, '#fff'], [-20, 72, 5, '#fbcfe8'], [114, 68, 7, '#fff'], [32, 112, 6, '#fde68a'], [74, 110, 9, '#a5f3fc'], [52, -32, 5, '#fff']].map(([x, y, s, c], i) => (
-                <path key={i} className="cos-twinkle" style={after(-i * 0.43)} d={sparkle(Number(s) / 8)} transform={`translate(${x} ${y})`} fill={String(c)} />
+                <path key={i} className="cos-twinkle" style={after(-i * 0.43)} d={sparkle(Number(s) / 8, Number(x), Number(y))} fill={String(c)} />
             ))}
         </>
     ),
@@ -143,7 +143,7 @@ export const effectArt: Record<string, (u: Ids) => ReactNode> = {
                 {rad(u('m'), [[0, '#ede9fe'], [1, '#8b5cf6']], [0.35, 0.3, 0.8])}
             </defs>
             <circle cx="50" cy="50" r="84" fill={ref(u, 'n')} />
-            {[[-8, 10, 7], [110, 24, 6], [20, 118, 8], [96, 112, 5], [54, -32, 6], [-24, 60, 5], [120, 70, 6]].map(([x, y, s], i) => <path key={i} className="cos-twinkle" style={after(-i * 0.55)} d={sparkle(Number(s) / 8)} transform={`translate(${x} ${y})`} fill="#fff" />)}
+            {[[-8, 10, 7], [110, 24, 6], [20, 118, 8], [96, 112, 5], [54, -32, 6], [-24, 60, 5], [120, 70, 6]].map(([x, y, s], i) => <path key={i} className="cos-twinkle" style={after(-i * 0.55)} d={sparkle(Number(s) / 8, x, y)} fill="#fff" />)}
             <g className="cos-orbit" style={{ animationDuration: '16s' }}>
                 <g transform="rotate(-24 50 50)">
                     <ellipse cx="50" cy="50" rx="66" ry="23" fill="none" stroke="#fff" strokeOpacity=".3" strokeWidth="1" strokeDasharray="2 4" />

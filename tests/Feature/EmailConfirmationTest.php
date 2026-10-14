@@ -7,7 +7,9 @@ use App\Models\User;
 use App\Notifications\VerifyEmailNotification;
 use App\Support\MailStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -79,6 +81,29 @@ class EmailConfirmationTest extends TestCase
 
         $this->post('/email/verification-notification')->assertRedirect()->assertSessionHas('status', 'verification-link-failed');
         $this->assertSame('failed', $user->sendEmailVerificationNotification());
+    }
+
+    public function test_a_mail_server_that_is_down_does_not_break_the_password_pages(): void
+    {
+        $user = User::factory()->create(['email' => 'kate@example.com', 'password' => Hash::make('old-pass-123')]);
+        $this->mailIsDown();
+
+        // Forgot password: no error page, the person is told the email could not go out
+        $this->from('/forgot-password')->post('/forgot-password', ['email' => 'kate@example.com'])
+            ->assertRedirect('/forgot-password')
+            ->assertSessionHasErrors(['email' => 'We could not send the email right now. Try again in a few minutes, or ask a staff member to help you.']);
+
+        // A new password from a reset link is saved, even though the "your password was changed" email cannot go out
+        $this->post('/reset-password', ['token' => Password::createToken($user), 'email' => 'kate@example.com', 'password' => 'new-pass-456', 'password_confirmation' => 'new-pass-456'])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('login', absolute: false));
+        $this->assertTrue(Hash::check('new-pass-456', $user->refresh()->password));
+
+        // and so is a new password chosen in the profile
+        $this->actingAs($user)->from('/profile')->put('/password', ['current_password' => 'new-pass-456', 'password' => 'third-pass-789', 'password_confirmation' => 'third-pass-789'])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile');
+        $this->assertTrue(Hash::check('third-pass-789', $user->refresh()->password));
     }
 
     public function test_the_send_button_sends_again_and_says_what_became_of_it(): void
@@ -195,7 +220,7 @@ class EmailConfirmationTest extends TestCase
             $this->assertFalse(MailStatus::configured(), $mailer);
         }
 
-        config(['mail.default' => 'smtp', 'mail.mailers.smtp.host' => 'smtp.gmail.com', 'mail.mailers.smtp.username' => null]);
+        config(['mail.default' => 'smtp', 'mail.mailers.smtp.host' => 'smtp.gmail.com', 'mail.mailers.smtp.username' => null, 'mail.mailers.smtp.password' => null]); // not whatever .env on this computer holds
         $this->assertFalse(MailStatus::configured(), 'Gmail with no login');
         config(['mail.mailers.smtp.username' => 'me@gmail.com']);
         $this->assertFalse(MailStatus::configured(), 'Gmail with no password');

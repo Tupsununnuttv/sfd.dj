@@ -26,7 +26,7 @@ export interface ScenePalette {
     accent: string; // neon signs, the light strip on the booth
     accent2: string; // the second light colour
     glow: string; // the haze behind the screen
-    theme?: 'halloween' | 'halloween2' | 'christmas' | 'christmas2' | 'winter' | 'spring' | 'easter' | 'summer' | 'midsummer' | 'synthwave' | 'retrowave' | 'definity' | 'anime' | 'latam' | 'lightshow' | 'cats' | 'goldmine' | 'skull' | 'skulls' | 'ultra' | 'foxy' | 'dragon' | 'tastycat' | 'tasty' | 'monstercat' | 'custom'; // a scenery of its own (Components/scene/Halloween.tsx, Christmas.tsx, Winter.tsx, Spring.tsx, Summer.tsx, Synthwave.tsx, Retrowave.tsx); none is the club
+    theme?: 'halloween' | 'halloween2' | 'christmas' | 'christmas2' | 'winter' | 'spring' | 'easter' | 'summer' | 'midsummer' | 'synthwave' | 'retrowave' | 'synthwave2' | 'retrowave2' | 'definity' | 'anime' | 'latam' | 'lightshow' | 'cats' | 'goldmine' | 'skull' | 'skulls' | 'ultra' | 'foxy' | 'dragon' | 'tastycat' | 'tasty' | 'monstercat' | 'custom'; // a scenery of its own (Components/scene/Halloween.tsx, Christmas.tsx, Winter.tsx, Spring.tsx, Summer.tsx, Synthwave.tsx, Retrowave.tsx); none is the club
 }
 
 export const palettes: Record<string, ScenePalette> = {
@@ -47,6 +47,8 @@ export const palettes: Record<string, ScenePalette> = {
     midsummer: { wallTop: '#14204a', wallBottom: '#f59e7a', floorTop: '#3b5a2a', floorBottom: '#0f1d0e', accent: '#fbbf24', accent2: '#60a5fa', glow: '#fb923c', theme: 'midsummer' },
     synthwave: { wallTop: '#0b0220', wallBottom: '#5b1a8f', floorTop: '#240b45', floorBottom: '#07020f', accent: '#ff2fd0', accent2: '#22d3ee', glow: '#d946ef', theme: 'synthwave' },
     retrowave: { wallTop: '#1a0b3d', wallBottom: '#ff5d8f', floorTop: '#0f2a4a', floorBottom: '#050b1a', accent: '#ff6ac1', accent2: '#2de2c8', glow: '#ffb454', theme: 'retrowave' },
+    synthwave2: { wallTop: '#04000f', wallBottom: '#ff3d7f', floorTop: '#2a0a52', floorBottom: '#06010f', accent: '#ff2fd0', accent2: '#22d3ee', glow: '#ff7ab8', theme: 'synthwave2' },
+    retrowave2: { wallTop: '#0f0530', wallBottom: '#ff6b5c', floorTop: '#10284a', floorBottom: '#040a18', accent: '#ff6ac1', accent2: '#2de2c8', glow: '#ffb85c', theme: 'retrowave2' },
     definity: { wallTop: '#01020a', wallBottom: '#2a2f8a', floorTop: '#0b1030', floorBottom: '#02030a', accent: '#a78bfa', accent2: '#22d3ee', glow: '#6366f1', theme: 'definity' },
     anime: { wallTop: '#1b2a6b', wallBottom: '#ff8fa3', floorTop: '#4a3f86', floorBottom: '#15103a', accent: '#ff7aa8', accent2: '#a5f3fc', glow: '#ffb7d5', theme: 'anime' },
     latam: { wallTop: '#2a1060', wallBottom: '#ff9a3c', floorTop: '#5a2a3a', floorBottom: '#1a0a14', accent: '#ff5d8f', accent2: '#22b8cf', glow: '#ffd43b', theme: 'latam' },

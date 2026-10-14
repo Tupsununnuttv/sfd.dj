@@ -223,8 +223,75 @@ function MusicWaitlist({ slug, locked, cycle }: { slug: string; locked: boolean;
     return (
         <div className="divide-y divide-neutral-800">
             <Toggle label="Lock waitlist" hint="While locked, only people who manage the queue can add songs. Everyone else sees “The waitlist is locked”." checked={locked} onChange={(v) => set({ locked: v })} />
-            <Toggle label="Cycle waitlist" hint="A song that has been played goes to the back of the waitlist, so the music keeps going round." checked={cycle} onChange={(v) => set({ cycle: v })} />
+            <Toggle label="Cycle waitlist" hint="A song that has been played goes to the back of the waitlist, so the music keeps going round. Somebody who has left the room is taken out of the line instead." checked={cycle} onChange={(v) => set({ cycle: v })} />
             {error && <p className="pt-3 text-sm text-red-400">{error}</p>}
+            <AutoHost slug={slug} />
+        </div>
+    );
+}
+
+type AutoHostState = { bot_id: number | null; playlist_id: number | null; bots: { id: number; name: string }[]; playlists: { id: number; name: string; songs_count: number }[] };
+
+/**
+ * Auto Host, for the host of the room (AutoHostController): one of your own bots keeps the music going. Whenever nobody is in the waitlist it plays the next song
+ * of a playlist of yours; somebody who joins plays after the bot's song. The site runs the bot itself: no script, no token.
+ */
+function AutoHost({ slug }: { slug: string }) {
+    const [state, setState] = useState<AutoHostState | null>(null);
+    const [botId, setBotId] = useState('');
+    const [listId, setListId] = useState('');
+    const [error, setError] = useState('');
+    const [notice, setNotice] = useState('');
+
+    useEffect(() => {
+        getJson<AutoHostState>(route('rooms.auto-host', slug))
+            .then((s) => {
+                setState(s);
+                setBotId(String(s.bot_id ?? s.bots[0]?.id ?? ''));
+                setListId(String(s.playlist_id ?? s.playlists.find((p) => p.songs_count > 0)?.id ?? ''));
+            })
+            .catch(() => setState(null)); // not the host: nothing to show
+    }, [slug]);
+
+    if (!state) return null;
+
+    const on = state.bot_id !== null;
+    const save = (enable: boolean) =>
+        send('PUT', route('rooms.auto-host.update', slug), enable ? { bot_id: Number(botId), playlist_id: Number(listId) } : { bot_id: null })
+            .then(() => {
+                setState({ ...state, bot_id: enable ? Number(botId) : null, playlist_id: enable ? Number(listId) : null });
+                setError('');
+                setNotice(enable ? 'Auto Host is on. If nobody is playing, it starts now.' : 'Auto Host is off.');
+            })
+            .catch((e: Error) => setError(e.message));
+
+    return (
+        <div className="space-y-3 pt-4" data-auto-host={on ? 'on' : 'off'}>
+            <div>
+                <p className="flex items-center gap-2 text-sm font-semibold text-white">
+                    🤖 Auto Host {on && <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">ON</span>}
+                </p>
+                <p className="mt-0.5 text-xs text-neutral-400">One of your bots keeps the music going. Whenever nobody is in the waitlist, it plays the next song of the playlist you pick; somebody who joins plays right after the bot's song. The site runs the bot for you.</p>
+            </div>
+            {state.bots.length === 0 ? (
+                <p className="text-xs text-amber-300">
+                    Make a bot first in <a href={route('settings.developers')} className="underline hover:text-amber-200">Settings → Developers</a>, then come back here.
+                </p>
+            ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                    <select value={botId} onChange={(e) => setBotId(e.target.value)} aria-label="Bot" className={`${bare} w-44`}>
+                        {state.bots.map((b) => <option key={b.id} value={b.id}>🤖 {b.name}</option>)}
+                    </select>
+                    <select value={listId} onChange={(e) => setListId(e.target.value)} aria-label="Playlist" className={`${bare} w-56`}>
+                        <option value="">Pick a playlist…</option>
+                        {state.playlists.map((p) => <option key={p.id} value={p.id} disabled={p.songs_count === 0}>{p.name} ({p.songs_count})</option>)}
+                    </select>
+                    <button onClick={() => save(true)} disabled={!botId || !listId} className="rounded bg-violet-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-40">{on ? 'Save' : 'Turn on'}</button>
+                    {on && <button onClick={() => save(false)} className="rounded bg-white/10 px-3 py-1.5 text-sm font-semibold text-neutral-200 hover:bg-white/20">Turn off</button>}
+                </div>
+            )}
+            {error && <p className="text-sm text-red-400">{error}</p>}
+            {notice && !error && <p className="text-xs text-emerald-300">{notice}</p>}
         </div>
     );
 }

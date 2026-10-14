@@ -149,6 +149,27 @@ class PlaylistsAndChatTest extends TestCase
             ->assertJsonPath('errors.0', fn ($error) => str_contains($error, 'playlist owner or a collaborator'));
     }
 
+    public function test_spotify_blocking_the_whole_app_because_its_owner_has_no_premium_is_said_plainly(): void
+    {
+        config(['services.youtube.key' => 'k']);
+        config(['services.spotify.client_id' => 'spotify-client', 'services.spotify.client_secret' => 'spotify-secret']);
+        Http::fake(['api.spotify.com/v1/playlists/*/items*' => Http::response('Active premium subscription required for the owner of the app. When the subscription status changes, it can take a few hours before requests are allowed again.', 403)]);
+
+        $user = User::factory()->create();
+        $list = $user->playlists()->create(['name' => 'Mix', 'kind' => 'custom']);
+        $user->forceFill([
+            'spotify_access_token' => 'linked-spotify-token',
+            'spotify_refresh_token' => 'linked-refresh-token',
+            'spotify_token_expires_at' => now()->addHour(),
+        ])->save();
+
+        $this->actingAs($user)->postJson("/api/playlists/{$list->id}/import", [
+            'text' => 'https://open.spotify.com/playlist/0GBy7zKDS6HNBOwnZR1TCV',
+        ])->assertOk()
+            ->assertJsonPath('found', 0)
+            ->assertJsonPath('errors.0', fn ($error) => str_contains($error, 'owner needs an active Spotify Premium') && ! str_contains($error, 'playlist owner or a collaborator'));
+    }
+
     public function test_room_queue_accepts_links_and_whole_playlists(): void
     {
         Event::fake([PlaybackUpdated::class]);

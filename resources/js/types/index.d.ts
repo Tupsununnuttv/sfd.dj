@@ -11,7 +11,8 @@ export interface RoleInfo {
 }
 
 export interface Preferences {
-    appearance?: { chat_size?: 'small' | 'normal' | 'large'; show_avatars?: boolean; show_badges?: boolean; show_activity?: boolean; always_animate?: boolean };
+    appearance?: { chat_size?: 'small' | 'normal' | 'large'; show_avatars?: boolean; show_badges?: boolean; show_activity?: boolean; always_animate?: boolean; compact?: boolean };
+    room?: { autowoot?: boolean };
     audio?: { default_volume?: number; mute_on_join?: boolean };
     notifications?: { friend_requests?: boolean; announcements?: boolean; whispers?: boolean; mentions?: boolean; desktop?: boolean };
     privacy?: { whispers?: 'everyone' | 'friends' | 'nobody'; friend_requests?: boolean; show_online?: boolean };

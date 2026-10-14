@@ -6,6 +6,7 @@ use App\Models\Room;
 use App\Models\User;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Cache;
+use Pusher\ApiErrorException;
 
 class RoomPresence
 {
@@ -40,6 +41,23 @@ class RoomPresence
     public static function roomsOf(int $userId): array
     {
         return self::locations()[$userId] ?? [];
+    }
+
+    /**
+     * The ids of the people in one room right now, asked fresh (no cache): for taking somebody who has left out of the waitlist.
+     * An empty list when nobody is there; null when it cannot be known (the live server does not answer), and then nobody should be taken out.
+     */
+    public static function idsIn(Room $room): ?array
+    {
+        try {
+            $response = Broadcast::connection()->getPusher()->get("/channels/presence-room.{$room->id}/users", [], true);
+        } catch (ApiErrorException $e) {
+            return $e->getCode() === 404 ? [] : null; // 404: nobody is in the channel
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return is_array($response['users'] ?? null) ? array_map(fn ($user) => (int) $user['id'], $response['users']) : null;
     }
 
     /** The privacy-visible participants in one room, for guests watching its public view. */
