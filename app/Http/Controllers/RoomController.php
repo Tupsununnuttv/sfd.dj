@@ -40,7 +40,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -181,7 +180,7 @@ class RoomController extends Controller
         return Inertia::render('History', [
             'songs' => PlaylistItem::whereNotNull('played_at')
                 ->whereHas('room', fn ($r) => $r->visibleTo($request->user()))
-                ->when($room, fn ($q) => $q->whereHas('room', fn ($r) => $r->where('slug', $room)))
+                ->when($room, fn ($q) => $q->whereHas('room', fn ($r) => $r->atAddress($room)))
                 ->when($mine && $request->user(), fn ($q) => $q->where('user_id', $request->user()->id))
                 ->with(['room:id,name,slug', 'user:id,name,avatar'])->latest('played_at')->limit(100)->get(),
             'rooms' => Room::visibleTo($request->user())->orderBy('name')->get(['name', 'slug']),
@@ -198,23 +197,16 @@ class RoomController extends Controller
             'is_private' => ['boolean'],
         ]);
 
-        $baseSlug = Str::slug($data['name']) ?: 'room';
-        $slug = $baseSlug;
-        $suffix = 2;
-
-        while (Room::where('slug', $slug)->orWhere('legacy_slug', $slug)->exists()) {
-            $slug = $baseSlug.'-'.$suffix++;
-        }
-
-        $room = $request->user()->rooms()->create($data + ['slug' => $slug]);
+        $room = $request->user()->rooms()->create($data + ['slug' => Room::slugFor($data['name'])]);
 
         return to_route('rooms.show', $room);
     }
 
     public function show(Request $request, Room $room): InertiaResponse|RedirectResponse
     {
+        // an old address (the room was renamed): on to the current one. Not a 301, which a browser keeps for good: the room may take that address back
         if ($request->route()->originalParameter('room') !== $room->slug) {
-            return to_route('rooms.show', $room, 301);
+            return to_route('rooms.show', $room);
         }
 
         $room->syncCurrent();
@@ -314,11 +306,18 @@ class RoomController extends Controller
         }
         unset($data['background']);
 
+        // the web address follows the name: the one it leaves is remembered and keeps working (links, bookmarks and bots)
+        $moved = false;
+        if ($data['name'] !== $room->name && ($slug = Room::slugFor($data['name'], $room)) !== $room->slug) {
+            $room->changeSlug($slug);
+            $moved = true;
+        }
+
         $room->update($data);
         $room->log($request->user(), 'settings', null, 'Room settings changed');
         RoomUpdated::dispatch($room->id);
 
-        return back();
+        return $moved ? to_route('rooms.show', $room) : back(); // this page is at the old address
     }
 
     /** The rules people read when they come in: up to ten, each with a title and a few words. (The old block of text is kept in step for the bot API.) */

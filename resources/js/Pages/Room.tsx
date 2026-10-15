@@ -145,7 +145,7 @@ function Panel({ title, onClose, children, wide = false, large = false, bare = f
             <div
                 role="dialog"
                 aria-label={title}
-                className={`w-full animate-menu overflow-x-hidden rounded-2xl border border-white/10 bg-neutral-900 text-white shadow-2xl shadow-black/60 ${full ? 'flex h-[92vh] max-w-[1480px] flex-col overflow-hidden' : `max-h-[92vh] overflow-y-auto ${wide ? 'max-w-4xl' : large ? 'max-w-3xl' : 'max-w-xl'}`}`}
+                className={`w-full animate-menu overflow-x-hidden rounded-2xl border border-white/10 bg-neutral-900 text-white shadow-2xl shadow-black/60 ${full ? 'flex h-[92vh] max-w-370 flex-col overflow-hidden' : `max-h-[92vh] overflow-y-auto ${wide ? 'max-w-4xl' : large ? 'max-w-3xl' : 'max-w-xl'}`}`}
                 onClick={(e) => e.stopPropagation()}
             >
                 {bare ? children : (
@@ -350,7 +350,15 @@ export default function Room({
     }
     const canModerate = can.moderate_chat || can.manage_queue || can.moderate_users;
     const canEditRoom = can.edit_settings || can.manage_roles || can.manage_queue;
-    const effectiveVolume = muted ? 0 : volume;
+    // a song's video is being watched in a playlist or a search (VideoPreview): the room goes quiet until it closes
+    const [previewing, setPreviewing] = useState(false);
+    useEffect(() => {
+        const preview = (e: Event) => setPreviewing((e as CustomEvent<boolean>).detail);
+        window.addEventListener('sfd:preview', preview);
+
+        return () => window.removeEventListener('sfd:preview', preview);
+    }, []);
+    const effectiveVolume = muted || previewing ? 0 : volume;
     const canSkip = (s: Song) => can.skip || s.user_id === user.id;
     const waitlist = [...(current ? [current] : []), ...playback.queue];
     const myPosition = waitlist.findIndex((s) => s.user_id === user.id);
@@ -516,7 +524,7 @@ export default function Room({
             window.removeEventListener('pagehide', leaveWaitlist);
             leaveWaitlist();
         };
-    }, [guest, room.slug]);
+    }, [guest, room.id]); // not room.slug: a rename changes it while people are here, and that is not leaving (the old address still works for this call)
 
     // Site-wide broadcasts also show up in this room's chat as system lines (not stored).
     useEffect(() => {
@@ -608,7 +616,7 @@ export default function Room({
             player.current = null;
             setReady(false);
         };
-    }, [room.slug]);
+    }, [room.id]); // eslint-disable-line react-hooks/exhaustive-deps -- by room, not by address: a rename must not restart the player
 
     // Start/stop the video when the song changes, when the player is ready, or when playback is switched on/off.
     useEffect(() => {
@@ -943,7 +951,7 @@ export default function Room({
                     />
                 </main>
 
-                <aside className={`sfd-panel ${tab === 'room' ? 'fixed bottom-[68px] left-14 right-0 z-20 flex h-14 md:static md:z-auto md:h-auto' : 'flex'} min-w-0 flex-1 flex-col border-t border-neutral-800 bg-black md:w-80 md:flex-none md:border-l md:border-t-0`}>
+                <aside className={`sfd-panel ${tab === 'room' ? 'fixed bottom-17 left-14 right-0 z-20 flex h-14 md:static md:z-auto md:h-auto' : 'flex'} min-w-0 flex-1 flex-col border-t border-neutral-800 bg-black md:w-80 md:flex-none md:border-l md:border-t-0`}>
                     <div className="sfd-tabs flex h-14 shrink-0 border-b border-neutral-800">
                         {tabs.map(([key, label]) => (
                             <button

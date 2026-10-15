@@ -3,6 +3,61 @@ export type Kind = 'new' | 'improved' | 'fixed';
 
 export const releases: { version: string; title: string; notes: [Kind, string][] }[] = [
     {
+        version: '1.52',
+        title: 'Room addresses follow the room name',
+        notes: [
+            ['new', 'When you rename a room, its web address changes with the name: "Late Night" at /rooms/late-night becomes "Early Morning Jazz" at /rooms/early-morning-jazz. Everybody who is in the room moves to the new address by itself.'],
+            ['improved', 'Every old address keeps working: a link to it goes on to the new one, so shared links, bookmarks and bots do not break. Nobody else can take an old address of your room, and you can take one back by naming the room that way again.'],
+        ],
+    },
+    {
+        version: '1.51',
+        title: 'The setup lines of the Admin panel are for the Owner',
+        notes: [
+            ['improved', 'In the Admin panel, the Setup & health lines about live updates, email, Stripe (API and webhook) and debug mode are for the Owner only: the other staff do not get them at all. The mail setup of the Email tab goes only to those who may open that tab.'],
+            ['new', 'A new Setup & health line for the Owner, YouTube channel linking, says which redirect address Google Cloud needs and why Google may answer "Access blocked ... has not completed the Google verification process" (error 403): while the OAuth consent screen is in Testing, only the Test users can connect.'],
+        ],
+    },
+    {
+        version: '1.50',
+        title: 'Fox is for the Owner only',
+        notes: [
+            ['improved', 'Fox, the street fox, is now for the Owner only, on the Owner shelf in the Avatar shop next to Rift, Skully and Zoo S02. Anyone else who had bought him got their SFD Coins back.'],
+        ],
+    },
+    {
+        version: '1.49',
+        title: 'Meet Boomer, a turtle with a boombox shell',
+        notes: [
+            ['new', 'Boomer, a new Epic character in the Avatar shop (level 20): a chill turtle in a pink bucket hat, round shades and a gold record on a chain, whose shell is a boombox with two woofers, a tape deck and an equalizer. Standing, he waves hello. Dancing, his arms swing and the bass shakes the speakers and sends sound waves out. At the decks, seen from behind, the whole boombox shows: the reels turn, the equalizer bounces, and he pumps one fist while scratching with the other.'],
+        ],
+    },
+    {
+        version: '1.48',
+        title: 'Meet Pip, a penguin DJ',
+        notes: [
+            ['new', 'Pip, a new Rare character in the Avatar shop (level 7): a chill penguin DJ in a crimson beanie, cyan headphones with glowing cups and a violet bow tie. Standing, Pip waves a flipper hello. Dancing, the flippers flap and snowflakes drift down around him. At the decks, seen from behind, he pumps one flipper and scratches with the other.'],
+        ],
+    },
+    {
+        version: '1.47',
+        title: 'Watch before you add, Fox, and an Owner shelf',
+        notes: [
+            ['new', 'Watch a song\'s video before you add it: press the picture of a track in your playlist (or Watch video in its menu), or Watch next to a search result. The video opens in a window over the page, with Add and Queue under it. The room goes quiet while you watch, and its music comes back when you close the window.'],
+            ['new', 'Fox, a new Epic character in the Avatar shop (level 12): a sly street fox in an olive bomber jacket with a red bandana and a gold hoop in one ear. Standing, he winks while his ears twitch and his big tail sways. Dancing, he swings his arms while sparks fly. At the decks, a fox head on the back of his jacket and a fist in the air.'],
+            ['improved', 'Panda Bear is a character for people with a role now: Brand Ambassadors and the roles above them. Anybody else who had bought him got their SFD Coins back.'],
+            ['improved', 'The Avatar shop has a shelf of its own for the Owner\'s characters (Rift, Skully and Zoo S02).'],
+        ],
+    },
+    {
+        version: '1.46',
+        title: 'Meet Wilmer, and Donate stays in one window',
+        notes: [
+            ['new', 'Wilmer, a new character in the Avatar shop (level 4): honey-blond hair with a big quiff, freckles and a wide grin, a teal varsity jacket with a W on the chest, rolled jeans and white sneakers, and headphones round his neck. Standing, he waves hello. Dancing, he pumps his fists in turn while notes rise around him. At the decks the headphones go on, and the back of his jacket says WILMER.'],
+            ['fixed', 'Donate in the room footbar opens the payment page in the same window, not a new one.'],
+        ],
+    },
+    {
         version: '1.45',
         title: 'Beta Tester is a badge for everybody',
         notes: [

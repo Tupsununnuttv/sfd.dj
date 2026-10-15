@@ -28,8 +28,8 @@ class RoomTest extends TestCase
             ->assertRedirect('/rooms/chillzone-2');
 
         $legacyRoom = $owner->rooms()->create(['name' => 'Old Chillzone', 'slug' => 'old-chillzone']);
-        $legacyRoom->forceFill(['legacy_slug' => 'old-chillzone-ciwy'])->save();
-        $this->assertDatabaseHas('rooms', ['id' => $legacyRoom->id, 'legacy_slug' => 'old-chillzone-ciwy']);
+        $legacyRoom->oldSlugs()->create(['slug' => 'old-chillzone-ciwy']);
+        $this->assertDatabaseHas('room_slugs', ['room_id' => $legacyRoom->id, 'slug' => 'old-chillzone-ciwy']);
 
         $this->actingAs($owner)->get('/rooms/old-chillzone-ciwy')->assertRedirect('/rooms/old-chillzone');
     }

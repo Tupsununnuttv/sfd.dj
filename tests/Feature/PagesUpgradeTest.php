@@ -6,6 +6,7 @@ use App\Models\Friendship;
 use App\Models\SiteEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -130,5 +131,37 @@ class PagesUpgradeTest extends TestCase
         $this->actingAs($owner)->get('/admin?sort=oldest')->assertInertia(fn (Assert $p) => $p->where('users.data.0.id', $owner->id));
         $this->actingAs($owner)->get('/admin?q=Robo')->assertInertia(fn (Assert $p) => $p->has('users.data', 1));
         $this->actingAs($owner)->get('/admin?role=nonsense&sort=nonsense')->assertOk()->assertInertia(fn (Assert $p) => $p->where('filters.role', null)->where('filters.sort', 'newest'));
+    }
+
+    public function test_live_updates_email_stripe_debug_and_youtube_linking_health_lines_are_for_the_owner_alone(): void
+    {
+        config(['services.stripe.secret' => 'not-a-real-stripe-key', 'services.youtube.client_id' => 'id', 'services.youtube.client_secret' => 'secret']);
+        Http::fake(['api.stripe.com/*' => Http::response(['id' => 'acct_test'])]);
+        $lines = fn (User $who) => collect($this->actingAs($who)->get('/admin')->assertOk()->inertiaProps('overview.health'))->pluck(0)->all();
+        $private = ['Email', 'Stripe API (subscriptions)', 'Stripe webhook', 'Debug mode', 'YouTube channel linking'];
+
+        $owner = $lines($this->userWith('owner'));
+        foreach ($private as $line) {
+            $this->assertContains($line, $owner);
+        }
+        $this->assertTrue(collect($owner)->contains(fn (string $name) => str_starts_with($name, 'Live updates')));
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'api.stripe.com'));
+
+        // nobody else gets them, not even the roles that may open the admin panel and the Email tab; the rest of the list stays
+        Http::fake(['api.stripe.com/*' => Http::response(['id' => 'acct_test'])]);
+        foreach (['admin', 'developer', 'lead_moderator'] as $role) {
+            $seen = $lines($this->userWith($role));
+            foreach ($private as $line) {
+                $this->assertNotContains($line, $seen, "{$role} must not see {$line}");
+            }
+            $this->assertFalse(collect($seen)->contains(fn (string $name) => str_starts_with($name, 'Live updates')), "{$role} must not see the live updates");
+            $this->assertContains('Maintenance mode', $seen);
+            $this->assertContains('Song search (YouTube API)', $seen);
+        }
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'api.stripe.com')); // nobody but the Owner makes the site call Stripe
+
+        // the mail setup goes only to those who may open the Email tab (maintenance.toggle)
+        $this->actingAs($this->userWith('admin'))->get('/admin')->assertInertia(fn (Assert $p) => $p->where('email', null));
+        $this->actingAs($this->userWith('developer'))->get('/admin')->assertInertia(fn (Assert $p) => $p->has('email.mailer'));
     }
 }

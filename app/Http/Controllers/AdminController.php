@@ -53,7 +53,7 @@ class AdminController extends Controller
                 'messages' => ChatMessage::count(),
                 'songs_played' => PlaylistItem::whereNotNull('played_at')->count(),
             ],
-            'overview' => $this->overview(),
+            'overview' => $this->overview($actor),
             'users' => User::query()
                 ->when($q, fn ($query) => $query->where(fn ($w) => $w->whereLike('name', "%{$q}%")->orWhereLike('username', "%{$q}%")->orWhereLike('email', "%{$q}%")))
                 ->when($role, fn ($query) => $query->whereJsonContains('roles', $role))
@@ -92,18 +92,19 @@ class AdminController extends Controller
             'announcements' => Announcement::latest()->limit(10)->get(['id', 'message', 'level', 'created_at']),
             'ipBans' => IpBan::latest()->get(['id', 'ip', 'reason', 'created_at']),
             'maintenance' => Setting::get('maintenance') === '1',
-            'email' => MailStatus::describe() + [
+            // the mail setup (server, from address) goes only to those who may open the Email tab
+            'email' => $actor->hasPermission('maintenance.toggle') ? MailStatus::describe() + [
                 'choice' => Setting::get('email_verification') ?? 'required', // what staff chose
                 'enforced' => Setting::verificationRequired(), // what is true now: "required" only counts while the site can send mail
                 'unverified' => User::where('is_bot', false)->whereNull('email_verified_at')->count(),
                 'test' => $request->session()->get('mail_test'),
-            ],
+            ] : null,
             'myIp' => $request->ip(),
         ]);
     }
 
     /** The first tab: numbers that matter today, two weeks of activity, what just happened, and whether the site is set up properly. */
-    private function overview(): array
+    private function overview(User $actor): array
     {
         $days = collect(range(13, 0))->map(fn ($i) => now()->subDays($i)->toDateString());
         $perDay = function (string $table, string $column = 'created_at', ?callable $where = null) use ($days) {
@@ -135,39 +136,68 @@ class AdminController extends Controller
                 ->map(fn ($v) => ['id' => $v->id, 'user' => $v->user?->name, 'by' => $v->issuer?->name, 'reason' => $v->reason, 'at' => $v->created_at->toIso8601String()]),
             'recentModeration' => RoomLog::with(['actor:id,name', 'target:id,name', 'room:id,name,slug'])->whereIn('action', ['kick', 'ban', 'unban', 'mute', 'unmute', 'clear_chat', 'delete_message'])->latest('id')->limit(8)->get()
                 ->map(fn ($l) => ['id' => $l->id, 'action' => $l->action, 'actor' => $l->actor?->name, 'target' => $l->target?->name, 'room' => $l->room?->only('name', 'slug'), 'at' => $l->created_at->toIso8601String()]),
-            'health' => $this->health(),
+            'health' => $this->health($this->isOwner($actor)),
         ];
     }
 
-    /** Is the site set up the way it should be? ok = fine, warn = something is not working, off = an optional extra that is not switched on. */
-    private function health(): array
+    /**
+     * Is the site set up the way it should be? ok = fine, warn = something is not working, off = an optional extra that is not switched on.
+     * The lines that show the inside of the setup (live updates, email, Stripe, debug mode, the YouTube sign-in) are for the Owner only: the others do not even get them.
+     */
+    private function health(bool $owner): array
     {
-        $reverb = true;
-        try {
-            Broadcast::connection()->getPusher()->get('/channels', [], true);
-        } catch (Throwable) {
-            $reverb = false;
-        }
-        $mail = config('mail.default');
-        $mailLogged = ! MailStatus::configured();
         $maintenance = Setting::get('maintenance') === '1';
         $discordLinking = DiscordController::configured();
         $discordRoleSync = DiscordRoleSync::configured();
         $spotifyLinking = SpotifyController::configured();
 
-        return [
-            ['Live updates ('.ucfirst((string) config('broadcasting.default')).')', $reverb ? 'ok' : 'warn', $reverb ? 'Chat, votes and music sync reach everyone live.' : (config('broadcasting.default') === 'reverb' ? 'Not reachable. Chat and sync will not update live. Start it with: php artisan reverb:start' : 'Not reachable. Chat and sync will not update live. Check the PUSHER_ keys.')],
-            ['Email', $mailLogged ? 'warn' : 'ok', $mailLogged ? "No mail server is set up (MAIL_MAILER is \"{$mail}\"): messages are only written to the log, so nobody has to confirm their email. Admin panel → Email shows what to put in .env." : "Sending through {$mail}."],
+        return array_values(array_filter([
+            $owner ? $this->liveUpdatesHealth() : null,
+            $owner ? $this->emailHealth() : null,
             ['Song search (YouTube API)', config('services.youtube.key') ? 'ok' : 'warn', config('services.youtube.key') ? 'Search and song lengths work.' : 'No YOUTUBE_API_KEY: song search and lengths are unavailable. Pasting links still works.'],
             ['GIF search (GIPHY)', config('services.giphy.api_key') ? 'ok' : 'off', config('services.giphy.api_key') ? 'Direct browser search is enabled.' : 'No GIPHY_API_KEY.'],
             ['Discord linking', $discordLinking ? 'ok' : 'off', $discordLinking ? 'People can link their Discord account.' : 'Add DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET to switch it on.'],
             ['Discord server roles', ! $discordLinking ? 'off' : ($discordRoleSync ? 'ok' : 'warn'), ! $discordLinking ? 'Discord linking must be configured first.' : ($discordRoleSync ? 'Role sync is configured; test a link to confirm bot permissions and role mappings.' : 'Add DISCORD_BOT_TOKEN and DISCORD_GUILD_ID to enable automatic server roles.')],
-            ['Stripe API (subscriptions)', ...array_values(Stripe::apiHealth())],
-            ['Stripe webhook', filled(config('services.stripe.webhook_secret')) ? 'ok' : 'warn', filled(config('services.stripe.webhook_secret')) ? 'Webhook signing secret is configured. Stripe delivery is confirmed only after a signed event is received.' : 'STRIPE_WEBHOOK_SECRET is missing. Subscription changes will not sync until the webhook secret is configured.'],
+            $owner ? ['Stripe API (subscriptions)', ...array_values(Stripe::apiHealth())] : null,
+            $owner ? ['Stripe webhook', filled(config('services.stripe.webhook_secret')) ? 'ok' : 'warn', filled(config('services.stripe.webhook_secret')) ? 'Webhook signing secret is configured. Stripe delivery is confirmed only after a signed event is received.' : 'STRIPE_WEBHOOK_SECRET is missing. Subscription changes will not sync until the webhook secret is configured.'] : null,
             ['Maintenance mode', $maintenance ? 'warn' : 'ok', $maintenance ? 'ON: visitors see the maintenance page.' : 'Off.'],
-            ['Debug mode', config('app.debug') && app()->environment('production') ? 'warn' : 'ok', config('app.debug') ? 'APP_DEBUG is on'.(app()->environment('production') ? ': turn it off in production, errors can show private details.' : ' (fine for development).') : 'Off.'],
+            $owner ? ['Debug mode', config('app.debug') && app()->environment('production') ? 'warn' : 'ok', config('app.debug') ? 'APP_DEBUG is on'.(app()->environment('production') ? ': turn it off in production, errors can show private details.' : ' (fine for development).') : 'Off.'] : null,
             ['Spotify playlist import', $spotifyLinking ? 'ok' : 'off', $spotifyLinking ? 'Users can connect Spotify; playlist access still requires the connected account to own or collaborate on the playlist.' : 'Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET to allow people to connect Spotify.'],
-        ];
+            $owner ? $this->youtubeLinkingHealth() : null,
+        ]));
+    }
+
+    private function liveUpdatesHealth(): array
+    {
+        $reachable = true;
+        try {
+            Broadcast::connection()->getPusher()->get('/channels', [], true);
+        } catch (Throwable) {
+            $reachable = false;
+        }
+
+        return ['Live updates ('.ucfirst((string) config('broadcasting.default')).')', $reachable ? 'ok' : 'warn', $reachable ? 'Chat, votes and music sync reach everyone live.' : (config('broadcasting.default') === 'reverb' ? 'Not reachable. Chat and sync will not update live. Start it with: php artisan reverb:start' : 'Not reachable. Chat and sync will not update live. Check the PUSHER_ keys.')];
+    }
+
+    private function emailHealth(): array
+    {
+        $mail = config('mail.default');
+        $logged = ! MailStatus::configured();
+
+        return ['Email', $logged ? 'warn' : 'ok', $logged ? "No mail server is set up (MAIL_MAILER is \"{$mail}\"): messages are only written to the log, so nobody has to confirm their email. Admin panel → Email shows what to put in .env." : "Sending through {$mail}."];
+    }
+
+    /**
+     * Connecting a YouTube channel goes through Google. Google lets in only the Test users while the OAuth consent screen is in Testing: everybody else gets
+     * "Access blocked: ... has not completed the Google verification process" (error 403 access_denied) on Google's own page, so the site cannot catch it.
+     */
+    private function youtubeLinkingHealth(): array
+    {
+        if (! YouTubeController::configured()) {
+            return ['YouTube channel linking', 'off', 'Add YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET (Google Cloud → APIs & Services → Credentials → OAuth client ID) to let people connect their channel.'];
+        }
+
+        return ['YouTube channel linking', 'ok', 'People can connect their channel. The OAuth client in Google Cloud must list '.route('youtube.callback').' as an authorized redirect URI. While the OAuth consent screen is in Testing, Google refuses everybody who is not a Test user ("Access blocked ... has not completed the Google verification process", error 403 access_denied): add them under OAuth consent screen → Test users, or press Publish app (until Google verifies it, up to 100 people can connect, each after a warning screen).'];
     }
 
     public function updateRoles(Request $request, User $user): RedirectResponse

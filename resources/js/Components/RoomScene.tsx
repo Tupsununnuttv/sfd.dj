@@ -212,7 +212,7 @@ export default function RoomScene({ background, image = null, users, dj, dancing
                                         className="absolute"
                                         style={{ left: 120 - stand.size / 2, top: 60 - stand.size / 2, width: stand.size, height: stand.size }}
                                     >
-                                        <Avatar name={dj.name} avatar={dj.avatar} cosmetics={{ ...dj.cosmetics, accessory: undefined }} className="h-[100px] w-[100px] text-5xl" />
+                                        <Avatar name={dj.name} avatar={dj.avatar} cosmetics={{ ...dj.cosmetics, accessory: undefined }} className="h-25 w-25 text-5xl" />
                                     </button>
                                 </div>
                             )}

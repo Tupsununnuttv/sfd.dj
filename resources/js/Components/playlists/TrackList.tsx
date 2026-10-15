@@ -1,6 +1,7 @@
 import ContextMenu, { MenuAnchor, MenuItem } from '@/Components/ContextMenu';
+import VideoPreview from '@/Components/playlists/VideoPreview';
 import { mmss, originLabel, Song, watchUrl } from '@/lib/playlists';
-import { ArrowDownToLine, ArrowUpToLine, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink, GripVertical, Link2, ListPlus, MoreVertical, Music2, Trash2 } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpToLine, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink, GripVertical, Link2, ListPlus, MoreVertical, Music2, Play, Trash2 } from 'lucide-react';
 import { DragEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 export const PAGE = 50;
@@ -25,6 +26,7 @@ export default function TrackList({ songs, availability, filter, isActive, roomS
     const [drag, setDrag] = useState<number | null>(null);
     const [over, setOver] = useState<{ id: number; after: boolean } | null>(null);
     const [menu, setMenu] = useState<{ song: Song; anchor: MenuAnchor } | null>(null);
+    const [watching, setWatching] = useState<Song | null>(null);
     const top = useRef<HTMLDivElement>(null);
 
     const q = filter.trim().toLowerCase();
@@ -68,6 +70,7 @@ export default function TrackList({ songs, availability, filter, isActive, roomS
                 ...(index < songs.length - 1 ? [{ label: 'Move to the bottom', icon: ArrowDownToLine, onSelect: () => move(song, 'bottom') }] : []),
             ],
             [
+                { label: 'Watch video', icon: Play, onSelect: () => setWatching(song) },
                 { label: 'Open on YouTube', icon: ExternalLink, onSelect: () => window.open(watchUrl(song.youtube_id), '_blank', 'noopener,noreferrer') },
                 { label: 'Copy link', icon: Link2, onSelect: () => navigator.clipboard?.writeText(watchUrl(song.youtube_id)).then(() => onNotice('Link copied.'), () => onNotice('Could not copy the link.')) },
             ],
@@ -115,10 +118,11 @@ export default function TrackList({ songs, availability, filter, isActive, roomS
                                         <GripVertical size={16} />
                                     </span>
                                     <span className="w-7 shrink-0 text-center text-xs font-semibold tabular-nums text-neutral-500">{index + 1}</span>
-                                    <span className="relative h-10 w-18 shrink-0 overflow-hidden rounded-lg bg-neutral-800 ring-1 ring-white/10">
+                                    <button type="button" onClick={() => setWatching(s)} title="Watch the video" aria-label={`Watch ${s.title}`} className="group/thumb relative h-10 w-18 shrink-0 overflow-hidden rounded-lg bg-neutral-800 ring-1 ring-white/10 transition hover:ring-violet-400/70">
                                         {s.thumbnail ? <img src={s.thumbnail} alt="" loading="lazy" draggable={false} className="h-full w-full object-cover" /> : <Music2 size={18} className="m-auto mt-3 text-neutral-600" />}
                                         {s.duration > 0 && <span className="absolute bottom-0.5 right-0.5 rounded bg-black/75 px-1 text-[10px] font-semibold leading-4 tabular-nums text-white">{mmss(s.duration)}</span>}
-                                    </span>
+                                        <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-white opacity-0 transition group-hover/thumb:opacity-100 group-focus-visible/thumb:opacity-100"><Play size={16} fill="currentColor" /></span>
+                                    </button>
                                     <span className="min-w-0 flex-1">
                                         <span className="flex items-center gap-2">
                                             <span className="truncate font-semibold text-neutral-100" title={s.title}>{s.title}</span>
@@ -170,6 +174,11 @@ export default function TrackList({ songs, availability, filter, isActive, roomS
             )}
 
             {menu && <ContextMenu anchor={menu.anchor} label={`Actions for ${menu.song.title}`} groups={itemsFor(menu.song)} onClose={() => setMenu(null)} />}
+            {watching && (
+                <VideoPreview id={watching.youtube_id} title={watching.title} channel={watching.channel} onClose={() => setWatching(null)}>
+                    {roomSlug && <button type="button" onClick={() => { onQueue(watching); setWatching(null); }} disabled={busy} className="rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-40">Queue in this room</button>}
+                </VideoPreview>
+            )}
         </div>
     );
 }

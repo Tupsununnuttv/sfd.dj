@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Http;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -20,6 +21,14 @@ abstract class TestCase extends BaseTestCase
         }
 
         return parent::setUpTraits();
+    }
+
+    /** A test that reaches the real Stripe, YouTube, Discord ... is a bug (one once made a live Stripe checkout page): every call a test makes has to be faked. */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Http::preventStrayRequests();
     }
 
     /** Pretend a mail server is set up in .env (nothing is sent in a test): only then does the site ask people to confirm their email. */

@@ -31,6 +31,24 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="YOUTUBE_API_KEY" value=""/>
+        <!-- the real keys in .env never reach a test: one without Http::fake() would call the real Stripe, Discord, Spotify ... (it once made a live Stripe checkout page) -->
+        <env name="STRIPE_SECRET" value="" force="true"/>
+        <env name="STRIPE_WEBHOOK_SECRET" value="" force="true"/>
+        <env name="DISCORD_BOT_TOKEN" value="" force="true"/>
+        <env name="DISCORD_CLIENT_ID" value="" force="true"/>
+        <env name="DISCORD_CLIENT_SECRET" value="" force="true"/>
+        <env name="DISCORD_GUILD_ID" value="" force="true"/>
+        <env name="SPOTIFY_CLIENT_ID" value="" force="true"/>
+        <env name="SPOTIFY_CLIENT_SECRET" value="" force="true"/>
+        <env name="YOUTUBE_CLIENT_ID" value="" force="true"/>
+        <env name="YOUTUBE_CLIENT_SECRET" value="" force="true"/>
+        <env name="GIPHY_API_KEY" value="" force="true"/>
+        <env name="GIPHY_SDK_API_KEY" value="" force="true"/>
+        <env name="TENOR_API_KEY" value="" force="true"/>
+        <env name="RESEND_API_KEY" value="" force="true"/>
+        <env name="POSTMARK_API_KEY" value="" force="true"/>
+        <env name="AWS_ACCESS_KEY_ID" value="" force="true"/>
+        <env name="AWS_SECRET_ACCESS_KEY" value="" force="true"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>

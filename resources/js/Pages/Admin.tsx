@@ -65,7 +65,7 @@ export default function Admin(props: AdminProps) {
             {tab === 'Support' && <SupportInbox />}
             {tab === 'Permissions' && <MatrixTab matrix={props.matrix} groups={props.roleGroups} />}
             {tab === 'Broadcast' && <BroadcastTab announcements={props.announcements} />}
-            {tab === 'Email' && <EmailTab email={props.email} gotoTab={setTab} />}
+            {tab === 'Email' && props.email && <EmailTab email={props.email} gotoTab={setTab} />}
             {tab === 'IP bans' && <IpBansTab ipBans={props.ipBans} myIp={props.myIp} />}
             {tab === 'Maintenance' && <MaintenanceTab maintenance={props.maintenance} />}
         </AppLayout>

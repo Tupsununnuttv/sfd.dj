@@ -28,9 +28,9 @@ export function WaitlistCard({ inList, etaSeconds, etaSince, locked, full = fals
         <button
             onClick={onClick}
             disabled={closed || busy}
-            className={`sfd-join flex h-[58px] w-full items-stretch overflow-hidden rounded-lg border bg-[#0f0f0f] text-left shadow-lg shadow-black/50 transition enabled:hover:-translate-y-0.5 enabled:hover:brightness-110 enabled:active:translate-y-0 disabled:opacity-60 ${tone.edge}`}
+            className={`sfd-join flex h-14.5 w-full items-stretch overflow-hidden rounded-lg border bg-[#0f0f0f] text-left shadow-lg shadow-black/50 transition enabled:hover:-translate-y-0.5 enabled:hover:brightness-110 enabled:active:translate-y-0 disabled:opacity-60 ${tone.edge}`}
         >
-            <span className={`flex w-[46px] shrink-0 items-center justify-center bg-linear-to-b text-white ${tone.icon}`}>
+            <span className={`flex w-11.5 shrink-0 items-center justify-center bg-linear-to-b text-white ${tone.icon}`}>
                 {inList ? <X size={22} strokeWidth={2.6} /> : <Users size={22} strokeWidth={2.2} />}
             </span>
             <span className="flex min-w-0 flex-1 flex-col justify-center px-3">

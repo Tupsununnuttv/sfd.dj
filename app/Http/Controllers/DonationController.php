@@ -6,6 +6,7 @@ use App\Models\Donation;
 use App\Models\Room;
 use App\Models\Setting;
 use App\Support\Stripe;
+use Closure;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
@@ -22,7 +23,7 @@ class DonationController extends Controller
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:1', 'max:1000'],
             'anonymous' => ['boolean'],
-            'room' => ['nullable', 'string', 'exists:rooms,slug'],
+            'room' => ['nullable', 'string', fn (string $attribute, mixed $value, Closure $fail) => Room::atAddress((string) $value)->exists() || $fail('That room does not exist.')], // a page still at the room's old address (it was renamed) may donate too
         ]);
 
         if (! Stripe::on()) {
@@ -32,7 +33,7 @@ class DonationController extends Controller
             return response()->json(['url' => $elsewhere, 'stripe' => false]);
         }
 
-        $room = isset($data['room']) ? Room::where('slug', $data['room'])->first() : null;
+        $room = isset($data['room']) ? Room::atAddress($data['room'])->first() : null;
         $donation = Donation::create([
             'user_id' => $request->user()->id,
             'room_id' => $room?->id,

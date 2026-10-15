@@ -141,7 +141,7 @@ class PlansTest extends TestCase
 
     public function test_admin_overview_reports_stripe_api_and_webhook_health(): void
     {
-        $admin = User::factory()->create(['roles' => ['admin']]);
+        $admin = User::factory()->create(['roles' => ['owner']]); // the Stripe lines are for the Owner alone
         config(['services.stripe.secret' => 'not-a-real-stripe-key', 'services.stripe.webhook_secret' => self::SECRET]);
         Http::fakeSequence('api.stripe.com/v1/account')
             ->push(['id' => 'acct_test'], 200)

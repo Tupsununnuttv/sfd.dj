@@ -1,6 +1,6 @@
 // Panda Bear: a round, fluffy giant panda with black ears, eye patches and limbs, shiny eyes, a pink blush and a stick of bamboo with leaves. He stands
 // munching it (every so often he lifts it to his mouth and chews), dances with both paws in the air and the bamboo waved like a glow stick, and at the
-// decks he wears mint headphones and pumps a paw. Everybody can wear him from level 12.
+// decks he wears mint headphones and pumps a paw. Brand Ambassadors and the roles above them can wear him.
 // Arms are chains (shoulder, elbow, paw, the bamboo in the paw) and the ears wobble a moment after the head, so the round body bounces softly.
 import { kf, lin, mirror, origins, picture, play, pose, rad, shadow } from './kit.mjs';
 import { blob, capsule, furStrokes, line } from './shapes.mjs';

@@ -18,9 +18,9 @@ export default function Badges({ badges = [], level, awards = 3 }: { badges?: Ro
         <span className="inline-flex items-center gap-1 align-middle">
             {all.filter((b) => !hidden.includes(b)).map((b) => (
                 b.key.startsWith('shop:')
-                    ? <span key={b.key} title={b.label} className="inline-flex cursor-default"><ShopBadge name={b.key.slice(5)} className="h-[18px] w-[18px]" /></span>
+                    ? <span key={b.key} title={b.label} className="inline-flex cursor-default"><ShopBadge name={b.key.slice(5)} className="h-4.5 w-4.5" /></span>
                     : b.key.startsWith('award:')
-                        ? <span key={b.key} title={b.text ? `${b.label}: ${b.text}` : b.label} className="inline-flex cursor-default"><AwardBadge name={b.key.slice(6)} className="h-[18px] w-[18px]" /></span>
+                        ? <span key={b.key} title={b.text ? `${b.label}: ${b.text}` : b.label} className="inline-flex cursor-default"><AwardBadge name={b.key.slice(6)} className="h-4.5 w-4.5" /></span>
                         : <RoleIcon key={b.key} role={b} />
             ))}
             {hidden.length > 0 && <span title={hidden.map((b) => b.label).join(', ')} className="cursor-default rounded bg-white/10 px-1 py-0.5 text-[9px] font-bold leading-none text-neutral-300">+{hidden.length}</span>}

@@ -22,7 +22,7 @@ export default function Toggle({
                 onClick={() => onChange(!checked)}
                 className={`relative h-5 w-9 shrink-0 rounded-full transition ${checked ? 'bg-violet-600' : 'bg-neutral-700'}`}
             >
-                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${checked ? 'left-[18px]' : 'left-0.5'}`} />
+                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${checked ? 'left-4.5' : 'left-0.5'}`} />
             </button>
         </label>
     );

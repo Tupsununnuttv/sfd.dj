@@ -79,6 +79,6 @@ export interface AdminProps {
         enforced: boolean; // what is true now: "required" only counts while the site can send email
         unverified: number;
         test: { ok: boolean; message: string; to: string; configured: boolean } | null;
-    };
+    } | null; // only for those who may open the Email tab
     myIp: string;
 }

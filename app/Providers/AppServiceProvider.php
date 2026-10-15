@@ -31,9 +31,9 @@ class AppServiceProvider extends ServiceProvider
             Broadcast::extend($driver, fn ($app, array $config) => new ForgivingBroadcaster(Broadcast::pusher($config), $config['jsonp'] ?? false));
         }
 
-        // every {room} route (chat, queue, ...) refuses people who may not enter a private room
+        // every {room} route (chat, queue, ...) refuses people who may not enter a private room. A room's old addresses find it too (it was renamed)
         Route::bind('room', function (string $slug) {
-            $room = Room::where(fn ($query) => $query->where('slug', $slug)->orWhere('legacy_slug', $slug))->firstOrFail();
+            $room = Room::atAddress($slug)->firstOrFail();
             abort_unless($room->canEnter(request()->user()), 403, 'This room is private.');
 
             return $room;

@@ -25,8 +25,8 @@ function useDismiss(open: boolean, box: React.RefObject<HTMLElement | null>, clo
 }
 
 /**
- * The donation panel: the goal (when staff set one) and a Donate form for any amount from €1, named or anonymous. With Stripe the payment page opens
- * here and comes back to the room; with a donation page set by staff (Ko-fi, PayPal ...) that page opens in a new tab.
+ * The donation panel: the goal (when staff set one) and a Donate form for any amount from €1, named or anonymous. The payment page opens in this
+ * window: Stripe's, which comes back to the room, or without Stripe the donation page set by staff (Ko-fi, PayPal ...).
  */
 function DonatePanel({ community, slug, onClose }: { community: Community; slug: string; onClose: () => void }) {
     const goal = community.donation;
@@ -39,12 +39,8 @@ function DonatePanel({ community, slug, onClose }: { community: Community; slug:
         e.preventDefault();
         setBusy(true);
         setError('');
-        sendJson<{ url: string; stripe: boolean }>('POST', route('donations.store'), { amount: Number(amount.replace(',', '.')), anonymous, room: slug })
-            .then(({ url, stripe }) => {
-                if (stripe) return window.location.assign(url); // Stripe's payment page, then back here
-                window.open(url, '_blank', 'noopener,noreferrer');
-                setBusy(false);
-            })
+        sendJson<{ url: string }>('POST', route('donations.store'), { amount: Number(amount.replace(',', '.')), anonymous, room: slug })
+            .then(({ url }) => window.location.assign(url)) // in this window, not a new one: Stripe's payment page (it comes back to the room) or the donation page staff set
             .catch((err: Error) => { setError(err.message); setBusy(false); });
     };
 
@@ -186,7 +182,7 @@ export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSk
     const giveTip = goal ? `Donation Goal\n${goal.title}\n${goal.percent}%` : 'Donate\nHelp the project grow <3';
 
     return (
-        <footer ref={bar} className="sfd-footbar relative flex h-[68px] shrink-0 items-center gap-3 border-t border-white/10 bg-linear-to-b from-neutral-950/95 to-black px-3 text-sm sm:px-4">
+        <footer ref={bar} className="sfd-footbar relative flex h-17 shrink-0 items-center gap-3 border-t border-white/10 bg-linear-to-b from-neutral-950/95 to-black px-3 text-sm sm:px-4">
             <div className="pointer-events-none absolute inset-x-0 -top-px h-px bg-linear-to-r from-transparent via-violet-500/50 to-transparent" />
 
             {/* the playlist I play from, and what comes next */}

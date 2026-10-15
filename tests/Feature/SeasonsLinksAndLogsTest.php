@@ -34,7 +34,8 @@ class SeasonsLinksAndLogsTest extends TestCase
     private function shown(?User $who = null): ?string
     {
         $background = null;
-        ($who ? $this->actingAs($who) : $this)->get('/rooms/seasons')->assertInertia(function (Assert $page) use (&$background) {
+        // some tests rename the room, and its address follows the name: the old address goes on to the new one
+        ($who ? $this->actingAs($who) : $this)->followingRedirects()->get('/rooms/seasons')->assertInertia(function (Assert $page) use (&$background) {
             $background = $page->toArray()['props']['room']['background'];
         });
 

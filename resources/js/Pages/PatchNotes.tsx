@@ -44,7 +44,7 @@ export default function PatchNotes() {
                     {shown.length === 0 && <p className="text-neutral-500">Nothing matches.</p>}
                     {shown.map((r) => (
                         <section key={r.version} id={`v${r.version}`} className="relative scroll-mt-4">
-                            <span className={`absolute left-[-31px] top-5 h-3 w-3 rounded-full ring-4 ring-neutral-950 ${r.version === releases[0].version ? 'bg-green-400' : 'bg-violet-400'}`} />
+                            <span className={`absolute -left-7.75 top-5 h-3 w-3 rounded-full ring-4 ring-neutral-950 ${r.version === releases[0].version ? 'bg-green-400' : 'bg-violet-400'}`} />
                             <Card className="p-5">
                                 <h2 className="flex flex-wrap items-center gap-3 font-bold">
                                     <span className="rounded-md bg-linear-to-r from-fuchsia-500 to-violet-500 px-2 py-0.5 text-sm">v{r.version}</span>

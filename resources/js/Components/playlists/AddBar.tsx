@@ -1,6 +1,7 @@
+import VideoPreview from '@/Components/playlists/VideoPreview';
 import { getJson } from '@/lib/post';
 import { isLink } from '@/lib/playlists';
-import { Info, Loader2, Plus, Search, X } from 'lucide-react';
+import { Info, Loader2, Play, Plus, Search, X } from 'lucide-react';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 
 interface Result {
@@ -12,7 +13,7 @@ interface Result {
 
 /**
  * The bar above the tracks: paste a YouTube, SoundCloud or Spotify link to add it at once, or type something to search YouTube.
- * The results drop down under the bar, each with Add (to this playlist) and, inside a room, Queue (into the waitlist).
+ * The results drop down under the bar, each with Watch (the video, before deciding), Add (to this playlist) and, inside a room, Queue (into the waitlist).
  */
 export default function AddBar({ disabled, roomSlug, onAdd, onQueue, onNotice }: {
     disabled: boolean;
@@ -24,10 +25,12 @@ export default function AddBar({ disabled, roomSlug, onAdd, onQueue, onNotice }:
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<Result[] | null>(null);
     const [searching, setSearching] = useState(false);
+    const [watching, setWatching] = useState<Result | null>(null);
     const box = useRef<HTMLFormElement>(null);
 
     useEffect(() => {
-        const away = (e: MouseEvent) => !box.current?.contains(e.target as Node) && setResults(null);
+        // a click outside closes the results, but not one in the video window opened from them
+        const away = (e: MouseEvent) => !box.current?.contains(e.target as Node) && !(e.target as Element).closest?.('[data-video-preview]') && setResults(null);
         document.addEventListener('mousedown', away);
 
         return () => document.removeEventListener('mousedown', away);
@@ -81,16 +84,27 @@ export default function AddBar({ disabled, roomSlug, onAdd, onQueue, onNotice }:
                 <ul className="absolute inset-x-0 top-full z-30 mt-2 max-h-88 overflow-y-auto rounded-2xl border border-white/10 bg-neutral-900/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-md">
                     {results.map((r) => (
                         <li key={r.id} className="flex items-center gap-3 rounded-xl p-1.5 hover:bg-white/6">
-                            <img src={r.thumbnail} alt="" loading="lazy" className="h-10 w-18 shrink-0 rounded-lg object-cover ring-1 ring-white/10" />
+                            <button type="button" onClick={() => setWatching(r)} title="Watch the video" aria-label={`Watch ${r.title}`} className="group/thumb relative h-10 w-18 shrink-0 overflow-hidden rounded-lg ring-1 ring-white/10 transition hover:ring-violet-400/70">
+                                <img src={r.thumbnail} alt="" loading="lazy" className="h-full w-full object-cover" />
+                                <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-white opacity-0 transition group-hover/thumb:opacity-100"><Play size={15} fill="currentColor" /></span>
+                            </button>
                             <span className="min-w-0 flex-1">
                                 <span className="block truncate font-semibold text-neutral-100">{r.title}</span>
                                 <span className="block truncate text-xs text-neutral-500">{r.channel}</span>
                             </span>
+                            <button type="button" onClick={() => setWatching(r)} className="flex shrink-0 items-center gap-1 rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-neutral-100 transition hover:bg-white/20"><Play size={12} fill="currentColor" /> Watch</button>
                             <button type="button" onClick={() => onAdd({ video_id: r.id })} disabled={disabled} className="flex shrink-0 items-center gap-1 rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-neutral-100 transition hover:bg-white/20 disabled:opacity-40"><Plus size={13} /> Add</button>
                             {roomSlug && <button type="button" onClick={() => onQueue(r.id)} disabled={disabled} className="shrink-0 rounded-lg bg-violet-600 px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-violet-500 disabled:opacity-40">Queue</button>}
                         </li>
                     ))}
                 </ul>
+            )}
+
+            {watching && (
+                <VideoPreview id={watching.id} title={watching.title} channel={watching.channel} onClose={() => setWatching(null)}>
+                    <button type="button" onClick={() => { onAdd({ video_id: watching.id }); setWatching(null); }} disabled={disabled} className="flex items-center gap-1.5 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-white/20 disabled:opacity-40"><Plus size={15} /> Add to this playlist</button>
+                    {roomSlug && <button type="button" onClick={() => { onQueue(watching.id); setWatching(null); }} disabled={disabled} className="rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-40">Queue in this room</button>}
+                </VideoPreview>
             )}
         </form>
     );

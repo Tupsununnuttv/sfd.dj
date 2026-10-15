@@ -78,6 +78,7 @@ class WhispersDiscordCommunityTest extends TestCase
         // right state: linked
         Http::fake([
             'discord.com/api/oauth2/token' => Http::response(['access_token' => 'tok']),
+            'discord.com/api/oauth2/token/revoke' => Http::response([]),
             'discord.com/api/users/@me' => Http::response(['id' => '123456', 'username' => 'kate', 'global_name' => 'Kate D']),
         ]);
         $this->withSession(['discord_state' => 'goodstate'])->get('/auth/discord/callback?code=abc&state=goodstate')->assertRedirect(route('settings.connections'));
@@ -87,7 +88,7 @@ class WhispersDiscordCommunityTest extends TestCase
         $this->assertArrayNotHasKey('discord_id', $me->toArray()); // the id never leaves the server
 
         // one Discord account cannot be on two SFD-DJ.EU accounts
-        Http::fake(['discord.com/api/oauth2/token' => Http::response(['access_token' => 't']), 'discord.com/api/users/@me' => Http::response(['id' => '777', 'username' => 'x'])]);
+        Http::fake(['discord.com/api/oauth2/token' => Http::response(['access_token' => 't']), 'discord.com/api/oauth2/token/revoke' => Http::response([]), 'discord.com/api/users/@me' => Http::response(['id' => '777', 'username' => 'x'])]);
         $this->withSession(['discord_state' => 's2'])->get('/auth/discord/callback?code=abc&state=s2');
         $this->assertSame('123456', $me->refresh()->discord_id);
 
@@ -129,6 +130,7 @@ class WhispersDiscordCommunityTest extends TestCase
         config(['services.discord.client_id' => 'client-id', 'services.discord.client_secret' => 'client-secret']);
         Http::fake([
             'discord.com/api/oauth2/token' => Http::response(['access_token' => 'access-token']),
+            'discord.com/api/oauth2/token/revoke' => Http::response([]),
             'discord.com/api/users/@me' => Http::response(['id' => 'discord-user-id']),
         ]);
 
@@ -149,6 +151,7 @@ class WhispersDiscordCommunityTest extends TestCase
         config(['services.discord.client_id' => 'client-id', 'services.discord.client_secret' => 'client-secret']);
         Http::fake([
             'discord.com/api/oauth2/token' => Http::response(['access_token' => 'access-token']),
+            'discord.com/api/oauth2/token/revoke' => Http::response([]),
             'discord.com/api/users/@me' => Http::response(['id' => 'unlinked-discord-id']),
         ]);
 
@@ -168,6 +171,7 @@ class WhispersDiscordCommunityTest extends TestCase
         config(['services.discord.client_id' => 'client-id', 'services.discord.client_secret' => 'client-secret']);
         Http::fake([
             'discord.com/api/oauth2/token' => Http::response(['access_token' => 'access-token']),
+            'discord.com/api/oauth2/token/revoke' => Http::response([]),
             'discord.com/api/users/@me' => Http::response(['id' => 'discord-user-id']),
         ]);
 

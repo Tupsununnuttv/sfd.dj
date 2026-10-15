@@ -13,7 +13,7 @@ MAIL_FROM_ADDRESS=your.address@gmail.com
 MAIL_FROM_NAME="SFD-DJ.EU"`;
 
 /** The mail server of the site: is it set up, a test message, and whether people must confirm their email. */
-export default function EmailTab({ email, gotoTab }: { email: AdminProps['email']; gotoTab: (tab: 'Users') => void }) {
+export default function EmailTab({ email, gotoTab }: { email: NonNullable<AdminProps['email']>; gotoTab: (tab: 'Users') => void }) {
     const [copied, setCopied] = useState(false);
     const [busy, setBusy] = useState(false);
     const copy = () => { navigator.clipboard?.writeText(ENV); setCopied(true); setTimeout(() => setCopied(false), 1600); };

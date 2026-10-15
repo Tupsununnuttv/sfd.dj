@@ -53,9 +53,9 @@ export function ProgressBar({ value, className = '' }: { value: number; classNam
 /** A little animated equalizer: shown next to a song that is playing. */
 export function Equalizer({ className = '' }: { className?: string }) {
     return (
-        <span className={`inline-flex h-3 items-end gap-[2px] ${className}`} aria-hidden>
+        <span className={`inline-flex h-3 items-end gap-0.5 ${className}`} aria-hidden>
             {[0, 1, 2].map((i) => (
-                <span key={i} className="w-[3px] animate-pulse rounded-sm bg-green-400" style={{ height: `${[60, 100, 40][i]}%`, animationDelay: `${i * 0.2}s`, animationDuration: '0.9s' }} />
+                <span key={i} className="w-0.75 animate-pulse rounded-sm bg-green-400" style={{ height: `${[60, 100, 40][i]}%`, animationDelay: `${i * 0.2}s`, animationDuration: '0.9s' }} />
             ))}
         </span>
     );

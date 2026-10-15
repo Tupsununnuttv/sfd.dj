@@ -15,7 +15,7 @@ import { Award, Check, ChevronDown, Crown, Frame, Gift, Lock, RotateCcw, Save, S
 import { ReactNode, useState } from 'react';
 
 type Slot = 'avatar' | 'badge' | 'accessory' | 'frame' | 'effect';
-type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'staff';
+type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'staff' | 'owner';
 type Item = { key: string; label: string; icon: string | null; level: number; rarity: Rarity; price: number; owned: boolean; character?: boolean; role?: { key: string; label: string; icon: string; color: string } };
 type Look = Record<Slot, string | null>;
 type Line = { amount: number; reason: string; note: string | null; at: string | null };
@@ -35,6 +35,7 @@ const rarities: Record<Rarity, { label: string; levels: string; card: string; te
     epic: { label: 'Epic', levels: 'Levels 10 to 24', card: 'border-violet-400/30 bg-violet-500/9 hover:border-violet-400/70', text: 'text-violet-300' },
     legendary: { label: 'Legendary', levels: 'Level 25 and up', card: 'border-amber-400/40 bg-linear-to-br from-amber-500/[0.14] via-fuchsia-500/6 to-transparent hover:border-amber-300/80', text: 'text-amber-300' },
     staff: { label: 'Staff', levels: 'For people with a role: Brand Ambassador and above', card: 'border-pink-400/40 bg-linear-to-br from-pink-500/16 via-violet-500/8 to-transparent hover:border-pink-300/80', text: 'text-pink-300' },
+    owner: { label: 'Owner', levels: 'The Owner\'s own characters: nobody else can wear them', card: 'border-rose-400/45 bg-linear-to-br from-rose-500/18 via-amber-500/8 to-transparent hover:border-rose-300/80', text: 'text-rose-300' },
 };
 
 const reasons: Record<string, string> = { level: 'New level', song: 'Song played', grab: 'Grab', daily: 'Daily reward', referral: 'Friend joined', shop: 'Shop', welcome: 'Welcome' };

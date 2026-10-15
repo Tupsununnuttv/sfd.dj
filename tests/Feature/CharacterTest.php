@@ -228,7 +228,7 @@ class CharacterTest extends TestCase
         $this->assertTrue($has($owner, 'char:zoos02'));
         $fox = collect($owner)->firstWhere('key', 'char:zoos02');
         $this->assertSame(['key' => 'owner', 'label' => 'Owner', 'icon' => '👑', 'color' => '#f43f5e'], $fox['role']);
-        $this->assertSame('staff', $fox['rarity']);
+        $this->assertSame('owner', $fox['rarity'], 'the characters of the Owner have a shelf of their own');
         $this->assertSame('Zoo S02', $fox['label']);
     }
 
@@ -306,5 +306,61 @@ class CharacterTest extends TestCase
         // the next song: everybody stands again until they vote
         $room->advance();
         $this->assertSame([], $room->refresh()->dancers());
+    }
+
+    public function test_panda_bear_is_for_brand_ambassadors_and_up(): void
+    {
+        $shelf = fn (User $user) => collect($this->actingAs($user)->get('/shop')->inertiaProps('catalog.avatar'))->keyBy('key');
+
+        $this->assertFalse($shelf($this->withRole(null))->has('char:pandabear'));
+        $this->assertSame('staff', $shelf($this->withRole('brand_ambassador'))['char:pandabear']['rarity']);
+
+        // whoever bought it without the role gets the coins back and another character; a Brand Ambassador keeps it
+        $buyer = $this->withRole(null);
+        $buyer->forceFill(['character' => 'char:pandabear', 'coins' => 5])->save();
+        $buyer->items()->create(['slot' => 'avatar', 'item' => 'char:pandabear', 'price' => 230]);
+        $ambassador = $this->withRole('brand_ambassador');
+        $ambassador->items()->create(['slot' => 'avatar', 'item' => 'char:pandabear', 'price' => 230]);
+        $ambassador->forceFill(['character' => 'char:pandabear'])->save();
+
+        (require database_path('migrations/2026_11_08_000001_make_panda_bear_brand_ambassador_only.php'))->up();
+
+        $this->assertSame(235, $buyer->refresh()->coins);
+        $this->assertNotSame('char:pandabear', $buyer->character);
+        $this->assertFalse($buyer->items()->where('item', 'char:pandabear')->exists());
+        $this->assertSame('char:pandabear', $ambassador->refresh()->character);
+        $this->assertTrue($ambassador->items()->where('item', 'char:pandabear')->exists());
+    }
+
+    public function test_fox_is_for_the_owner_alone_and_stands_on_the_owner_shelf(): void
+    {
+        $shelf = fn (User $user) => collect($this->actingAs($user)->get('/shop')->inertiaProps('catalog.avatar'))->keyBy('key');
+
+        foreach ([null, 'brand_ambassador', 'admin', 'developer'] as $role) {
+            $user = $this->withRole($role);
+            $this->assertFalse($shelf($user)->has('char:fox'), ($role ?? 'a plain user').' does not see the fox in the shop');
+            $this->actingAs($user)->post('/shop/equip', ['avatar' => 'char:fox'])->assertSessionHasErrors('avatar');
+        }
+
+        $owner = $this->withRole('owner');
+        $fox = $shelf($owner)['char:fox'];
+        $this->assertSame('owner', $fox['rarity'], 'on the shelf of the Owner');
+        $this->assertSame('Fox', $fox['label']);
+        $this->actingAs($owner)->post('/shop/equip', ['avatar' => 'char:fox'])->assertSessionHasNoErrors();
+        $this->assertSame('char:fox', $owner->refresh()->character);
+
+        // whoever bought him before gets the coins back and another character; the Owner keeps him
+        $buyer = $this->withRole(null);
+        $buyer->forceFill(['character' => 'char:fox', 'coins' => 5])->save();
+        $buyer->items()->create(['slot' => 'avatar', 'item' => 'char:fox', 'price' => 430]);
+        $owner->items()->create(['slot' => 'avatar', 'item' => 'char:fox', 'price' => 430]);
+
+        (require database_path('migrations/2026_11_09_000001_make_fox_owner_only.php'))->up();
+
+        $this->assertSame(435, $buyer->refresh()->coins);
+        $this->assertNotSame('char:fox', $buyer->character);
+        $this->assertFalse($buyer->items()->where('item', 'char:fox')->exists());
+        $this->assertSame('char:fox', $owner->refresh()->character);
+        $this->assertTrue($owner->items()->where('item', 'char:fox')->exists());
     }
 }

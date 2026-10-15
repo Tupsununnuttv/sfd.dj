@@ -218,7 +218,7 @@ function General({ room, genres, backgrounds: pickable, seasons, canLock }: Pick
             <Card title="About the room" text="What people see in the room list and when they come in.">
                 <div className="space-y-3">
                     <div>
-                        <label className={label}><span>Room name</span>{count(s.name, 50)}</label>
+                        <label className={label}><span>Room name <span className="text-neutral-600">(the web address follows the name; old links keep working)</span></span>{count(s.name, 50)}</label>
                         <input value={s.name} onChange={(e) => set({ name: e.target.value })} maxLength={50} className={input} />
                         {errors.name && <p className="mt-1 text-xs text-red-400">{errors.name}</p>}
                     </div>

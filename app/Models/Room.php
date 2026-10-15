@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class Room extends Model
 {
@@ -43,8 +44,6 @@ class Room extends Model
 
     protected $fillable = ['user_id', 'name', 'slug', 'description', 'current_item_id', 'current_started_at', 'badges', 'background', 'genre', 'is_private', 'is_featured', 'custom_background', 'welcome_message', 'rules', 'rule_list', 'custom_css', 'waitlist_locked', 'waitlist_cycle', 'automod', 'auto_host_bot_id', 'auto_host_playlist_id'];
 
-    protected $hidden = ['legacy_slug'];
-
     protected static function booted(): void
     {
         static::created(fn (Room $room) => $room->ensureDefaultRoles());
@@ -59,6 +58,48 @@ class Room extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    /** The addresses this room had before its current one (see changeSlug). */
+    public function oldSlugs(): HasMany
+    {
+        return $this->hasMany(RoomSlug::class);
+    }
+
+    /** The room that has this address: as its current one, or as one it used to have. */
+    public function scopeAtAddress(Builder $query, string $slug): void
+    {
+        $query->where(fn (Builder $q) => $q->where('slug', $slug)->orWhereIn('id', RoomSlug::where('slug', $slug)->select('room_id')));
+    }
+
+    /**
+     * The address for a room name: its words joined with dashes ("Late Night Jazz" is late-night-jazz), and -2, -3 ... when another room has it or had it
+     * (old addresses stay taken, so a link to somebody's old room never lands in a new one). The room itself may keep or take back its own addresses.
+     */
+    public static function slugFor(string $name, ?self $room = null): string
+    {
+        $base = Str::slug($name) ?: 'room';
+        $slug = $base;
+        $suffix = 2;
+
+        while (
+            self::where('slug', $slug)->when($room, fn (Builder $q) => $q->whereKeyNot($room->id))->exists()
+            || RoomSlug::where('slug', $slug)->when($room, fn (Builder $q) => $q->where('room_id', '!=', $room->id))->exists()
+        ) {
+            $slug = $base.'-'.$suffix++;
+        }
+
+        return $slug;
+    }
+
+    /** Move the room to a new address. The one it leaves is remembered, so links to it keep working. */
+    public function changeSlug(string $slug): void
+    {
+        DB::transaction(function () use ($slug) {
+            $this->oldSlugs()->where('slug', $slug)->delete(); // taking back an address it had before
+            $this->oldSlugs()->firstOrCreate(['slug' => $this->slug]);
+            $this->update(['slug' => $slug]);
+        });
     }
 
     protected function casts(): array

@@ -6,7 +6,7 @@ export default function StatusDot({ status, className = '', ring = 'ring-neutral
 
     return (
         <span title={STATUS[s].label} data-status={s} className={`relative inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-2 ${ring} ${STATUS[s].dot} ${className}`}>
-            {s === 'busy' && <span className="absolute inset-x-[2px] top-1/2 h-[2px] -translate-y-1/2 rounded bg-white" />}
+            {s === 'busy' && <span className="absolute inset-x-0.5 top-1/2 h-0.5 -translate-y-1/2 rounded bg-white" />}
         </span>
     );
 }
