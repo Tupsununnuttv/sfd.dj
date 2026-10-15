@@ -85,7 +85,7 @@ export default function AccountsTab({ q, filters, users }: Pick<AdminProps, 'q' 
                         {users.data.length === 0 && <tr><td colSpan={4} className="p-8 text-center text-neutral-500">No accounts match.</td></tr>}
                         {users.data.map((user) => (
                             <Fragment key={user.id}>
-                                <tr className="hover:bg-white/[0.02]">
+                                <tr className="hover:bg-white/2">
                                     <td className="px-3 py-3"><Link href={route('users.show', user.id)} className="font-semibold hover:underline">{user.name}</Link></td>
                                     <td className="px-3 py-3 text-neutral-400">{user.username ? `@${user.username}` : '-'}</td>
                                     <td className="px-3 py-3 text-neutral-400">{user.email}</td>

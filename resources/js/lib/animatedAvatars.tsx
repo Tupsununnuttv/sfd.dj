@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { type JSX, useId } from 'react';
 
 /**
  * Animated avatars: little characters drawn as SVG that move in a loop (blinking, bobbing, chewing to the beat).

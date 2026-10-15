@@ -41,7 +41,7 @@ export default function FriendToast() {
     if (requests.length === 0) return null;
 
     return (
-        <div className="fixed bottom-4 right-4 z-[60] w-72 space-y-2">
+        <div className="fixed bottom-4 right-4 z-60 w-72 space-y-2">
             {requests.map((r) => (
                 <div key={r.id} className="rounded-xl border border-neutral-700 bg-neutral-900 p-3 text-white shadow-xl">
                     <div className="flex items-center gap-3">

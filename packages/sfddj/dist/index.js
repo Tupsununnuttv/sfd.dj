@@ -17,9 +17,7 @@ export class SfdDj {
         if (!options?.token)
             throw new Error('sfddj: a token is required (Settings → Developers on SFD-DJ.EU).');
         this.token = options.token;
-        if (!options.baseUrl)
-            throw new Error('sfddj: baseUrl is required, e.g. https://sfd.example.com');
-        this.base = options.baseUrl.replace(/\/+$/, '') + '/api/v1';
+        this.base = (options.baseUrl || 'https://sfd-dj.eu').replace(/\/+$/, '') + '/api/v1';
         this.doFetch = options.fetch ?? ((...args) => fetch(...args));
     }
     async call(method, path, body, query) {

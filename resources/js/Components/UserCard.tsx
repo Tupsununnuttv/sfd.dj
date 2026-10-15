@@ -149,7 +149,7 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
     const stats: [LucideIcon, string, number | undefined][] = [[Music, 'Songs', s?.songs_played], [ThumbsUp, 'Woots', s?.woots], [Bookmark, 'Grabs', s?.grabs], [Users, 'Friends', s?.friends]];
 
     return (
-        <div className="fixed inset-0 z-[60]" onClick={onClose} onContextMenu={(e) => { e.preventDefault(); onClose(); }}>
+        <div className="fixed inset-0 z-60" onClick={onClose} onContextMenu={(e) => { e.preventDefault(); onClose(); }}>
             <div
                 ref={box}
                 role="dialog"
@@ -161,7 +161,7 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
                 onContextMenu={(e) => e.stopPropagation()}
             >
                 {/* who */}
-                <div className="h-16 bg-gradient-to-br from-violet-600/50 via-fuchsia-600/30 to-sky-500/20" />
+                <div className="h-16 bg-linear-to-br from-violet-600/50 via-fuchsia-600/30 to-sky-500/20" />
                 <div className="-mt-9 flex items-end gap-3 px-4">
                     <div className="rounded-full bg-neutral-900 p-1"><Avatar name={user.name} avatar={user.avatar} cosmetics={user.cosmetics} className="h-16 w-16 text-3xl" /></div>
                     <div className="min-w-0 pb-1">
@@ -176,7 +176,7 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
                     {profile?.favorite_genre && <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-bold leading-none text-neutral-300">🎵 {profile.favorite_genre}</span>}
                 </div>
                 <p className="flex items-center gap-1.5 px-4 pt-1.5 text-xs">
-                    <StatusDot status={room.here ? status : 'offline'} ring="ring-transparent" className="!ring-0" />
+                    <StatusDot status={room.here ? status : 'offline'} ring="ring-transparent" className="ring-0!" />
                     <span className={room.here ? STATUS[status].text : 'text-neutral-500'}>{room.here ? `${STATUS[status].label}, in this room` : 'Not in this room right now'}</span>
                     {flag && <span className="ml-auto flex min-w-0 items-center gap-1.5 text-neutral-300"><Flag flag={flag} className="h-3.5" /><span className="truncate">{flag.name}</span></span>}
                 </p>
@@ -199,7 +199,7 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
                 {failed && !profile && (
                     <p className="px-4 pt-2 text-xs text-neutral-400">Could not load the profile. <button onClick={retry} className="font-semibold text-violet-300 hover:underline">Try again</button></p>
                 )}
-                {profile?.bio && <p className="mx-4 mt-3 line-clamp-4 whitespace-pre-line break-words rounded-xl bg-white/5 px-3 py-2 text-xs italic text-neutral-300">“{profile.bio}”</p>}
+                {profile?.bio && <p className="mx-4 mt-3 line-clamp-4 whitespace-pre-line wrap-break-word rounded-xl bg-white/5 px-3 py-2 text-xs italic text-neutral-300">“{profile.bio}”</p>}
                 {joined && <p className="flex flex-wrap items-center gap-2 px-4 pt-2 text-[11px] text-neutral-500">Joined {joined}{profile?.discord && <> · Discord {profile.discord}</>}{profile?.youtube_channel && <a href={profile.youtube_channel.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-red-300"><SocialIcon name="youtube" size={13} /> {profile.youtube_channel.title || 'YouTube channel'}</a>}</p>}
 
                 {/* what you can do */}

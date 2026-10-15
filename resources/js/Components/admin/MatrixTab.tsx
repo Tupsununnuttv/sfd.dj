@@ -38,7 +38,7 @@ export default function MatrixTab({ matrix, groups }: { matrix: AdminProps['matr
                     <tbody>
                         {Object.entries(groups).map(([group, heading]) => (
                             <Fragment key={group}>
-                                <tr className="border-y border-white/10 bg-white/[0.04]">
+                                <tr className="border-y border-white/10 bg-white/4">
                                     <th colSpan={perms.length + 1} className="px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-neutral-200">
                                         <span className="sticky left-3">{heading.icon} {heading.label}</span>
                                     </th>
@@ -46,7 +46,7 @@ export default function MatrixTab({ matrix, groups }: { matrix: AdminProps['matr
                                 {matrix.roles.filter((r) => r.group === group).map((r) => {
                                     const fixed = r.key === 'owner' || r.key === 'member'; // the Owner has it all, the User has nothing extra
                                     return (
-                                        <tr key={r.key} className="border-b border-white/5 hover:bg-white/[0.02]">
+                                        <tr key={r.key} className="border-b border-white/5 hover:bg-white/2">
                                             <td className="sticky left-0 z-10 whitespace-nowrap bg-neutral-900 px-3 py-2.5 text-xs font-bold" style={{ color: r.color }}>
                                                 <span className="mr-2 inline-flex align-middle"><RoleIcon role={r} /></span>{r.label}
                                                 {r.key === 'member' && <span className="ml-2 font-normal text-neutral-500">(everyone)</span>}

@@ -10,7 +10,7 @@ export default function AppLayout({ title, subtitle, actions, children }: PropsW
             <Sidebar />
             <div className="flex min-w-0 flex-1 flex-col">
                 <Live />
-                <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden [background-image:radial-gradient(50rem_22rem_at_70%_-8%,rgba(139,92,246,0.16),transparent),radial-gradient(40rem_20rem_at_0%_0%,rgba(217,70,239,0.08),transparent)]">
+                <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[radial-gradient(50rem_22rem_at_70%_-8%,rgba(139,92,246,0.16),transparent),radial-gradient(40rem_20rem_at_0%_0%,rgba(217,70,239,0.08),transparent)]">
                     <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
                         <VerifyBanner />
                         <div className="flex flex-wrap items-end justify-between gap-3">

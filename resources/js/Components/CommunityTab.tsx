@@ -10,7 +10,7 @@ export interface CommunityAdmin {
 }
 
 const field = 'w-full rounded-md border-neutral-700 bg-neutral-800 text-sm text-neutral-100 placeholder-neutral-500 focus:border-violet-500 focus:ring-violet-500';
-const card = 'rounded-2xl border border-white/10 bg-white/[0.04] p-5';
+const card = 'rounded-2xl border border-white/10 bg-white/4 p-5';
 
 /** Admin panel → Community: the social links in the room footbar and the donation goal. */
 export default function CommunityTab({ community }: { community: CommunityAdmin }) {
@@ -66,13 +66,13 @@ export default function CommunityTab({ community }: { community: CommunityAdmin 
                     {errors['donation.url'] && <p className="mt-1 text-xs text-red-400">{errors['donation.url']}</p>}
                 </div>
                 <div>
-                    <div className="h-2 overflow-hidden rounded-full bg-neutral-800"><div className="h-full bg-gradient-to-r from-pink-500 to-fuchsia-500" style={{ width: `${percent}%` }} /></div>
+                    <div className="h-2 overflow-hidden rounded-full bg-neutral-800"><div className="h-full bg-linear-to-r from-pink-500 to-fuchsia-500" style={{ width: `${percent}%` }} /></div>
                     <p className="mt-1 text-xs text-neutral-500">{d.currency}{d.current} of {d.currency}{d.goal} ({percent}%), before the donations made on the site. People donate any amount with the Donate button in a room's footbar: with Stripe connected they pay on Stripe and it is added to the goal by itself; without it, the page above opens. Put money raised anywhere else in "Raised elsewhere".</p>
                 </div>
             </section>
 
             <div className="flex items-center gap-3 lg:col-span-2">
-                <button className="rounded-md bg-gradient-to-r from-fuchsia-500 to-violet-500 px-5 py-2 text-sm font-semibold">Save</button>
+                <button className="rounded-md bg-linear-to-r from-fuchsia-500 to-violet-500 px-5 py-2 text-sm font-semibold">Save</button>
                 {saved && <span className="text-sm text-green-400">Saved.</span>}
             </div>
         </form>

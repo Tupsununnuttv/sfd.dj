@@ -82,7 +82,7 @@ export default function Overview({ data, openTickets, totalUsers, gotoTab }: { d
                     <SectionTitle title="Newest people" action={<button onClick={() => gotoTab('Users')} className="text-xs text-violet-400 hover:underline">All users →</button>} />
                     <Card className="divide-y divide-white/5">
                         {data.recentUsers.map((u) => (
-                            <Link key={u.id} href={route('users.show', u.id)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-white/[0.03]">
+                            <Link key={u.id} href={route('users.show', u.id)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-white/3">
                                 <Avatar name={u.name} avatar={u.avatar} className="h-7 w-7 text-sm" />
                                 <span className="min-w-0 flex-1 truncate">{u.name} {u.is_bot && <span className="rounded bg-sky-500/20 px-1 text-[10px] font-bold text-sky-300">BOT</span>}</span>
                                 <span className="text-xs text-neutral-500">{ago(u.joined)}</span>

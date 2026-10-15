@@ -47,10 +47,10 @@ export default function RoomHeader({ room, host, listening, dj, title, playing, 
     return (
         <header className="sfd-navbar flex h-14 shrink-0 items-center gap-3 border-b border-white/10 bg-black/40 px-3 backdrop-blur sm:px-4 md:grid md:grid-cols-[minmax(11rem,1fr)_minmax(0,30rem)_minmax(11rem,1fr)]">
             <div className="flex min-w-0 shrink-0 items-center gap-3 md:shrink md:overflow-hidden">
-                <Link href={route('dashboard')} title="Leave the room" aria-label="Leave the room" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-neutral-300 transition hover:bg-white/10 hover:text-white">
+                <Link href={route('dashboard')} title="Leave the room" aria-label="Leave the room" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-neutral-300 transition hover:bg-white/10 hover:text-white">
                     <ArrowLeft size={18} />
                 </Link>
-                <div className="min-w-0 max-w-[15rem] sm:max-w-[19rem]">
+                <div className="min-w-0 max-w-60 sm:max-w-76">
                     <p className="flex items-center gap-2 leading-tight">
                         <span className="truncate text-sm font-extrabold tracking-tight" title={room.name}>{room.name}</span>
                         <RoomBadge badges={room.badges} compact />
@@ -84,7 +84,7 @@ export default function RoomHeader({ room, host, listening, dj, title, playing, 
                             <div className="mt-1.5 flex items-center gap-2 text-[10px] font-semibold tabular-nums leading-none text-neutral-400" data-progress>
                                 <span className="shrink-0">{mmss(position)}</span>
                                 <div className="relative h-1 min-w-8 flex-1 rounded-full bg-white/10">
-                                    <div className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 via-violet-500 to-sky-400 transition-[width] duration-1000 ease-linear" style={{ width: `${progress * 100}%` }} />
+                                    <div className="h-full rounded-full bg-linear-to-r from-fuchsia-500 via-violet-500 to-sky-400 transition-[width] duration-1000 ease-linear" style={{ width: `${progress * 100}%` }} />
                                     {progress > 0 && <span className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_8px_rgba(168,85,247,0.9)] transition-[left] duration-1000 ease-linear" style={{ left: `${progress * 100}%` }} />}
                                 </div>
                                 <span className="shrink-0">{duration > 0 ? mmss(duration) : '--:--'}</span>
@@ -98,7 +98,7 @@ export default function RoomHeader({ room, host, listening, dj, title, playing, 
 
             <div className="flex min-w-0 shrink-0 items-center justify-end gap-2">
                 {Object.keys(social).length > 0 && (
-                    <nav aria-label="Our social media" className="hidden shrink-0 items-center gap-0.5 rounded-xl border border-white/10 bg-white/[0.04] p-0.5 2xl:flex">
+                    <nav aria-label="Our social media" className="hidden shrink-0 items-center gap-0.5 rounded-xl border border-white/10 bg-white/4 p-0.5 2xl:flex">
                         {Object.entries(social).map(([key, url]) => (
                             <a key={key} href={url} target="_blank" rel="noopener noreferrer" title={socialLabels[key] ?? key} aria-label={socialLabels[key] ?? key} className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition hover:bg-white/10 hover:text-white">
                                 <SocialIcon name={key} size={14} />
@@ -108,7 +108,7 @@ export default function RoomHeader({ room, host, listening, dj, title, playing, 
                 )}
                 {/* the volume */}
                 <div className="flex shrink-0 items-center gap-2" data-volume>
-                    <button onClick={onMute} aria-label={muted ? 'Unmute' : 'Mute'} title={muted ? 'Unmute' : 'Mute'} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] transition hover:bg-white/10 hover:text-white ${shown === 0 ? 'text-red-300' : 'text-neutral-300'}`}>
+                    <button onClick={onMute} aria-label={muted ? 'Unmute' : 'Mute'} title={muted ? 'Unmute' : 'Mute'} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition hover:bg-white/10 hover:text-white ${shown === 0 ? 'text-red-300' : 'text-neutral-300'}`}>
                         <Speaker size={18} />
                     </button>
                     <input

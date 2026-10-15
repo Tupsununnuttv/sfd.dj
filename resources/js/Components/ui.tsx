@@ -4,7 +4,7 @@ import { PropsWithChildren, ReactNode } from 'react';
 
 /** The look shared by the app's pages: soft glass cards, section titles, number tiles, progress bars. */
 
-export const card = 'rounded-2xl border border-white/10 bg-white/[0.04] shadow-lg shadow-black/20';
+export const card = 'rounded-2xl border border-white/10 bg-white/4 shadow-lg shadow-black/20';
 
 export function Card({ className = '', children }: PropsWithChildren<{ className?: string }>) {
     return <section className={`${card} ${className}`}>{children}</section>;
@@ -33,7 +33,7 @@ export function StatTile({ icon: Icon, label, value, hint, tone = 'violet' }: { 
 
     return (
         <div className={`${card} relative overflow-hidden p-4`}>
-            <div className={`pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br ${tones[tone].split(' ')[0]} to-transparent blur-xl`} />
+            <div className={`pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-linear-to-br ${tones[tone].split(' ')[0]} to-transparent blur-xl`} />
             <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 ${tones[tone].split(' ')[1]}`}><Icon size={18} /></div>
             <p className="text-2xl font-black tabular-nums tracking-tight">{value}</p>
             <p className="text-xs text-neutral-400">{label}</p>
@@ -45,7 +45,7 @@ export function StatTile({ icon: Icon, label, value, hint, tone = 'violet' }: { 
 export function ProgressBar({ value, className = '' }: { value: number; className?: string }) {
     return (
         <div className={`h-2 overflow-hidden rounded-full bg-white/10 ${className}`}>
-            <div className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500 transition-all duration-700" style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+            <div className="h-full rounded-full bg-linear-to-r from-fuchsia-500 to-violet-500 transition-all duration-700" style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
         </div>
     );
 }
@@ -62,7 +62,7 @@ export function Equalizer({ className = '' }: { className?: string }) {
 }
 
 export const chip = (active: boolean) =>
-    `rounded-full px-3 py-1.5 text-xs font-semibold transition ${active ? 'bg-gradient-to-r from-fuchsia-500 to-violet-500 text-white' : 'bg-white/5 text-neutral-300 hover:bg-white/10'}`;
+    `rounded-full px-3 py-1.5 text-xs font-semibold transition ${active ? 'bg-linear-to-r from-fuchsia-500 to-violet-500 text-white' : 'bg-white/5 text-neutral-300 hover:bg-white/10'}`;
 
 export interface TabDef<K extends string> {
     key: K;
@@ -82,7 +82,7 @@ export function Tabs<K extends string>({ tabs, active, onChange, className = '',
                     role="tab"
                     aria-selected={active === t.key}
                     onClick={() => onChange(t.key)}
-                    className={`flex items-center rounded-xl py-2 font-semibold transition ${compact ? 'gap-1.5 px-3 text-[13px]' : 'gap-2 px-3.5 text-sm'} ${active === t.key ? 'bg-gradient-to-r from-fuchsia-500/30 to-violet-500/30 text-white ring-1 ring-violet-400/40' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}`}
+                    className={`flex items-center rounded-xl py-2 font-semibold transition ${compact ? 'gap-1.5 px-3 text-[13px]' : 'gap-2 px-3.5 text-sm'} ${active === t.key ? 'bg-linear-to-r from-fuchsia-500/30 to-violet-500/30 text-white ring-1 ring-violet-400/40' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}`}
                 >
                     {t.icon && <t.icon size={15} />}
                     {t.label}
@@ -113,7 +113,7 @@ export function OnlineDot({ online, status, className = '' }: { online: boolean;
 /** A text box without a width: add w-full, w-48, w-auto yourself (two widths on one element fight each other). */
 export const fieldBase = 'rounded-lg border-white/10 bg-white/5 text-sm text-neutral-100 placeholder-neutral-500 focus:border-violet-500 focus:ring-violet-500';
 export const fieldClass = `w-full ${fieldBase}`;
-export const primaryBtn = 'whitespace-nowrap rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50';
+export const primaryBtn = 'whitespace-nowrap rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50';
 export const ghostBtn = 'whitespace-nowrap rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-white/20 disabled:opacity-50';
 
 /** A tiny bar chart (inline SVG, no library): one bar per day. */
@@ -159,7 +159,7 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
                     key={o.value}
                     type="button"
                     onClick={() => onChange(o.value)}
-                    className={`rounded-xl border px-4 py-3 text-left transition ${value === o.value ? 'border-violet-400/60 bg-violet-500/15 text-white' : 'border-white/10 bg-white/[0.03] text-neutral-300 hover:bg-white/[0.07]'}`}
+                    className={`rounded-xl border px-4 py-3 text-left transition ${value === o.value ? 'border-violet-400/60 bg-violet-500/15 text-white' : 'border-white/10 bg-white/3 text-neutral-300 hover:bg-white/[0.07]'}`}
                 >
                     <span className="block text-sm font-semibold">{o.label}</span>
                     {o.hint && <span className="mt-0.5 block text-xs text-neutral-500">{o.hint}</span>}

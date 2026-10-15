@@ -3,6 +3,53 @@ export type Kind = 'new' | 'improved' | 'fixed';
 
 export const releases: { version: string; title: string; notes: [Kind, string][] }[] = [
     {
+        version: '1.45',
+        title: 'Beta Tester is a badge for everybody',
+        notes: [
+            ['improved', 'Beta Tester is no longer a role with the flask icon. Everybody has the teal Beta Tester badge instead, in front of their name in chat, in the room\'s user list, on profiles and in the Admin panel. Everybody who signs up during the beta gets it too.'],
+            ['fixed', 'Special badges (Beta Tester, Bug Hunter, Community Hero ...) now show in front of names in room chat. Before, chat left them out.'],
+        ],
+    },
+    {
+        version: '1.44',
+        title: 'Rooms open faster, on newer foundations',
+        notes: [
+            ['improved', 'Rooms open faster. Every room background is a file of its own now, so a room loads only the background it shows. The room itself loads about a fifth of what it did.'],
+            ['improved', 'The site runs on the newest versions of what it is built with: React 19, Inertia 3, TypeScript 7 and the rest. Pages change and forms save as before.'],
+        ],
+    },
+    {
+        version: '1.43',
+        title: 'Words that never go out, and everything points at sfd-dj.eu',
+        notes: [
+            ['new', 'Some words cannot be written on SFD-DJ.EU at all: slurs (about gay people, women or where someone comes from) and words about abusing children, "pdf" included. A chat message or whisper with one of them is not sent, and you see why. This holds for everybody, staff and bots too. Spellings that try to hide the word are caught as well: spaced-out letters, digits for letters, stretched letters and look-alike letters. Room hosts can still add their own words in AutoMod.'],
+            ['improved', 'The Discord bot always works with sfd-dj.eu: /status checks it, /profile and the website updates come from it, updates link to it, and the bot shows "Listening to sfd-dj.eu".'],
+            ['improved', 'The sfddj npm package for room bots talks to https://sfd-dj.eu by itself. You only give baseUrl for another copy of the site.'],
+        ],
+    },
+    {
+        version: '1.42',
+        title: 'The confirm link works everywhere, and new log in pages',
+        notes: [
+            ['fixed', 'The "Confirm my email" link in the welcome email works in any browser now: logged in as that account, as somebody else, or not logged in at all. It used to end on a "403 This action is unauthorized" page unless that same account was logged in. An old or changed link now says why it no longer works, instead of an error page.'],
+            ['improved', 'Log in and Create account have a new look: the form sits in a card with Log in / Create account tabs on top, and next to it a stage where characters from the Avatar shop dance in front of a light wall. On phones the dancers stand above the form.'],
+            ['new', 'Create account shows a preview of how you will look in rooms (your name, @username, Beta Tester badge and level), and the form is split into three short steps.'],
+            ['improved', 'The home page: characters dance in front of the room picture, the numbers sit in one bar, the partners fit one row, Live right now has a "Start your own room" card, and a new "Dress up your DJ" card shows characters from the Avatar shop.'],
+            ['fixed', 'Signing up without an invite link no longer counts as an invite from an older account, and the sign-up page no longer says that somebody invited you when nobody did.'],
+            ['improved', 'On phones the Live support button is just the round icon, so it hides less of the page.'],
+        ],
+    },
+    {
+        version: '1.41',
+        title: 'Kiko & Mochi, better Room settings, and you stay in the room',
+        notes: [
+            ['new', 'Kiko & Mochi, a new Epic character in the Avatar shop (level 16): a DJ girl with lilac space buns and pink headphones, and her Shiba puppy Mochi beside her. Standing, Mochi wags its tail and looks up when Kiko reaches out to pet it. Dancing, they hop in turn (Mochi with its front paws up) and hearts rise between them. At the decks, Mochi bobs along while Kiko pumps a fist.'],
+            ['fixed', 'Connecting Spotify, Discord or YouTube from your settings inside a room no longer takes you out of the room. The sign-in opens in a small window of its own, closes when it is done, and the page in the room shows the new connection.'],
+            ['fixed', 'Room settings → Music & Waitlist → Auto Host no longer sends you out of the room to make a bot. You can make the bot right there, and Settings → Developers opens over the room.'],
+            ['improved', 'Room settings have a new look: the parts are listed on the left with icons and a line about each one, and every part is laid out in clear boxes. General shows a big preview of the background you pick, counts the letters in the name, description and welcome message, and has a save bar that tells you when something is not saved yet. You can undo your changes, and the window stays open after saving.'],
+        ],
+    },
+    {
         version: '1.40',
         title: 'A new logo, donations and four new characters',
         notes: [

@@ -221,10 +221,10 @@ class WhispersDiscordCommunityTest extends TestCase
             ->assertJsonPath('announcements.0.message', 'New listening rooms are live.');
     }
 
-    public function test_discord_connect_joins_server_and_syncs_beta_tester_role(): void
+    public function test_discord_connect_joins_server_and_syncs_site_roles(): void
     {
         $me = User::factory()->create();
-        $me->forceFill(['roles' => ['beta_tester']])->save();
+        $me->forceFill(['roles' => ['early_supporter']])->save();
         config([
             'services.discord.client_id' => 'client-id',
             'services.discord.client_secret' => 'client-secret',
@@ -244,7 +244,7 @@ class WhispersDiscordCommunityTest extends TestCase
             }
             if (str_ends_with($url, '/guilds/guild-id/roles')) {
                 return Http::response([
-                    ['id' => 'beta-role-id', 'name' => 'SFD-DJ.EU | Beta Tester'],
+                    ['id' => 'beta-role-id', 'name' => 'SFD-DJ.EU | Early Supporter'],
                     ['id' => 'other-role-id', 'name' => 'Community'],
                     ['id' => 'member-role-id', 'name' => 'Member'],
                 ]);

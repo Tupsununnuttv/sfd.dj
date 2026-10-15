@@ -38,7 +38,7 @@ export default function Brand() {
             <PageHeader crumbs={[['Brand']]} title="The SFD-DJ.EU brand" text="A bold S in a glossy tile that runs from violet to cyan, ringed by a sound spectrum with a playhead: the music, in sync, live. Use it to write about us or to link to us." />
 
             <section className="mx-auto max-w-6xl px-6">
-                <div className="relative flex flex-col items-center overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-950 via-neutral-950 to-fuchsia-950 px-6 py-16">
+                <div className="relative flex flex-col items-center overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-violet-950 via-neutral-950 to-fuchsia-950 px-6 py-16">
                     <div className="pointer-events-none absolute -left-20 -top-20 h-80 w-80 animate-float rounded-full bg-fuchsia-600/25 blur-3xl" />
                     <div className="pointer-events-none absolute -bottom-24 right-0 h-96 w-96 animate-float rounded-full bg-violet-600/25 blur-3xl [animation-delay:2s]" />
                     <LogoMark detail="full" spin className="relative text-[16rem] drop-shadow-[0_30px_70px_rgba(168,85,247,0.6)]" />
@@ -56,7 +56,7 @@ export default function Brand() {
                     <ApplicationLogo className="text-4xl" detail="full" onLight />
                     <p className="mt-5 text-center text-sm text-neutral-500">On a light page, keep the tile and write SFD in dark.</p>
                 </div>
-                <div className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-fuchsia-600 to-violet-700 p-8">
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-linear-to-br from-fuchsia-600 to-violet-700 p-8">
                     <ApplicationLogo className="text-4xl" detail="full" />
                     <p className="mt-5 text-center text-sm text-white/80">On a colour, the tile still keeps it readable.</p>
                 </div>
@@ -89,7 +89,7 @@ export default function Brand() {
                         </button>
                     ))}
                 </div>
-                <div className="mt-4 h-3 overflow-hidden rounded-full bg-gradient-to-r from-fuchsia-500 via-violet-500 to-sky-400" title="The brand gradient: fuchsia to violet to sky" />
+                <div className="mt-4 h-3 overflow-hidden rounded-full bg-linear-to-r from-fuchsia-500 via-violet-500 to-sky-400" title="The brand gradient: fuchsia to violet to sky" />
             </section>
 
             <section className="mx-auto mt-14 grid max-w-6xl grid-cols-1 gap-4 px-6 md:grid-cols-2">

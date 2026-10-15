@@ -42,7 +42,6 @@ class SiteRolesTest extends TestCase
             ['partnership', '🤝', 'Partnership', 'community'],
             ['vip', '💜', 'VIP', 'community'],
             ['early_supporter', '💎', 'Early Supporter', 'community'],
-            ['beta_tester', '🧪', 'Beta Tester', 'community'],
             ['supporter', '⭐', 'Supporter', 'community'],
             ['member', '👤', 'User', 'community'],
         ];
@@ -58,7 +57,7 @@ class SiteRolesTest extends TestCase
         $this->assertSame('Creator / Contributor', Role::GROUPS['creator']['label']);
         $this->assertSame('Community / Status', Role::GROUPS['community']['label']);
         $this->assertNull(Role::tryFrom('content_creator'));
-        $this->assertCount(19, array_unique(array_map(fn (Role $r) => $r->color(), Role::cases())), 'every role has its own colour');
+        $this->assertCount(18, array_unique(array_map(fn (Role $r) => $r->color(), Role::cases())), 'every role has its own colour');
     }
 
     public function test_the_permissions_tab_lists_every_role_in_that_order_with_its_group(): void
@@ -70,7 +69,7 @@ class SiteRolesTest extends TestCase
             ->component('Admin')
             ->where('roleGroups', fn ($groups) => $groups->keys()->all() === ['staff', 'staff2', 'creator', 'community'])
             ->where('matrix.roles', fn ($roles) => $roles->pluck('key')->all() === $keys
-                && $roles->last() === ['key' => 'member', 'label' => 'User', 'color' => '#a3a3a3', 'rank' => 18, 'icon' => '👤', 'group' => 'community'])
+                && $roles->last() === ['key' => 'member', 'label' => 'User', 'color' => '#a3a3a3', 'rank' => 17, 'icon' => '👤', 'group' => 'community'])
             ->where('roleOptions', fn ($roles) => $roles->pluck('key')->all() === $withoutUser)
             ->where('assignable', fn ($roles) => $roles->pluck('key')->all() === $withoutUser));
     }

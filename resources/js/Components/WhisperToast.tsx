@@ -46,7 +46,7 @@ export default function WhisperToast() {
     return (
         <div className="fixed bottom-4 left-4 z-50 w-72 rounded-xl border border-violet-500/40 bg-neutral-900 p-4 text-sm shadow-2xl">
             <p className="text-xs font-semibold text-violet-300">💬 Whisper from {toast.sender.name}</p>
-            <p className="mt-1 line-clamp-3 break-words text-neutral-200">{toast.body}</p>
+            <p className="mt-1 line-clamp-3 wrap-break-word text-neutral-200">{toast.body}</p>
             <div className="mt-3 flex gap-2">
                 <Link href={route('whispers', { with: toast.sender.id })} className="rounded-md bg-violet-600 px-3 py-1 text-xs font-semibold hover:bg-violet-500">Open</Link>
                 <button onClick={() => setToast(null)} className="rounded-md bg-neutral-800 px-3 py-1 text-xs hover:bg-neutral-700">Dismiss</button>

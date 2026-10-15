@@ -45,7 +45,7 @@ const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? on
 function Row({ i, p, right }: { i: number; p: Person; right: string }) {
     return (
         <li>
-            <Link href={route('users.show', p.id)} className="flex items-center gap-3 p-3 hover:bg-white/[0.03]">
+            <Link href={route('users.show', p.id)} className="flex items-center gap-3 p-3 hover:bg-white/3">
                 <span className="w-6 text-center text-sm font-bold text-neutral-500">{['🥇', '🥈', '🥉'][i] ?? i + 1}</span>
                 <Avatar name={p.name} avatar={p.avatar} />
                 <span className="min-w-0 flex-1 truncate text-sm">{p.name}</span>
@@ -72,7 +72,7 @@ function Podium({ people }: { people: (Person & { xp: number; level: number })[]
                     <Avatar name={p.name} avatar={p.avatar} className="mt-1 h-14 w-14 text-xl" />
                     <p className="mt-2 max-w-full truncate text-sm font-semibold">{p.name}</p>
                     <p className="text-xs text-neutral-400">Lv {p.level} · {p.xp} XP</p>
-                    <div className={`mt-2 w-full rounded-t-xl bg-gradient-to-t ${tint} to-transparent ${height}`} />
+                    <div className={`mt-2 w-full rounded-t-xl bg-linear-to-t ${tint} to-transparent ${height}`} />
                 </Link>
             ))}
         </div>
@@ -105,14 +105,14 @@ export default function Community({ stats, pulse, week, newest, genres, team, in
             <section className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 lg:grid-cols-4">
                 {([[MessageCircle, 'Messages today', pulse.messages], [Music, 'Songs played today', pulse.songs], [ThumbsUp, 'Woots today', pulse.woots], [UserPlus, 'New members today', pulse.joined]] as const).map(([Icon, label, value]) => (
                     <div key={label} className="flex items-center gap-3 bg-neutral-950/80 p-4">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500/25 to-violet-500/25 text-violet-200"><Icon size={19} /></span>
+                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-fuchsia-500/25 to-violet-500/25 text-violet-200"><Icon size={19} /></span>
                         <span><span className="block text-2xl font-black tabular-nums leading-none">{value}</span><span className="text-xs text-neutral-400">{label}</span></span>
                     </div>
                 ))}
             </section>
 
             {me && (
-                <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-fuchsia-600/20 via-violet-600/10 to-transparent p-5">
+                <div className="rounded-2xl border border-white/10 bg-linear-to-br from-fuchsia-600/20 via-violet-600/10 to-transparent p-5">
                     <div className="mb-2 flex items-baseline justify-between">
                         <p className="text-lg font-black">Level {me.level}</p>
                         <p className="text-sm text-neutral-300">{me.xp} XP · rank #{me.rank}</p>
@@ -159,7 +159,7 @@ export default function Community({ stats, pulse, week, newest, genres, team, in
                                         <p className="text-sm"><span className="font-semibold">❤ {goal.title}</span> <span className="text-neutral-400">{goal.currency}{goal.current} of {goal.currency}{goal.goal} ({goal.percent}%)</span></p>
                                         {goal.url && <a href={goal.url} target="_blank" rel="noopener noreferrer" className="rounded-md bg-pink-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-pink-400">Donate</a>}
                                     </div>
-                                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-gradient-to-r from-pink-500 to-fuchsia-500" style={{ width: `${goal.percent}%` }} /></div>
+                                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-linear-to-r from-pink-500 to-fuchsia-500" style={{ width: `${goal.percent}%` }} /></div>
                                 </div>
                             )}
                             {editing && settings && <div className="border-t border-white/10 pt-4"><CommunityTab community={settings} /></div>}
@@ -231,10 +231,10 @@ export default function Community({ stats, pulse, week, newest, genres, team, in
                         {week.songs.length === 0 ? <EmptyState icon="🎵" title="No woots this week yet" text="Play a song in a public room and ask the crowd to woot it." /> : (
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                 {week.songs.map((s, i) => (
-                                    <Link key={s.title + i} href={route('rooms.show', s.room.slug)} className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] transition hover:border-violet-400/60">
-                                        <div className="relative h-32 bg-gradient-to-br from-fuchsia-600/40 to-violet-900/50">
+                                    <Link key={s.title + i} href={route('rooms.show', s.room.slug)} className="group overflow-hidden rounded-2xl border border-white/10 bg-white/4 transition hover:border-violet-400/60">
+                                        <div className="relative h-32 bg-linear-to-br from-fuchsia-600/40 to-violet-900/50">
                                             {s.thumbnail && <img src={s.thumbnail} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-105" />}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 to-transparent" />
+                                            <div className="absolute inset-0 bg-linear-to-t from-neutral-950 to-transparent" />
                                             <span className="absolute left-3 top-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-bold">#{i + 1}</span>
                                             <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-green-500/90 px-2 py-0.5 text-xs font-bold text-black"><ThumbsUp size={12} /> {s.woots}</span>
                                         </div>
@@ -259,7 +259,7 @@ export default function Community({ stats, pulse, week, newest, genres, team, in
                             <ul className="divide-y divide-white/5">
                                 {week.rooms.length === 0 && <li className="p-4 text-sm text-neutral-500">No rooms played anything yet.</li>}
                                 {week.rooms.map((r, i) => (
-                                    <li key={r.id}><Link href={route('rooms.show', r.slug)} className="flex items-center gap-3 p-3 hover:bg-white/[0.03]"><span className="w-6 text-center text-sm font-bold text-neutral-500">{['🥇', '🥈', '🥉'][i] ?? i + 1}</span><span className="min-w-0 flex-1"><span className="block truncate text-sm">{r.name}</span><span className="text-xs text-neutral-500">{r.genre ?? 'No genre'}</span></span><span className="text-xs text-neutral-400">{count(r.plays, 'song')}</span></Link></li>
+                                    <li key={r.id}><Link href={route('rooms.show', r.slug)} className="flex items-center gap-3 p-3 hover:bg-white/3"><span className="w-6 text-center text-sm font-bold text-neutral-500">{['🥇', '🥈', '🥉'][i] ?? i + 1}</span><span className="min-w-0 flex-1"><span className="block truncate text-sm">{r.name}</span><span className="text-xs text-neutral-500">{r.genre ?? 'No genre'}</span></span><span className="text-xs text-neutral-400">{count(r.plays, 'song')}</span></Link></li>
                                 ))}
                             </ul>
                         </Board>
@@ -279,7 +279,7 @@ export default function Community({ stats, pulse, week, newest, genres, team, in
                     {team.length === 0 ? <EmptyState icon="🛠️" title="No team listed yet" /> : (
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                             {team.map((p) => (
-                                <Link key={p.id} href={route('users.show', p.id)} className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:border-violet-400/60">
+                                <Link key={p.id} href={route('users.show', p.id)} className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/4 p-5 transition hover:border-violet-400/60">
                                     <Avatar name={p.name} avatar={p.avatar} className="h-14 w-14 text-xl" />
                                     <span className="min-w-0">
                                         <span className="block truncate font-bold" style={{ color: p.primary_role.color }}>{p.name}</span>

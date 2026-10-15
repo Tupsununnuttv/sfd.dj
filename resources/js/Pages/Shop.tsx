@@ -30,11 +30,11 @@ const slots: { slot: Slot; tab: string; one: string; icon: LucideIcon }[] = [
 
 // full class names so Tailwind keeps them
 const rarities: Record<Rarity, { label: string; levels: string; card: string; text: string }> = {
-    common: { label: 'Common', levels: 'Levels 1 to 3', card: 'border-white/10 bg-white/[0.04] hover:border-white/30', text: 'text-neutral-400' },
-    rare: { label: 'Rare', levels: 'Levels 4 to 9', card: 'border-sky-400/25 bg-sky-500/[0.06] hover:border-sky-400/60', text: 'text-sky-300' },
-    epic: { label: 'Epic', levels: 'Levels 10 to 24', card: 'border-violet-400/30 bg-violet-500/[0.09] hover:border-violet-400/70', text: 'text-violet-300' },
-    legendary: { label: 'Legendary', levels: 'Level 25 and up', card: 'border-amber-400/40 bg-gradient-to-br from-amber-500/[0.14] via-fuchsia-500/[0.06] to-transparent hover:border-amber-300/80', text: 'text-amber-300' },
-    staff: { label: 'Staff', levels: 'For people with a role: Brand Ambassador and above', card: 'border-pink-400/40 bg-gradient-to-br from-pink-500/[0.16] via-violet-500/[0.08] to-transparent hover:border-pink-300/80', text: 'text-pink-300' },
+    common: { label: 'Common', levels: 'Levels 1 to 3', card: 'border-white/10 bg-white/4 hover:border-white/30', text: 'text-neutral-400' },
+    rare: { label: 'Rare', levels: 'Levels 4 to 9', card: 'border-sky-400/25 bg-sky-500/6 hover:border-sky-400/60', text: 'text-sky-300' },
+    epic: { label: 'Epic', levels: 'Levels 10 to 24', card: 'border-violet-400/30 bg-violet-500/9 hover:border-violet-400/70', text: 'text-violet-300' },
+    legendary: { label: 'Legendary', levels: 'Level 25 and up', card: 'border-amber-400/40 bg-linear-to-br from-amber-500/[0.14] via-fuchsia-500/6 to-transparent hover:border-amber-300/80', text: 'text-amber-300' },
+    staff: { label: 'Staff', levels: 'For people with a role: Brand Ambassador and above', card: 'border-pink-400/40 bg-linear-to-br from-pink-500/16 via-violet-500/8 to-transparent hover:border-pink-300/80', text: 'text-pink-300' },
 };
 
 const reasons: Record<string, string> = { level: 'New level', song: 'Song played', grab: 'Grab', daily: 'Daily reward', referral: 'Friend joined', shop: 'Shop', welcome: 'Welcome' };
@@ -180,7 +180,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
                     title={open ? undefined : lockedByLevel ? `Needs level ${it.level}. Click to try it on.` : 'Click to try it on, then buy it to keep it.'}
                     className="flex min-w-0 flex-1 flex-col items-center gap-2 rounded-t-2xl p-3 pt-4"
                 >
-                    <div className={`mt-1 flex items-center justify-center ${it.character ? 'h-24' : 'h-[4.5rem]'} ${open ? '' : 'opacity-70 saturate-75'}`}>{preview(it)}</div>
+                    <div className={`mt-1 flex items-center justify-center ${it.character ? 'h-24' : 'h-18'} ${open ? '' : 'opacity-70 saturate-75'}`}>{preview(it)}</div>
                     <div className="min-w-0 max-w-full">
                         {it.label && <p className="truncate text-sm font-semibold">{it.label}</p>}
                         <p className={`text-[11px] font-semibold ${open ? r.text : 'text-neutral-500'}`}>{status(it)}</p>
@@ -189,7 +189,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
                 {saved[tab] === it.key && <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">Worn</span>}
                 {lockedByLevel && <Lock size={13} className="pointer-events-none absolute right-2 top-2 text-neutral-400" />}
                 {on && open && <span className="pointer-events-none absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-violet-500 text-white"><Check size={11} strokeWidth={3} /></span>}
-                <div className="min-h-[2.75rem] px-3 pb-3">
+                <div className="min-h-11 px-3 pb-3">
                     {it.owned || it.role ? (
                         <p className="pt-1.5 text-[11px] font-semibold text-emerald-300/80">{it.owned && it.price > 0 && !staff ? <span className="inline-flex items-center gap-1"><Check size={12} strokeWidth={3} /> Yours</span> : ''}</p>
                     ) : lockedByLevel ? (
@@ -200,7 +200,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
                             disabled={!afford || busy}
                             data-buy={it.key}
                             title={afford ? `Buy ${it.label} for ${it.price.toLocaleString()} SFD Coins` : `You need ${(it.price - coins).toLocaleString()} more SFD Coins`}
-                            className={`${buyBtn} ${afford ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 hover:from-amber-300 hover:to-amber-400' : 'cursor-not-allowed bg-white/5 text-neutral-500'}`}
+                            className={`${buyBtn} ${afford ? 'bg-linear-to-r from-amber-400 to-amber-500 text-amber-950 hover:from-amber-300 hover:to-amber-400' : 'cursor-not-allowed bg-white/5 text-neutral-500'}`}
                         >
                             <CoinIcon className="h-4 w-4" /> {it.price.toLocaleString()}
                         </button>
@@ -214,9 +214,9 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
         <button
             onClick={() => pick(tab, null)}
             aria-pressed={draft[tab] === null}
-            className={`flex min-w-0 flex-col items-center gap-2 rounded-2xl border border-dashed p-3 pt-4 text-center transition hover:-translate-y-0.5 ${draft[tab] === null ? 'border-violet-400 bg-violet-500/10 ring-2 ring-violet-400' : 'border-white/15 bg-white/[0.02] hover:border-white/30'}`}
+            className={`flex min-w-0 flex-col items-center gap-2 rounded-2xl border border-dashed p-3 pt-4 text-center transition hover:-translate-y-0.5 ${draft[tab] === null ? 'border-violet-400 bg-violet-500/10 ring-2 ring-violet-400' : 'border-white/15 bg-white/2 hover:border-white/30'}`}
         >
-            <div className="mt-1 flex h-[4.5rem] items-center justify-center">
+            <div className="mt-1 flex h-18 items-center justify-center">
                 <span className="flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-white/20 text-neutral-500"><X size={18} /></span>
             </div>
             <div>
@@ -246,7 +246,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
                 {/* the studio: what you are trying on, and what it looks like */}
                 <div className="min-w-0">
                     <Card className="overflow-x-hidden lg:sticky lg:top-4 lg:max-h-[calc(100vh-5.5rem)]">
-                        <div className="relative flex flex-col items-center bg-gradient-to-b from-violet-600/25 via-fuchsia-600/10 to-transparent px-4 pb-3 pt-11">
+                        <div className="relative flex flex-col items-center bg-linear-to-b from-violet-600/25 via-fuchsia-600/10 to-transparent px-4 pb-3 pt-11">
                             <div className="pointer-events-none absolute left-1/2 top-5 h-40 w-40 -translate-x-1/2 rounded-full bg-violet-500/30 blur-3xl" />
                             <div key={pops} className="relative animate-pop">
                                 <Avatar name={user.name} avatar={draft.avatar} cosmetics={worn} className="h-24 w-24 text-5xl" />
@@ -273,13 +273,13 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
                             <div className="space-y-2">
                                 <div className="flex gap-2">{actions}</div>
                                 {blocked.length > 0 && (
-                                    <div className="space-y-2 rounded-xl border border-amber-400/25 bg-amber-400/[0.06] p-3 text-xs" data-testid="not-yours">
+                                    <div className="space-y-2 rounded-xl border border-amber-400/25 bg-amber-400/6 p-3 text-xs" data-testid="not-yours">
                                         <p className="text-amber-200">Not yours yet: <span className="font-semibold">{blocked.map(({ it }) => it.label).join(', ')}</span>. Buy {blocked.length === 1 ? 'it' : 'them'} to save this look.</p>
                                         {buyable.length > 0 && (
                                             <button
                                                 onClick={() => buy(buyable)}
                                                 disabled={busy || coins < total}
-                                                className={`${buyBtn} ${coins >= total ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 hover:from-amber-300 hover:to-amber-400' : 'cursor-not-allowed bg-white/5 text-neutral-500'}`}
+                                                className={`${buyBtn} ${coins >= total ? 'bg-linear-to-r from-amber-400 to-amber-500 text-amber-950 hover:from-amber-300 hover:to-amber-400' : 'cursor-not-allowed bg-white/5 text-neutral-500'}`}
                                             >
                                                 <CoinIcon className="h-4 w-4" /> Buy {buyable.length === 1 ? 'it' : `all ${buyable.length}`} for {total.toLocaleString()}
                                             </button>
@@ -312,7 +312,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
                                     const dirty = key !== saved[slot];
 
                                     return (
-                                        <li key={slot} className={`flex items-center gap-1 rounded-xl ${tab === slot ? 'bg-white/[0.06]' : ''}`}>
+                                        <li key={slot} className={`flex items-center gap-1 rounded-xl ${tab === slot ? 'bg-white/6' : ''}`}>
                                             <button onClick={() => setTab(slot)} className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-2 py-1 text-left transition hover:bg-white/5">
                                                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/5 text-lg text-neutral-400">{icon ?? <Icon size={15} />}</span>
                                                 <span className="min-w-0 flex-1">
@@ -355,7 +355,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
                 {/* the shelves */}
                 <div className="min-w-0 space-y-5">
                     {/* the wallet: SFD Coins, the daily reward and how to earn more */}
-                    <div className="overflow-hidden rounded-2xl border border-amber-400/25 bg-gradient-to-r from-amber-500/[0.12] via-amber-500/[0.05] to-transparent">
+                    <div className="overflow-hidden rounded-2xl border border-amber-400/25 bg-linear-to-r from-amber-500/12 via-amber-500/5 to-transparent">
                         <div className="flex flex-wrap items-center gap-3 px-4 py-3">
                             <CoinIcon className="h-11 w-11 drop-shadow-[0_2px_6px_rgba(245,184,46,0.45)]" />
                             <div className="min-w-0 flex-1">
@@ -366,7 +366,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
                                 onClick={claim}
                                 disabled={!daily.claimable || busy}
                                 data-daily
-                                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition ${daily.claimable ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 shadow-lg shadow-amber-500/20 hover:from-amber-300 hover:to-amber-400' : 'cursor-default bg-white/5 text-neutral-400'}`}
+                                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition ${daily.claimable ? 'bg-linear-to-r from-amber-400 to-amber-500 text-amber-950 shadow-lg shadow-amber-500/20 hover:from-amber-300 hover:to-amber-400' : 'cursor-default bg-white/5 text-neutral-400'}`}
                             >
                                 <Gift size={16} /> {daily.claimable ? `Claim ${daily.amount} daily coins` : 'Daily reward taken'}
                             </button>
@@ -397,7 +397,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
                         )}
                     </div>
 
-                    <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                    <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/4 px-4 py-3">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-300"><Trophy size={18} /></span>
                         <div className="min-w-0 flex-1">
                             <div className="mb-1 flex items-baseline justify-between gap-3 text-xs"><span className="font-bold">Your collection</span><span className="text-neutral-400">{have} of {all.length} yours</span></div>

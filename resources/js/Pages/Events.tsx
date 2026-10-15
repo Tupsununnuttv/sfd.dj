@@ -104,7 +104,7 @@ function Countdown({ iso }: { iso: string }) {
 
 function Featured({ e, guest }: { e: EventCard; guest: boolean }) {
     return (
-        <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-fuchsia-600/25 via-violet-600/15 to-sky-600/10 p-6 sm:p-8">
+        <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-fuchsia-600/25 via-violet-600/15 to-sky-600/10 p-6 sm:p-8">
             <div className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 rounded-full bg-fuchsia-500/20 blur-3xl" />
             <div className="relative flex flex-wrap items-start justify-between gap-6">
                 <div className="max-w-xl">
@@ -140,7 +140,7 @@ function DeleteButton({ e }: { e: EventCard }) {
 function EventItem({ e, past, guest }: { e: EventCard; past?: boolean; guest: boolean }) {
     return (
         <Card className={`flex gap-4 p-4 ${past ? 'opacity-70' : ''}`}>
-            <div className={`flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl ${e.is_live ? 'bg-red-500/80' : 'bg-gradient-to-br from-fuchsia-500/30 to-violet-500/30'}`}>
+            <div className={`flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl ${e.is_live ? 'bg-red-500/80' : 'bg-linear-to-br from-fuchsia-500/30 to-violet-500/30'}`}>
                 <span className="text-[10px] font-bold tracking-wider text-white/80">{month(e.starts_at)}</span>
                 <span className="text-2xl font-black leading-none">{day(e.starts_at)}</span>
             </div>

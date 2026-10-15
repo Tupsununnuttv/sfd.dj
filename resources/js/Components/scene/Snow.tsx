@@ -11,7 +11,7 @@ const { x, y, w, h } = SCENE.screen;
 export default function Snow({ petals = false, variant }: { petals?: boolean; variant?: 'leaves' | 'embers' | 'sprinkles' | 'glitter' | 'wisps' | 'pastel' | 'fireflies' }) {
     return (
         <div
-            className="pointer-events-none absolute inset-0 z-[300] overflow-hidden"
+            className="pointer-events-none absolute inset-0 z-300 overflow-hidden"
             style={{ clipPath: `polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x - 8}px ${y}px, ${x - 8}px ${y + h + 8}px, ${x + w + 8}px ${y + h + 8}px, ${x + w + 8}px ${y}px, ${x - 8}px ${y}px)` }}
             aria-hidden
         >

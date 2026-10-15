@@ -40,7 +40,7 @@ export default function RoomEmojiManager({ slug, emojis }: { slug: string; emoji
 
             <form onSubmit={add} className="flex flex-wrap items-center gap-2">
                 <input value={name} onChange={(e) => setName(e.target.value.toLowerCase())} placeholder="name" maxLength={20} className={`${field} w-28`} />
-                <input type="file" accept="image/png,image/webp,image/gif" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="max-w-[12rem] text-xs text-neutral-400" />
+                <input type="file" accept="image/png,image/webp,image/gif" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="max-w-48 text-xs text-neutral-400" />
                 <button disabled={!name || !file} className="rounded bg-violet-600 px-3 py-1.5 text-xs font-semibold hover:bg-violet-500 disabled:opacity-50">Add emoji</button>
             </form>
             {error && <p className="text-xs text-red-400">{error}</p>}

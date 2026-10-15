@@ -209,7 +209,7 @@ function AutoMod({ slug, initial }: { slug: string; initial: ModData['automod'] 
                 <textarea value={s.words_text} onChange={(e) => set({ words_text: e.target.value })} rows={3} placeholder="badword, another word" className={input} />
             </div>
             <div className="flex items-center gap-3">
-                <button className="rounded bg-gradient-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-sm font-semibold">Save AutoMod</button>
+                <button className="rounded bg-linear-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-sm font-semibold">Save AutoMod</button>
                 {msg && <span className="text-xs text-neutral-300">{msg}</span>}
             </div>
         </form>

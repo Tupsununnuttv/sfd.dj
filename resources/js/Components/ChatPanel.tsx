@@ -63,7 +63,7 @@ export function RoomNotifications({ notifications, onDismiss }: {
     if (notifications.length === 0) return null;
 
     return (
-        <div className="pointer-events-none fixed left-2 right-2 top-14 z-40 flex max-h-[40vh] flex-col gap-1.5 overflow-y-auto md:left-auto md:right-[21rem] md:top-16 md:w-[min(22rem,calc(100vw-23rem))]" aria-label="Room notifications" aria-live="polite">
+        <div className="pointer-events-none fixed left-2 right-2 top-14 z-40 flex max-h-[40vh] flex-col gap-1.5 overflow-y-auto md:left-auto md:right-84 md:top-16 md:w-[min(22rem,calc(100vw-23rem))]" aria-label="Room notifications" aria-live="polite">
             {notifications.map((notification) => (
                 <div key={notification.id} className={`pointer-events-auto animate-rise flex items-start gap-2 rounded-md border border-white/10 bg-neutral-900/95 px-2.5 py-2 text-xs shadow-lg ${systemTone[notification.kind] ?? 'text-neutral-300'}`}>
                     <span aria-hidden className="shrink-0">{systemIcon[notification.kind] ?? '•'}</span>
@@ -90,7 +90,7 @@ function withEmojis(body: string, emojis: RoomEmojiData[]): ReactNode[] {
     return body.split(SPLIT).map((part, i) => {
         if (new RegExp(`^${EMOTE_TOKEN}$`).test(part)) {
             const { source, id } = parseToken(part);
-            return <img key={i} src={emoteUrl(source, id)} alt="emote" title={source === 'bttv' ? 'BetterTTV emote' : '7TV emote'} loading="lazy" className="mx-0.5 inline h-7 w-auto max-w-[5rem] align-middle" />;
+            return <img key={i} src={emoteUrl(source, id)} alt="emote" title={source === 'bttv' ? 'BetterTTV emote' : '7TV emote'} loading="lazy" className="mx-0.5 inline h-7 w-auto max-w-20 align-middle" />;
         }
         const e = emojis.find((x) => `:${x.name}:` === part);
         return e ? <img key={i} src={e.url} alt={part} title={part} className="mx-0.5 inline h-6 w-6 align-middle" /> : part;
@@ -262,7 +262,7 @@ export default function ChatPanel({
     const [menu, setMenu] = useState<{ m: ChatMessageData; anchor: MenuAnchor; row: DOMRect } | null>(null); // the open message menu
     const [copied, setCopied] = useState(false);
     const [peek, setPeek] = useState<{ user: CardUser; anchor: DOMRect } | null>(null); // the preview shown while the mouse rests on a name or picture
-    const peekTimer = useRef<number>();
+    const peekTimer = useRef<number | undefined>(undefined);
     const [picked, setPicked] = useState<Record<string, EmoteInfo>>({}); // emotes chosen from the pickers, by name
     const globals = useGlobalEmotes(!readOnly);
     const [error, setError] = useState('');
@@ -380,13 +380,13 @@ export default function ChatPanel({
 
     return (
         <div className="sfd-chat flex min-h-0 flex-1 flex-col">
-            <p className="mx-3 mt-3 flex shrink-0 items-center gap-2 rounded-lg bg-white/[0.05] px-2.5 py-1.5 text-xs text-neutral-200" data-version>
+            <p className="mx-3 mt-3 flex shrink-0 items-center gap-2 rounded-lg bg-white/5 px-2.5 py-1.5 text-xs text-neutral-200" data-version>
                 <span aria-hidden>👋</span>
                 <span className="min-w-0 flex-1">Welcome to <span className="font-bold text-white">SFD-DJ.EU</span>, Version {VERSION}</span>
                 {onPatchNotes && <button onClick={onPatchNotes} className="shrink-0 font-semibold text-violet-300 hover:underline">What's new</button>}
             </p>
             {welcome && (
-                <p className={`mx-3 mt-3 flex max-h-28 shrink-0 gap-2 overflow-y-auto break-words rounded bg-violet-500/10 p-2 italic text-violet-200 ${chatText[chatSize]}`}>
+                <p className={`mx-3 mt-3 flex max-h-28 shrink-0 gap-2 overflow-y-auto wrap-break-word rounded bg-violet-500/10 p-2 italic text-violet-200 ${chatText[chatSize]}`}>
                     <span aria-hidden>🎉</span>
                     <span>{welcome}</span>
                 </p>
@@ -406,7 +406,7 @@ export default function ChatPanel({
                         const broadcast = m.kind === 'broadcast';
                         const welcome = m.kind === 'welcome';
                         return (
-                            <p key={m.id} className={`flex gap-2 break-words text-xs italic ${loud ? 'rounded bg-amber-500/10 p-2 text-amber-300' : broadcast ? 'rounded border border-amber-400/40 bg-amber-500/15 p-2 text-amber-200' : welcome ? 'rounded bg-violet-500/10 p-2 text-violet-200' : `border-l-2 border-current pl-2 ${systemTone[m.kind ?? ''] ?? 'text-neutral-500'}`}`}>
+                            <p key={m.id} className={`flex gap-2 wrap-break-word text-xs italic ${loud ? 'rounded bg-amber-500/10 p-2 text-amber-300' : broadcast ? 'rounded border border-amber-400/40 bg-amber-500/15 p-2 text-amber-200' : welcome ? 'rounded bg-violet-500/10 p-2 text-violet-200' : `border-l-2 border-current pl-2 ${systemTone[m.kind ?? ''] ?? 'text-neutral-500'}`}`}>
                                 <span aria-hidden>{systemIcon[m.kind ?? ''] ?? '•'}</span>
                                 <span>
                                     {m.kind === 'announcement' && <span className="font-semibold not-italic">System announcement: </span>}
@@ -435,7 +435,7 @@ export default function ChatPanel({
                                 e.preventDefault();
                                 openMenu(m, { x: e.clientX, y: e.clientY }, e.currentTarget.getBoundingClientRect());
                             }}
-                            className={`sfd-message group relative -mx-1.5 flex gap-2 rounded-lg px-1.5 py-0.5 transition-colors ${mentionsMe ? 'bg-amber-400/10 hover:bg-amber-400/15' : 'hover:bg-white/[0.04]'} ${open ? 'bg-white/[0.06]' : ''}`}
+                            className={`sfd-message group relative -mx-1.5 flex gap-2 rounded-lg px-1.5 py-0.5 transition-colors ${mentionsMe ? 'bg-amber-400/10 hover:bg-amber-400/15' : 'hover:bg-white/4'} ${open ? 'bg-white/6' : ''}`}
                         >
                             {showAvatars && <button onClick={openCard} {...peekOn} aria-label={`${m.user}: quick profile`} className="shrink-0 self-start"><Avatar name={m.user} avatar={m.avatar} cosmetics={m.cosmetics} /></button>}
                             <div className="min-w-0 flex-1">
@@ -452,7 +452,7 @@ export default function ChatPanel({
                                     </p>
                                 )}
 
-                                {m.body && <p className="break-words text-neutral-200">{withEmojis(m.body, emojis)}</p>}
+                                {m.body && <p className="wrap-break-word text-neutral-200">{withEmojis(m.body, emojis)}</p>}
                                 {m.sticker && <p className="text-5xl leading-tight">{m.sticker}</p>}
                                 {m.image_url && <img src={m.image_url} data-media alt="" loading="lazy" className="mt-1 max-h-48 max-w-full rounded-lg" />}
                             </div>

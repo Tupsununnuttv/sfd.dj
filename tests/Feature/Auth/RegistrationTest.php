@@ -29,6 +29,7 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
-        $this->assertSame(['beta_tester'], auth()->user()->roles); // everybody who signs up during the beta is a Beta Tester
+        $this->assertSame(['beta'], auth()->user()->awards); // everybody who signs up during the beta gets the Beta Tester badge
+        $this->assertEmpty(auth()->user()->roles ?? []); // a badge, not a role
     }
 }

@@ -22,7 +22,7 @@ export default function EmailTab({ email, gotoTab }: { email: AdminProps['email'
 
     const row = (label: string, value: string) => <div className="flex justify-between gap-4 border-b border-white/5 py-2 text-sm last:border-0"><span className="text-neutral-500">{label}</span><span className="break-all text-right text-neutral-200">{value}</span></div>;
     const option = (value: 'required' | 'optional', title: string, text: string) => (
-        <button type="button" onClick={() => email.choice !== value && choose(value)} aria-pressed={email.choice === value} data-choice={value} className={`rounded-xl border px-4 py-3 text-left transition ${email.choice === value ? 'border-violet-400/60 bg-violet-500/15 text-white' : 'border-white/10 bg-white/[0.03] text-neutral-300 hover:bg-white/[0.07]'}`}>
+        <button type="button" onClick={() => email.choice !== value && choose(value)} aria-pressed={email.choice === value} data-choice={value} className={`rounded-xl border px-4 py-3 text-left transition ${email.choice === value ? 'border-violet-400/60 bg-violet-500/15 text-white' : 'border-white/10 bg-white/3 text-neutral-300 hover:bg-white/[0.07]'}`}>
             <span className="block text-sm font-semibold">{title}</span>
             <span className="mt-0.5 block text-xs text-neutral-400">{text}</span>
         </button>
@@ -76,7 +76,7 @@ export default function EmailTab({ email, gotoTab }: { email: AdminProps['email'
                         {option('required', 'Required', 'Members confirm their email first. Asked for only while the site can send email.')}
                         {option('optional', 'Optional', 'Everybody gets in at once. A bar invites them to confirm later.')}
                     </div>
-                    <p className={`rounded-xl border px-3 py-2.5 text-sm ${email.enforced ? 'border-violet-400/30 bg-violet-500/10 text-violet-100' : 'border-white/10 bg-white/[0.03] text-neutral-300'}`} data-enforced={email.enforced}>
+                    <p className={`rounded-xl border px-3 py-2.5 text-sm ${email.enforced ? 'border-violet-400/30 bg-violet-500/10 text-violet-100' : 'border-white/10 bg-white/3 text-neutral-300'}`} data-enforced={email.enforced}>
                         {email.enforced
                             ? 'Right now: new members must confirm their email before they can chat, vote and DJ.'
                             : email.choice === 'required'

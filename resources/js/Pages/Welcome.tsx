@@ -1,4 +1,5 @@
 import Avatar from '@/Components/Avatar';
+import Crowd from '@/Components/Crowd';
 import RoleBadge from '@/Components/RoleBadge';
 import RoomBadge from '@/Components/RoomBadge';
 import SiteLayout from '@/Layouts/SiteLayout';
@@ -8,7 +9,7 @@ import { countdown, until, useNow } from '@/lib/time';
 import { useCountUp } from '@/lib/useCountUp';
 import { PageProps, RoleInfo } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowRight, Calendar, Check, ChevronDown, Code2, Heart, PlugZap, Sparkles, Trophy } from 'lucide-react';
+import { ArrowRight, Calendar, Check, ChevronDown, Code2, Heart, PlugZap, Plus, Shirt, Sparkles, Trophy } from 'lucide-react';
 
 interface HomeRoom {
     id: number;
@@ -40,7 +41,7 @@ const steps = [
     ['3', 'Listen and chat', 'Everyone hears the same second. Woot the good ones, talk about them.'],
 ];
 
-const badges: [string, string][] = [['Owner', '#f43f5e'], ['Admin', '#ef4444'], ['Moderator', '#22c55e'], ['Helper', '#84cc16'], ['Artist', '#ec4899'], ['Music Producer', '#d946ef'], ['VIP', '#a855f7'], ['Supporter', '#fbbf24'], ['Beta Tester', '#38bdf8'], ['Translator', '#60a5fa']];
+const badges: [string, string][] = [['Owner', '#f43f5e'], ['Admin', '#ef4444'], ['Moderator', '#22c55e'], ['Helper', '#84cc16'], ['Artist', '#ec4899'], ['Music Producer', '#d946ef'], ['VIP', '#a855f7'], ['Supporter', '#fbbf24'], ['Beta Tester', '#2dd4bf'], ['Translator', '#60a5fa']];
 
 const questions: [string, string][] = [
     ['Do I need an account?', 'Not to look around. As a guest you can open rooms, watch what is playing and read the chat. To chat, vote or DJ you need a free account.'],
@@ -82,12 +83,21 @@ function PartnerMark({ mark }: { mark: Partner['mark'] }) {
     );
 }
 
-/** A picture of a real room (public/images/home-room.png), to show what you get. */
-function Preview() {
+/** A picture of a real room (public/images/home-room.png), to show what you get, with a few characters dancing in front of it and what plays right now. */
+function Preview({ playing }: { playing: HomeRoom | undefined }) {
     return (
-        <div className="relative animate-float">
-            <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-fuchsia-600/30 via-violet-600/20 to-sky-600/20 blur-2xl" />
-            <img src="/images/home-room.png" alt="A SFD-DJ.EU room: the video, the DJ booth, the crowd on the dance floor and the chat" width={1909} height={923} className="relative w-full rounded-3xl border border-white/10 shadow-2xl" />
+        <div className="relative pb-20">
+            <div className="relative animate-float">
+                <div className="absolute -inset-4 rounded-4xl bg-linear-to-br from-fuchsia-600/30 via-violet-600/20 to-sky-600/20 blur-2xl" />
+                <img src="/images/home-room.png" alt="A SFD-DJ.EU room: the video, the DJ booth, the crowd on the dance floor and the chat" width={1909} height={923} className="relative w-full rounded-3xl border border-white/10 shadow-2xl" />
+                {playing && (
+                    <Link href={route('rooms.show', playing.slug)} className="absolute left-3 top-3 flex max-w-[85%] items-center gap-2 rounded-full border border-white/15 bg-black/75 px-3 py-1.5 text-xs backdrop-blur hover:border-violet-400/60">
+                        <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-green-400" />
+                        <span className="truncate"><b>Now playing</b> in {playing.name}: {playing.now_playing}</span>
+                    </Link>
+                )}
+            </div>
+            <div className="absolute inset-x-0 bottom-0"><Crowd names={['neko', 'kikomochi', 'foxy']} height={150} /></div>
         </div>
     );
 }
@@ -96,9 +106,22 @@ function Counter({ value, label }: { value: number; label: string }) {
     const [ref, shown] = useCountUp(value);
 
     return (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-center">
+        <div className="bg-neutral-950 p-5 text-center sm:p-6">
             <p ref={ref as never} className="text-3xl font-black tabular-nums">{shown.toLocaleString()}</p>
             <p className="mt-1 text-xs text-neutral-500">{label}</p>
+        </div>
+    );
+}
+
+/** The Avatar shop on the home page: some of the characters dancing, and the way to dress up. */
+function Showcase({ guest }: { guest: boolean }) {
+    return (
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-violet-600/20 via-white/3 to-fuchsia-600/10 p-7">
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-400"><Shirt size={14} /> Avatar shop</p>
+            <h3 className="mt-3 text-2xl font-black">Dress up your DJ</h3>
+            <p className="mt-2 max-w-lg text-neutral-400">Characters that dance when you woot and spin at the decks when it is your song. New ones come with updates, and some unlock as you level up.</p>
+            <Crowd names={['milky', 'emberdragon', 'kikomochi', 'frostdragon', 'spooky']} height={150} lazy className="mt-6" />
+            <Link href={guest ? route('register') : route('shop')} className="mt-6 inline-block text-sm font-semibold text-violet-400 hover:underline">{guest ? 'Make an account to dress up →' : 'Open the Avatar shop →'}</Link>
         </div>
     );
 }
@@ -107,7 +130,7 @@ function EventCard({ event }: { event: NonNullable<Props['event']> }) {
     const c = countdown(event.starts_at, useNow(1000));
 
     return (
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-fuchsia-600/20 via-violet-600/10 to-transparent p-7">
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-fuchsia-600/20 via-violet-600/10 to-transparent p-7">
             <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-violet-200"><Calendar size={14} /> {c ? `Next event · ${until(event.starts_at)}` : 'Happening now'}</p>
             <h3 className="mt-3 text-2xl font-black">{event.title}</h3>
             {event.description && <p className="mt-2 line-clamp-2 text-neutral-300">{event.description}</p>}
@@ -147,36 +170,38 @@ export default function Welcome({ rooms, event, topDjs, genres, stats }: Props) 
                     <h1 className="mt-6 text-5xl font-black leading-[1.02] tracking-tight sm:text-7xl">
                         Your music room,
                         <br />
-                        <span className="bg-gradient-to-r from-fuchsia-500 to-violet-500 bg-clip-text text-transparent">live.</span>
+                        <span className="bg-linear-to-r from-fuchsia-500 to-violet-500 bg-clip-text text-transparent">live.</span>
                     </h1>
                     <p className="mt-6 max-w-lg text-lg text-neutral-400">Join a room, add songs and listen in perfect sync with everyone else, with live chat, a waitlist and a crowd that cares about the same song.</p>
                     <div className="mt-9 flex flex-wrap gap-3">
-                        <Link href={guest ? route('register') : route('dashboard')} className={`${btn} inline-flex items-center gap-2 bg-gradient-to-r from-fuchsia-500 to-violet-500 shadow-lg shadow-violet-900/30 hover:opacity-90`}>{guest ? 'Get started, it is free' : 'Open my rooms'} <ArrowRight size={16} /></Link>
+                        <Link href={guest ? route('register') : route('dashboard')} className={`${btn} inline-flex items-center gap-2 bg-linear-to-r from-fuchsia-500 to-violet-500 shadow-lg shadow-violet-900/30 hover:opacity-90`}>{guest ? 'Get started, it is free' : 'Open my rooms'} <ArrowRight size={16} /></Link>
                         <Link href={route('dashboard')} className={`${btn} bg-white/10 hover:bg-white/20`}>{guest ? 'Browse as guest' : 'Browse all rooms'}</Link>
                     </div>
                     <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-neutral-400">
                         {['Free to use', 'Nothing to download', 'Plays through YouTube'].map((t) => <li key={t} className="flex items-center gap-1.5"><Check size={15} className="text-green-400" /> {t}</li>)}
                     </ul>
                 </div>
-                <Preview />
+                <Preview playing={rooms.find((r) => r.now_playing)} />
             </section>
 
             {/* numbers */}
-            <section className="mx-auto grid max-w-4xl grid-cols-2 gap-3 px-6 sm:grid-cols-4">
-                <Counter value={stats.members} label="Members" />
-                <Counter value={stats.rooms} label="Public rooms" />
-                <Counter value={stats.songs_played} label="Songs played" />
-                <Counter value={stats.listening} label="Listening now" />
+            <section className="mx-auto max-w-4xl px-6">
+                <div className="grid grid-cols-2 gap-px overflow-hidden rounded-3xl border border-white/10 bg-white/10 sm:grid-cols-4">
+                    <Counter value={stats.members} label="Members" />
+                    <Counter value={stats.rooms} label="Public rooms" />
+                    <Counter value={stats.songs_played} label="Songs played" />
+                    <Counter value={stats.listening} label="Listening now" />
+                </div>
             </section>
 
             {/* partners */}
             <section aria-labelledby="partners-title" className="mx-auto mt-16 max-w-6xl px-6">
                 <p id="partners-title" className="text-center text-xs font-bold uppercase tracking-[0.22em] text-neutral-500">Our partners</p>
-                <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     {partners.map((p) => {
                         const inner = (
                             <>
-                                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-white/10 to-white/[0.03] ring-1 ring-white/10 transition group-hover:from-fuchsia-500/20 group-hover:to-violet-500/10"><PartnerMark mark={p.mark} /></span>
+                                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-white/10 to-white/3 ring-1 ring-white/10 transition group-hover:from-fuchsia-500/20 group-hover:to-violet-500/10"><PartnerMark mark={p.mark} /></span>
                                 <span className="min-w-0 flex-1">
                                     <span className="block truncate text-xl font-black tracking-tight">{p.name}</span>
                                     <span className="block text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Partner</span>
@@ -184,7 +209,7 @@ export default function Welcome({ rooms, event, topDjs, genres, stats }: Props) 
                                 {p.url && <ArrowRight size={16} className="shrink-0 text-neutral-600 transition group-hover:translate-x-1 group-hover:text-violet-300" />}
                             </>
                         );
-                        const card = 'group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 transition';
+                        const card = 'group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/4 px-5 py-4 transition';
 
                         return (
                             <li key={p.name}>
@@ -236,6 +261,11 @@ export default function Welcome({ rooms, event, topDjs, genres, stats }: Props) 
                                 </div>
                             </Link>
                         ))}
+                        <Link href={guest ? route('register') : route('dashboard')} className="flex min-h-36 flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-white/15 p-5 text-center text-neutral-400 transition hover:border-violet-400/60 hover:bg-violet-500/10 hover:text-white">
+                            <Plus size={22} />
+                            <span className="font-semibold">Start your own room</span>
+                            <span className="text-xs text-neutral-500">Pick a name and a genre, invite your friends. Free.</span>
+                        </Link>
                     </div>
                 )}
             </section>
@@ -264,7 +294,7 @@ export default function Welcome({ rooms, event, topDjs, genres, stats }: Props) 
                 <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
                     {steps.map(([n, title, text]) => (
                         <div key={n} className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500 text-sm font-bold">{n}</span>
+                            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-r from-fuchsia-500 to-violet-500 text-sm font-bold">{n}</span>
                             <h3 className="mt-3 font-semibold">{title}</h3>
                             <p className="mt-1 text-sm text-neutral-400">{text}</p>
                         </div>
@@ -272,31 +302,30 @@ export default function Welcome({ rooms, event, topDjs, genres, stats }: Props) 
                 </div>
             </section>
 
-            {/* the community */}
-            {(event || topDjs.length > 0) && (
-                <section className="mx-auto mt-24 grid max-w-6xl grid-cols-1 gap-4 px-6 lg:grid-cols-2">
-                    {event && <EventCard event={event} />}
-                    {topDjs.length > 0 && (
-                        <div className="rounded-3xl border border-white/10 bg-white/5 p-7">
-                            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-400"><Trophy size={14} /> Top DJs</p>
-                            <ul className="mt-4 space-y-3">
-                                {topDjs.map((d, i) => (
-                                    <li key={d.id}>
-                                        <Link href={route('users.show', d.id)} className="flex items-center gap-3 rounded-xl p-2 hover:bg-white/5">
-                                            <span className="w-6 text-center text-lg">{['🥇', '🥈', '🥉'][i]}</span>
-                                            <Avatar name={d.name} avatar={d.avatar} className="h-10 w-10" />
-                                            <span className="min-w-0 flex-1 truncate font-semibold">{d.name}</span>
-                                            <RoleBadge role={d.primary_role} />
-                                            <span className="text-sm text-neutral-400">{d.plays} songs</span>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                            <Link href={route('community')} className="mt-4 inline-block text-sm font-semibold text-violet-400 hover:underline">Leaderboards →</Link>
-                        </div>
-                    )}
-                </section>
-            )}
+            {/* the community: the next event, the top DJs and the Avatar shop (an odd last card takes the whole row) */}
+            <section className="mx-auto mt-24 grid max-w-6xl grid-cols-1 gap-4 px-6 lg:grid-cols-2 lg:[&>*:last-child:nth-child(odd)]:col-span-2">
+                {event && <EventCard event={event} />}
+                {topDjs.length > 0 && (
+                    <div className="rounded-3xl border border-white/10 bg-white/5 p-7">
+                        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-400"><Trophy size={14} /> Top DJs</p>
+                        <ul className="mt-4 space-y-3">
+                            {topDjs.map((d, i) => (
+                                <li key={d.id}>
+                                    <Link href={route('users.show', d.id)} className="flex items-center gap-3 rounded-xl p-2 hover:bg-white/5">
+                                        <span className="w-6 text-center text-lg">{['🥇', '🥈', '🥉'][i]}</span>
+                                        <Avatar name={d.name} avatar={d.avatar} className="h-10 w-10" />
+                                        <span className="min-w-0 flex-1 truncate font-semibold">{d.name}</span>
+                                        <RoleBadge role={d.primary_role} />
+                                        <span className="text-sm text-neutral-400">{d.plays} songs</span>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                        <Link href={route('community')} className="mt-4 inline-block text-sm font-semibold text-violet-400 hover:underline">Leaderboards →</Link>
+                    </div>
+                )}
+                <Showcase guest={guest} />
+            </section>
 
             {/* badges */}
             <section className="mx-auto mt-24 max-w-6xl px-6 text-center">
@@ -350,7 +379,7 @@ export default function Welcome({ rooms, event, topDjs, genres, stats }: Props) 
                         <p className="text-pink-400"><Heart size={28} /></p>
                         <h2 className="mt-3 text-2xl font-black">{goal.title}</h2>
                         <p className="mt-2 text-neutral-400">{goal.currency}{goal.current} of {goal.currency}{goal.goal} ({goal.percent}%)</p>
-                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-gradient-to-r from-pink-500 to-fuchsia-500" style={{ width: `${goal.percent}%` }} /></div>
+                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-linear-to-r from-pink-500 to-fuchsia-500" style={{ width: `${goal.percent}%` }} /></div>
                         {goal.url && <a href={goal.url} target="_blank" rel="noopener noreferrer" className="mt-5 inline-block rounded-lg bg-pink-500 px-5 py-2 text-sm font-semibold hover:bg-pink-400">Donate</a>}
                     </div>
                 ) : (
@@ -366,9 +395,10 @@ export default function Welcome({ rooms, event, topDjs, genres, stats }: Props) 
             {/* final call */}
             {guest && (
                 <section className="mx-auto mt-24 max-w-3xl px-6 text-center">
+                    <Crowd names={['bun', 'wolfie', 'panda', 'robo']} height={120} lazy className="mb-8" />
                     <h2 className="text-4xl font-black tracking-tight">Ready to play the next song?</h2>
                     <p className="mt-3 text-neutral-400">Make an account in a minute. Free.</p>
-                    <Link href={route('register')} className={`${btn} mt-6 inline-block bg-gradient-to-r from-fuchsia-500 to-violet-500 hover:opacity-90`}>Create account</Link>
+                    <Link href={route('register')} className={`${btn} mt-6 inline-block bg-linear-to-r from-fuchsia-500 to-violet-500 hover:opacity-90`}>Create account</Link>
                 </section>
             )}
         </SiteLayout>

@@ -42,6 +42,7 @@ export default function Login({ status, canResetPassword, discordLoginEnabled, d
 
     return (
         <GuestLayout
+            switcher="login"
             title="Welcome back"
             subtitle="Log in to jump into your rooms, your playlists and your friends."
             aside={<SavedAccounts onUse={(a) => setData((d) => ({ ...d, email: a.email, password: a.password }))} />}

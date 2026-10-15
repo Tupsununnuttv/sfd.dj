@@ -63,9 +63,9 @@ export default function Edit({ mustVerifyEmail, status, genres, countries }: Pag
                                     aria-checked={myStatus === s}
                                     data-status-option={s}
                                     onClick={() => myStatus !== s && setStatus(s)}
-                                    className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${myStatus === s ? 'border-violet-400/60 bg-violet-500/15' : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.07]'}`}
+                                    className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${myStatus === s ? 'border-violet-400/60 bg-violet-500/15' : 'border-white/10 bg-white/3 hover:bg-white/[0.07]'}`}
                                 >
-                                    <StatusDot status={s} ring="ring-transparent" className="!h-3 !w-3 !ring-0" />
+                                    <StatusDot status={s} ring="ring-transparent" className="h-3! w-3! ring-0!" />
                                     <span>
                                         <span className="block text-sm font-semibold">{STATUS[s].label}</span>
                                         <span className="block text-xs text-neutral-500">{STATUS[s].hint}</span>
@@ -146,16 +146,16 @@ export default function Edit({ mustVerifyEmail, status, genres, countries }: Pag
                 <aside className="xl:sticky xl:top-4 xl:self-start">
                     <p className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-500">Preview</p>
                     <Card className="overflow-hidden">
-                        <div className="h-16 bg-gradient-to-r from-fuchsia-600/50 via-violet-600/40 to-sky-600/30" />
+                        <div className="h-16 bg-linear-to-r from-fuchsia-600/50 via-violet-600/40 to-sky-600/30" />
                         <div className="-mt-9 px-5 pb-5">
-                            <span className="relative inline-block"><Avatar name={data.name || user.name} avatar={user.avatar} cosmetics={user.cosmetics} className="h-[4.5rem] w-[4.5rem] text-3xl ring-4 ring-neutral-900" /><StatusDot status={myStatus} ring="ring-neutral-900" className="absolute bottom-0 right-0 !h-4 !w-4" /></span>
+                            <span className="relative inline-block"><Avatar name={data.name || user.name} avatar={user.avatar} cosmetics={user.cosmetics} className="h-18 w-18 text-3xl ring-4 ring-neutral-900" /><StatusDot status={myStatus} ring="ring-neutral-900" className="absolute bottom-0 right-0 h-4! w-4!" /></span>
                             <p className="mt-3 flex flex-wrap items-center gap-2 text-lg font-black" style={{ color: user.primary_role.color }}>
                                 <Badges badges={user.badges} level={user.level} awards={9} /> {data.name || 'Your name'} <RoleBadge role={user.primary_role} />
                             </p>
                             <p className="flex flex-wrap items-center gap-x-2 text-sm text-neutral-400">@{data.username || 'username'}{data.pronouns && <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-neutral-200">{data.pronouns}</span>}</p>
                             {flag && <p className="mt-2 flex items-center gap-2 text-sm text-neutral-300"><Flag flag={flag} className="h-4" /> {flag.name}</p>}
                             {data.favorite_genre && <span className="mt-2 inline-block rounded-full bg-violet-500/15 px-2.5 py-0.5 text-xs text-violet-300">🎵 {data.favorite_genre}</span>}
-                            <p className="mt-3 whitespace-pre-line break-words text-sm text-neutral-300">{data.bio || <span className="text-neutral-600">Your bio shows here.</span>}</p>
+                            <p className="mt-3 whitespace-pre-line wrap-break-word text-sm text-neutral-300">{data.bio || <span className="text-neutral-600">Your bio shows here.</span>}</p>
                         </div>
                     </Card>
 

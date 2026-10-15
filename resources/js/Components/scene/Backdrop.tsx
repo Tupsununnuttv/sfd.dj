@@ -1,34 +1,6 @@
 import { BoothFrontArt } from '@/Components/scene/DjBooth';
-import AnimeBackdrop from '@/Components/scene/Anime';
-import CatsBackdrop from '@/Components/scene/Cats';
-import ChristmasBackdrop from '@/Components/scene/Christmas';
-import Christmas2Backdrop from '@/Components/scene/Christmas2';
-import CustomBackdrop from '@/Components/scene/Custom';
-import DefinityBackdrop from '@/Components/scene/Definity';
-import EasterBackdrop from '@/Components/scene/Easter';
-import GoldMineBackdrop from '@/Components/scene/GoldMine';
-import DragonBackdrop from '@/Components/scene/Dragon';
-import FoxyBackdrop from '@/Components/scene/Foxy';
-import HalloweenBackdrop from '@/Components/scene/Halloween';
-import Halloween2Backdrop from '@/Components/scene/Halloween2';
-import LatamBackdrop from '@/Components/scene/Latam';
-import LightshowBackdrop from '@/Components/scene/Lightshow';
-import MidsummerBackdrop from '@/Components/scene/Midsummer';
-import MonstercatBackdrop from '@/Components/scene/Monstercat';
-import RetrowaveBackdrop from '@/Components/scene/Retrowave';
-import Retrowave2Backdrop from '@/Components/scene/Retrowave2';
-import SkullBackdrop from '@/Components/scene/Skull';
-import SkullsBackdrop from '@/Components/scene/Skulls';
-import SpringBackdrop from '@/Components/scene/Spring';
-import SummerBackdrop from '@/Components/scene/Summer';
-import SynthwaveBackdrop from '@/Components/scene/Synthwave';
-import Synthwave2Backdrop from '@/Components/scene/Synthwave2';
-import TastyBackdrop from '@/Components/scene/Tasty';
-import TastycatBackdrop from '@/Components/scene/Tastycat';
-import UltraBackdrop from '@/Components/scene/Ultra';
-import WinterBackdrop from '@/Components/scene/Winter';
 import { floorLineX as lineX, floorRowY as rowY, floorTile as tile, SCENE, ScenePalette } from '@/lib/scenes';
-import { useId } from 'react';
+import { ComponentType, lazy, LazyExoticComponent, Suspense, useId } from 'react';
 
 const FLOOR = SCENE.floor;
 const tv = SCENE.screen;
@@ -40,66 +12,58 @@ interface Props { palette: ScenePalette; live?: boolean; withBooth?: boolean; he
 
 /** The room's scenery: the club, or the scenery a palette asks for (Halloween, Halloween V2, Christmas, Christmas V2, Winter, Spring, Easter, Summer, Midsummer, Synthwave, Retrowave, Midnight Definity, Anime, LATAM, Lightshow, Cats, Gold Mine, Skull, Skulls, Ultra, Foxy, Dragon, Tastycat, Tasty, Monstercat), or the host's own picture. It is a different component, so a room that changes its background starts a fresh one. */
 export default function SceneBackdrop(props: Props) {
-    switch (props.palette.theme) {
-        case 'halloween':
-            return <HalloweenBackdrop {...props} />;
-        case 'halloween2':
-            return <Halloween2Backdrop {...props} />;
-        case 'christmas':
-            return <ChristmasBackdrop {...props} />;
-        case 'christmas2':
-            return <Christmas2Backdrop {...props} />;
-        case 'winter':
-            return <WinterBackdrop {...props} />;
-        case 'spring':
-            return <SpringBackdrop {...props} />;
-        case 'easter':
-            return <EasterBackdrop {...props} />;
-        case 'summer':
-            return <SummerBackdrop {...props} />;
-        case 'midsummer':
-            return <MidsummerBackdrop {...props} />;
-        case 'synthwave':
-            return <SynthwaveBackdrop {...props} />;
-        case 'synthwave2':
-            return <Synthwave2Backdrop {...props} />;
-        case 'retrowave2':
-            return <Retrowave2Backdrop {...props} />;
-        case 'retrowave':
-            return <RetrowaveBackdrop {...props} />;
-        case 'definity':
-            return <DefinityBackdrop {...props} />;
-        case 'anime':
-            return <AnimeBackdrop {...props} />;
-        case 'latam':
-            return <LatamBackdrop {...props} />;
-        case 'lightshow':
-            return <LightshowBackdrop {...props} />;
-        case 'cats':
-            return <CatsBackdrop {...props} />;
-        case 'goldmine':
-            return <GoldMineBackdrop {...props} />;
-        case 'skull':
-            return <SkullBackdrop {...props} />;
-        case 'skulls':
-            return <SkullsBackdrop {...props} />;
-        case 'ultra':
-            return <UltraBackdrop {...props} />;
-        case 'foxy':
-            return <FoxyBackdrop {...props} />;
-        case 'dragon':
-            return <DragonBackdrop {...props} />;
-        case 'tasty':
-            return <TastyBackdrop {...props} />;
-        case 'tastycat':
-            return <TastycatBackdrop {...props} />;
-        case 'monstercat':
-            return <MonstercatBackdrop {...props} />;
-        case 'custom':
-            return <CustomBackdrop {...props} />;
-        default:
-            return <ClubBackdrop {...props} />;
+    const Scene = props.palette.theme && SCENES[props.palette.theme];
+
+    if (!Scene) {
+        return <ClubBackdrop {...props} />;
     }
+
+    return (
+        <Suspense fallback={<Plain {...props} />}>
+            <Scene {...props} />
+        </Suspense>
+    );
+}
+
+/** Every scenery but the club is a file of its own, loaded when a room shows it: the scenes together are bigger than the rest of the room. */
+const SCENES: Record<NonNullable<ScenePalette['theme']>, LazyExoticComponent<ComponentType<Props>>> = {
+    halloween: lazy(() => import('@/Components/scene/Halloween')),
+    halloween2: lazy(() => import('@/Components/scene/Halloween2')),
+    christmas: lazy(() => import('@/Components/scene/Christmas')),
+    christmas2: lazy(() => import('@/Components/scene/Christmas2')),
+    winter: lazy(() => import('@/Components/scene/Winter')),
+    spring: lazy(() => import('@/Components/scene/Spring')),
+    easter: lazy(() => import('@/Components/scene/Easter')),
+    summer: lazy(() => import('@/Components/scene/Summer')),
+    midsummer: lazy(() => import('@/Components/scene/Midsummer')),
+    synthwave: lazy(() => import('@/Components/scene/Synthwave')),
+    synthwave2: lazy(() => import('@/Components/scene/Synthwave2')),
+    retrowave: lazy(() => import('@/Components/scene/Retrowave')),
+    retrowave2: lazy(() => import('@/Components/scene/Retrowave2')),
+    definity: lazy(() => import('@/Components/scene/Definity')),
+    anime: lazy(() => import('@/Components/scene/Anime')),
+    latam: lazy(() => import('@/Components/scene/Latam')),
+    lightshow: lazy(() => import('@/Components/scene/Lightshow')),
+    cats: lazy(() => import('@/Components/scene/Cats')),
+    goldmine: lazy(() => import('@/Components/scene/GoldMine')),
+    skull: lazy(() => import('@/Components/scene/Skull')),
+    skulls: lazy(() => import('@/Components/scene/Skulls')),
+    ultra: lazy(() => import('@/Components/scene/Ultra')),
+    foxy: lazy(() => import('@/Components/scene/Foxy')),
+    dragon: lazy(() => import('@/Components/scene/Dragon')),
+    tasty: lazy(() => import('@/Components/scene/Tasty')),
+    tastycat: lazy(() => import('@/Components/scene/Tastycat')),
+    monstercat: lazy(() => import('@/Components/scene/Monstercat')),
+    custom: lazy(() => import('@/Components/scene/Custom')),
+};
+
+/** What shows for the moment a scenery's file is loading: its wall colour, on a canvas of the same size. */
+function Plain({ palette: p, height = 900, className = '' }: Props) {
+    return (
+        <svg viewBox={`0 0 1600 ${height}`} preserveAspectRatio="xMidYMin slice" className={className} aria-hidden>
+            <rect width="1600" height={height} fill={p.wallBottom} />
+        </svg>
+    );
 }
 
 /**

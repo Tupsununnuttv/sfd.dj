@@ -70,13 +70,13 @@ export default function SupportInbox() {
     const waiting = tickets.filter((t) => t.waiting).length;
 
     return (
-        <div className="grid min-h-[28rem] gap-4 lg:grid-cols-[18rem_1fr]">
-            <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+        <div className="grid min-h-112 gap-4 lg:grid-cols-[18rem_1fr]">
+            <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/4">
                 <p className="border-b border-neutral-800 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-neutral-500">
                     Conversations {waiting > 0 && <span className="ml-1 rounded-full bg-red-500 px-1.5 text-white">{waiting} waiting</span>}
                 </p>
                 {tickets.length === 0 && <p className="p-4 text-sm text-neutral-500">Nobody has written yet.</p>}
-                <ul className="max-h-[32rem] divide-y divide-neutral-800 overflow-y-auto">
+                <ul className="max-h-128 divide-y divide-neutral-800 overflow-y-auto">
                     {tickets.map((t) => (
                         <li key={t.id}>
                             <button onClick={() => select(t.id)} className={`w-full px-4 py-3 text-left hover:bg-neutral-800 ${openId === t.id ? 'bg-neutral-800' : ''}`}>
@@ -93,7 +93,7 @@ export default function SupportInbox() {
                 </ul>
             </section>
 
-            <section className="flex min-h-[28rem] flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+            <section className="flex min-h-112 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/4">
                 {!current ? (
                     <p className="m-auto text-sm text-neutral-500">Pick a conversation.</p>
                 ) : (
@@ -112,7 +112,7 @@ export default function SupportInbox() {
                                 <div key={m.id} className={`flex ${m.sender === 'staff' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${m.sender === 'staff' ? 'bg-violet-600' : 'bg-neutral-800'}`}>
                                         <p className="text-[11px] font-semibold text-fuchsia-300">{m.sender === 'staff' ? m.who : current.name}</p>
-                                        <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                                        <p className="whitespace-pre-wrap wrap-break-word">{m.body}</p>
                                         <p className="text-[10px] text-white/50">{time(m.at)}</p>
                                     </div>
                                 </div>

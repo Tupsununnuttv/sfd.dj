@@ -23,7 +23,7 @@ const storedSort = (): Sort => {
     }
 };
 
-const iconBtn = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-neutral-300 transition hover:bg-white/10 hover:text-white disabled:opacity-40';
+const iconBtn = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-neutral-300 transition hover:bg-white/10 hover:text-white disabled:opacity-40';
 
 /**
  * The playlists: my lists on the left, and on the right the one I picked with its tracks in play order.
@@ -261,7 +261,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
             {onClose && (
                 <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
                     <div className="flex items-center gap-3">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500/30 to-violet-500/30 text-violet-200 ring-1 ring-white/10"><ListMusic size={19} /></span>
+                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-fuchsia-500/30 to-violet-500/30 text-violet-200 ring-1 ring-white/10"><ListMusic size={19} /></span>
                         <h2 className="text-lg font-black tracking-tight">Playlists</h2>
                     </div>
                     <button onClick={onClose} aria-label="Close" className="rounded-xl p-2 text-neutral-400 transition hover:bg-white/10 hover:text-white"><X size={20} /></button>
@@ -270,7 +270,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
 
             <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,12rem)_minmax(0,1fr)] gap-4 p-4 md:grid-cols-[15rem_minmax(0,1fr)] md:grid-rows-1 xl:grid-cols-[19rem_minmax(0,1fr)]">
                 {/* my playlists */}
-                <aside className="flex min-h-0 flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                <aside className="flex min-h-0 flex-col rounded-2xl border border-white/10 bg-white/3 p-3">
                     <div className="mb-3 flex items-center justify-between px-1">
                         <h3 className="font-bold">My Playlists</h3>
                         <span className="rounded-lg bg-white/10 px-2 py-0.5 text-xs font-bold tabular-nums text-neutral-300">{lists.length}</span>
@@ -285,7 +285,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                         >
                             <ArrowUpDown size={16} />
                         </button>
-                        <button onClick={() => setCreating(!creating)} disabled={lists.length >= MAX_LISTS} aria-label="New playlist" title={lists.length >= MAX_LISTS ? 'You have reached the playlist limit' : 'New playlist'} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-500 text-white shadow-lg shadow-violet-900/40 transition hover:opacity-90 disabled:opacity-40">
+                        <button onClick={() => setCreating(!creating)} disabled={lists.length >= MAX_LISTS} aria-label="New playlist" title={lists.length >= MAX_LISTS ? 'You have reached the playlist limit' : 'New playlist'} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-r from-fuchsia-500 to-violet-500 text-white shadow-lg shadow-violet-900/40 transition hover:opacity-90 disabled:opacity-40">
                             <Plus size={18} strokeWidth={2.6} />
                         </button>
                     </div>
@@ -313,7 +313,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                                 <button
                                     onClick={() => setSelected(l.id)}
                                     aria-current={selected === l.id}
-                                    className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${selected === l.id ? 'bg-gradient-to-r from-violet-500/25 via-violet-500/10 to-transparent ring-1 ring-violet-400/30' : 'hover:bg-white/[0.05]'}`}
+                                    className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${selected === l.id ? 'bg-linear-to-r from-violet-500/25 via-violet-500/10 to-transparent ring-1 ring-violet-400/30' : 'hover:bg-white/5'}`}
                                 >
                                     {selected === l.id && <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-violet-400" />}
                                     <span className={`min-w-0 flex-1 truncate ${selected === l.id ? 'font-bold text-white' : 'font-semibold text-neutral-300'}`}>{l.name}</span>
@@ -327,7 +327,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                 </aside>
 
                 {/* the one I picked */}
-                <section className="flex min-h-0 min-w-0 flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+                <section className="flex min-h-0 min-w-0 flex-col rounded-2xl border border-white/10 bg-white/3 p-4 sm:p-5">
                     {current ? (
                         <>
                             <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between xl:gap-4">
@@ -358,12 +358,12 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2">
                                     {roomSlug && songs.length > 0 && (
-                                        <button onClick={queueAll} disabled={busy} className="h-9 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-500 px-4 text-xs font-bold text-white shadow-lg shadow-violet-900/40 transition hover:opacity-90 disabled:opacity-40">Queue all</button>
+                                        <button onClick={queueAll} disabled={busy} className="h-9 rounded-xl bg-linear-to-r from-fuchsia-500 to-violet-500 px-4 text-xs font-bold text-white shadow-lg shadow-violet-900/40 transition hover:opacity-90 disabled:opacity-40">Queue all</button>
                                     )}
-                                    <button onClick={() => setFilterOpen(!filterOpen)} aria-label="Search in this playlist" title="Search in this playlist" aria-pressed={filterOpen} className={`${iconBtn} ${filterOpen ? '!border-violet-400/50 !bg-violet-500/20 !text-white' : ''}`}><Search size={16} /></button>
+                                    <button onClick={() => setFilterOpen(!filterOpen)} aria-label="Search in this playlist" title="Search in this playlist" aria-pressed={filterOpen} className={`${iconBtn} ${filterOpen ? 'border-violet-400/50! bg-violet-500/20! text-white!' : ''}`}><Search size={16} /></button>
                                     <button onClick={() => setRenaming(current.name)} aria-label="Rename" title="Rename" className={iconBtn}><Pencil size={16} /></button>
                                     <button onClick={shuffle} disabled={busy || songs.length < 2} aria-label="Shuffle the order" title="Shuffle the order" className={iconBtn}><Shuffle size={16} /></button>
-                                    <button onClick={() => setImportOpen(!importOpen)} aria-label="Import links" title="Import links" aria-pressed={importOpen} className={`${iconBtn} ${importOpen ? '!border-violet-400/50 !bg-violet-500/20 !text-white' : ''}`}><ClipboardPaste size={16} /></button>
+                                    <button onClick={() => setImportOpen(!importOpen)} aria-label="Import links" title="Import links" aria-pressed={importOpen} className={`${iconBtn} ${importOpen ? 'border-violet-400/50! bg-violet-500/20! text-white!' : ''}`}><ClipboardPaste size={16} /></button>
                                     <button onClick={exportList} disabled={songs.length === 0} aria-label="Download the links" title="Download the links" className={iconBtn}><Download size={16} /></button>
                                     <button
                                         onClick={remove}
@@ -392,7 +392,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                                     />
                                     <p className="text-xs text-neutral-500">YouTube playlists import up to 1,000 songs. Spotify tracks are matched to YouTube; connect Spotify in Settings to import playlists you own or collaborate on.</p>
                                     <div className="flex flex-wrap items-center gap-3">
-                                        <button disabled={busy || !importText.trim()} className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-xs font-bold text-white hover:opacity-90 disabled:opacity-40">{busy ? 'Importing…' : 'Import'}</button>
+                                        <button disabled={busy || !importText.trim()} className="rounded-xl bg-linear-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-xs font-bold text-white hover:opacity-90 disabled:opacity-40">{busy ? 'Importing…' : 'Import'}</button>
                                         <button type="button" onClick={() => setImportOpen(false)} className="text-xs font-semibold text-neutral-400 hover:text-white">Close</button>
                                     </div>
                                     {importErrors.length > 0 && <ul className="space-y-1 text-xs text-red-400">{importErrors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
@@ -441,14 +441,14 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                         </>
                     ) : (
                         <div className="m-auto max-w-sm text-center">
-                            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500/25 to-violet-500/25 text-violet-200 ring-1 ring-white/10"><ListMusic size={26} /></span>
+                            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-fuchsia-500/25 to-violet-500/25 text-violet-200 ring-1 ring-white/10"><ListMusic size={26} /></span>
                             <h3 className="mt-4 text-xl font-black tracking-tight">{loaded ? 'Make your first playlist' : 'Loading…'}</h3>
                             {loaded && (
                                 <>
                                     <p className="mt-1 text-neutral-400">Add songs from YouTube, SoundCloud and Spotify, drag them into the order you want, and press Join Waitlist in a room to play them.</p>
                                     <form onSubmit={create} className="mt-5 flex gap-2">
                                         <input value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={60} placeholder="Name of the playlist" aria-label="Name of the playlist" className="min-w-0 flex-1 rounded-xl border-white/10 bg-black/40 text-sm placeholder-neutral-600 focus:border-violet-400 focus:ring-violet-500/30" />
-                                        <button disabled={busy || !newName.trim()} className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-500 px-4 text-sm font-bold text-white hover:opacity-90 disabled:opacity-40">Create</button>
+                                        <button disabled={busy || !newName.trim()} className="rounded-xl bg-linear-to-r from-fuchsia-500 to-violet-500 px-4 text-sm font-bold text-white hover:opacity-90 disabled:opacity-40">Create</button>
                                     </form>
                                 </>
                             )}

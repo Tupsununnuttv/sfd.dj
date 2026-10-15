@@ -48,7 +48,7 @@ export default function History({ songs, rooms, filters }: Props) {
             {songs.length === 0 ? (
                 <p className="text-neutral-500">Nothing has been played yet.</p>
             ) : (
-                <ul className="divide-y divide-neutral-800 rounded-2xl border border-white/10 bg-white/[0.04]">
+                <ul className="divide-y divide-neutral-800 rounded-2xl border border-white/10 bg-white/4">
                     {songs.map((s) => (
                         <li key={s.id} className="flex items-center gap-4 p-3">
                             {s.thumbnail && <img src={s.thumbnail} alt="" className="h-12 w-20 shrink-0 rounded object-cover" />}

@@ -5,6 +5,8 @@ import SavedAccounts from '@/Components/SavedAccounts';
 import TextInput from '@/Components/TextInput';
 import { Field } from '@/Components/ui';
 import GuestLayout from '@/Layouts/GuestLayout';
+import { characterUrl, DEFAULT_CHARACTER } from '@/lib/characters';
+import { AwardBadge } from '@/lib/cosmetics';
 import { checkPassword } from '@/lib/password';
 import { useUsernameCheck } from '@/lib/useUsernameCheck';
 import { canSaveAccounts, saveAccount } from '@/lib/savedAccounts';
@@ -44,9 +46,16 @@ export default function Register({ inviter }: { inviter: { name: string; avatar:
     };
 
     const icon = 'pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500';
+    const shownName = data.name.trim() || data.username;
+    const step = (n: number, text: string) => (
+        <p className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-500 ${n > 1 ? 'pt-2' : ''}`}>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/10 text-[10px] text-neutral-200">{n}</span> {text}
+        </p>
+    );
 
     return (
         <GuestLayout
+            switcher="register"
             title="Create your account"
             subtitle="Free, and it takes a minute. Then pick a room and press play."
             aside={<SavedAccounts onUse={(a) => setData((d) => ({ ...d, username: a.username, name: a.name, email: a.email }))} />}
@@ -60,7 +69,22 @@ export default function Register({ inviter }: { inviter: { name: string; avatar:
                 </p>
             )}
 
+            {/* what the room will show: everybody starts as a character, with the Beta Tester badge, at level 1 */}
+            <div className="mb-6 flex items-center gap-4 overflow-hidden rounded-2xl border border-white/10 bg-linear-to-r from-violet-600/20 via-fuchsia-600/5 to-transparent px-4 py-3" data-register-preview>
+                <img src={characterUrl(DEFAULT_CHARACTER, 'dancing')} alt="" width={58} height={80} className="-my-1 shrink-0 drop-shadow-[0_8px_10px_rgba(0,0,0,0.5)]" />
+                <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-violet-300">You in the room</p>
+                    <p className={`truncate text-lg font-bold ${shownName ? '' : 'text-neutral-500'}`}>{shownName || 'Your name'}</p>
+                    <p className="flex min-w-0 items-center gap-2 text-xs text-neutral-400">
+                        <span className="truncate">@{data.username || 'username'}</span>
+                        <span className="flex shrink-0 items-center gap-1 font-bold text-teal-400"><AwardBadge name="beta" className="h-4 w-4" /> Beta Tester</span>
+                        <span className="shrink-0">Level 1</span>
+                    </p>
+                </div>
+            </div>
+
             <form onSubmit={submit} className="space-y-5">
+                {step(1, 'How people see you')}
                 <Field
                     label="Username"
                     htmlFor="username"
@@ -85,6 +109,7 @@ export default function Register({ inviter }: { inviter: { name: string; avatar:
                     </div>
                 </Field>
 
+                {step(2, 'How you log in')}
                 <Field label="Email" htmlFor="email" error={errors.email} hint="We send one message to check it is yours. We never show it to anyone.">
                     <div className="relative">
                         <Mail size={17} className={icon} />
@@ -122,6 +147,7 @@ export default function Register({ inviter }: { inviter: { name: string; avatar:
                     </div>
                 </Field>
 
+                {step(3, 'Almost done')}
                 <div className="space-y-2.5">
                     <label className="flex items-start gap-2.5 text-sm text-neutral-300">
                         <Checkbox className="mt-0.5" checked={data.terms} onChange={(e) => setData('terms', e.target.checked)} />

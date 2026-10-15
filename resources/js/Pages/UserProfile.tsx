@@ -32,8 +32,8 @@ export default function UserProfile({ profile: p }: Props) {
         <AppLayout title="Profile">
             <Head title={p.name} />
 
-            <section className="flex flex-wrap items-center gap-5 rounded-xl border border-neutral-800 bg-gradient-to-br from-violet-600/20 to-fuchsia-600/10 p-6">
-                <span className="relative inline-block"><Avatar name={p.name} avatar={p.avatar} cosmetics={p.cosmetics} className="h-24 w-24 text-4xl" /><StatusDot status={status} ring="ring-neutral-900" className="absolute bottom-1 right-1 !h-5 !w-5" /></span>
+            <section className="flex flex-wrap items-center gap-5 rounded-xl border border-neutral-800 bg-linear-to-br from-violet-600/20 to-fuchsia-600/10 p-6">
+                <span className="relative inline-block"><Avatar name={p.name} avatar={p.avatar} cosmetics={p.cosmetics} className="h-24 w-24 text-4xl" /><StatusDot status={status} ring="ring-neutral-900" className="absolute bottom-1 right-1 h-5! w-5!" /></span>
                 <div className="min-w-0 flex-1">
                     <p className="flex flex-wrap items-center gap-2 text-2xl font-bold" style={{ color: p.primary_role.color }}>
                         <Badges badges={p.badges} level={p.level} awards={9} /> {p.name} <RoleBadge role={p.primary_role} showMember />
@@ -42,10 +42,10 @@ export default function UserProfile({ profile: p }: Props) {
                         {p.username && <span>@{p.username}</span>}
                         {p.pronouns && <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-neutral-200" title="Pronouns">{p.pronouns}</span>}
                         {p.flag && <span className="flex items-center gap-1.5 text-neutral-300"><Flag flag={p.flag} className="h-4" /> {p.flag.name}</span>}
-                        <span className={`flex items-center gap-1.5 text-xs font-semibold ${STATUS[status].text}`}><StatusDot status={status} ring="ring-transparent" className="!ring-0" /> {STATUS[status].label}</span>
+                        <span className={`flex items-center gap-1.5 text-xs font-semibold ${STATUS[status].text}`}><StatusDot status={status} ring="ring-transparent" className="ring-0!" /> {STATUS[status].label}</span>
                     </p>
                     {p.favorite_genre && <span className="mt-2 inline-block rounded-full bg-violet-500/15 px-2.5 py-0.5 text-xs text-violet-300">🎵 {p.favorite_genre}</span>}
-                    {p.bio && <p className="mt-3 max-w-2xl whitespace-pre-line break-words text-sm text-neutral-200">{p.bio}</p>}
+                    {p.bio && <p className="mt-3 max-w-2xl whitespace-pre-line wrap-break-word text-sm text-neutral-200">{p.bio}</p>}
                     <p className="mt-1 flex flex-wrap items-center gap-3 text-xs text-neutral-500">
                         <span>Joined {new Date(p.joined).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                         {p.discord && <span className="flex items-center gap-1"><SocialIcon name="discord" size={14} /> {p.discord}</span>}
@@ -78,7 +78,7 @@ export default function UserProfile({ profile: p }: Props) {
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 {tiles.map(([label, value]) => (
-                    <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <div key={label} className="rounded-2xl border border-white/10 bg-white/4 p-4">
                         <p className="text-2xl font-bold">{value}</p>
                         <p className="text-xs text-neutral-500">{label}</p>
                     </div>
@@ -86,7 +86,7 @@ export default function UserProfile({ profile: p }: Props) {
             </div>
 
             {!!p.awards?.length && (
-                <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5" data-awards>
+                <section className="rounded-2xl border border-white/10 bg-white/4 p-5" data-awards>
                     <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-500">Badges</h2>
                     <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {p.awards.map((a) => (
@@ -102,7 +102,7 @@ export default function UserProfile({ profile: p }: Props) {
                 </section>
             )}
 
-            <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+            <section className="rounded-2xl border border-white/10 bg-white/4 p-5">
                 <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-500">Rooms by {p.name}</h2>
                 {p.rooms.length === 0 ? (
                     <p className="text-sm text-neutral-500">No public rooms yet.</p>

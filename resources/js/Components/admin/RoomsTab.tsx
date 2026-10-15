@@ -32,7 +32,7 @@ export default function RoomsTab({ rooms, counts }: { rooms: AdminRoom[]; counts
                     <tbody className="divide-y divide-white/5">
                         {shown.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-neutral-500">No rooms.</td></tr>}
                         {shown.map((r) => (
-                            <tr key={r.id} className="hover:bg-white/[0.02]">
+                            <tr key={r.id} className="hover:bg-white/2">
                                 <td className="px-3 py-3">
                                     <Link href={route('rooms.show', r.slug)} className="font-semibold hover:underline">{r.name}</Link> <RoomBadge badges={r.badges} />{r.is_private && <span title="Private room" className="ml-1">🔒</span>}
                                     <p className="text-xs text-neutral-500">{r.genre ?? 'No genre'}</p>

@@ -88,8 +88,8 @@ export default function SupportWidget({ launcher = true }: { launcher?: boolean 
     return (
         <div className="fixed bottom-4 right-4 z-40 text-sm">
             {open && (
-                <div className="mb-3 flex h-[28rem] w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 shadow-2xl">
-                    <div className="flex items-center justify-between bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-3">
+                <div className="mb-3 flex h-112 w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 shadow-2xl">
+                    <div className="flex items-center justify-between bg-linear-to-r from-fuchsia-600 to-violet-600 px-4 py-3">
                         <div>
                             <p className="font-semibold">Live support</p>
                             <p className="text-xs text-white/80">Problem with your account? Tell us.</p>
@@ -113,7 +113,7 @@ export default function SupportWidget({ launcher = true }: { launcher?: boolean 
                                     <div key={m.id} className={`flex ${m.sender === 'visitor' ? 'justify-end' : 'justify-start'}`}>
                                         <div className={`max-w-[85%] rounded-lg px-3 py-2 ${m.sender === 'visitor' ? 'bg-violet-600' : 'bg-neutral-800'}`}>
                                             {m.sender === 'staff' && <p className="text-[11px] font-semibold text-fuchsia-300">{m.who}</p>}
-                                            <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                                            <p className="whitespace-pre-wrap wrap-break-word">{m.body}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -137,9 +137,11 @@ export default function SupportWidget({ launcher = true }: { launcher?: boolean 
             {launcher && (
                 <button
                     onClick={() => { setOpen(!open); setUnread(0); }}
-                    className="relative ml-auto flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-3 font-semibold shadow-lg hover:opacity-90"
+                    aria-label="Live support"
+                    title="Live support"
+                    className="relative ml-auto flex items-center gap-2 rounded-full bg-linear-to-r from-fuchsia-600 to-violet-600 p-3 font-semibold shadow-lg hover:opacity-90 sm:px-4"
                 >
-                    <LifeBuoy size={18} /> Live support
+                    <LifeBuoy size={18} /> <span className="hidden sm:inline">Live support</span>{/* only the buoy on phones, so it hides less of the page */}
                     {unread > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-red-500 px-1.5 text-[10px] font-bold">{unread}</span>}
                 </button>
             )}

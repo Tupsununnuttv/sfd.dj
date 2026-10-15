@@ -33,7 +33,7 @@ export function IntervalSwitch({ value, onChange }: { value: Interval; onChange:
 export default function PlanCards({ plans, interval, current, action, freeAction }: { plans: PlanInfo[]; interval: Interval; current?: string | null; action: (p: PlanInfo) => ReactNode; freeAction?: ReactNode }) {
     return (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className={`flex flex-col rounded-2xl border p-6 ${current === null ? 'border-white/30 bg-white/[0.06]' : 'border-white/10 bg-white/[0.03]'}`} data-plan="free">
+            <div className={`flex flex-col rounded-2xl border p-6 ${current === null ? 'border-white/30 bg-white/6' : 'border-white/10 bg-white/3'}`} data-plan="free">
                 <h3 className="text-lg font-bold">Free</h3>
                 <p className="mt-2 text-4xl font-black">€0</p>
                 <p className="text-xs text-neutral-500">Always free</p>

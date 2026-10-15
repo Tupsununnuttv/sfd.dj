@@ -44,7 +44,7 @@ function Code({ children }: { children: string }) {
     );
 }
 
-const origin = () => (typeof window === 'undefined' ? 'https://your-site' : window.location.origin);
+const origin = () => (typeof window === 'undefined' ? 'https://sfd-dj.eu' : window.location.origin);
 
 const sections: Section[] = [
     {
@@ -172,7 +172,7 @@ const sections: Section[] = [
         body: (
             <>
                 <H>Site roles</H>
-                <P>From highest to lowest. <b>Staff:</b> 👑 Owner, 🛠️ Developer, 🔴 Admin, 🟣 Lead Moderator, 💗 Brand Ambassador, 🟠 Moderator, 🟢 Site Moderator, 🟡 Helper, 📢 Promoter, 🌐 Translator. <b>Creator / Contributor:</b> 📝 Content Provider, 🎵 Music Producer, 🎤 Artist. <b>Community / Status:</b> 🤝 Partnership, 💜 VIP, 💎 Early Supporter, 🧪 Beta Tester, ⭐ Supporter, 👤 User. You can hold several; the highest is shown first, and the icon of every role you hold shows in front of your name in chat. What each role may do site-wide is set in the Admin panel permission matrix.</P>
+                <P>From highest to lowest. <b>Staff:</b> 👑 Owner, 🛠️ Developer, 🔴 Admin, 🟣 Lead Moderator, 💗 Brand Ambassador, 🟠 Moderator, 🟢 Site Moderator, 🟡 Helper, 📢 Promoter, 🌐 Translator. <b>Creator / Contributor:</b> 📝 Content Provider, 🎵 Music Producer, 🎤 Artist. <b>Community / Status:</b> 🤝 Partnership, 💜 VIP, 💎 Early Supporter, ⭐ Supporter, 👤 User. You can hold several; the highest is shown first, and the icon of every role you hold shows in front of your name in chat. What each role may do site-wide is set in the Admin panel permission matrix.</P>
                 <H>Room roles</H>
                 <List
                     items={[

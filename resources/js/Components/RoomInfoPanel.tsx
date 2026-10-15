@@ -62,17 +62,17 @@ export default function RoomInfoPanel({ room, host, online, team, now, queue, st
             <div className={`relative overflow-hidden px-6 pb-6 pt-7 ${backgroundClass(room.background)}`}>
                 <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-fuchsia-600/25 blur-3xl" />
                 <div className="pointer-events-none absolute -bottom-20 left-10 h-48 w-48 rounded-full bg-violet-600/25 blur-3xl" />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/20 to-transparent" />
+                <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-neutral-900 via-neutral-900/20 to-transparent" />
                 <button onClick={onClose} aria-label="Close" className="absolute right-4 top-4 rounded-lg bg-black/30 p-1.5 text-neutral-300 backdrop-blur hover:bg-black/50 hover:text-white"><X size={18} /></button>
 
                 <div className="relative">
                     <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-violet-300">Room info <RoomBadge badges={room.badges} /></p>
-                    <h2 className="mt-1 break-words text-3xl font-black tracking-tight sm:text-4xl">{room.name}</h2>
+                    <h2 className="mt-1 wrap-break-word text-3xl font-black tracking-tight sm:text-4xl">{room.name}</h2>
                     <div className="mt-3 flex flex-wrap gap-2">
                         {room.genre && <span className={pill}>🎵 {room.genre}</span>}
                         <span className={pill}>{room.is_private ? <><Lock size={12} /> Private</> : <><Globe size={12} /> Public</>}</span>
                         <span className={pill}>Since {since}</span>
-                        <span className={`${pill} !bg-green-500/15 !text-green-300`}><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" /> {online.length} here now</span>
+                        <span className={`${pill} bg-green-500/15! text-green-300!`}><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" /> {online.length} here now</span>
                     </div>
                     {room.description && <p className="mt-3 max-w-2xl text-sm text-neutral-200">{room.description}</p>}
                     <div className="mt-4 flex flex-wrap gap-2">
@@ -89,7 +89,7 @@ export default function RoomInfoPanel({ room, host, online, team, now, queue, st
                     <section>
                         <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-400">Now playing</h3>
                         {now ? (
-                            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/4 p-3">
                                 {now.thumbnail ? <img src={now.thumbnail} alt="" className="h-14 w-24 shrink-0 rounded-lg object-cover" /> : <span className="flex h-14 w-24 shrink-0 items-center justify-center rounded-lg bg-white/5 text-2xl">🎵</span>}
                                 <div className="min-w-0">
                                     <p className="line-clamp-2 text-sm font-semibold">{now.title}</p>
@@ -117,7 +117,7 @@ export default function RoomInfoPanel({ room, host, online, team, now, queue, st
                                 {rules.map((rule, i) => (
                                     <li key={i} className="flex gap-3 text-sm text-neutral-200">
                                         <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-[11px] font-bold text-violet-200">{i + 1}</span>
-                                        <span className="min-w-0 break-words"><span className="font-semibold text-neutral-100">{rule.title}</span>{rule.text && <span className="mt-0.5 block whitespace-pre-line text-neutral-400">{rule.text}</span>}</span>
+                                        <span className="min-w-0 wrap-break-word"><span className="font-semibold text-neutral-100">{rule.title}</span>{rule.text && <span className="mt-0.5 block whitespace-pre-line text-neutral-400">{rule.text}</span>}</span>
                                     </li>
                                 ))}
                             </ol>
@@ -128,7 +128,7 @@ export default function RoomInfoPanel({ room, host, online, team, now, queue, st
                 <div className="min-w-0 space-y-5">
                     <div className="grid grid-cols-2 gap-2">
                         {tiles.map(([Icon, label, value]) => (
-                            <div key={label} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                            <div key={label} className="rounded-xl border border-white/10 bg-white/4 p-3">
                                 <Icon size={15} className="text-violet-300" />
                                 <p className="mt-1.5 text-xl font-black tabular-nums leading-none">{value.toLocaleString()}</p>
                                 <p className="mt-1 text-[11px] text-neutral-400">{label}</p>
@@ -138,7 +138,7 @@ export default function RoomInfoPanel({ room, host, online, team, now, queue, st
 
                     <section>
                         <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-400">Host</h3>
-                        <div className="rounded-xl border border-amber-400/20 bg-gradient-to-br from-amber-500/10 to-transparent p-3">
+                        <div className="rounded-xl border border-amber-400/20 bg-linear-to-br from-amber-500/10 to-transparent p-3">
                             <div className="flex items-center gap-3">
                                 <Avatar name={host.name} avatar={host.avatar} className="h-12 w-12 text-2xl" />
                                 <div className="min-w-0">
@@ -159,14 +159,14 @@ export default function RoomInfoPanel({ room, host, online, team, now, queue, st
                             {present.length > 0 && (
                                 <ul className="space-y-2">
                                     {present.map(({ role, people }) => (
-                                        <li key={role.key} className="rounded-xl bg-white/[0.04] p-2.5">
+                                        <li key={role.key} className="rounded-xl bg-white/4 p-2.5">
                                             <RoleBadge role={role} />
                                             <ul className="mt-2 flex flex-wrap gap-1.5">
                                                 {people.map((p) => (
                                                     <li key={p.id}>
                                                         <button onClick={() => onProfile(p.id, p.name)} className="flex items-center gap-1.5 rounded-full bg-white/5 py-0.5 pl-0.5 pr-2.5 text-xs hover:bg-white/10">
                                                             <Avatar name={p.name} avatar={p.avatar} cosmetics={p.cosmetics} className="h-5 w-5 text-[10px]" />
-                                                            <span className="max-w-[7rem] truncate">{p.name}</span>
+                                                            <span className="max-w-28 truncate">{p.name}</span>
                                                         </button>
                                                     </li>
                                                 ))}

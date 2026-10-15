@@ -132,7 +132,7 @@ class ApiAndRolesTest extends TestCase
             'owner', 'developer', 'admin', 'lead_moderator', 'brand_ambassador',
             'site_moderator', 'moderator', 'helper', 'promoter', 'translator',
             'content_provider', 'music_producer', 'artist',
-            'partnership', 'vip', 'early_supporter', 'beta_tester', 'supporter', 'member',
+            'partnership', 'vip', 'early_supporter', 'supporter', 'member',
         ];
         $this->assertSame($expected, array_map(fn (Role $role) => $role->value, Role::cases()));
 

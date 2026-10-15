@@ -17,8 +17,8 @@ interface Props {
 }
 
 const field = 'rounded-md border-neutral-700 bg-neutral-800 text-sm text-neutral-100 placeholder-neutral-500 focus:border-violet-500 focus:ring-violet-500';
-const card = 'rounded-2xl border border-white/10 bg-white/[0.04] p-5';
-const primary = 'rounded-md bg-gradient-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50';
+const card = 'rounded-2xl border border-white/10 bg-white/4 p-5';
+const primary = 'rounded-md bg-linear-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50';
 
 function TokenList({ tokens }: { tokens: Token[] }) {
     if (tokens.length === 0) return <p className="text-sm text-neutral-500">No tokens.</p>;

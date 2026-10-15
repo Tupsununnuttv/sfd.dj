@@ -25,7 +25,7 @@ export default function VerifyEmail({ status, mail, required }: { status?: strin
         <GuestLayout title={required ? 'Check your email' : 'Confirm your email'} subtitle={required ? 'One last step: open the link we sent to confirm it is really yours.' : 'You are in. Confirming your email is how you get back in if you forget your password.'}>
             <Head title="Email Verification" />
 
-            <div className="mb-6 flex items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5" data-verify-card>
+            <div className="mb-6 flex items-start gap-4 rounded-2xl border border-white/10 bg-white/4 p-5" data-verify-card>
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/20 text-violet-300"><MailCheck size={22} /></span>
                 <div className="text-sm">
                     <p className="font-semibold">{state === 'sent' ? 'We sent a link to' : 'The link goes to'}</p>
@@ -43,7 +43,7 @@ export default function VerifyEmail({ status, mail, required }: { status?: strin
 
             <form onSubmit={submit} className="space-y-3">
                 {!required && (
-                    <Link href={route('dashboard')} className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 py-3 text-sm font-semibold text-white transition hover:opacity-90" data-continue>
+                    <Link href={route('dashboard')} className="flex w-full items-center justify-center gap-2 rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 py-3 text-sm font-semibold text-white transition hover:opacity-90" data-continue>
                         Continue to SFD-DJ.EU <ArrowRight size={16} />
                     </Link>
                 )}

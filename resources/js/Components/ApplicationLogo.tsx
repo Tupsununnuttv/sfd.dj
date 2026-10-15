@@ -64,7 +64,7 @@ export default function ApplicationLogo({ className = '', textClassName = '', de
             <LogoMark detail={detail} spin={spin} />
             <span className={`font-black tracking-tight ${textClassName}`}>
                 <span className={onLight ? 'text-neutral-950' : 'text-white'}>SFD</span>
-                <span className={`bg-gradient-to-r bg-clip-text text-transparent ${onLight ? 'from-violet-600 via-fuchsia-600 to-sky-600' : 'from-violet-300 via-fuchsia-300 to-sky-300'}`}>-DJ.EU</span>
+                <span className={`bg-linear-to-r bg-clip-text text-transparent ${onLight ? 'from-violet-600 via-fuchsia-600 to-sky-600' : 'from-violet-300 via-fuchsia-300 to-sky-300'}`}>-DJ.EU</span>
             </span>
         </span>
     );

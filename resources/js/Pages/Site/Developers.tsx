@@ -4,7 +4,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 
 const code = `import { SfdDj } from 'sfddj';
 
-const sfd = new SfdDj({ token: process.env.SFDDJ_TOKEN, baseUrl: '${typeof window !== 'undefined' ? window.location.origin : 'https://your-site'}' });
+const sfd = new SfdDj({ token: process.env.SFDDJ_TOKEN, baseUrl: '${typeof window !== 'undefined' ? window.location.origin : 'https://sfd-dj.eu'}' });
 
 const bot = sfd.bot('my-room-slug')
     .command('ping', () => bot.say('pong!'))
@@ -49,13 +49,13 @@ export default function Developers() {
                     <ol className="mt-4 space-y-4">
                         {steps.map(([title, text], i) => (
                             <li key={title} className="flex gap-4">
-                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500 text-sm font-bold">{i + 1}</span>
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-linear-to-r from-fuchsia-500 to-violet-500 text-sm font-bold">{i + 1}</span>
                                 <div><p className="font-semibold">{title}</p><p className="text-sm text-neutral-400">{text}</p></div>
                             </li>
                         ))}
                     </ol>
                     <div className="mt-8 flex flex-wrap gap-3">
-                        <Link href={guest ? route('register') : route('settings.developers')} className="rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold hover:opacity-90">{guest ? 'Create an account' : 'Get a token'}</Link>
+                        <Link href={guest ? route('register') : route('settings.developers')} className="rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold hover:opacity-90">{guest ? 'Create an account' : 'Get a token'}</Link>
                         <Link href={`${route('docs')}#developers`} className="rounded-lg bg-white/10 px-5 py-2.5 text-sm font-semibold hover:bg-white/20">API reference</Link>
                     </div>
                 </div>

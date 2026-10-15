@@ -7,6 +7,7 @@ use App\Models\Friendship;
 use App\Models\User;
 use App\Models\Whisper;
 use App\Support\LinkGuard;
+use App\Support\WordGuard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -66,7 +67,8 @@ class WhisperController extends Controller
             : User::whereRaw('lower(username) = ?', [mb_strtolower($data['username'])])->first();
 
         abort_if(! $to, 422, 'There is nobody with that username.');
-        $why = $request->user()->is_staff ? null : LinkGuard::check($data['body']); // not even in a whisper: links to other sites
+        $why = WordGuard::check($data['body']) // never these words, staff included
+            ?? ($request->user()->is_staff ? null : LinkGuard::check($data['body'])); // not even in a whisper: links to other sites
         abort_if($why !== null, 422, (string) $why);
         abort_if($to->id === $request->user()->id, 422, 'You cannot whisper to yourself.');
 

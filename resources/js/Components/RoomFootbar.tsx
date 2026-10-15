@@ -8,7 +8,7 @@ import { router } from '@inertiajs/react';
 import { CalendarDays, Check, ChevronUp, CircleHelp, HandCoins, Info, LifeBuoy, ListMusic, Monitor, MonitorOff, MoreHorizontal, Music2, RefreshCw, ScrollText, SkipForward, X } from 'lucide-react';
 import { FormEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-const iconBtn = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-neutral-300 transition hover:bg-white/10 hover:text-white';
+const iconBtn = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-neutral-300 transition hover:bg-white/10 hover:text-white';
 const money = (currency: string, amount: number) => `${currency}${amount.toFixed(2)}`;
 
 /** Closes a popover on a click outside `box` or on Esc. */
@@ -49,22 +49,22 @@ function DonatePanel({ community, slug, onClose }: { community: Community; slug:
     };
 
     return (
-        <div role="dialog" aria-label="Donation goal" className="absolute bottom-full right-0 z-40 mb-3 w-[22rem] max-w-[calc(100vw-1.5rem)] animate-menu rounded-2xl border border-white/10 bg-neutral-900/95 p-3 shadow-2xl shadow-black/60 backdrop-blur-md">
+        <div role="dialog" aria-label="Donation goal" className="absolute bottom-full right-0 z-40 mb-3 w-88 max-w-[calc(100vw-1.5rem)] animate-menu rounded-2xl border border-white/10 bg-neutral-900/95 p-3 shadow-2xl shadow-black/60 backdrop-blur-md">
             <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-sky-300"><HandCoins size={18} /></span>
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/6 text-sky-300"><HandCoins size={18} /></span>
                 <p className="flex-1 text-[15px] font-bold text-white">Donation Goal</p>
                 <button onClick={onClose} aria-label="Close" className="rounded-lg border border-white/10 p-1.5 text-neutral-400 transition hover:bg-white/10 hover:text-white"><X size={16} /></button>
             </div>
 
-            <form onSubmit={donate} className="mt-3 space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+            <form onSubmit={donate} className="mt-3 space-y-3 rounded-xl border border-white/10 bg-white/3 p-3">
                 {goal && (
                     <div>
                         <div className="flex items-center justify-between">
                             <span className="rounded-md border border-sky-400/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-300">Global goal</span>
-                            <span className="rounded-md border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[11px] font-bold tabular-nums text-neutral-200">{goal.percent}%</span>
+                            <span className="rounded-md border border-white/10 bg-white/6 px-2 py-0.5 text-[11px] font-bold tabular-nums text-neutral-200">{goal.percent}%</span>
                         </div>
                         <p className="mt-2 text-[13px] font-extrabold uppercase tracking-wide text-white">{goal.title}</p>
-                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-sky-400 to-cyan-300" style={{ width: `${goal.percent}%` }} /></div>
+                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-linear-to-r from-sky-400 to-cyan-300" style={{ width: `${goal.percent}%` }} /></div>
                         <p className="mt-1.5 text-xs tabular-nums text-neutral-400">{money(goal.currency, goal.current)} of {money(goal.currency, goal.goal)}</p>
                     </div>
                 )}
@@ -85,7 +85,7 @@ function DonatePanel({ community, slug, onClose }: { community: Community; slug:
                     <button disabled={busy || !community.donate || !(Number(amount.replace(',', '.')) >= 1)} className="h-11 shrink-0 rounded-xl bg-sky-500 px-5 text-sm font-bold text-white transition hover:bg-sky-400 disabled:opacity-40">{busy ? '…' : 'Donate'}</button>
                 </div>
 
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/3 p-3">
                     <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-white/30 bg-transparent text-sky-500 focus:ring-sky-400" />
                     <span>
                         <span className="block text-[13px] font-bold text-white">Donate anonymously</span>
@@ -186,8 +186,8 @@ export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSk
     const giveTip = goal ? `Donation Goal\n${goal.title}\n${goal.percent}%` : 'Donate\nHelp the project grow <3';
 
     return (
-        <footer ref={bar} className="sfd-footbar relative flex h-[68px] shrink-0 items-center gap-3 border-t border-white/10 bg-gradient-to-b from-neutral-950/95 to-black px-3 text-sm sm:px-4">
-            <div className="pointer-events-none absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
+        <footer ref={bar} className="sfd-footbar relative flex h-[68px] shrink-0 items-center gap-3 border-t border-white/10 bg-linear-to-b from-neutral-950/95 to-black px-3 text-sm sm:px-4">
+            <div className="pointer-events-none absolute inset-x-0 -top-px h-px bg-linear-to-r from-transparent via-violet-500/50 to-transparent" />
 
             {/* the playlist I play from, and what comes next */}
             {!guest && tier >= 1 && (
@@ -198,9 +198,9 @@ export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSk
                             aria-haspopup="listbox"
                             aria-expanded={pick}
                             title="The playlist you play from"
-                            className={`flex h-11 items-center gap-2.5 rounded-xl border px-2.5 text-left transition ${pick ? 'border-violet-400/50 bg-violet-500/15' : 'border-white/10 bg-white/[0.04] hover:bg-white/10'} ${tier === 1 ? 'w-12 justify-center px-0' : tier === 2 ? 'w-40' : 'w-52'}`}
+                            className={`flex h-11 items-center gap-2.5 rounded-xl border px-2.5 text-left transition ${pick ? 'border-violet-400/50 bg-violet-500/15' : 'border-white/10 bg-white/4 hover:bg-white/10'} ${tier === 1 ? 'w-12 justify-center px-0' : tier === 2 ? 'w-40' : 'w-52'}`}
                         >
-                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-fuchsia-500/40 to-violet-500/40 text-violet-100"><ListMusic size={15} /></span>
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-fuchsia-500/40 to-violet-500/40 text-violet-100"><ListMusic size={15} /></span>
                             {tier >= 2 && (
                                 <>
                                     <span className="min-w-0 flex-1">
@@ -234,7 +234,7 @@ export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSk
                     </div>
 
                     {tier >= 2 && (
-                        <button onClick={onPlaylists} title="Your next track: open the playlists" className={`flex h-11 min-w-0 items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 text-left transition hover:bg-white/10 ${tier === 3 ? 'w-64' : 'w-40'}`}>
+                        <button onClick={onPlaylists} title="Your next track: open the playlists" className={`flex h-11 min-w-0 items-center gap-2.5 rounded-xl border border-white/10 bg-white/4 px-2.5 text-left transition hover:bg-white/10 ${tier === 3 ? 'w-64' : 'w-40'}`}>
                             <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-neutral-800 ring-1 ring-white/10">
                                 {next?.thumbnail ? <img src={next.thumbnail} alt="" className="h-full w-full object-cover" /> : <Music2 size={15} className="m-auto mt-2 text-neutral-600" />}
                             </span>
@@ -269,7 +269,7 @@ export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSk
                             onClick={() => { setGiving(!giving); !giving && router.reload({ only: ['community'] }); /* the newest total */ }}
                             aria-label="Donation goal"
                             aria-expanded={giving}
-                            className={`${iconBtn} relative ${giving ? '!border-sky-400/50 !bg-sky-500/20 !text-sky-200' : 'hover:!text-sky-300'}`}
+                            className={`${iconBtn} relative ${giving ? 'border-sky-400/50! bg-sky-500/20! text-sky-200!' : 'hover:text-sky-300!'}`}
                         >
                             <HandCoins size={18} />
                             {goal && <span className="absolute inset-x-1.5 bottom-1 h-0.5 overflow-hidden rounded-full bg-white/15"><span className="block h-full bg-sky-400" style={{ width: `${goal.percent}%` }} /></span>}
@@ -283,16 +283,16 @@ export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSk
                     aria-label={playbackOn ? 'Turn the video off' : 'Turn the video on'}
                     aria-pressed={playbackOn}
                     title={playbackOn ? 'Playback is on. Click to turn the video and sound off here.' : 'Playback is off. Click to turn it on.'}
-                    className={`${iconBtn} ${playbackOn ? '' : '!border-red-400/40 !bg-red-500/20 !text-red-200'}`}
+                    className={`${iconBtn} ${playbackOn ? '' : 'border-red-400/40! bg-red-500/20! text-red-200!'}`}
                 >
                     {playbackOn ? <Monitor size={18} /> : <MonitorOff size={18} />}
                 </button>
-                {canSkip && <button onClick={onSkip} aria-label="Skip song" title="Skip song" className={`${iconBtn} !border-violet-400/30 !bg-violet-500/15 !text-violet-100 hover:!bg-violet-500/30`}><SkipForward size={18} /></button>}
+                {canSkip && <button onClick={onSkip} aria-label="Skip song" title="Skip song" className={`${iconBtn} border-violet-400/30! bg-violet-500/15! text-violet-100! hover:bg-violet-500/30!`}><SkipForward size={18} /></button>}
                 <button
                     data-menu-trigger
                     onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setMore(more ? null : { x: r.right, y: window.innerHeight, right: true, flipTo: r.top - 8 }); /* y at the bottom of the window: it never fits below, so it opens above */ }}
                     aria-haspopup="menu"
-                    className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 text-[13px] font-semibold text-neutral-200 transition hover:bg-white/10"
+                    className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 text-[13px] font-semibold text-neutral-200 transition hover:bg-white/10"
                 >
                     <MoreHorizontal size={17} /> {tier >= 2 && 'More'}
                 </button>

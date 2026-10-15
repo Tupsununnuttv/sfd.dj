@@ -3,7 +3,7 @@
 //   - the people: Fedora (with a boombox), Blaze and Echo (DJs with headphones) and their referee-shirt versions Blaze Ref and Echo Ref
 //   - the Zoo S02 fox
 //   - Rift, the raven mage, and Skully, a skeleton DJ (the Owner only)
-//   - for everybody, by level: Milky the milk carton (6), Panda Bear (12), Spooky the jack-o'-lantern scarecrow (14), Ember Dragon (30), Frost Dragon (35)
+//   - for everybody, by level: Milky the milk carton (6), Panda Bear (12), Spooky the jack-o'-lantern scarecrow (14), Kiko & Mochi, a girl and her dancing Shiba (16), Ember Dragon (30), Frost Dragon (35)
 // The others are for the roles named in AvatarController::ROLE_ONLY. The six simple characters everybody can wear are drawn by make-characters.mjs.
 // Run it with `node scripts/make-staff-characters.mjs`, or name the ones to redraw: `node scripts/make-staff-characters.mjs ice fedora`.
 import fs from 'node:fs';
@@ -14,6 +14,7 @@ import { dj } from './staff-characters/djs.mjs';
 import { dragon } from './staff-characters/dragon.mjs';
 import { fedora } from './staff-characters/fedora.mjs';
 import { fox } from './staff-characters/fox.mjs';
+import { kiko } from './staff-characters/kiko.mjs';
 import { STATES } from './staff-characters/kit.mjs';
 import { milky } from './staff-characters/milky.mjs';
 import { panda } from './staff-characters/panda.mjs';
@@ -45,6 +46,7 @@ const characters = {
     emberdragon: (state) => dragon('ember', state),
     frostdragon: (state) => dragon('frost', state),
     milky,
+    kikomochi: kiko,
 };
 
 const only = process.argv.slice(2);

@@ -52,16 +52,16 @@ export default function GrabDialog({ slug, song, onClose, onGrabbed }: {
     const form = (
         <form onSubmit={make} className="flex gap-2">
             <input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="Name of the new playlist" aria-label="Name of the new playlist" autoFocus={none} className="min-w-0 flex-1 rounded-lg border-white/10 bg-white/5 text-sm text-white placeholder-neutral-500 focus:border-violet-500 focus:ring-violet-500" />
-            <button disabled={busy !== null || !name.trim()} data-make className="flex shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 px-3.5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50">
+            <button disabled={busy !== null || !name.trim()} data-make className="flex shrink-0 items-center gap-1.5 rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-3.5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50">
                 <Plus size={15} /> {busy === 'new' ? 'Working…' : none ? 'Make it and grab' : 'Make and grab'}
             </button>
         </form>
     );
 
     return (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose} data-grab-dialog>
+        <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose} data-grab-dialog>
             <div role="dialog" aria-modal="true" aria-label="Grab this song" className="w-full max-w-md animate-menu overflow-hidden rounded-2xl border border-white/10 bg-neutral-900 text-white shadow-2xl shadow-black/60" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center gap-3 border-b border-white/10 bg-gradient-to-r from-violet-600/25 via-fuchsia-600/10 to-transparent p-4">
+                <div className="flex items-center gap-3 border-b border-white/10 bg-linear-to-r from-violet-600/25 via-fuchsia-600/10 to-transparent p-4">
                     {song.thumbnail ? <img src={song.thumbnail} alt="" className="h-12 w-20 shrink-0 rounded-lg object-cover" /> : <span className="flex h-12 w-20 shrink-0 items-center justify-center rounded-lg bg-white/10 text-xl">🎵</span>}
                     <div className="min-w-0 flex-1">
                         <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-violet-300"><Heart size={12} fill="currentColor" /> Grab this song</p>
@@ -90,7 +90,7 @@ export default function GrabDialog({ slug, song, onClose, onGrabbed }: {
                             <ul className="max-h-64 space-y-1.5 overflow-y-auto pr-1" data-playlists>
                                 {lists.map((l) => (
                                     <li key={l.id}>
-                                        <button onClick={() => grab({ playlist_id: l.id }, l.id)} disabled={busy !== null} data-pick={l.id} className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-left transition hover:border-violet-400/50 hover:bg-violet-500/10 disabled:opacity-60">
+                                        <button onClick={() => grab({ playlist_id: l.id }, l.id)} disabled={busy !== null} data-pick={l.id} className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/4 px-3 py-2.5 text-left transition hover:border-violet-400/50 hover:bg-violet-500/10 disabled:opacity-60">
                                             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/20 text-violet-200"><ListMusic size={16} /></span>
                                             <span className="min-w-0 flex-1">
                                                 <span className="block truncate text-sm font-semibold">{l.name}</span>

@@ -6,6 +6,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import {
     ActionRowBuilder,
+    ActivityType,
     ButtonBuilder,
     ButtonStyle,
     ChannelType,
@@ -27,6 +28,10 @@ if (existsSync('.env')) {
     process.loadEnvFile();
 }
 
+// A real web address, or null (Node does not fill in "${APP_URL}" in .env files, so that would arrive as it is written).
+const webAddress = (value) => (/^https?:\/\/\S+$/.test(value ?? '') ? value : null);
+// The site this bot belongs to. Not APP_URL: on a PC that is http://localhost:8000, and on the host it can still be the laravel.cloud address.
+const siteUrl = (webAddress(process.env.DISCORD_WEBSITE_URL) ?? 'https://sfd-dj.eu').replace(/\/+$/, '');
 const token = process.env.DISCORD_BOT_TOKEN;
 const applicationId = process.env.DISCORD_APPLICATION_ID || process.env.DISCORD_CLIENT_ID;
 const guildId = process.env.DISCORD_GUILD_ID;
@@ -260,7 +265,11 @@ if (!token || !applicationId || !guildId) {
         new ButtonBuilder().setCustomId('staff-application:start').setLabel('Start application').setStyle(ButtonStyle.Primary),
     );
 
-    const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+    // "Listening to sfd-dj.eu" under the bot's name, so everybody sees which site it belongs to
+    const client = new Client({
+        intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+        presence: { activities: [{ name: siteUrl.replace(/^https?:\/\//, ''), type: ActivityType.Listening }] },
+    });
 
     const sendMemberNotice = async (member, type) => {
         const settings = botSettings[member.guild.id]?.[type];
@@ -397,7 +406,7 @@ if (!token || !applicationId || !guildId) {
     };
 
     const checkWebsiteStatus = async () => {
-        const url = process.env.DISCORD_STATUS_URL || process.env.DISCORD_WEBSITE_URL || process.env.APP_URL || 'https://sfddj.laravel.cloud';
+        const url = webAddress(process.env.DISCORD_STATUS_URL) ?? siteUrl;
         const started = Date.now();
         try {
             const response = await fetch(url, { signal: AbortSignal.timeout(8000), redirect: 'follow' });
@@ -498,9 +507,8 @@ if (!token || !applicationId || !guildId) {
             return;
         }
 
-        const baseUrl = (process.env.DISCORD_WEBSITE_URL || process.env.APP_URL || 'https://sfddj.laravel.cloud').replace(/\/$/, '');
         const cursor = settings.announcementsAfter;
-        const endpoint = new URL('/api/discord/announcements', baseUrl);
+        const endpoint = new URL('/api/discord/announcements', siteUrl);
         if (cursor !== undefined) {
             endpoint.searchParams.set('after', String(cursor));
         }
@@ -531,6 +539,7 @@ if (!token || !applicationId || !guildId) {
                 embeds: [new EmbedBuilder()
                     .setColor(warning ? 0xf59e0b : 0x5865f2)
                     .setTitle(warning ? 'SFD-DJ.EU notice' : 'SFD-DJ.EU update')
+                    .setURL(siteUrl)
                     .setDescription(String(announcement.message).slice(0, 3900))
                     .setTimestamp(new Date(announcement.created_at))],
                 allowedMentions: { parse: [] },
@@ -942,14 +951,13 @@ if (!token || !applicationId || !guildId) {
 
             if (interaction.isChatInputCommand() && interaction.commandName === 'profile') {
                 await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-                const baseUrl = (process.env.DISCORD_WEBSITE_URL || process.env.APP_URL || 'https://sfddj.laravel.cloud').replace(/\/$/, '');
-                const response = await fetch(`${baseUrl}/api/discord/members/${interaction.user.id}`, {
+                const response = await fetch(`${siteUrl}/api/discord/members/${interaction.user.id}`, {
                     headers: { Authorization: `Bot ${token}`, Accept: 'application/json' },
                     signal: AbortSignal.timeout(8000),
                 });
 
                 if (response.status === 404) {
-                    await interaction.editReply('Your Discord account is not linked to an SFD-DJ.EU account yet. Connect it in Settings → Connections.');
+                    await interaction.editReply(`Your Discord account is not linked to an SFD-DJ.EU account yet. Connect it in Settings → Connections: ${siteUrl}/settings/connections`);
 
                     return;
                 }

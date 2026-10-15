@@ -5,6 +5,7 @@ import { applyMotion } from '@/lib/motion';
 import { PageProps } from '@/types';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { ComponentType } from 'react';
 import { createRoot } from 'react-dom/client';
 import { configureEcho } from '@laravel/echo-react';
 
@@ -40,8 +41,8 @@ createInertiaApp({
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.tsx`,
-            import.meta.glob('./Pages/**/*.tsx'),
-        ),
+            import.meta.glob<{ default: ComponentType }>('./Pages/**/*.tsx'),
+        ).then((page) => page.default),
     setup({ el, App, props }) {
         motion(props.initialPage);
 

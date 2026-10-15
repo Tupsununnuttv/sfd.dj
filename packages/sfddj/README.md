@@ -21,7 +21,7 @@ role in your room (**Room settings → Roles**). It can never do more than that 
 ```js
 import { SfdDj } from 'sfddj';
 
-const sfd = new SfdDj({ token: process.env.SFDDJ_TOKEN, baseUrl: 'https://your-sfddj.example' });
+const sfd = new SfdDj({ token: process.env.SFDDJ_TOKEN }); // talks to https://sfd-dj.eu; pass baseUrl for another copy of the site
 const room = 'my-room-slug';
 
 const bot = sfd.bot(room)

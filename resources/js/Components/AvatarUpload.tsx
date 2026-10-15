@@ -67,7 +67,7 @@ export default function AvatarUpload() {
                 <Avatar name={user.name} avatar={user.avatar} cosmetics={user.cosmetics} className="h-24 w-24 text-4xl" />
                 <div className="space-y-2">
                     <div className="flex gap-2">
-                        <button onClick={() => input.current?.click()} disabled={busy} className="rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50">
+                        <button onClick={() => input.current?.click()} disabled={busy} className="rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50">
                             {busy ? 'Uploading…' : hasPhoto ? 'Change photo' : 'Upload photo'}
                         </button>
                         {hasPhoto && (

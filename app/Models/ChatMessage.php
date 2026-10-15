@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 class ChatMessage extends Model
 {
     /** Columns of the sender needed to show their badges. Roles and XP must be here or everyone looks like a Member. */
-    public const WITH_USER = 'user:id,name,avatar,roles,xp,cosmetics,is_bot,plan,plan_until';
+    public const WITH_USER = 'user:id,name,avatar,roles,awards,xp,cosmetics,is_bot,plan,plan_until';
 
     protected $fillable = ['room_id', 'user_id', 'body', 'type', 'kind', 'image', 'sticker', 'reply_to_id'];
 

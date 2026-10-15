@@ -96,7 +96,7 @@ function CreateRoom({ genres, onClose }: { genres: string[]; onClose: () => void
                     <input type="checkbox" checked={data.is_private} onChange={(e) => setData('is_private', e.target.checked)} className="rounded border-neutral-600 bg-neutral-800 text-violet-500 focus:ring-violet-500" />
                     🔒 Private room <span className="text-xs text-neutral-500">(only you and SFD-DJ.EU staff can enter)</span>
                 </label>
-                <button disabled={processing} className="w-full rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 py-2.5 text-sm font-semibold text-white disabled:opacity-50">Create room</button>
+                <button disabled={processing} className="w-full rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 py-2.5 text-sm font-semibold text-white disabled:opacity-50">Create room</button>
             </form>
         </div>
     );
@@ -155,7 +155,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
             <Head title="Dashboard" />
 
             {/* hero */}
-            <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-fuchsia-600/25 via-violet-600/15 to-sky-600/10 p-6 sm:p-8">
+            <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-fuchsia-600/25 via-violet-600/15 to-sky-600/10 p-6 sm:p-8">
                 <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-fuchsia-500/20 blur-3xl" />
                 {guest ? (
                     <div className="relative flex flex-wrap items-center justify-between gap-5">
@@ -167,7 +167,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                         <div className="flex gap-2">
                             {rooms.length > 1 && <button onClick={surprise} className="flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2.5 text-sm font-semibold hover:bg-white/20"><Shuffle size={16} /> Surprise me</button>}
                             <Link href={route('login')} className="rounded-lg bg-white/10 px-5 py-2.5 text-sm font-semibold hover:bg-white/20">Log in</Link>
-                            <Link href={route('register')} className="rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold hover:opacity-90">Register free</Link>
+                            <Link href={route('register')} className="rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold hover:opacity-90">Register free</Link>
                         </div>
                     </div>
                 ) : (
@@ -181,8 +181,8 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {daily?.claimable && <button onClick={() => router.post(route('shop.daily'), {}, { preserveScroll: true })} data-daily className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 px-5 py-2.5 text-sm font-bold text-amber-950 shadow-lg shadow-amber-500/20 hover:from-amber-300 hover:to-amber-400"><CoinIcon className="h-4 w-4" /> Claim {daily.amount} daily coins</button>}
-                            <button onClick={() => setCreating(true)} className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold hover:opacity-90"><Plus size={16} /> Create room</button>
+                            {daily?.claimable && <button onClick={() => router.post(route('shop.daily'), {}, { preserveScroll: true })} data-daily className="flex items-center gap-2 rounded-lg bg-linear-to-r from-amber-400 to-amber-500 px-5 py-2.5 text-sm font-bold text-amber-950 shadow-lg shadow-amber-500/20 hover:from-amber-300 hover:to-amber-400"><CoinIcon className="h-4 w-4" /> Claim {daily.amount} daily coins</button>}
+                            <button onClick={() => setCreating(true)} className="flex items-center gap-2 rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold hover:opacity-90"><Plus size={16} /> Create room</button>
                             {live[0] && <Link href={route('rooms.show', live[0].slug)} className="flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2.5 text-sm font-semibold hover:bg-white/20"><Radio size={16} /> Jump into {live[0].name}</Link>}
                             {rooms.length > 1 && <button onClick={surprise} className="flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2.5 text-sm font-semibold hover:bg-white/20"><Shuffle size={16} /> Surprise me</button>}
                         </div>
@@ -208,8 +208,8 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
             )}
 
             {!guest && resume && (
-                <Link href={route('rooms.show', resume.slug)} className="group flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 transition hover:border-violet-400/60">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500/30 to-violet-500/30 text-violet-200"><Radio size={19} /></span>
+                <Link href={route('rooms.show', resume.slug)} className="group flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/4 px-5 py-4 transition hover:border-violet-400/60">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-fuchsia-500/30 to-violet-500/30 text-violet-200"><Radio size={19} /></span>
                     <span className="min-w-0 flex-1"><span className="block text-xs font-bold uppercase tracking-wider text-neutral-500">Pick up where you left off</span><span className="block truncate font-semibold">{resume.name}{resume.genre && <span className="font-normal text-neutral-500"> · {resume.genre}</span>} <span className="font-normal text-neutral-500">· you were there {ago(resume.at)}</span></span></span>
                     <span className="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold group-hover:bg-white/20">Rejoin →</span>
                 </Link>
@@ -252,7 +252,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                             <SectionTitle title="✨ Picked for you" hint={recommended.reason} />
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                                 {recommended.rooms.map((r) => (
-                                    <Link key={r.id} href={route('rooms.show', r.slug)} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-violet-400/60">
+                                    <Link key={r.id} href={route('rooms.show', r.slug)} className="rounded-2xl border border-white/10 bg-white/4 p-4 transition hover:border-violet-400/60">
                                         <p className="truncate font-bold">{r.name}</p>
                                         <p className="mt-1 text-xs text-neutral-500">{r.genre ?? 'No genre'}</p>
                                         <p className={`mt-3 text-xs ${(counts[r.id] ?? r.listening) > 0 ? 'text-green-400' : 'text-neutral-500'}`}>● {counts[r.id] ?? r.listening} listening</p>
@@ -299,7 +299,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                                 <p className="text-3xl">🎶</p>
                                 <p className="mt-2 font-semibold">{rooms.length === 0 ? 'No rooms yet' : tab === 'mine' ? 'You have not created a room yet' : 'No rooms match'}</p>
                                 <p className="mt-1 text-sm text-neutral-400">{rooms.length === 0 || tab === 'mine' ? 'Make the first one and invite your friends.' : 'Try a different search or clear the filters.'}</p>
-                                {!guest && (rooms.length === 0 || tab === 'mine') && <button onClick={() => setCreating(true)} className="mt-4 rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 px-5 py-2 text-sm font-semibold">Create a room</button>}
+                                {!guest && (rooms.length === 0 || tab === 'mine') && <button onClick={() => setCreating(true)} className="mt-4 rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-5 py-2 text-sm font-semibold">Create a room</button>}
                             </Card>
                         ) : (
                             <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -315,7 +315,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                             <SectionTitle title="Quick actions" />
                             <div className="grid grid-cols-2 gap-2">
                                 {quick.map(([Icon, label, href, tone]) => (
-                                    <Link key={label} href={href} className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm font-medium transition hover:border-violet-400/50 hover:bg-white/[0.07]">
+                                    <Link key={label} href={href} className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/4 px-3 py-3 text-sm font-medium transition hover:border-violet-400/50 hover:bg-white/[0.07]">
                                         <span className={tone}><Icon size={17} /></span> {label}
                                     </Link>
                                 ))}
@@ -362,7 +362,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                         <Card className="divide-y divide-white/5">
                             {events.length === 0 && <p className="p-4 text-sm text-neutral-500">No events planned yet.</p>}
                             {events.map((e) => (
-                                <Link key={e.id} href={e.room ? route('rooms.show', e.room.slug) : route('events')} className="block p-4 hover:bg-white/[0.03]">
+                                <Link key={e.id} href={e.room ? route('rooms.show', e.room.slug) : route('events')} className="block p-4 hover:bg-white/3">
                                     <p className="font-semibold">{e.title}</p>
                                     <p className="mt-0.5 text-xs text-violet-300">{when(e.starts_at)}</p>
                                     <p className="mt-0.5 text-xs text-neutral-500">{e.room ? `in ${e.room.name} · ` : ''}{e.going_count} going</p>
@@ -405,7 +405,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                             <SectionTitle title="Top DJs" action={<Link href={route('community')} className="text-xs text-violet-400 hover:underline">Leaderboard →</Link>} />
                             <Card className="divide-y divide-white/5">
                                 {topDjs.map((d, i) => (
-                                    <Link key={d.id} href={route('users.show', d.id)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-white/[0.03]">
+                                    <Link key={d.id} href={route('users.show', d.id)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-white/3">
                                         <span className="w-5 text-center text-base">{['🥇', '🥈', '🥉'][i] ?? <span className="text-xs text-neutral-500">{i + 1}</span>}</span>
                                         <Avatar name={d.name} avatar={d.avatar} className="h-7 w-7 text-sm" />
                                         <span className="min-w-0 flex-1 truncate">{d.name}</span>
@@ -421,7 +421,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                             <SectionTitle title="Your recent songs" action={<Link href={`${route('history')}?mine=1`} className="text-xs text-violet-400 hover:underline">History →</Link>} />
                             <Card className="divide-y divide-white/5">
                                 {mySongs.map((s) => (
-                                    <Link key={s.id} href={route('rooms.show', s.room.slug)} className="flex items-center gap-3 p-3 hover:bg-white/[0.03]">
+                                    <Link key={s.id} href={route('rooms.show', s.room.slug)} className="flex items-center gap-3 p-3 hover:bg-white/3">
                                         {s.thumbnail ? <img src={s.thumbnail} alt="" className="h-9 w-14 shrink-0 rounded object-cover" /> : <span className="h-9 w-14 shrink-0 rounded bg-white/10" />}
                                         <div className="min-w-0">
                                             <p className="truncate text-sm">{s.title}</p>
@@ -449,7 +449,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                         <Card className="border-pink-500/30 bg-pink-500/5 p-5">
                             <p className="flex items-center gap-2 font-semibold"><Heart size={16} className="text-pink-400" /> {community.donation.title}</p>
                             <p className="mt-1 text-sm text-neutral-400">{community.donation.currency}{community.donation.current} of {community.donation.currency}{community.donation.goal} ({community.donation.percent}%)</p>
-                            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-gradient-to-r from-pink-500 to-fuchsia-500" style={{ width: `${community.donation.percent}%` }} /></div>
+                            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-linear-to-r from-pink-500 to-fuchsia-500" style={{ width: `${community.donation.percent}%` }} /></div>
                             {community.donation.url && <a href={community.donation.url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block rounded-lg bg-pink-500 px-4 py-2 text-sm font-semibold text-white hover:bg-pink-400">Donate</a>}
                         </Card>
                     )}
@@ -457,7 +457,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                     {Object.keys(community.social).length > 0 && (
                         <div className="flex flex-wrap gap-2">
                             {Object.entries(community.social).map(([key, url]) => (
-                                <a key={key} href={url} target="_blank" rel="noopener noreferrer" title={key} className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-neutral-300 hover:border-violet-400/50 hover:text-white"><SocialIcon name={key} size={17} /></a>
+                                <a key={key} href={url} target="_blank" rel="noopener noreferrer" title={key} className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/4 text-neutral-300 hover:border-violet-400/50 hover:text-white"><SocialIcon name={key} size={17} /></a>
                             ))}
                         </div>
                     )}

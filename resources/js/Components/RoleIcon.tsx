@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { AudioWaveform, BadgeCheck, Bot, ChevronsUp, ChevronUp, Clapperboard, CodeXml, Crown, Disc3, FlaskConical, Gavel, Gem, Handshake, Heart, Languages, LifeBuoy, Megaphone, MicVocal, Rocket, ShieldCheck, ShieldPlus, Sparkles, Tag, User, Zap } from 'lucide-react';
+import { AudioWaveform, BadgeCheck, Bot, ChevronsUp, ChevronUp, Clapperboard, CodeXml, Crown, Disc3, Gavel, Gem, Handshake, Heart, Languages, LifeBuoy, Megaphone, MicVocal, Rocket, ShieldCheck, ShieldPlus, Sparkles, Tag, User, Zap } from 'lucide-react';
 
 /** The icon of every site role (App\Enums\Role), and of bots. */
 const SITE: Record<string, LucideIcon> = {
@@ -19,7 +19,6 @@ const SITE: Record<string, LucideIcon> = {
     partnership: Handshake,
     vip: Gem,
     early_supporter: Rocket,
-    beta_tester: FlaskConical,
     supporter: Heart,
     member: User,
     bot: Bot,

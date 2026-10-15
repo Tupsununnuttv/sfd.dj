@@ -178,7 +178,7 @@ export default function Faq() {
                             <Card className="divide-y divide-white/5">
                                 {g.items.map((i) => (
                                     <div key={i.q}>
-                                        <button onClick={() => toggle(i.q)} aria-expanded={isOpen(i.q)} className="flex w-full items-center justify-between gap-4 p-4 text-left text-sm font-semibold hover:bg-white/[0.03]">
+                                        <button onClick={() => toggle(i.q)} aria-expanded={isOpen(i.q)} className="flex w-full items-center justify-between gap-4 p-4 text-left text-sm font-semibold hover:bg-white/3">
                                             <span>{mark(i.q, needle)}</span>
                                             <ChevronDown size={18} className={`shrink-0 text-neutral-500 transition ${isOpen(i.q) ? 'rotate-180 text-violet-300' : ''}`} />
                                         </button>
@@ -199,7 +199,7 @@ export default function Faq() {
                             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/20 text-violet-300"><LifeBuoy size={22} /></span>
                             <div><p className="font-semibold">Still stuck?</p><p className="text-sm text-neutral-400">Talk to us in the live chat. No account needed.</p></div>
                         </div>
-                        <Link href={route('site.contact')} className="rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold hover:opacity-90">Contact support</Link>
+                        <Link href={route('site.contact')} className="rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold hover:opacity-90">Contact support</Link>
                     </Card>
                 </div>
             </div>

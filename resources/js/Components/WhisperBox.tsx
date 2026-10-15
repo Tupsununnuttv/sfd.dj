@@ -43,7 +43,7 @@ const dayLabel = (iso: string) => {
  * Whispers: your conversations on the left, the open one on the right. Updates live.
  * `start` opens a person straight away; `friends` fills the "new whisper" picker; `openProfile` replaces going to their page.
  */
-export default function WhisperBox({ start, friends = [], openProfile, className = 'h-[calc(100vh-15rem)] min-h-[30rem]' }: {
+export default function WhisperBox({ start, friends = [], openProfile, className = 'h-[calc(100vh-15rem)] min-h-120' }: {
     start?: number | null;
     friends?: Person[];
     openProfile?: (id: number, name: string) => void;
@@ -147,14 +147,14 @@ export default function WhisperBox({ start, friends = [], openProfile, className
     return (
         <div className={`grid gap-4 md:grid-cols-[19rem_1fr] ${className}`}>
             {/* conversations */}
-            <section className={`${chatOpen ? 'hidden md:flex' : 'flex'} min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]`}>
+            <section className={`${chatOpen ? 'hidden md:flex' : 'flex'} min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/4`}>
                 <div className="space-y-2 border-b border-white/10 p-3">
                     <div className="flex items-center gap-2">
                         <div className="relative flex-1">
                             <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
                             <input value={find} onChange={(e) => setFind(e.target.value)} placeholder="Search whispers" className={`${fieldClass} py-1.5 pl-8`} />
                         </div>
-                        <button onClick={startNew} title="New whisper" className="rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 p-2 text-white hover:opacity-90"><MessageCirclePlus size={17} /></button>
+                        <button onClick={startNew} title="New whisper" className="rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 p-2 text-white hover:opacity-90"><MessageCirclePlus size={17} /></button>
                     </div>
                     <div className="flex gap-1.5 text-xs">
                         <button onClick={() => setUnreadOnly(false)} className={`rounded-full px-3 py-1 font-semibold ${!unreadOnly ? 'bg-white/15 text-white' : 'text-neutral-400 hover:text-white'}`}>All</button>
@@ -189,13 +189,13 @@ export default function WhisperBox({ start, friends = [], openProfile, className
             </section>
 
             {/* the open conversation */}
-            <section className={`${chatOpen ? 'flex' : 'hidden md:flex'} min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]`}>
+            <section className={`${chatOpen ? 'flex' : 'hidden md:flex'} min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/4`}>
                 {!chatOpen ? (
                     <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
                         <p className="text-5xl">💬</p>
                         <p className="mt-3 font-semibold">Your whispers</p>
                         <p className="mt-1 max-w-xs text-sm text-neutral-400">Private messages between you and one other person. Pick a conversation, or start a new one.</p>
-                        <button onClick={startNew} className="mt-4 rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-sm font-semibold">New whisper</button>
+                        <button onClick={startNew} className="mt-4 rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-sm font-semibold">New whisper</button>
                     </div>
                 ) : (
                     <>
@@ -238,8 +238,8 @@ export default function WhisperBox({ start, friends = [], openProfile, className
                                 <div key={m.id}>
                                     {heading && <p className="my-4 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-500">{heading}</p>}
                                     <div className={`flex ${m.mine ? 'justify-end' : 'justify-start'} ${first ? 'mt-3' : 'mt-0.5'}`}>
-                                        <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${m.mine ? 'rounded-br-md bg-gradient-to-br from-fuchsia-600 to-violet-600 text-white' : 'rounded-bl-md bg-white/10'}`}>
-                                            <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                                        <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${m.mine ? 'rounded-br-md bg-linear-to-br from-fuchsia-600 to-violet-600 text-white' : 'rounded-bl-md bg-white/10'}`}>
+                                            <p className="whitespace-pre-wrap wrap-break-word">{m.body}</p>
                                             {last && <p className={`mt-0.5 text-[10px] ${m.mine ? 'text-white/60' : 'text-neutral-500'}`}>{clock(m.at)}</p>}
                                         </div>
                                     </div>
@@ -252,7 +252,7 @@ export default function WhisperBox({ start, friends = [], openProfile, className
                         <form onSubmit={send} className="flex items-end gap-2 border-t border-white/10 p-3">
                             <textarea ref={box} rows={1} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} placeholder={other ? `Whisper to ${other.name}…` : 'Write a whisper…'} maxLength={500} className={`${fieldClass} max-h-28 resize-none`} />
                             {text.length > 400 && <span className="pb-2 text-[11px] text-neutral-500">{500 - text.length}</span>}
-                            <button disabled={!text.trim()} aria-label="Send" className="rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 p-2.5 text-white transition hover:opacity-90 disabled:opacity-40"><Send size={17} /></button>
+                            <button disabled={!text.trim()} aria-label="Send" className="rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 p-2.5 text-white transition hover:opacity-90 disabled:opacity-40"><Send size={17} /></button>
                         </form>
                     </>
                 )}

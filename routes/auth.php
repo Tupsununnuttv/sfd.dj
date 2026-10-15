@@ -39,13 +39,15 @@ Route::middleware('guest')->group(function () {
         ->name('password.store');
 });
 
+// The link in the "confirm your email" message: it checks its own signature, so it works logged in as anybody, or nobody
+Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+    ->whereNumber('id')
+    ->middleware('throttle:6,1')
+    ->name('verification.verify');
+
 Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
-
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
 
     Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('throttle:6,1')

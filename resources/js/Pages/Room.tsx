@@ -1048,7 +1048,7 @@ export default function Room({
                                             const iconBtn = 'rounded p-0.5 text-neutral-500';
 
                                             return (
-                                                <li key={u.id} className="sfd-user flex items-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
+                                                <li key={u.id} className="sfd-user flex items-center gap-2.5 rounded-lg border border-white/10 bg-white/3 px-2 py-1.5">
                                                     <button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} title="Quick profile" className="relative shrink-0"><Avatar name={u.name} avatar={u.avatar} cosmetics={u.cosmetics} /><StatusDot status={u.status} className="absolute -bottom-0.5 -right-0.5" /></button>
                                                     <div className="min-w-0 flex-1">
                                                         <p className="flex items-center gap-1.5">
@@ -1167,7 +1167,7 @@ export default function Room({
 
             {panel === 'whispers' && (
                 <Panel title="Whispers" onClose={() => setPanel(null)} wide>
-                    <Suspense fallback={loadingPanel}><WhisperBox start={whisperTo} className="h-[62vh] min-h-[24rem]" openProfile={(id, name) => { setPanel(null); setPage({ url: route('users.show', id), title: `${name}'s profile` }); }} /></Suspense>
+                    <Suspense fallback={loadingPanel}><WhisperBox start={whisperTo} className="h-[62vh] min-h-96" openProfile={(id, name) => { setPanel(null); setPage({ url: route('users.show', id), title: `${name}'s profile` }); }} /></Suspense>
                 </Panel>
             )}
 
@@ -1201,7 +1201,7 @@ export default function Room({
             )}
 
             {panel === 'settings' && (
-                <Panel title="Room settings" onClose={() => setPanel(null)} large>
+                <Panel title="Room settings" onClose={() => setPanel(null)} wide>
                     <Suspense fallback={loadingPanel}>
                         <RoomSettingsPanel
                             room={room}
@@ -1217,7 +1217,7 @@ export default function Room({
                             canCss={user.id === host.id || user.is_staff}
                             locked={playback.locked}
                             cycle={playback.cycle}
-                            onSaved={() => setPanel(null)}
+                            onOpenPage={(url, title) => setPage({ url, title })}
                         />
                     </Suspense>
                 </Panel>

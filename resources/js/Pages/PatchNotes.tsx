@@ -44,17 +44,17 @@ export default function PatchNotes() {
                     {shown.length === 0 && <p className="text-neutral-500">Nothing matches.</p>}
                     {shown.map((r) => (
                         <section key={r.version} id={`v${r.version}`} className="relative scroll-mt-4">
-                            <span className={`absolute -left-[31px] top-5 h-3 w-3 rounded-full ring-4 ring-neutral-950 ${r.version === releases[0].version ? 'bg-green-400' : 'bg-violet-400'}`} />
+                            <span className={`absolute left-[-31px] top-5 h-3 w-3 rounded-full ring-4 ring-neutral-950 ${r.version === releases[0].version ? 'bg-green-400' : 'bg-violet-400'}`} />
                             <Card className="p-5">
                                 <h2 className="flex flex-wrap items-center gap-3 font-bold">
-                                    <span className="rounded-md bg-gradient-to-r from-fuchsia-500 to-violet-500 px-2 py-0.5 text-sm">v{r.version}</span>
+                                    <span className="rounded-md bg-linear-to-r from-fuchsia-500 to-violet-500 px-2 py-0.5 text-sm">v{r.version}</span>
                                     {r.title}
                                     {r.version === releases[0].version && <span className="rounded-full bg-green-500/20 px-2 py-0.5 text-xs text-green-300">Latest</span>}
                                 </h2>
                                 <ul className="mt-4 space-y-2.5 text-sm">
                                     {r.notes.map(([k, text]) => (
                                         <li key={text} className="flex items-start gap-3">
-                                            <span className={`mt-0.5 w-[4.5rem] shrink-0 rounded px-1.5 py-0.5 text-center text-[10px] font-bold uppercase ${badge[k]}`}>{k}</span>
+                                            <span className={`mt-0.5 w-18 shrink-0 rounded px-1.5 py-0.5 text-center text-[10px] font-bold uppercase ${badge[k]}`}>{k}</span>
                                             <span className="text-neutral-300">{text}</span>
                                         </li>
                                     ))}

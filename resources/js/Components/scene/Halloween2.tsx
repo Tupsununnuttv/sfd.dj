@@ -3,7 +3,7 @@ import { skullGlyph } from '@/Components/scene/shapes';
 import { after, r1, rand } from '@/Components/scene/util';
 import { sparkle } from '@/lib/art/kit';
 import { floorLineX as lineX, floorRowY as rowY, SCENE, ScenePalette } from '@/lib/scenes';
-import { useId } from 'react';
+import { type JSX, useId } from 'react';
 
 const FLOOR = SCENE.floor;
 const tv = SCENE.screen;

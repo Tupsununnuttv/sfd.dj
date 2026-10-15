@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\Role;
 use App\Events\RoomUpdated;
 use App\Events\UserUpdated;
+use App\Models\ChatMessage;
 use App\Models\Friendship;
 use App\Models\Room;
 use App\Models\User;
@@ -221,14 +223,26 @@ class ProfileRoomExtrasTest extends TestCase
         $this->actingAs($owner)->get('/admin')->assertInertia(fn (Assert $p) => $p->has('awardList', count(Awards::ALL))->where('awardList.0.key', 'beta')->has('users.data.0.awards'));
     }
 
-    public function test_somebody_who_holds_the_beta_tester_role_is_not_shown_the_beta_badge_twice(): void
+    public function test_the_beta_tester_role_became_the_badge_for_everybody_and_chat_shows_it(): void
     {
-        $person = User::factory()->create(['roles' => ['beta_tester'], 'awards' => ['beta', 'hero']]);
-        $keys = collect($person->badges)->pluck('key')->all();
+        $person = User::factory()->create();
+        $person->forceFill(['roles' => ['beta_tester', 'vip'], 'awards' => ['hero']])->save();
+        $newer = User::factory()->create();
+        $newer->forceFill(['roles' => ['beta_tester'], 'awards' => null])->save();
+        $bot = User::factory()->create(['is_bot' => true]);
+        $bot->forceFill(['roles' => ['beta_tester']])->save();
 
-        $this->assertContains('beta_tester', $keys);
-        $this->assertNotContains('award:beta', $keys);
-        $this->assertContains('award:hero', $keys);
+        (require database_path('migrations/2026_11_07_000001_replace_the_beta_tester_role_with_the_badge.php'))->up();
+
+        $this->assertSame([['vip'], ['beta', 'hero']], [$person->refresh()->roles, $person->awards]);
+        $this->assertSame([[], ['beta']], [$newer->refresh()->roles, $newer->awards]);
+        $this->assertSame([[], null], [$bot->refresh()->roles, $bot->awards], 'a bot only loses the role');
+        $this->assertNull(Role::tryFrom('beta_tester'));
+
+        // the badge is drawn in front of the name, also on a chat line (which loads only some columns of the person)
+        $room = $person->rooms()->create(['name' => 'Badges', 'slug' => 'badges']);
+        $room->messages()->create(['user_id' => $newer->id, 'body' => 'hi']);
+        $this->assertContains('award:beta', collect($room->messages()->with(ChatMessage::WITH_USER)->first()->user->badges)->pluck('key')->all());
     }
 
     public function test_every_award_is_drawn_and_has_a_name_and_a_meaning(): void

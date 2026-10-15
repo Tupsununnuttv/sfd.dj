@@ -77,7 +77,7 @@ export default function SiteLayout({ children }: PropsWithChildren) {
     const btn = 'rounded-lg px-4 py-2 text-sm font-semibold transition';
 
     return (
-        <div className="min-h-screen bg-black text-white [background-image:radial-gradient(60rem_26rem_at_50%_-12%,rgba(168,85,247,0.28),transparent)]">
+        <div className="min-h-screen bg-black text-white bg-[radial-gradient(60rem_26rem_at_50%_-12%,rgba(168,85,247,0.28),transparent)]">
             <header className="sticky top-0 z-40 border-b border-white/5 bg-black/70 backdrop-blur">
                 <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
                     <Link href="/"><ApplicationLogo className="text-2xl" /></Link>
@@ -92,10 +92,10 @@ export default function SiteLayout({ children }: PropsWithChildren) {
                         {auth.guest ? (
                             <>
                                 <Link href={route('login')} className="hidden px-3 py-2 text-sm text-neutral-300 hover:text-white sm:block">Log in</Link>
-                                <Link href={route('register')} className={`${btn} bg-gradient-to-r from-fuchsia-500 to-violet-500 hover:opacity-90`}>Register</Link>
+                                <Link href={route('register')} className={`${btn} bg-linear-to-r from-fuchsia-500 to-violet-500 hover:opacity-90`}>Register</Link>
                             </>
                         ) : (
-                            <Link href={route('dashboard')} className={`${btn} bg-gradient-to-r from-fuchsia-500 to-violet-500 hover:opacity-90`}>Open rooms</Link>
+                            <Link href={route('dashboard')} className={`${btn} bg-linear-to-r from-fuchsia-500 to-violet-500 hover:opacity-90`}>Open rooms</Link>
                         )}
                         <button onClick={() => setOpen(!open)} className="rounded-md p-2 text-neutral-300 hover:bg-white/10 lg:hidden" aria-label="Menu">{open ? <X size={20} /> : <Menu size={20} />}</button>
                     </div>

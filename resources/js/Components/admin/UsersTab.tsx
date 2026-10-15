@@ -170,7 +170,7 @@ Their rooms, playlists, messages and friends go with it. This cannot be undone.`
                     <tbody className="divide-y divide-white/5">
                         {users.data.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-neutral-500">Nobody matches.</td></tr>}
                         {users.data.map((u) => (
-                            <tr key={u.id} className="align-top hover:bg-white/[0.02]">
+                            <tr key={u.id} className="align-top hover:bg-white/2">
                                 <td className="px-3 py-3">
                                     <div className="flex items-center gap-3">
                                         <div className="relative"><Avatar name={u.name} avatar={u.avatar} /><OnlineDot online={within(u.last_seen_at, 5)} className="absolute -bottom-0.5 -right-0.5" /></div>

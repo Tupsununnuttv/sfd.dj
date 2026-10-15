@@ -31,7 +31,6 @@ enum Role: string
     case Partnership = 'partnership';
     case Vip = 'vip';
     case EarlySupporter = 'early_supporter';
-    case BetaTester = 'beta_tester';
     case Supporter = 'supporter';
     case Member = 'member';
 
@@ -65,7 +64,6 @@ enum Role: string
             self::ContentProvider => 'Content Provider',
             self::MusicProducer => 'Music Producer',
             self::EarlySupporter => 'Early Supporter',
-            self::BetaTester => 'Beta Tester',
             self::Vip => 'VIP',
             self::Member => 'User',
             default => ucfirst($this->value),
@@ -91,7 +89,6 @@ enum Role: string
             self::Partnership => '#2dd4bf',
             self::Vip => '#a78bfa',
             self::EarlySupporter => '#67e8f9',
-            self::BetaTester => '#38bdf8',
             self::Supporter => '#fcd34d',
             self::Member => '#a3a3a3',
         };
@@ -117,7 +114,6 @@ enum Role: string
             self::Partnership => '🤝',
             self::Vip => '💜',
             self::EarlySupporter => '💎',
-            self::BetaTester => '🧪',
             self::Supporter => '⭐',
             self::Member => '👤',
         };

@@ -122,8 +122,8 @@ export type VoteType = 'woot' | 'meh' | 'grab';
 export interface ClientOptions {
     /** A token from Settings → Developers on SFD-DJ.EU. */
     token: string;
-    /** The address of the SFD-DJ.EU site you talk to, e.g. https://sfd.example.com (no /api/v1 at the end). */
-    baseUrl: string;
+    /** The site you talk to, without /api/v1 at the end. https://sfd-dj.eu unless you give another (a copy on your own PC: http://localhost:8000). */
+    baseUrl?: string;
     /** Bring your own fetch (tests, old runtimes). */
     fetch?: typeof fetch;
 }
@@ -150,8 +150,7 @@ export class SfdDj {
     constructor(options: ClientOptions) {
         if (!options?.token) throw new Error('sfddj: a token is required (Settings → Developers on SFD-DJ.EU).');
         this.token = options.token;
-        if (!options.baseUrl) throw new Error('sfddj: baseUrl is required, e.g. https://sfd.example.com');
-        this.base = options.baseUrl.replace(/\/+$/, '') + '/api/v1';
+        this.base = (options.baseUrl || 'https://sfd-dj.eu').replace(/\/+$/, '') + '/api/v1';
         this.doFetch = options.fetch ?? ((...args) => fetch(...args));
     }
 

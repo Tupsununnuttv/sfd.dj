@@ -469,7 +469,7 @@ class Room extends Model
     /** State sent to clients: what plays now, seconds already elapsed, and the queue. */
     public function playback(): array
     {
-        $models = $this->items()->with('user:id,name,avatar,character,cosmetics,roles,xp,is_bot,plan,plan_until')->get();
+        $models = $this->items()->with('user:id,name,avatar,character,cosmetics,roles,awards,xp,is_bot,plan,plan_until')->get();
         $items = $models->map(fn (PlaylistItem $i) => [
             'id' => $i->id,
             'user_id' => $i->user_id,

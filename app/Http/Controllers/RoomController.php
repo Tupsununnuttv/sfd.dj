@@ -30,6 +30,7 @@ use App\Support\Presence;
 use App\Support\RoomCss;
 use App\Support\RoomPresence;
 use App\Support\Season;
+use App\Support\WordGuard;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -492,6 +493,10 @@ class RoomController extends Controller
 
         if ($room->isMuted($me)) {
             throw ValidationException::withMessages(['body' => 'You are muted in this room.']);
+        }
+        if ($why = WordGuard::check($fields['body'] ?? '')) { // nobody, staff and bots included
+            $room->log($me, 'automod', $me, 'a word that is not allowed on the site: '.$fields['body']);
+            throw ValidationException::withMessages(['body' => $why]);
         }
         if (! $me->is_staff && ($why = LinkGuard::check($fields['body'] ?? ''))) {
             $room->log($me, 'automod', $me, 'a link to another site: '.$fields['body']);

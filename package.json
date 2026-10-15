@@ -2,7 +2,7 @@
     "$schema": "https://www.schemastore.org/package.json",
     "private": true,
     "engines": {
-        "node": "24.x"
+        "node": "26.x"
     },
     "type": "module",
     "scripts": {
@@ -12,31 +12,31 @@
         "bot:start": "node bot/index.js"
     },
     "devDependencies": {
-        "@headlessui/react": "^2.0.0",
-        "@inertiajs/react": "^2.0.0",
-        "@tailwindcss/forms": "^0.5.3",
-        "@tailwindcss/vite": "^4.0.0",
-        "@types/node": "^24.19.1",
+        "@headlessui/react": "^2.2.10",
+        "@inertiajs/react": "^3.9.1",
+        "@tailwindcss/forms": "^0.5.11",
+        "@tailwindcss/vite": "^4.3.3",
+        "@types/node": "^26.6.5",
         "@types/qrcode": "^1.5.6",
-        "@types/react": "^18.0.28",
-        "@types/react-dom": "^18.0.10",
+        "@types/react": "^19.3.0",
+        "@types/react-dom": "^19.3.0",
         "@vitejs/plugin-react": "^6.1.2",
-        "autoprefixer": "^10.4.12",
+        "autoprefixer": "^10.6.1",
         "concurrently": "^10.0.6",
-        "laravel-vite-plugin": "^3.1",
-        "postcss": "^8.4.31",
-        "react": "^18.2.0",
-        "react-dom": "^18.2.0",
+        "laravel-vite-plugin": "^3.2.0",
+        "postcss": "^8.5.30",
+        "react": "^19.3.1",
+        "react-dom": "^19.3.1",
         "tailwindcss": "^4.3.3",
-        "typescript": "^5.0.2",
-        "vite": "^8.0.0"
+        "typescript": "^7.0.2",
+        "vite": "^8.3.4"
     },
     "dependencies": {
-        "@laravel/echo-react": "^2.5.0",
+        "@laravel/echo-react": "^2.6.1",
         "discord.js": "^14.27.0",
-        "laravel-echo": "^2.5.0",
-        "lucide-react": "^1.52.0",
-        "node": "^26.11.1",
+        "laravel-echo": "^2.6.1",
+        "lucide-react": "^1.57.0",
+        "node": "^26.12.0",
         "pusher-js": "^8.6.0",
         "qrcode": "^1.5.4"
     }

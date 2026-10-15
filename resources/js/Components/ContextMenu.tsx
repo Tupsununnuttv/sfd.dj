@@ -91,7 +91,7 @@ export default function ContextMenu({ anchor, header, groups, titles = [], label
             aria-label={label}
             onContextMenu={(e) => e.preventDefault()}
             style={pos}
-            className="fixed z-[70] max-h-[calc(100vh-1rem)] w-60 animate-menu overflow-y-auto rounded-2xl border border-white/10 bg-neutral-900/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-md"
+            className="fixed z-70 max-h-[calc(100vh-1rem)] w-60 animate-menu overflow-y-auto rounded-2xl border border-white/10 bg-neutral-900/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-md"
         >
             {header && <div className="px-2 pb-1.5 pt-1">{header}</div>}
             {groups.map((group, g) => (

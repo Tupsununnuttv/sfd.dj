@@ -70,7 +70,7 @@ export default function VoteBar({
                                 {label}
                                 {type === 'woot' && autowoot && <span className="rounded bg-lime-400/20 px-1 text-[9px] leading-4 tracking-normal text-lime-300">AUTO</span>}
                             </span>
-                            <span className={`flex h-7 items-center justify-center bg-gradient-to-b text-[17px] font-bold tabular-nums text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] ${body}`}>{votes[type]}</span>
+                            <span className={`flex h-7 items-center justify-center bg-linear-to-b text-[17px] font-bold tabular-nums text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] ${body}`}>{votes[type]}</span>
                         </button>
                         {type === 'woot' && onAutowoot && (
                             <>

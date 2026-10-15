@@ -37,7 +37,7 @@ export default function Feature({ slug }: { slug: string }) {
                     )}
 
                     <div className="mt-10 flex flex-wrap gap-3">
-                        <Link href={guest ? route('register') : route('dashboard')} className="rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold hover:opacity-90">{guest ? 'Get started' : 'Open rooms'}</Link>
+                        <Link href={guest ? route('register') : route('dashboard')} className="rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold hover:opacity-90">{guest ? 'Get started' : 'Open rooms'}</Link>
                         <Link href={route('site.feature', next.slug)} className="rounded-lg bg-white/10 px-5 py-2.5 text-sm font-semibold hover:bg-white/20">Next: {next.title} →</Link>
                     </div>
                 </div>

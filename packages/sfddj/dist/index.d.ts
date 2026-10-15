@@ -143,8 +143,8 @@ export type VoteType = 'woot' | 'meh' | 'grab';
 export interface ClientOptions {
     /** A token from Settings → Developers on SFD-DJ.EU. */
     token: string;
-    /** The address of the SFD-DJ.EU site you talk to, e.g. https://sfd.example.com (no /api/v1 at the end). */
-    baseUrl: string;
+    /** The site you talk to, without /api/v1 at the end. https://sfd-dj.eu unless you give another (a copy on your own PC: http://localhost:8000). */
+    baseUrl?: string;
     /** Bring your own fetch (tests, old runtimes). */
     fetch?: typeof fetch;
 }

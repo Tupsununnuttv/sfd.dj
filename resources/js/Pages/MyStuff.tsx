@@ -59,7 +59,7 @@ export default function MyStuff({ stats, rooms, playlists, recent, worn, account
             <Head title="My Stuff" />
 
             {/* who you are */}
-            <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-fuchsia-600/20 via-violet-600/10 to-sky-600/10 p-6 sm:p-8">
+            <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-fuchsia-600/20 via-violet-600/10 to-sky-600/10 p-6 sm:p-8">
                 <div className="pointer-events-none absolute -right-14 -top-14 h-60 w-60 rounded-full bg-violet-500/20 blur-3xl" />
                 <div className="relative flex flex-wrap items-center gap-6">
                     <Avatar name={user.name} avatar={user.avatar} cosmetics={user.cosmetics} className="h-24 w-24 text-4xl" />
@@ -106,7 +106,7 @@ export default function MyStuff({ stats, rooms, playlists, recent, worn, account
                         <SectionTitle title="Account checklist" hint={`${secure} of ${checklist.length} done`} />
                         <Card className="divide-y divide-white/5">
                             {checklist.map(([ok, title, text, href]) => (
-                                <Link key={title} href={href} className="flex items-center gap-3 p-4 hover:bg-white/[0.03]">
+                                <Link key={title} href={href} className="flex items-center gap-3 p-4 hover:bg-white/3">
                                     {ok ? <CheckCircle2 size={20} className="shrink-0 text-green-400" /> : <Circle size={20} className="shrink-0 text-neutral-600" />}
                                     <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{title}</span><span className="block truncate text-xs text-neutral-500">{text}</span></span>
                                     {!ok && <span className="text-xs font-semibold text-violet-300">Set up →</span>}
@@ -148,7 +148,7 @@ export default function MyStuff({ stats, rooms, playlists, recent, worn, account
                     <p className="text-sm text-neutral-400">{done.length} of {achievements.length} unlocked. They are worked out from what you do on SFD-DJ.EU.</p>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {achievements.map((a) => (
-                            <Card key={a.key} className={`p-4 ${a.done ? 'border-amber-400/30 bg-amber-400/[0.06]' : ''}`}>
+                            <Card key={a.key} className={`p-4 ${a.done ? 'border-amber-400/30 bg-amber-400/6' : ''}`}>
                                 <div className="flex items-start gap-3">
                                     <span className={`text-3xl ${a.done ? '' : 'opacity-40 grayscale'}`}>{a.icon}</span>
                                     <div className="min-w-0 flex-1">
@@ -168,11 +168,11 @@ export default function MyStuff({ stats, rooms, playlists, recent, worn, account
 
             {tab === 'rooms' && (
                 rooms.length === 0 ? (
-                    <EmptyState icon="🏠" title="You have not created a room yet" text="A room is yours to host: pick the genre, set the rules, give roles to friends." action={<Link href={route('dashboard')} className="rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-500 px-5 py-2 text-sm font-semibold">Create a room</Link>} />
+                    <EmptyState icon="🏠" title="You have not created a room yet" text="A room is yours to host: pick the genre, set the rules, give roles to friends." action={<Link href={route('dashboard')} className="rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-5 py-2 text-sm font-semibold">Create a room</Link>} />
                 ) : (
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                         {rooms.map((r) => (
-                            <Link key={r.id} href={route('rooms.show', r.slug)} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:border-violet-400/60">
+                            <Link key={r.id} href={route('rooms.show', r.slug)} className="rounded-2xl border border-white/10 bg-white/4 p-5 transition hover:border-violet-400/60">
                                 <div className="flex items-center gap-2"><h3 className="truncate font-bold">{r.name}</h3><RoomBadge badges={r.badges} />{r.is_private && <span title="Private">🔒</span>}</div>
                                 <p className="mt-1 text-sm text-neutral-400">{r.genre ?? 'No genre'} · {r.items_count} in queue · created {ago(r.created_at)}</p>
                             </Link>
@@ -205,8 +205,8 @@ export default function MyStuff({ stats, rooms, playlists, recent, worn, account
 
 function SongRow({ s }: { s: Props['recent'][number] }) {
     return (
-        <Link href={route('rooms.show', s.room.slug)} className="flex items-center gap-3 p-3 hover:bg-white/[0.03]">
-            {s.thumbnail ? <img src={s.thumbnail} alt="" className="h-11 w-[4.5rem] shrink-0 rounded-lg object-cover" /> : <span className="h-11 w-[4.5rem] shrink-0 rounded-lg bg-white/10" />}
+        <Link href={route('rooms.show', s.room.slug)} className="flex items-center gap-3 p-3 hover:bg-white/3">
+            {s.thumbnail ? <img src={s.thumbnail} alt="" className="h-11 w-18 shrink-0 rounded-lg object-cover" /> : <span className="h-11 w-18 shrink-0 rounded-lg bg-white/10" />}
             <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{s.title}</p>
                 <p className="text-xs text-neutral-500">{s.room.name} · {ago(s.played_at)}</p>

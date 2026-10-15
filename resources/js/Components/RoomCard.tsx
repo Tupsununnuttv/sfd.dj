@@ -32,11 +32,11 @@ export default function RoomCard({ room, listening = 0, playing }: { room: RoomS
     return (
         <Link
             href={route('rooms.show', room.slug)}
-            className="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:border-violet-400/60 hover:shadow-violet-500/10"
+            className="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/4 shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:border-violet-400/60 hover:shadow-violet-500/10"
         >
-            <div className={`relative h-28 overflow-hidden bg-gradient-to-br ${tintOf(room.id)}`}>
+            <div className={`relative h-28 overflow-hidden bg-linear-to-br ${tintOf(room.id)}`}>
                 {playing?.thumbnail && <img src={playing.thumbnail} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-70 transition duration-500 group-hover:scale-105" />}
-                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/30 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-neutral-950 via-neutral-950/30 to-transparent" />
                 <div className="absolute left-3 top-3 flex items-center gap-1.5">
                     {room.is_featured && <span className="rounded-full bg-amber-400/90 px-2 py-0.5 text-[10px] font-bold text-black">⭐ Featured</span>}
                     {room.genre && <span className="rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-semibold text-violet-200 backdrop-blur">🎵 {room.genre}</span>}

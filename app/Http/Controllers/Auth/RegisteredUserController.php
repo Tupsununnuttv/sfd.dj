@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Enums\Role;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\Controller;
@@ -30,9 +29,11 @@ class RegisteredUserController extends Controller
             $request->session()->put('ref', $request->query('ref'));
         }
 
+        $ref = $request->session()->get('ref');
+
         return Inertia::render('Auth/Register', [
-            // "Alex invited you": only the name and picture of the person behind the link
-            'inviter' => User::where('referral_code', $request->session()->get('ref'))->first()?->only('name', 'avatar'),
+            // "Alex invited you": only the name and picture of the person behind the link (no link: nobody, not the first account without a code)
+            'inviter' => $ref ? User::where('referral_code', $ref)->first()?->only('name', 'avatar') : null,
         ]);
     }
 
@@ -62,9 +63,11 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
             'avatar' => AvatarController::starterCharacter(), // somebody new walks into the room as a character, not as a letter
         ]);
-        $user->forceFill(['roles' => [Role::BetaTester->value]])->save(); // everybody who signs up while the site is in beta is a Beta Tester
+        $user->forceFill(['awards' => ['beta']])->save(); // everybody who signs up while the site is in beta gets the Beta Tester badge
 
-        if ($referrer = User::where('referral_code', $request->session()->pull('ref'))->first()) {
+        $ref = $request->session()->pull('ref');
+
+        if ($ref && $referrer = User::where('referral_code', $ref)->first()) {
             $user->forceFill(['referred_by' => $referrer->id])->save();
             $referrer->addXp(CommunityController::REFERRAL_XP);
             $referrer->referrals()->count() <= 20 && $referrer->award(User::REFERRAL_COINS, 'referral', $user->name); // the first 20 friends pay coins

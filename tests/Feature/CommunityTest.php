@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
@@ -76,5 +77,19 @@ class CommunityTest extends TestCase
         $this->assertSame($referrer->id, User::where('email', 'new@example.com')->first()->referred_by);
         $this->actingAs($referrer)->get('/community')->assertOk();
         $this->actingAs($referrer)->get('/referral')->assertOk();
+    }
+
+    public function test_signing_up_without_an_invite_link_credits_nobody(): void
+    {
+        $codeless = User::factory()->create();
+        $codeless->forceFill(['referral_code' => null])->save(); // an older account, from before the codes
+
+        $this->get('/register')->assertInertia(fn (Assert $page) => $page->where('inviter', null));
+        $this->post('/register', [
+            'username' => 'newbie', 'email' => 'new@example.com', 'password' => 'password-123', 'password_confirmation' => 'password-123', 'terms' => true,
+        ])->assertRedirect('/dashboard');
+
+        $this->assertNull(User::where('email', 'new@example.com')->first()->referred_by);
+        $this->assertSame(0, $codeless->refresh()->xp);
     }
 }

@@ -327,10 +327,8 @@ class User extends Authenticatable implements MustVerifyEmail
             $plan = $this->activePlan();
             $roles = $plan ? $roles->push(['key' => "sub:{$plan}", 'label' => 'SFD-DJ.EU '.Plans::TIERS[$plan]['name'], 'color' => Plans::TIERS[$plan]['color'], 'icon' => '💎']) : $roles;
 
-            // the special badges staff gave them (beta tester ...), then the one from the shop
-            $held = $this->roles ?? [];
-            $awards = array_filter(Awards::clean($this->awards), fn ($key) => ! in_array(Awards::ROLE_TWIN[$key] ?? null, $held, true));
-            $roles = $roles->concat(array_map(Awards::badge(...), $awards));
+            // the special badges staff gave them (Beta Tester ...), then the one from the shop
+            $roles = $roles->concat(array_map(Awards::badge(...), Awards::clean($this->awards)));
 
             return $shop ? $roles->push(['key' => 'shop:'.$key, 'label' => $shop, 'color' => '#a78bfa', 'icon' => null])->all() : $roles->all();
         });

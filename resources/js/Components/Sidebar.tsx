@@ -62,13 +62,13 @@ function NavItem({ label, routeName, icon: Icon, params }: NavLink) {
 
     const url = route(routeName, params);
     const onOverlay = useOverlayClick(url, label);
-    const className = `${item} ${route().current(routeName) ? 'bg-gradient-to-r from-violet-600/30 to-fuchsia-600/5 font-semibold text-white shadow-[inset_3px_0_0_#a855f7]' : idle}`;
+    const className = `${item} ${route().current(routeName) ? 'bg-linear-to-r from-violet-600/30 to-fuchsia-600/5 font-semibold text-white shadow-[inset_3px_0_0_#a855f7]' : idle}`;
     const inner = (
         <>
             <Icon size={18} className="shrink-0" />
             <span className={`${expanded ? 'inline' : 'hidden lg:inline'} flex-1 whitespace-nowrap`}>{label}</span>
             {badge > 0 && <span className="rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">{badge}</span>}
-            {routeName === 'shop' && !auth.guest && <span className={`${expanded ? 'inline' : 'hidden lg:inline'} shrink-0`}><CoinPill amount={auth.coins} compact className="!px-1.5 !text-[11px]" /></span>}
+            {routeName === 'shop' && !auth.guest && <span className={`${expanded ? 'inline' : 'hidden lg:inline'} shrink-0`}><CoinPill amount={auth.coins} compact className="px-1.5! text-[11px]!" /></span>}
         </>
     );
 
@@ -86,7 +86,7 @@ function ProfileCard() {
     const url = route('profile.edit');
     const onOverlay = useOverlayClick(url, 'Profile');
     const pct = levelPercent(user.xp, user.level);
-    const className = `group relative mb-1 block rounded-xl p-1 transition lg:border lg:bg-gradient-to-br lg:from-white/[0.07] lg:to-white/[0.02] lg:p-2.5 lg:hover:from-violet-500/15 lg:hover:to-fuchsia-500/5 ${route().current('profile.edit') ? 'lg:border-violet-400/50' : 'lg:border-white/10 lg:hover:border-violet-400/40'}`;
+    const className = `group relative mb-1 block rounded-xl p-1 transition lg:border lg:bg-linear-to-br lg:from-white/[0.07] lg:to-white/2 lg:p-2.5 lg:hover:from-violet-500/15 lg:hover:to-fuchsia-500/5 ${route().current('profile.edit') ? 'lg:border-violet-400/50' : 'lg:border-white/10 lg:hover:border-violet-400/40'}`;
     const title = `${user.name}: level ${user.level}, ${xpText(user.xp, user.level)}. Open your profile.`;
 
     const body = (
@@ -95,7 +95,7 @@ function ProfileCard() {
             <div className={`${expanded ? 'flex' : 'hidden lg:flex'} items-center gap-3`}>
                 <span className="relative shrink-0">
                     <Avatar name={user.name} avatar={user.avatar} cosmetics={user.cosmetics} className="h-11 w-11 text-xl" />
-                    <StatusDot status={user.status} className="absolute -bottom-0.5 -right-0.5 !h-3 !w-3" />
+                    <StatusDot status={user.status} className="absolute -bottom-0.5 -right-0.5 h-3! w-3!" />
                 </span>
                 <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
@@ -108,7 +108,7 @@ function ProfileCard() {
                         <span className="tabular-nums text-neutral-400">{xpText(user.xp, user.level)}</span>
                     </span>
                     <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-white/10">
-                        <span className="block h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500 transition-all duration-700" style={{ width: `${pct}%` }} />
+                        <span className="block h-full rounded-full bg-linear-to-r from-fuchsia-500 to-violet-500 transition-all duration-700" style={{ width: `${pct}%` }} />
                     </span>
                 </span>
             </div>
@@ -154,7 +154,7 @@ function StatusMenu() {
     return (
         <div ref={box} className="relative mb-3 [@media(max-height:900px)]:mb-1">
             <button onClick={() => setOpen(!open)} aria-haspopup="menu" aria-expanded={open} title={`Status: ${STATUS[status].label}. Click to change it.`} data-status-button className="flex w-full items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs text-neutral-400 transition hover:bg-white/5 hover:text-white lg:justify-start lg:px-3">
-                <StatusDot status={status} ring="ring-transparent" className="!ring-0" />
+                <StatusDot status={status} ring="ring-transparent" className="ring-0!" />
                 <span className={`${expanded ? 'inline' : 'hidden lg:inline'} flex-1 text-left font-medium`}>{STATUS[status].label}</span>
                 <ChevronDown size={14} className={`${expanded ? 'block' : 'hidden lg:block'} transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
@@ -162,7 +162,7 @@ function StatusMenu() {
                 <div role="menu" aria-label="Status" className="absolute left-0 top-full z-40 mt-1 w-64 animate-menu rounded-xl border border-white/10 bg-neutral-900 p-1.5 shadow-2xl shadow-black/60">
                     {STATUSES.map((s) => (
                         <button key={s} role="menuitemradio" aria-checked={s === status} data-status-option={s} onClick={() => pick(s)} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-white/10 ${s === status ? 'bg-white/5' : ''}`}>
-                            <StatusDot status={s} ring="ring-transparent" className="!h-3 !w-3 !ring-0" />
+                            <StatusDot status={s} ring="ring-transparent" className="h-3! w-3! ring-0!" />
                             <span>
                                 <span className="block text-sm font-semibold text-white">{STATUS[s].label}</span>
                                 <span className="block text-[11px] leading-snug text-neutral-400">{STATUS[s].hint}</span>
@@ -224,7 +224,7 @@ export default function Sidebar({
                     <>
                         <div className={divider} />
                         <p title={room.name} className={`${expanded ? 'block' : 'hidden lg:block'} truncate px-3 pb-1 pt-0.5 text-[11px] font-bold uppercase tracking-wider text-neutral-500`}>{room.name}</p>
-                        <button onClick={room.onRoom} title={`Room: ${room.name}`} aria-current="page" className={`${item} bg-gradient-to-r from-violet-600/30 to-fuchsia-600/5 font-semibold text-white shadow-[inset_3px_0_0_#a855f7]`}>
+                        <button onClick={room.onRoom} title={`Room: ${room.name}`} aria-current="page" className={`${item} bg-linear-to-r from-violet-600/30 to-fuchsia-600/5 font-semibold text-white shadow-[inset_3px_0_0_#a855f7]`}>
                             <Radio size={18} className="shrink-0 text-violet-300" />
                             <span className={expanded ? 'inline' : 'hidden lg:inline'}>Room</span>
                         </button>

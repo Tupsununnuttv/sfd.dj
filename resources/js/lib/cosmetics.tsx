@@ -65,7 +65,7 @@ export function AccessoryLayers({ name }: { name: string }) {
 
     return (
         <>
-            {art.back && <svg viewBox="-40 -40 180 180" data-accessory-back={name} className={`${layer} -z-[5] h-[180%] w-[180%]`} aria-hidden>{art.back((n) => u(`b${n}`))}</svg>}
+            {art.back && <svg viewBox="-40 -40 180 180" data-accessory-back={name} className={`${layer} z-[-5] h-[180%] w-[180%]`} aria-hidden>{art.back((n) => u(`b${n}`))}</svg>}
             {art.front && <svg viewBox="-40 -40 180 180" data-accessory={name} className={`${layer} z-10 h-[180%] w-[180%]`} aria-hidden>{art.front(u)}</svg>}
         </>
     );

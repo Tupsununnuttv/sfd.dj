@@ -26,7 +26,7 @@ export default function SettingsLayout({ title, subtitle, children }: PropsWithC
             <Link
                 key={name}
                 href={route(name)}
-                className={`flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm transition ${active ? 'bg-gradient-to-r from-violet-600/30 to-fuchsia-600/5 font-semibold text-white shadow-[inset_3px_0_0_#a855f7]' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}`}
+                className={`flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm transition ${active ? 'bg-linear-to-r from-violet-600/30 to-fuchsia-600/5 font-semibold text-white shadow-[inset_3px_0_0_#a855f7]' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}`}
             >
                 <Icon size={17} className="shrink-0" /> {label}
             </Link>

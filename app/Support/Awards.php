@@ -19,9 +19,6 @@ final class Awards
         'hero' => ['Community Hero', 'Made the community a better place to be.', '#fb7185'],
     ];
 
-    /** An award that is the same thing as a role: somebody who holds the role is not shown the badge twice. (The role's icon is drawn as this badge, too.) */
-    public const ROLE_TWIN = ['beta' => 'beta_tester'];
-
     /** One award as the pages want it (the same shape as a role badge, with the meaning added). */
     public static function badge(string $key): ?array
     {

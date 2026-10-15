@@ -51,13 +51,13 @@ export default function Referral({ link, code, reward, referrals, topInviters, r
             <Head title="Referral" />
 
             {/* the link */}
-            <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-fuchsia-600/25 via-violet-600/15 to-sky-600/10 p-6 sm:p-8">
+            <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-fuchsia-600/25 via-violet-600/15 to-sky-600/10 p-6 sm:p-8">
                 <div className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 rounded-full bg-fuchsia-500/20 blur-3xl" />
                 <div className="relative">
                     <p className="text-xs font-bold uppercase tracking-wider text-violet-200">Your personal invite link</p>
                     <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                         <input readOnly value={link} onFocus={(e) => e.target.select()} className="min-w-0 flex-1 rounded-xl border-white/10 bg-black/30 font-mono text-sm text-neutral-100" />
-                        <button onClick={() => copy('link')} className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold transition hover:opacity-90">
+                        <button onClick={() => copy('link')} className="flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold transition hover:opacity-90">
                             {copied === 'link' ? <><Check size={16} /> Copied</> : <><Copy size={16} /> Copy link</>}
                         </button>
                     </div>
@@ -123,7 +123,7 @@ export default function Referral({ link, code, reward, referrals, topInviters, r
                     ) : (
                         <Card className="divide-y divide-white/5">
                             {referrals.map((r) => (
-                                <Link key={r.id} href={route('users.show', r.id)} className="flex items-center gap-3 p-3 text-sm hover:bg-white/[0.03]">
+                                <Link key={r.id} href={route('users.show', r.id)} className="flex items-center gap-3 p-3 text-sm hover:bg-white/3">
                                     <Avatar name={r.name} avatar={r.avatar} />
                                     <span className="min-w-0 flex-1 truncate font-medium">{r.name}</span>
                                     <RoleBadge role={r.primary_role} />
@@ -141,7 +141,7 @@ export default function Referral({ link, code, reward, referrals, topInviters, r
                     <Card className="divide-y divide-white/5">
                         {topInviters.length === 0 && <p className="p-4 text-sm text-neutral-500">Nobody has invited anyone yet. Be the first!</p>}
                         {topInviters.map((p, i) => (
-                            <Link key={p.id} href={route('users.show', p.id)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-white/[0.03]">
+                            <Link key={p.id} href={route('users.show', p.id)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-white/3">
                                 <span className="w-5 text-center">{['🥇', '🥈', '🥉'][i] ?? <span className="text-xs text-neutral-500">{i + 1}</span>}</span>
                                 <Avatar name={p.name} avatar={p.avatar} className="h-7 w-7 text-sm" />
                                 <span className="min-w-0 flex-1 truncate">{p.name}</span>

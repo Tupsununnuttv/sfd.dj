@@ -72,16 +72,16 @@ export default function AddBar({ disabled, roomSlug, onAdd, onQueue, onNotice }:
                 {query && (
                     <button type="button" onClick={() => { setQuery(''); setResults(null); }} aria-label="Clear" className="shrink-0 rounded-lg p-1 text-neutral-500 hover:bg-white/10 hover:text-white"><X size={15} /></button>
                 )}
-                <button disabled={disabled || searching || !query.trim()} className="shrink-0 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-500 px-4 py-1.5 text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-40">
+                <button disabled={disabled || searching || !query.trim()} className="shrink-0 rounded-xl bg-linear-to-r from-fuchsia-500 to-violet-500 px-4 py-1.5 text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-40">
                     {isLink(query) ? 'Add' : 'Search'}
                 </button>
             </div>
 
             {results && results.length > 0 && (
-                <ul className="absolute inset-x-0 top-full z-30 mt-2 max-h-[22rem] overflow-y-auto rounded-2xl border border-white/10 bg-neutral-900/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-md">
+                <ul className="absolute inset-x-0 top-full z-30 mt-2 max-h-88 overflow-y-auto rounded-2xl border border-white/10 bg-neutral-900/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-md">
                     {results.map((r) => (
-                        <li key={r.id} className="flex items-center gap-3 rounded-xl p-1.5 hover:bg-white/[0.06]">
-                            <img src={r.thumbnail} alt="" loading="lazy" className="h-10 w-[4.5rem] shrink-0 rounded-lg object-cover ring-1 ring-white/10" />
+                        <li key={r.id} className="flex items-center gap-3 rounded-xl p-1.5 hover:bg-white/6">
+                            <img src={r.thumbnail} alt="" loading="lazy" className="h-10 w-18 shrink-0 rounded-lg object-cover ring-1 ring-white/10" />
                             <span className="min-w-0 flex-1">
                                 <span className="block truncate font-semibold text-neutral-100">{r.title}</span>
                                 <span className="block truncate text-xs text-neutral-500">{r.channel}</span>
