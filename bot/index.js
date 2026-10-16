@@ -32,15 +32,16 @@ if (existsSync('.env')) {
 const webAddress = (value) => (/^https?:\/\/\S+$/.test(value ?? '') ? value : null);
 // The site this bot belongs to. Not APP_URL: on a PC that is http://localhost:8000, and on the host it can still be the laravel.cloud address.
 const siteUrl = (webAddress(process.env.DISCORD_WEBSITE_URL) ?? 'https://sfd-dj.eu').replace(/\/+$/, '');
+// The bot's application is the one its token belongs to: it is read after login (readyClient.application.id), not from DISCORD_CLIENT_ID, which is the app the website's Discord login uses and may be another one.
 const token = process.env.DISCORD_BOT_TOKEN;
-const applicationId = process.env.DISCORD_APPLICATION_ID || process.env.DISCORD_CLIENT_ID;
 const guildId = process.env.DISCORD_GUILD_ID;
 const memberRoleId = process.env.DISCORD_MEMBER_ROLE_ID;
 const applicationsChannelId = process.env.DISCORD_STAFF_APPLICATIONS_CHANNEL_ID;
 const staffRoleId = process.env.DISCORD_STAFF_ROLE_ID;
 const approvedStaffRoleId = process.env.DISCORD_APPROVED_STAFF_ROLE_ID;
 const modLogChannelId = process.env.DISCORD_MOD_LOG_CHANNEL_ID;
-const staffApplicationRequirements = (process.env.DISCORD_STAFF_APPLICATION_REQUIREMENTS || '').split('|').map((value) => value.trim()).filter(Boolean);
+// What an applicant reads first: #staff-requirements and #staff-application-questions (a channel mention shows as the channel's name and opens it). The website's staff application page links to the same two (staff_application_links in config/services.php).
+const staffApplicationRequirements = ['827776116851736628', '827776072551759912'].map((channelId) => `<#${channelId}>`);
 const staffApplicationQuestions = {
     motivation: process.env.DISCORD_STAFF_QUESTION_MOTIVATION || 'Why do you want to join the staff team?',
     experience: process.env.DISCORD_STAFF_QUESTION_EXPERIENCE || 'What relevant experience do you have?',
@@ -253,8 +254,8 @@ const ticketPanel = new ActionRowBuilder().addComponents(
         .setStyle(ButtonStyle.Primary),
 );
 
-if (!token || !applicationId || !guildId) {
-    console.error('Discord bot is not configured. Set DISCORD_BOT_TOKEN, DISCORD_CLIENT_ID, and DISCORD_GUILD_ID in .env.');
+if (!token || !guildId) {
+    console.error('Discord bot is not configured. Set DISCORD_BOT_TOKEN and DISCORD_GUILD_ID in .env.');
     process.exitCode = 1;
 } else {
     const applyCommand = new SlashCommandBuilder()
@@ -746,7 +747,7 @@ if (!token || !applicationId || !guildId) {
                 await pollGithubReleases(serverId);
             }
             const rest = new REST({ version: '10' }).setToken(token);
-            await rest.put(Routes.applicationGuildCommands(applicationId, guildId), { body: [applyCommand, ...moderationCommands].map((command) => command.toJSON()) });
+            await rest.put(Routes.applicationGuildCommands(readyClient.application.id, guildId), { body: [applyCommand, ...moderationCommands].map((command) => command.toJSON()) });
             setInterval(() => checkBirthdays().catch((error) => console.error('Birthday check failed:', error.message)), 60_000).unref();
             setInterval(() => settleDueGiveaways().catch((error) => console.error('Giveaway check failed:', error.message)), 15_000).unref();
             setInterval(() => Object.keys(botSettings).forEach((serverId) => pollWebsiteAnnouncements(serverId).catch((error) => console.error('Website announcement poll failed:', error.message))), 60_000).unref();
@@ -1405,7 +1406,9 @@ if (!token || !applicationId || !guildId) {
                 return;
             }
 
-            if (action === 'approve') {
+            // an application sent on the website by somebody without a linked Discord account has "none" instead of a Discord ID: there is no Discord role to give
+            const onDiscord = /^\d+$/.test(applicantId);
+            if (action === 'approve' && onDiscord) {
                 if (approvedStaffRoleId) {
                     const applicant = await interaction.guild.members.fetch(applicantId);
                     await applicant.roles.add(approvedStaffRoleId, `Staff application approved by ${interaction.user.tag}`);
@@ -1418,7 +1421,7 @@ if (!token || !applicationId || !guildId) {
 
             const embed = EmbedBuilder.from(interaction.message.embeds[0])
                 .setColor(action === 'approve' ? 0x22c55e : 0xef4444)
-                .addFields({ name: 'Decision', value: `${action === 'approve' ? 'Approved' : 'Rejected'} by ${interaction.user}` });
+                .addFields({ name: 'Decision', value: `${action === 'approve' ? 'Approved' : 'Rejected'} by ${interaction.user}${action === 'approve' && !onDiscord ? '. No Discord account is linked, so no Discord role was given: give them a role in the Admin panel.' : ''}` });
             const disabledRow = new ActionRowBuilder().addComponents(
                 ...interaction.message.components.flatMap((row) => row.components).map((button) => ButtonBuilder.from(button).setDisabled(true)),
             );

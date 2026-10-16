@@ -7,12 +7,12 @@ interface Props {
     discord: { username: string | null; connected: boolean };
     configured: boolean;
     questions: { motivation: string; experience: string; availability: string };
-    requirements: string[];
+    links: { label: string; url: string }[]; // the Discord channels to read first
     notice?: string;
     error?: string;
 }
 
-export default function StaffApplication({ discord, configured, questions, requirements, notice, error }: Props) {
+export default function StaffApplication({ discord, configured, questions, links, notice, error }: Props) {
     const { data, setData, post, processing, errors, reset } = useForm({ motivation: '', experience: '', availability: '' });
 
     const submit = (event: FormEvent) => {
@@ -27,24 +27,31 @@ export default function StaffApplication({ discord, configured, questions, requi
             <section className="mx-auto max-w-3xl space-y-6 px-6 pb-16">
                 {notice && <p role="status" className="border-l-2 border-green-400 pl-4 text-sm text-green-200">{notice}</p>}
                 {error && <p role="alert" className="border-l-2 border-red-400 pl-4 text-sm text-red-200">{error}</p>}
-                {requirements.length > 0 && (
+                {links.length > 0 && (
                     <section className="border-y border-white/10 py-5">
                         <h2 className="text-sm font-semibold text-white">Requirements</h2>
                         <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-neutral-400">
-                            {requirements.map((requirement) => <li key={requirement}>{requirement}</li>)}
+                            {links.map((link) => (
+                                <li key={link.url}>
+                                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="font-medium text-sky-400 hover:text-sky-300 hover:underline">{link.label}</a>
+                                </li>
+                            ))}
                         </ul>
                     </section>
                 )}
 
-                {!discord.connected ? (
-                    <p className="text-sm text-neutral-300">
-                        Connect Discord before applying. <Link href={route('settings.connections')} className="text-violet-300 underline">Open Connections</Link>
-                    </p>
-                ) : !configured ? (
+                {!configured ? (
                     <p className="text-sm text-neutral-400">Staff applications are not available right now. Please try again later.</p>
                 ) : (
                     <>
-                        <p className="text-sm text-neutral-400">Applying as {discord.username || 'your connected Discord account'}. Staff review applications in the private SFD-DJ.EU Discord channel.</p>
+                        {discord.connected ? (
+                            <p className="text-sm text-neutral-400">Applying as {discord.username || 'your connected Discord account'}. Staff review applications in the private SFD-DJ.EU Discord channel.</p>
+                        ) : (
+                            <p className="text-sm text-neutral-400">
+                                Applying with your SFD-DJ.EU account: you do not need to connect Discord. Staff review applications in the private SFD-DJ.EU Discord channel. If you{' '}
+                                <Link href={route('settings.connections')} className="text-violet-300 underline">connect Discord</Link>, the team can also give you the staff role there when you are approved.
+                            </p>
+                        )}
                         <form onSubmit={submit} className="space-y-5">
                             <Field label={questions.motivation} htmlFor="motivation" error={errors.motivation}>
                                 <textarea id="motivation" value={data.motivation} onChange={(event) => setData('motivation', event.target.value)} maxLength={900} required rows={4} className={fieldClass} />

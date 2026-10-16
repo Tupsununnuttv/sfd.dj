@@ -182,7 +182,7 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /** ponytail: XP is bumped in place, no ledger table; add one if you need XP history. Every new level pays coins (see coinsForLevel). */
-    /** The paid plan someone has now (plus or premium: App\Support\Plans), or null. A plan without an end date was given for good. */
+    /** The paid plan someone has now (bronze, silver, gold, plus, pro or premium: App\Support\Plans), or null. A plan without an end date was given for good. */
     public function activePlan(): ?string
     {
         return isset(Plans::TIERS[$this->plan]) && (! $this->plan_until || $this->plan_until->isFuture()) ? $this->plan : null;
@@ -261,6 +261,20 @@ class User extends Authenticatable implements MustVerifyEmail
         return collect($roles)->sortBy(fn (Role $r) => $r->rank())->first() ?? Role::Member;
     }
 
+    /** The role their subscription gives (Bronze to Premium, named like the plan), or null without one. It is worked out from the plan every time, never stored, so it ends with the plan. */
+    public function subscriptionRole(): ?Role
+    {
+        return Role::tryFrom((string) $this->activePlan());
+    }
+
+    /** The role people see on them: the one they were given, and for somebody with none (a plain User) the one their subscription gives. Rights come from role() alone. */
+    public function shownRole(): Role
+    {
+        $role = $this->role();
+
+        return $role === Role::Member ? ($this->subscriptionRole() ?? $role) : $role;
+    }
+
     public function outranks(self $other): bool
     {
         return $this->role()->rank() < $other->role()->rank();
@@ -268,7 +282,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     protected function primaryRole(): Attribute
     {
-        return Attribute::get(fn () => $this->roleInfo($this->role()));
+        return Attribute::get(fn () => $this->roleInfo($this->shownRole()));
     }
 
     /** The flag they chose, { code, name }, or null. */
@@ -309,12 +323,12 @@ class User extends Authenticatable implements MustVerifyEmail
         }
     }
 
-    /** Every role the user holds, highest first, as small badges shown before their name (max 4). */
+    /** Every role the user holds, and the one their subscription gives, highest first, as small badges shown before their name (max 4). */
     protected function badges(): Attribute
     {
         return Attribute::get(function () {
             $roles = collect($this->roles ?? [])
-                ->map(Role::tryFrom(...))->filter()->sortBy(fn (Role $r) => $r->rank())->take(4)
+                ->map(Role::tryFrom(...))->push($this->subscriptionRole())->filter()->sortBy(fn (Role $r) => $r->rank())->take(4)
                 ->map(fn (Role $r) => $this->roleInfo($r))->values();
 
             // the badge equipped in the Avatar shop goes after the role icons
@@ -322,10 +336,6 @@ class User extends Authenticatable implements MustVerifyEmail
             $shop = AvatarController::BADGES[$key] ?? null; // its name; the page draws the badge itself
 
             $roles = $this->is_bot ? $roles->push(['key' => 'bot', 'label' => 'Bot', 'color' => '#38bdf8', 'icon' => '🤖']) : $roles;
-
-            // the gem of a paid plan
-            $plan = $this->activePlan();
-            $roles = $plan ? $roles->push(['key' => "sub:{$plan}", 'label' => 'SFD-DJ.EU '.Plans::TIERS[$plan]['name'], 'color' => Plans::TIERS[$plan]['color'], 'icon' => '💎']) : $roles;
 
             // the special badges staff gave them (Beta Tester ...), then the one from the shop
             $roles = $roles->concat(array_map(Awards::badge(...), Awards::clean($this->awards)));

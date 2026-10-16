@@ -56,7 +56,7 @@ export type PageProps<
         user: User; // guests get a placeholder user (id 0)
         guest: boolean;
         coins: number; // your SFD Coins (0 for a guest)
-        limits: { playlists: number; songs: number; emojis: number }; // how many you may have: more with Plus or Premium
+        limits: { playlists: number; songs: number; emojis: number }; // how many you may have: more with a plan
     };
     // somebody who has not confirmed their email yet: must they, can the site send the message, and what became of the last one; null for everybody else
     verification: { required: boolean; mail: boolean; status: string | null } | null;

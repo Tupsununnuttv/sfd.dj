@@ -112,7 +112,7 @@ const sections: Section[] = [
             <>
                 <List
                     items={[
-                        'Create up to 30 playlists with up to 5,000 songs each; Plus and Premium raise that to 10,000 and 20,000. Pressing Grab in a room asks which of your playlists the song goes in; with no playlist yet you make one on the spot.',
+                        'Create up to 100 playlists with up to 5,000 songs each; the paid plans raise that, up to 500 playlists and 20,000 songs each on Premium. Pressing Grab in a room asks which of your playlists the song goes in; with no playlist yet you make one on the spot.',
                         'Add a song by searching YouTube or pasting a YouTube, SoundCloud or Spotify link.',
                         'Drag the tracks into the order they should play in (or use a track\'s menu: move to the top or the bottom), shuffle the order, find a track in the list, rename or delete the list, and download its links as a text file.',
                         'One playlist is your active playlist. Its first track is your next track: the footbar of a room shows it, and it is the one that plays when your turn in the Waitlist comes. When a song has been played it goes to the bottom of its list and slowly moves up as other songs are played, so your next turn plays the next one. The Waitlist tab lists the people in the line, not songs. Chat tells when a song has ended, who joined or left the waitlist and so on, each in its own colour. Pick the active playlist in the footbar or in Playlists.',
@@ -172,7 +172,7 @@ const sections: Section[] = [
         body: (
             <>
                 <H>Site roles</H>
-                <P>From highest to lowest. <b>Staff:</b> 👑 Owner, 🛠️ Developer, 🔴 Admin, 🟣 Lead Moderator, 💗 Brand Ambassador, 🟠 Moderator, 🟢 Site Moderator, 🟡 Helper, 📢 Promoter, 🌐 Translator. <b>Creator / Contributor:</b> 📝 Content Provider, 🎵 Music Producer, 🎤 Artist. <b>Community / Status:</b> 🤝 Partnership, 💜 VIP, 💎 Early Supporter, ⭐ Supporter, 👤 User. You can hold several; the highest is shown first, and the icon of every role you hold shows in front of your name in chat. What each role may do site-wide is set in the Admin panel permission matrix.</P>
+                <P>From highest to lowest. <b>Staff:</b> 👑 Owner, 🛠️ Developer, 🔴 Admin, 🟣 Lead Moderator, 💗 Brand Ambassador, 🟠 Moderator, 🟢 Site Moderator, 🟡 Helper, 📢 Promoter, 🌐 Translator. <b>Creator / Contributor:</b> 📝 Content Provider, 🎵 Music Producer, 🎤 Artist. <b>Community / Status:</b> 🤝 Partnership, 💜 VIP, 💎 Early Supporter, ⭐ Supporter. <b>Subscriptions:</b> 💎 Premium, Pro, Plus, Gold, Silver, Bronze, the role of the plan you have: it comes with the plan, ends with it and gives no rights. Everybody else is a 👤 User. You can hold several; the highest is shown first, and the icon of every role you hold shows in front of your name in chat. What each role may do site-wide is set in the Admin panel permission matrix.</P>
                 <H>Room roles</H>
                 <List
                     items={[
@@ -241,7 +241,7 @@ const sections: Section[] = [
                     ]}
                 />
                 <H>2. Call the API</H>
-                <P>Base address: <K>{`${origin()}/api/v1`}</K>. Send <K>Authorization: Bearer YOUR_TOKEN</K> and <K>Accept: application/json</K>. A room is addressed by its slug (the last part of its web address). Posting a chat message makes a bot visible in the room automatically; for a quiet bot, heartbeat every 30 seconds and leave when it disconnects. Limits: 120 requests a minute per token, chat 60, whispers 30.</P>
+                <P>Base address: <K>{`${origin()}/api/v1`}</K>. The live site is <K>https://sfd-dj.eu/api/v1</K>. Send <K>Authorization: Bearer YOUR_TOKEN</K> and <K>Accept: application/json</K>. A room is addressed by its slug (the last part of its web address). Posting a chat message makes a bot visible in the room automatically; for a quiet bot, heartbeat every 30 seconds and leave when it disconnects. Limits: 120 requests a minute per token, chat 60, whispers 30; every answer says how many requests you have left in <K>X-RateLimit-Remaining</K>, and a <K>429</K> says how long to wait in <K>Retry-After</K>.</P>
                 <Code>{`curl ${origin()}/api/v1/rooms/my-room/messages \\
   -H "Authorization: Bearer YOUR_TOKEN" -H "Accept: application/json"
 
@@ -253,8 +253,20 @@ curl -X POST ${origin()}/api/v1/rooms/my-room/messages \\
                     <table className="w-full text-xs">
                         <tbody className="divide-y divide-white/5">
                             {[
-                                ['GET', '/me', 'The account behind the token'],
+                                ['GET', '/', 'The front door, no token needed: version, server time and limits'],
+                                ['GET', '/plans', 'No token needed: the subscriptions (Bronze to Premium) with prices in euro cents, XP and limits, and what Free has'],
+                                ['GET', '/me', 'The account behind the token, with its character, plan, limits and SFD Coins'],
                                 ['GET', '/users/{id}', 'A public profile'],
+                                ['GET', '/characters', 'The characters this account may wear: level, price, owned, and the three pictures of each'],
+                                ['GET', '/playlists', 'Your playlists with their song counts'],
+                                ['POST', '/playlists', 'name: make a playlist (up to the limit of your plan)'],
+                                ['GET / PATCH / DELETE', '/playlists/{id}', 'The songs in play order / rename (name) / delete'],
+                                ['POST', '/playlists/{id}/activate', 'Make it the playlist you play from'],
+                                ['POST', '/playlists/{id}/songs', 'url, or video_id: add a song'],
+                                ['POST', '/playlists/{id}/import', 'text: many links, one per line'],
+                                ['DELETE', '/playlists/{id}/songs/{song}', 'Remove a song'],
+                                ['PUT', '/playlists/{id}/order', 'ids: all the song ids, first song first'],
+                                ['POST', '/playlists/{id}/shuffle', 'Shuffle the songs'],
                                 ['GET', '/rooms', 'Rooms you may see, with listeners and queue length'],
                                 ['GET', '/rooms/{room}', 'Settings, what is playing, waitlist, votes, your permissions'],
                                 ['GET', '/rooms/{room}/members', 'Room roles and who holds them'],
@@ -266,6 +278,7 @@ curl -X POST ${origin()}/api/v1/rooms/my-room/messages \\
                                 ['DELETE', '/rooms/{room}/messages', 'Clear the chat (every message goes)'],
                                 ['POST', '/rooms/{room}/announce', 'message: a highlighted room announcement'],
                                 ['POST', '/rooms/{room}/queue', 'url, or video_id: add a song to the waitlist'],
+                                ['POST', '/rooms/{room}/queue-playlist', 'playlist_id: put up to 50 songs of one of your playlists into the waitlist'],
                                 ['DELETE', '/rooms/{room}/queue/{item}', 'Remove a song from the waitlist'],
                                 ['DELETE', '/rooms/{room}/waitlist', 'Leave the waitlist'],
                                 ['PATCH', '/rooms/{room}/waitlist-settings', 'locked and/or cycle (true / false)'],
@@ -290,12 +303,15 @@ curl -X POST ${origin()}/api/v1/rooms/my-room/messages \\
                 </div>
                 <P>Success is a JSON body or an empty <K>204</K>. Errors: <K>401</K> bad or missing token, <K>403</K> not allowed (or banned from the room), <K>422</K> invalid input with an <K>errors</K> object, <K>429</K> slow down.</P>
                 <H>4. The JavaScript library</H>
-                <P>Prefer a ready-made client? <K>npm install sfddj</K> wraps every endpoint and has a small <K>Bot</K> helper with chat commands and a song-change event.</P>
+                <P>Prefer a ready-made client? <K>npm install sfddj</K> (version 1.1) wraps every endpoint above, tries again by itself when the site says slow down, ships its TypeScript types, and has a <K>Bot</K> helper with chat commands (with cooldowns), song-change and vote events, and a place in the room for bot accounts.</P>
                 <Code>{`import { SfdDj } from 'sfddj';
 
 const sfd = new SfdDj({ token: process.env.SFDDJ_TOKEN, baseUrl: '${origin()}' });
-const bot = sfd.bot('my-room-slug').command('ping', () => bot.say('pong!'));
-await bot.start();`}</Code>
+const bot = sfd.bot('my-room-slug').command('ping', (m) => bot.reply(m, 'pong!'), { cooldownMs: 3000 });
+await bot.start();
+
+const { id } = await sfd.createPlaylist('Warm up');
+await sfd.addToPlaylist(id, { url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' });`}</Code>
                 <Note tone="warn">Never put a token in a public repository or in a browser extension you share. Anyone who has it can act as that account.</Note>
             </>
         ),

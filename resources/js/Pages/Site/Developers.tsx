@@ -7,7 +7,7 @@ const code = `import { SfdDj } from 'sfddj';
 const sfd = new SfdDj({ token: process.env.SFDDJ_TOKEN, baseUrl: '${typeof window !== 'undefined' ? window.location.origin : 'https://sfd-dj.eu'}' });
 
 const bot = sfd.bot('my-room-slug')
-    .command('ping', () => bot.say('pong!'))
+    .command('ping', (m) => bot.reply(m, 'pong!'), { cooldownMs: 3000 })
     .on('songChange', (song) => song && bot.say(\`Now playing: \${song.title}\`));
 
 await bot.start();`;
@@ -15,7 +15,7 @@ await bot.start();`;
 const cards = [
     ['🤖', 'Room bots', 'Greet people, run commands like !ping, announce songs, moderate. A bot is its own account with a 🤖 badge and only does what its room role allows.'],
     ['🧩', 'Extensions', 'A personal token acts as you, so your own browser extension or script can chat, vote and queue songs.'],
-    ['🛠️', 'Tools', 'Read rooms, chat and the waitlist as JSON for dashboards, overlays and stats.'],
+    ['🛠️', 'Tools', 'Read rooms, chat and the waitlist as JSON for dashboards, overlays and stats. Manage playlists, list characters and show the subscription prices.'],
 ];
 
 const steps = [
@@ -60,7 +60,7 @@ export default function Developers() {
                     </div>
                 </div>
                 <div>
-                    <h2 className="text-2xl font-black">A bot in ten lines</h2>
+                    <h2 className="text-2xl font-black">A bot in a few lines</h2>
                     <pre className="mt-4 overflow-x-auto rounded-xl border border-white/10 bg-neutral-950 p-4 text-xs leading-relaxed text-neutral-300">{code}</pre>
                     <p className="mt-3 text-sm text-neutral-500"><code className="rounded bg-white/10 px-1.5 py-0.5 text-violet-300">npm install sfddj</code>: no dependencies, works in Node 18+ and the browser.</p>
                 </div>
@@ -70,6 +70,7 @@ export default function Developers() {
                 <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-sm text-neutral-400">
                     <p className="font-semibold text-neutral-200">Good to know</p>
                     <ul className="mt-2 list-disc space-y-1 pl-5">
+                        <li>The API answers on <code className="rounded bg-white/10 px-1.5 py-0.5 text-violet-300">https://sfd-dj.eu/api/v1</code>. <code className="rounded bg-white/10 px-1.5 py-0.5 text-violet-300">GET /api/v1</code> needs no token: use it to check the address.</li>
                         <li>120 requests a minute per token. Chat 60 a minute, whispers 30.</li>
                         <li>Keep tokens secret. Never put one in a public repository or a shared extension.</li>
                         <li>Do not use the API to spam, scrape private data or get around bans. See the <Link href={route('site.legal', 'terms')} className="text-violet-400 hover:underline">Terms</Link>.</li>

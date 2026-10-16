@@ -21,7 +21,7 @@ use Inertia\Response;
  */
 class PlaylistController extends Controller
 {
-    public const MAX_PLAYLISTS = 30; // without a plan: Plus and Premium allow more (App\Support\Plans)
+    public const MAX_PLAYLISTS = 100; // without a plan: the paid plans allow more (App\Support\Plans)
 
     private const SONG_FIELDS = ['id', 'youtube_id', 'title', 'channel', 'thumbnail', 'duration', 'origin', 'position'];
 

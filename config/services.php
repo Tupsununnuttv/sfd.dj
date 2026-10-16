@@ -50,7 +50,11 @@ return [
         'staff_applications_channel_id' => env('DISCORD_STAFF_APPLICATIONS_CHANNEL_ID'),
         'staff_role_id' => env('DISCORD_STAFF_ROLE_ID'),
         'approved_staff_role_id' => env('DISCORD_APPROVED_STAFF_ROLE_ID'),
-        'staff_application_requirements' => env('DISCORD_STAFF_APPLICATION_REQUIREMENTS', ''),
+        // The Discord channels an applicant reads first: blue links on the staff application page, and in the message to the staff. The label is the channel's name.
+        'staff_application_links' => [
+            ['label' => '#staff-requirements', 'url' => 'https://discord.com/channels/827767815452753950/827776116851736628'],
+            ['label' => '#staff-application-questions', 'url' => 'https://discord.com/channels/827767815452753950/827776072551759912'],
+        ],
         'staff_application_questions' => [
             'motivation' => env('DISCORD_STAFF_QUESTION_MOTIVATION', 'Why do you want to join the staff team?'),
             'experience' => env('DISCORD_STAFF_QUESTION_EXPERIENCE', 'What relevant experience do you have?'),
@@ -64,7 +68,7 @@ return [
     ],
 
     // Legacy Tenor endpoint; the chat GIF picker now uses GIPHY directly from the browser.
-    // payments for SFD-DJ.EU Plus and Premium (App\Support\Stripe): the secret key and the signing secret of the webhook /stripe/webhook
+    // payments for the SFD-DJ.EU subscriptions (App\Support\Stripe): the secret key and the signing secret of the webhook /stripe/webhook
     'stripe' => [
         'secret' => env('STRIPE_SECRET'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),

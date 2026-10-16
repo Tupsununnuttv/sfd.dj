@@ -24,7 +24,7 @@ Draw the person standing, feet at the bottom, in a picture about 200 x 276 (a bi
 | `foxy`, `neko`, `bun`, `panda`, `wolfie`, `robo` | `node scripts/make-characters.mjs` | everybody, unlocked by level |
 | `ice`, `azure`, `sun`, `nebula` (astronauts) and their slim `...mini` builds, `fedora`, `blaze`, `echo`, `blazeref`, `echoref`, `pandabear` | `node scripts/make-staff-characters.mjs` | Brand Ambassador and above |
 | `zoos02` (the Zoo S02 fox) | `node scripts/make-staff-characters.mjs` | the Owner only |
-| `wilmer` (a friend in a varsity jacket), `milky` (the milk carton), `pip` (a penguin DJ), `spooky` (the jack-o'-lantern scarecrow), `kikomochi` (a girl and her Shiba), `boomer` (a turtle with a boombox shell), `emberdragon`, `frostdragon` | `node scripts/make-staff-characters.mjs` | everybody, from level 4, 6, 7, 14, 16, 20, 30 and 35 |
+| `adammochi` (a bearded DJ in a black robe and his panda), `wilmer` (a friend in a varsity jacket), `milky` (the milk carton), `pip` (a penguin DJ), `spooky` (the jack-o'-lantern scarecrow), `kikomochi` (a girl and her Shiba), `boomer` (a turtle with a boombox shell), `emberdragon`, `frostdragon` | `node scripts/make-staff-characters.mjs` | everybody, from level 3, 4, 6, 7, 14, 16, 20, 30 and 35 |
 | `skully` (the skeleton DJ), `rift` (the raven mage), `fox` (the street fox) | `node scripts/make-staff-characters.mjs` | the Owner only |
 
 Changing a file here by hand is fine, but running its script again writes those files again (`node scripts/make-staff-characters.mjs ice fedora` redraws only the ones named).

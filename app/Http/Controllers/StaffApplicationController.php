@@ -20,7 +20,7 @@ class StaffApplicationController extends Controller
             ],
             'configured' => DiscordStaffApplications::configured(),
             'questions' => config('services.discord.staff_application_questions'),
-            'requirements' => array_values(array_filter(array_map('trim', explode('|', (string) config('services.discord.staff_application_requirements'))))),
+            'links' => config('services.discord.staff_application_links'),
             'notice' => session('staff_application_notice'),
             'error' => session('staff_application_error'),
         ]);
@@ -34,10 +34,7 @@ class StaffApplicationController extends Controller
             'availability' => ['required', 'string', 'max:900'],
         ]);
 
-        if (! $request->user()->discord_id) {
-            return Redirect::route('staff-application.create')->with('staff_application_error', 'Connect your Discord account in Settings → Connections before applying.');
-        }
-
+        // a linked Discord account is not needed: the application goes to the staff channel with the SFD-DJ.EU account on it
         if (! DiscordStaffApplications::send($request->user(), $answers)) {
             return Redirect::route('staff-application.create')->with('staff_application_error', 'Your application could not be sent. Please try again later.');
         }

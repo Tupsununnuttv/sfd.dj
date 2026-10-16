@@ -3,6 +3,59 @@ export type Kind = 'new' | 'improved' | 'fixed';
 
 export const releases: { version: string; title: string; notes: [Kind, string][] }[] = [
     {
+        version: '1.58',
+        title: 'Staff applications without Discord',
+        notes: [
+            ['new', 'You can send a staff application (Home → Community → Staff application) without a Discord account linked to your profile. You only need to be logged in. Before, the page asked you to connect Discord first.'],
+            ['improved', 'The Requirements on the staff application page are now blue links that open the Discord channels #staff-requirements and #staff-application-questions, instead of a bare channel number. The Discord bot\'s /apply lists the same two channels.'],
+            ['improved', 'The staff team sees your SFD-DJ.EU account with a link to your profile in the application. If you do link Discord, they can still give you the staff role there as soon as you are approved; without it, they give you a role on the site instead.'],
+        ],
+    },
+    {
+        version: '1.57',
+        title: 'A role for every subscription',
+        notes: [
+            ['new', 'Six new roles, one for each subscription: Bronze, Silver, Gold, Plus, Pro and Premium. Buy a plan and you get the role of the same name straight away: a gem and a name in the colour of the plan, in chat, in the room, on your profile and in the friends and community lists. When the plan ends, the role goes with it.'],
+            ['improved', 'The roles belong to the subscription alone: they cannot be handed out by hand, they are not in the Permissions Matrix and they give no staff rights. A role you were given (Moderator, Supporter ...) still comes first, and the role of your plan follows it.'],
+            ['improved', 'Plus is a deeper teal and Pro an indigo now, so that no two roles share a colour.'],
+        ],
+    },
+    {
+        version: '1.56',
+        title: 'A newer API, sfddj 1.1 and a loading screen for rooms',
+        notes: [
+            ['new', 'The API (/api/v1) knows more: your playlists (make, rename, add and import songs, reorder, shuffle, activate, delete, and queue a whole playlist into a room), the characters you may wear with their pictures, and the subscription prices. GET /api/v1 and GET /api/v1/plans need no token. /me now also tells your character, plan, limits and SFD Coins.'],
+            ['new', 'sfddj 1.1 for npm covers all of it, tries again by itself when the site says slow down, gives up instead of hanging, and has a better Bot helper: it shows in the room, has command cooldowns, a custom prefix, reply() and a votes event.'],
+            ['improved', 'Settings → Developers shows the API address (https://sfd-dj.eu/api/v1) with a Copy button. Docs → Developers and the Developers page are up to date.'],
+            ['new', 'Open a room and a "Loading room…" screen shows at once, with the room name, until the room is open. It works from the dashboard and from every other page that links to a room.'],
+        ],
+    },
+    {
+        version: '1.55',
+        title: 'Up to 100 playlists',
+        notes: [
+            ['new', 'Everybody can now make up to 100 playlists, up from 30. The subscriptions give more: 120 playlists on Bronze, 150 on Silver, 175 on Gold, 200 on Plus, 300 on Pro and 500 on Premium.'],
+            ['improved', 'The playlist counter under your playlists is easy to read now: "1 of 100 playlists" in bright text with a bar that fills up, turns amber when you are close to the limit and red when you reach it.'],
+            ['fixed', 'The counter and the New playlist button now follow your plan. Before, they stopped at 30 even when your plan allowed more.'],
+        ],
+    },
+    {
+        version: '1.54',
+        title: 'Six subscriptions: Bronze, Silver, Gold, Plus, Pro and Premium',
+        notes: [
+            ['new', 'The Pricing page now lists six optional subscriptions instead of two, each a step up from the one before: Bronze (€0.99 a month), Silver (€1.49), Gold (€1.99), Plus (€2.99), Pro (€4.49) and Premium (€5.99), or by the year for two months free. Each gives a gem in its own colour next to your name, more XP (from +5% to +50%), more playlists (120 up to 500), more songs in each playlist (6,000 up to 20,000) and more emojis in the rooms you host (35 up to 100). Plus and Premium cost and give what they did before, and everything that is free stays free.'],
+            ['improved', 'The same six plans are in Settings, where "SFD-DJ.EU Plus" under More is now "SFD-DJ.EU Subscriptions". The cards sit three to a row, with Free across the top.'],
+            ['improved', 'The Premium gem is pink now, so it cannot be mistaken for Gold.'],
+        ],
+    },
+    {
+        version: '1.53',
+        title: 'Meet Adam & Mochi',
+        notes: [
+            ['new', 'Adam & Mochi, a new Common character in the Avatar shop (level 3): a bearded DJ in a black robe with red storm clouds, a metal headband and wrapped hands, and his panda Mochi in a little robe of her own. Standing, Adam waves hello while Mochi nibbles a bamboo shoot. Dancing, they bounce in turn: Adam grins, throws his arms about and brings his hands together in a seal, Mochi flaps her arms, and storm clouds drift up behind them. At the decks, seen from behind, Adam scratches with one hand and pumps the other while Mochi bobs beside him.'],
+        ],
+    },
+    {
         version: '1.52',
         title: 'Room addresses follow the room name',
         notes: [

@@ -12,7 +12,7 @@ const groups: { name: string; items: [string, string, LucideIcon][] }[] = [
     { name: 'You', items: [['profile.edit', 'Profile', UserRound], ['settings.connections', 'Connections', Cable], ['settings.privacy', 'Privacy', Lock], ['settings.account', 'Account & security', ShieldCheck]] },
     { name: 'Account status', items: [['settings.violations', 'Violations', Gavel]] },
     { name: 'Preferences', items: [['settings.appearance', 'Appearance', Palette], ['settings.audio', 'Audio', Volume2], ['settings.notifications', 'Notifications', Bell]] },
-    { name: 'More', items: [['settings.plus', 'SFD-DJ.EU Plus', Sparkles]] },
+    { name: 'More', items: [['settings.plus', 'SFD-DJ.EU Subscriptions', Sparkles]] },
     { name: 'Developer tools', items: [['settings.developers', 'Developers', Code2]] },
 ];
 

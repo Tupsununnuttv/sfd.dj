@@ -22,20 +22,28 @@ const SITE: Record<string, LucideIcon> = {
     supporter: Heart,
     member: User,
     bot: Bot,
-    'sub:plus': Gem, // the paid plans: a solid gem in the colour of the plan
-    'sub:premium': Gem,
+    // the six subscription roles
+    premium: Gem,
+    pro: Gem,
+    plus: Gem,
+    gold: Gem,
+    silver: Gem,
+    bronze: Gem,
 };
+
+/** Drawn solid instead of as a line: the host's crown and the gems of the subscription roles (in the colour of the plan). */
+const SOLID = new Set(['host', 'premium', 'pro', 'plus', 'gold', 'silver', 'bronze']);
 
 /** The host and the four roles every room has (their names cannot be changed); a role a host made gets a tag. */
 const ROOM: Record<string, LucideIcon> = { Host: Crown, 'Co-Host': Crown, Manager: ChevronsUp, Bouncer: ChevronUp, 'Resident DJ': Disc3 };
 
 interface Role { key: string; label: string; color: string }
 
-/** The line icon of a site or room role. The host's crown is filled, the co-host's is not, and so are the gems of Plus and Premium. */
+/** The line icon of a site or room role. The host's crown is filled, the co-host's is not; the gems of the subscription roles are filled too. */
 export function RoleGlyph({ role, size = 12 }: { role: Role; size?: number }) {
     const Icon = SITE[role.key] ?? ROOM[role.label] ?? Tag;
 
-    return <Icon size={size} strokeWidth={2.4} fill={role.key === 'host' || role.key.startsWith('sub:') ? 'currentColor' : 'none'} aria-hidden className="shrink-0" />;
+    return <Icon size={size} strokeWidth={2.4} fill={SOLID.has(role.key) ? 'currentColor' : 'none'} aria-hidden className="shrink-0" />;
 }
 
 /** A role as a small tile: its icon in its colour on a tinted square with a border of the same colour. The name shows on hover. */

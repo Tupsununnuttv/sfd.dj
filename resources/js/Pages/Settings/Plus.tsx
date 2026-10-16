@@ -15,7 +15,7 @@ interface Mine {
 
 const day = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
 
-/** SFD-DJ.EU Plus and Premium: what you have, the plans and their prices, and buying one on Stripe. */
+/** SFD-DJ.EU Subscriptions (Bronze, Silver, Gold, Plus, Pro and Premium): what you have, the plans and their prices, and buying one on Stripe. */
 export default function Plus({ plans, mine, manageable, payments, paid }: { plans: PlanInfo[]; mine: Mine | null; manageable: boolean; payments: boolean; paid: boolean }) {
     const [period, setPeriod] = useState<Interval>('month');
     const [busy, setBusy] = useState<string | null>(null);
@@ -24,8 +24,8 @@ export default function Plus({ plans, mine, manageable, payments, paid }: { plan
     const color = plans.find((p) => p.key === mine?.key)?.color;
 
     return (
-        <SettingsLayout title="SFD-DJ.EU Plus" subtitle="Optional plans that give you a gem, more XP and room for more playlists and emojis. Everything that is free stays free.">
-            <Head title="SFD-DJ.EU Plus" />
+        <SettingsLayout title="SFD-DJ.EU Subscriptions" subtitle="Optional plans that give you the role of the same name, more XP and room for more playlists and emojis. Everything that is free stays free.">
+            <Head title="SFD-DJ.EU Subscriptions" />
             <div className="max-w-5xl space-y-6">
                 {paid && (
                     <p className="flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
@@ -73,7 +73,7 @@ export default function Plus({ plans, mine, manageable, payments, paid }: { plan
                 />
 
                 <p className="text-xs leading-relaxed text-neutral-500">
-                    Payments are handled by Stripe; SFD-DJ.EU never sees your card. A plan renews by itself every month or year until you cancel it under “Manage or cancel”, and after cancelling you keep it until the end of the time you paid for. Prices are in euros. SFD Coins are never sold for money: you earn them by using the site.
+                    A plan gives you the role of the same name (Bronze, Silver, Gold, Plus, Pro or Premium) as soon as you have it, and it goes when the plan ends; it does not give you any staff rights. Payments are handled by Stripe; SFD-DJ.EU never sees your card. A plan renews by itself every month or year until you cancel it under “Manage or cancel”, and after cancelling you keep it until the end of the time you paid for. Prices are in euros. SFD Coins are never sold for money: you earn them by using the site.
                 </p>
             </div>
         </SettingsLayout>

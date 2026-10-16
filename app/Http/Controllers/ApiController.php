@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Role;
 use App\Models\ChatMessage;
 use App\Models\Room;
+use App\Support\Plans;
 use App\Support\RoomPresence;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,6 +13,28 @@ use Illuminate\Http\Request;
 /** The read side of the public API (/api/v1). Writing goes through the same controllers as the website. */
 class ApiController extends Controller
 {
+    /** The front door, no token needed: the version, the time on the server and the limits, so a tool can check it is talking to the right address. */
+    public function root(): JsonResponse
+    {
+        return response()->json([
+            'name' => 'SFD-DJ.EU API',
+            'version' => 'v1',
+            'time' => now()->toIso8601String(),
+            'docs' => url('/docs').'#developers',
+            'package' => 'sfddj',
+            'limits' => ['requests_per_minute' => 120, 'chat_per_minute' => 60, 'whispers_per_minute' => 30],
+        ]);
+    }
+
+    /** The subscriptions with numbers a program can use (prices in euro cents, `xp` as a multiplier), and what everybody has without one. No token needed. */
+    public function plans(): JsonResponse
+    {
+        return response()->json([
+            'free' => Plans::FREE,
+            'plans' => collect(Plans::TIERS)->map(fn (array $t, string $key) => ['key' => $key, 'currency' => 'eur'] + $t)->values(),
+        ]);
+    }
+
     public function me(Request $request): JsonResponse
     {
         $me = $request->user();
@@ -18,7 +42,35 @@ class ApiController extends Controller
         return response()->json($me->only('id', 'name', 'username', 'avatar', 'level', 'xp', 'primary_role', 'badges', 'is_bot') + [
             'roles' => $me->roles ?? [],
             'site_permissions' => $me->site_permissions,
+            'character' => str_starts_with((string) $me->character, 'char:') ? substr($me->character, 5) : null,
+            'plan' => $me->activePlan(),
+            'limits' => $me->limits(),
+            'coins' => (int) $me->coins,
         ]);
+    }
+
+    /** The characters this account may wear, with their level, price, whether they are theirs and the three pictures of each. */
+    public function characters(Request $request): JsonResponse
+    {
+        $me = $request->user();
+        $bought = AvatarController::bought($me);
+
+        return response()->json(collect(AvatarController::charactersFor($me))->map(function (string $label, string $name) use ($me, $bought) {
+            $key = "char:{$name}";
+            $level = AvatarController::levelOf('avatar', $key);
+            $role = AvatarController::roleNeeded($key);
+
+            return [
+                'name' => $name,
+                'label' => $label,
+                'level' => $level,
+                'rarity' => $role ? ($role === Role::Owner ? 'owner' : 'staff') : AvatarController::rarityOf($level),
+                'price' => AvatarController::priceOf('avatar', $key),
+                'owned' => AvatarController::owns($me, 'avatar', $key, $bought),
+                'role' => $role?->value,
+                'images' => collect(['standing', 'dancing', 'djing'])->mapWithKeys(fn (string $state) => [$state => route('characters.show', ['state' => $state, 'name' => $name])]),
+            ];
+        })->sortBy('level')->values());
     }
 
     public function rooms(Request $request): JsonResponse

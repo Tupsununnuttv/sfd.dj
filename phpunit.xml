@@ -24,6 +24,8 @@
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
+        <!-- with the Vite dev server running (public/hot) Inertia asks it to render each page, and Http::preventStrayRequests() turned that into a 500 in about a third of the tests -->
+        <env name="INERTIA_SSR_ENABLED" value="false" force="true"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
@@ -38,6 +40,8 @@
         <env name="DISCORD_CLIENT_ID" value="" force="true"/>
         <env name="DISCORD_CLIENT_SECRET" value="" force="true"/>
         <env name="DISCORD_GUILD_ID" value="" force="true"/>
+        <env name="DISCORD_ROLE_PREFIX" value="SFD-DJ.EU | " force="true"/><!-- the tests name their fake Discord roles with the default prefix, whatever .env says -->
+        <env name="DISCORD_MEMBER_ROLE_ID" value="" force="true"/>
         <env name="SPOTIFY_CLIENT_ID" value="" force="true"/>
         <env name="SPOTIFY_CLIENT_SECRET" value="" force="true"/>
         <env name="YOUTUBE_CLIENT_ID" value="" force="true"/>

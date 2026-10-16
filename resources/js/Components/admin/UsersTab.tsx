@@ -81,7 +81,7 @@ function AwardEditor({ user, list }: { user: AdminUser; list: AdminProps['awardL
     );
 }
 
-/** SFD-DJ.EU Plus or Premium by hand: for a month, three, a year or for good, or none. A plan bought through Stripe is left to Stripe. */
+/** A SFD-DJ.EU plan (Bronze to Premium) by hand: for a month, three, a year or for good, or none. A plan bought through Stripe is left to Stripe. */
 function PlanEditor({ user, list }: { user: AdminUser; list: AdminProps['planList'] }) {
     const [open, setOpen] = useState(false);
     const [plan, setPlan] = useState(user.plan ?? '');
@@ -94,7 +94,7 @@ function PlanEditor({ user, list }: { user: AdminUser; list: AdminProps['planLis
 
     return (
         <div className="w-64 space-y-2 rounded-xl border border-white/10 bg-neutral-950 p-3 shadow-xl">
-            <p className="text-[11px] text-neutral-500">Give SFD-DJ.EU Plus or Premium for free, or take it away.</p>
+            <p className="text-[11px] text-neutral-500">Give a SFD-DJ.EU subscription for free, or take it away.</p>
             <select value={plan} onChange={(e) => setPlan(e.target.value)} className={`${fieldBase} w-full py-1.5 text-xs`}>
                 <option value="">No plan</option>
                 {list.map((p) => <option key={p.key} value={p.key}>{p.name}</option>)}

@@ -2,9 +2,13 @@
 
 namespace App\Enums;
 
+use App\Support\Plans;
+
 /**
  * Declaration order is the rank order: first = most powerful. Everyone without a role is a User (the "member" case).
  * The cases are written in groups (Staff, Staff 2, Creator / Contributor, Community / Status); group() says which is which.
+ * The six subscription roles (Premium down to Bronze, named like the plans in App\Support\Plans) are different: nobody hands them out. Somebody has one exactly
+ * while they have that subscription (User::subscriptionRole), so they are not stored, not in the permissions matrix and not synced to Discord (see manual()).
  */
 enum Role: string
 {
@@ -32,6 +36,15 @@ enum Role: string
     case Vip = 'vip';
     case EarlySupporter = 'early_supporter';
     case Supporter = 'supporter';
+
+    // Subscriptions, highest plan first
+    case Premium = 'premium';
+    case Pro = 'pro';
+    case Plus = 'plus';
+    case Gold = 'gold';
+    case Silver = 'silver';
+    case Bronze = 'bronze';
+
     case Member = 'member';
 
     /** Site-wide abilities that can be switched per role in the admin Permissions Matrix. */
@@ -90,6 +103,7 @@ enum Role: string
             self::Vip => '#a78bfa',
             self::EarlySupporter => '#67e8f9',
             self::Supporter => '#fcd34d',
+            self::Premium, self::Pro, self::Plus, self::Gold, self::Silver, self::Bronze => Plans::TIERS[$this->value]['color'],
             self::Member => '#a3a3a3',
         };
     }
@@ -115,6 +129,7 @@ enum Role: string
             self::Vip => '💜',
             self::EarlySupporter => '💎',
             self::Supporter => '⭐',
+            self::Premium, self::Pro, self::Plus, self::Gold, self::Silver, self::Bronze => '💎',
             self::Member => '👤',
         };
     }
@@ -136,10 +151,22 @@ enum Role: string
         return array_search($this, self::cases(), true);
     }
 
-    /** Roles that can be handed out (everyone is a User already). */
+    /** A role that comes with a subscription (Premium to Bronze) instead of being given by hand. */
+    public function isSubscription(): bool
+    {
+        return isset(Plans::TIERS[$this->value]);
+    }
+
+    /** Every role somebody can hold by hand, in rank order, with the plain User last: what the permissions matrix, the room's user list and the Discord roles work with. */
+    public static function manual(): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $r) => ! $r->isSubscription()));
+    }
+
+    /** Roles that can be handed out (everyone is a User already, and the subscription roles come with the subscription). */
     public static function assignable(): array
     {
-        return array_filter(self::cases(), fn (self $r) => $r !== self::Member);
+        return array_filter(self::manual(), fn (self $r) => $r !== self::Member);
     }
 
     public function info(): array
@@ -149,7 +176,7 @@ enum Role: string
 
     public static function meta(): array
     {
-        return array_map(fn (self $r) => $r->info(), self::cases());
+        return array_map(fn (self $r) => $r->info(), self::manual());
     }
 
     /** Starting point for the permissions matrix. The Owner role always has everything and is not stored. */

@@ -11,7 +11,6 @@ import { FormEvent, useCallback, useEffect, useState } from 'react';
 type Sort = 'name' | 'size' | 'time';
 
 const SORTS: [Sort, string][] = [['name', 'Name (A to Z)'], ['size', 'Most tracks'], ['time', 'Longest']];
-const MAX_LISTS = 30;
 const SORT_KEY = 'sfddj.playlistSort';
 
 const storedSort = (): Sort => {
@@ -34,8 +33,10 @@ const iconBtn = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bo
  */
 export default function PlaylistManager({ roomSlug, onClose, onChanged, className = '' }: { roomSlug?: string; onClose?: () => void; onChanged?: () => void; className?: string }) {
     const { auth } = usePage<PageProps>().props;
-    const maxSongs = auth.limits?.songs ?? 5000; // more with Plus or Premium
+    const maxSongs = auth.limits?.songs ?? 5000; // more with a plan
+    const maxLists = auth.limits?.playlists ?? 100; // more with a plan
     const [lists, setLists] = useState<PlaylistInfo[]>([]);
+    const full = lists.length >= maxLists;
     const [loaded, setLoaded] = useState(false);
     const [selected, setSelected] = useState<number | null>(null);
     const [songs, setSongs] = useState<Song[]>([]);
@@ -285,7 +286,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                         >
                             <ArrowUpDown size={16} />
                         </button>
-                        <button onClick={() => setCreating(!creating)} disabled={lists.length >= MAX_LISTS} aria-label="New playlist" title={lists.length >= MAX_LISTS ? 'You have reached the playlist limit' : 'New playlist'} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-r from-fuchsia-500 to-violet-500 text-white shadow-lg shadow-violet-900/40 transition hover:opacity-90 disabled:opacity-40">
+                        <button onClick={() => setCreating(!creating)} disabled={full} aria-label="New playlist" title={full ? 'You have reached the playlist limit' : 'New playlist'} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-r from-fuchsia-500 to-violet-500 text-white shadow-lg shadow-violet-900/40 transition hover:opacity-90 disabled:opacity-40">
                             <Plus size={18} strokeWidth={2.6} />
                         </button>
                     </div>
@@ -323,7 +324,13 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                             </li>
                         ))}
                     </ul>
-                    <p className="mt-2 px-1 text-[11px] text-neutral-600">{lists.length} of {MAX_LISTS} playlists</p>
+                    <div className="mt-3 shrink-0 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5" data-playlist-count>
+                        <p className={`text-sm font-semibold tabular-nums ${full ? 'text-rose-300' : 'text-neutral-100'}`}>{lists.length} <span className="font-medium text-neutral-400">of {maxLists} playlists</span></p>
+                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Playlists used" aria-valuemin={0} aria-valuemax={maxLists} aria-valuenow={lists.length}>
+                            <div className={`h-full rounded-full ${full ? 'bg-rose-400' : lists.length >= maxLists * 0.8 ? 'bg-amber-400' : 'bg-violet-400'}`} style={{ width: `${Math.min(100, (lists.length / maxLists) * 100)}%` }} />
+                        </div>
+                        {full && <p className="mt-1.5 text-xs text-rose-300">You have reached the limit.</p>}
+                    </div>
                 </aside>
 
                 {/* the one I picked */}

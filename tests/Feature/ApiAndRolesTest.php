@@ -134,7 +134,9 @@ class ApiAndRolesTest extends TestCase
             'content_provider', 'music_producer', 'artist',
             'partnership', 'vip', 'early_supporter', 'supporter', 'member',
         ];
-        $this->assertSame($expected, array_map(fn (Role $role) => $role->value, Role::cases()));
+        $this->assertSame($expected, array_map(fn (Role $role) => $role->value, Role::manual()));
+        // the roles that come with a subscription rank below every role somebody is given and above the plain User, but are not part of the room's order
+        $this->assertSame([...array_slice($expected, 0, -1), 'premium', 'pro', 'plus', 'gold', 'silver', 'bronze', 'member'], array_map(fn (Role $role) => $role->value, Role::cases()));
 
         $owner = $this->userWith('owner');
         $room = $owner->rooms()->create(['name' => 'Ordered', 'slug' => 'ordered-room']);

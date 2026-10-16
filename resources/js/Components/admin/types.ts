@@ -15,7 +15,7 @@ export interface AdminUser {
     primary_role: RoleInfo;
     badges: RoleInfo[];
     awards: string[];
-    plan: string | null; // plus or premium
+    plan: string | null; // bronze, silver, gold, plus, pro or premium
     plan_until: string | null; // null with a plan: for good
     plan_paid: boolean; // bought through Stripe: Stripe runs it
     email_verified: boolean;

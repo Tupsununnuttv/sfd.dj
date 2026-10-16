@@ -1,5 +1,6 @@
 import SettingsLayout from '@/Layouts/SettingsLayout';
 import { Head, router, usePage } from '@inertiajs/react';
+import { Check, Copy } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 
 interface Token {
@@ -14,11 +15,28 @@ interface Props {
     bots: { id: number; name: string; username: string; tokens: Token[] }[];
     newToken: { for: string; token: string } | null;
     api: string;
+    /** Where the API answers, as [label, address]: the live site for everybody, and the Owner also gets the two of a copy on their own computer. */
+    addresses: [string, string][];
 }
 
 const field = 'rounded-md border-neutral-700 bg-neutral-800 text-sm text-neutral-100 placeholder-neutral-500 focus:border-violet-500 focus:ring-violet-500';
 const card = 'rounded-2xl border border-white/10 bg-white/4 p-5';
 const primary = 'rounded-md bg-linear-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50';
+
+function Address({ label, url, here }: { label: string; url: string; here: boolean }) {
+    const [copied, setCopied] = useState(false);
+    const copy = () => navigator.clipboard?.writeText(url).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1500); });
+
+    return (
+        <li className="flex items-center gap-3 py-2">
+            <span className="w-36 shrink-0 text-xs text-neutral-500">{label}{here && <span className="ml-1 rounded bg-violet-500/20 px-1 text-[10px] font-semibold text-violet-300">this site</span>}</span>
+            <code className="min-w-0 flex-1 truncate rounded bg-neutral-800 px-2 py-1 text-xs text-violet-300">{url}</code>
+            <button onClick={copy} aria-label={`Copy ${url}`} className="flex shrink-0 items-center gap-1 rounded-md bg-neutral-800 px-2 py-1 text-xs text-neutral-300 hover:bg-neutral-700">
+                {copied ? <><Check size={13} className="text-emerald-400" /> Copied</> : <><Copy size={13} /> Copy</>}
+            </button>
+        </li>
+    );
+}
 
 function TokenList({ tokens }: { tokens: Token[] }) {
     if (tokens.length === 0) return <p className="text-sm text-neutral-500">No tokens.</p>;
@@ -53,7 +71,7 @@ function NewToken({ name, botId }: { name?: string; botId?: number }) {
 }
 
 /** Settings → Developers: bots and API tokens for the SFD-DJ.EU API. */
-export default function Developers({ tokens, bots, newToken, api }: Props) {
+export default function Developers({ tokens, bots, newToken, api, addresses }: Props) {
     const [name, setName] = useState('');
     const errors = usePage().props.errors as Record<string, string>;
 
@@ -68,9 +86,18 @@ export default function Developers({ tokens, bots, newToken, api }: Props) {
 
             <div className="max-w-3xl space-y-6">
                 <p className="text-sm text-neutral-400">
-                    Build room bots, browser extensions and tools on the SFD-DJ.EU API at <code className="rounded bg-neutral-800 px-1 text-violet-300">{api}</code>.
+                    Build room bots, browser extensions and tools on the SFD-DJ.EU API.
                     Install the helper library with <code className="rounded bg-neutral-800 px-1 text-violet-300">npm install sfddj</code>. See Docs → Developers for every endpoint.
                 </p>
+
+                <section className={`${card} space-y-2`}>
+                    <h2 className="font-semibold">API addresses</h2>
+                    <p className="text-sm text-neutral-400">The same API answers on each of these. With the library, give it the site without <code className="rounded bg-neutral-800 px-1 text-violet-300">/api/v1</code> as <code className="rounded bg-neutral-800 px-1 text-violet-300">baseUrl</code>.</p>
+                    <ul className="divide-y divide-neutral-800">
+                        {!addresses.some(([, url]) => url === api) && <Address label="This site" url={api} here />}
+                        {addresses.map(([label, url]) => <Address key={url} label={label} url={url} here={url === api} />)}
+                    </ul>
+                </section>
 
                 {newToken && (
                     <div className="space-y-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-5">

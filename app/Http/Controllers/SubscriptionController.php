@@ -12,7 +12,7 @@ use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
-/** SFD-DJ.EU Plus and Premium: Settings → Plus, buying a plan on Stripe, managing it there, and what Stripe tells us back. */
+/** SFD-DJ.EU Subscriptions (Bronze, Silver, Gold, Plus, Pro and Premium): Settings → Subscriptions, buying a plan on Stripe, managing it there, and what Stripe tells us back. */
 class SubscriptionController extends Controller
 {
     public function show(Request $request): InertiaResponse

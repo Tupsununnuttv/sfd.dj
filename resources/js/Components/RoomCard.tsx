@@ -32,6 +32,7 @@ export default function RoomCard({ room, listening = 0, playing }: { room: RoomS
     return (
         <Link
             href={route('rooms.show', room.slug)}
+            data-room-name={room.name}
             className="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/4 shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:border-violet-400/60 hover:shadow-violet-500/10"
         >
             <div className={`relative h-28 overflow-hidden bg-linear-to-br ${tintOf(room.id)}`}>

@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\ChatMessage;
 use App\Models\SitePermission;
 use App\Models\User;
+use App\Support\Plans;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -49,15 +50,23 @@ class SiteRolesTest extends TestCase
 
     public function test_the_roles_come_in_the_agreed_order_groups_icons_and_names(): void
     {
-        $actual = array_map(fn (Role $r) => [$r->value, $r->icon(), $r->label(), $r->group()], Role::cases());
+        $describe = fn (array $roles) => array_map(fn (Role $r) => [$r->value, $r->icon(), $r->label(), $r->group()], array_values($roles));
+        $list = $this->list();
 
-        $this->assertSame($this->list(), $actual);
+        $this->assertSame($list, $describe(Role::manual()));
+        $this->assertSame(array_slice($list, 0, -1), $describe(Role::assignable()));
+
+        // the six subscription roles come with a plan, highest plan first: below every role somebody is given, above the plain User
+        $subscriptions = [['premium', '💎', 'Premium', 'community'], ['pro', '💎', 'Pro', 'community'], ['plus', '💎', 'Plus', 'community'], ['gold', '💎', 'Gold', 'community'], ['silver', '💎', 'Silver', 'community'], ['bronze', '💎', 'Bronze', 'community']];
+        $this->assertSame([...array_slice($list, 0, -1), ...$subscriptions, ...array_slice($list, -1)], $describe(Role::cases()));
+        $this->assertSame(array_reverse(array_keys(Plans::TIERS)), array_column($subscriptions, 0), 'named like the plans, the highest first');
+
         $this->assertSame(['staff', 'staff2', 'creator', 'community'], array_keys(Role::GROUPS));
         $this->assertSame('🛡️', Role::GROUPS['staff']['icon']);
         $this->assertSame('Creator / Contributor', Role::GROUPS['creator']['label']);
         $this->assertSame('Community / Status', Role::GROUPS['community']['label']);
         $this->assertNull(Role::tryFrom('content_creator'));
-        $this->assertCount(18, array_unique(array_map(fn (Role $r) => $r->color(), Role::cases())), 'every role has its own colour');
+        $this->assertCount(24, array_unique(array_map(fn (Role $r) => $r->color(), Role::cases())), 'every role has its own colour');
     }
 
     public function test_the_permissions_tab_lists_every_role_in_that_order_with_its_group(): void
@@ -69,7 +78,7 @@ class SiteRolesTest extends TestCase
             ->component('Admin')
             ->where('roleGroups', fn ($groups) => $groups->keys()->all() === ['staff', 'staff2', 'creator', 'community'])
             ->where('matrix.roles', fn ($roles) => $roles->pluck('key')->all() === $keys
-                && $roles->last() === ['key' => 'member', 'label' => 'User', 'color' => '#a3a3a3', 'rank' => 17, 'icon' => '👤', 'group' => 'community'])
+                && $roles->last() === ['key' => 'member', 'label' => 'User', 'color' => '#a3a3a3', 'rank' => 23, 'icon' => '👤', 'group' => 'community'])
             ->where('roleOptions', fn ($roles) => $roles->pluck('key')->all() === $withoutUser)
             ->where('assignable', fn ($roles) => $roles->pluck('key')->all() === $withoutUser));
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,11 +24,18 @@ class DeveloperController extends Controller
         $me = $request->user();
         $tokens = fn (User $u) => $u->tokens()->latest()->get(['id', 'name', 'last_used_at', 'created_at']);
 
+        // the live address is for everybody; the two of a copy on your own computer (php artisan serve) are for the Owner alone
+        $addresses = [['Live site', 'https://sfd-dj.eu/api/v1']];
+        if (AvatarController::holds($me, Role::Owner)) {
+            array_push($addresses, ['Your own computer', 'http://127.0.0.1:8000/api/v1'], ['Your own computer', 'http://localhost:8000/api/v1']);
+        }
+
         return Inertia::render('Settings/Developers', [
             'tokens' => $tokens($me),
             'bots' => $me->bots()->get()->map(fn (User $b) => $b->only('id', 'name', 'username') + ['tokens' => $tokens($b)])->values(),
             'newToken' => session('new_token'), // shown once, right after it was made
             'api' => url('/api/v1'),
+            'addresses' => $addresses,
         ]);
     }
 

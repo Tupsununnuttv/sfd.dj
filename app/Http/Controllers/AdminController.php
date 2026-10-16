@@ -235,7 +235,7 @@ class AdminController extends Controller
         return back();
     }
 
-    /** Give somebody Plus or Premium by hand (for a month, a year or for good), or take it away. A plan paid through Stripe is run by Stripe: staff only see it. */
+    /** Give somebody a plan (Bronze to Premium) by hand (for a month, a year or for good), or take it away. A plan paid through Stripe is run by Stripe: staff only see it. */
     public function updatePlan(Request $request, User $user): RedirectResponse
     {
         $this->allow($request, 'users.manage');

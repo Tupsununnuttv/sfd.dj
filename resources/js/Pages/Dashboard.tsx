@@ -183,7 +183,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                         <div className="flex flex-wrap gap-2">
                             {daily?.claimable && <button onClick={() => router.post(route('shop.daily'), {}, { preserveScroll: true })} data-daily className="flex items-center gap-2 rounded-lg bg-linear-to-r from-amber-400 to-amber-500 px-5 py-2.5 text-sm font-bold text-amber-950 shadow-lg shadow-amber-500/20 hover:from-amber-300 hover:to-amber-400"><CoinIcon className="h-4 w-4" /> Claim {daily.amount} daily coins</button>}
                             <button onClick={() => setCreating(true)} className="flex items-center gap-2 rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold hover:opacity-90"><Plus size={16} /> Create room</button>
-                            {live[0] && <Link href={route('rooms.show', live[0].slug)} className="flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2.5 text-sm font-semibold hover:bg-white/20"><Radio size={16} /> Jump into {live[0].name}</Link>}
+                            {live[0] && <Link href={route('rooms.show', live[0].slug)} data-room-name={live[0].name} className="flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2.5 text-sm font-semibold hover:bg-white/20"><Radio size={16} /> Jump into {live[0].name}</Link>}
                             {rooms.length > 1 && <button onClick={surprise} className="flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2.5 text-sm font-semibold hover:bg-white/20"><Shuffle size={16} /> Surprise me</button>}
                         </div>
                         {stats && (
@@ -208,7 +208,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
             )}
 
             {!guest && resume && (
-                <Link href={route('rooms.show', resume.slug)} className="group flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/4 px-5 py-4 transition hover:border-violet-400/60">
+                <Link href={route('rooms.show', resume.slug)} data-room-name={resume.name} className="group flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/4 px-5 py-4 transition hover:border-violet-400/60">
                     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-fuchsia-500/30 to-violet-500/30 text-violet-200"><Radio size={19} /></span>
                     <span className="min-w-0 flex-1"><span className="block text-xs font-bold uppercase tracking-wider text-neutral-500">Pick up where you left off</span><span className="block truncate font-semibold">{resume.name}{resume.genre && <span className="font-normal text-neutral-500"> · {resume.genre}</span>} <span className="font-normal text-neutral-500">· you were there {ago(resume.at)}</span></span></span>
                     <span className="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold group-hover:bg-white/20">Rejoin →</span>
@@ -252,7 +252,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                             <SectionTitle title="✨ Picked for you" hint={recommended.reason} />
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                                 {recommended.rooms.map((r) => (
-                                    <Link key={r.id} href={route('rooms.show', r.slug)} className="rounded-2xl border border-white/10 bg-white/4 p-4 transition hover:border-violet-400/60">
+                                    <Link key={r.id} href={route('rooms.show', r.slug)} data-room-name={r.name} className="rounded-2xl border border-white/10 bg-white/4 p-4 transition hover:border-violet-400/60">
                                         <p className="truncate font-bold">{r.name}</p>
                                         <p className="mt-1 text-xs text-neutral-500">{r.genre ?? 'No genre'}</p>
                                         <p className={`mt-3 text-xs ${(counts[r.id] ?? r.listening) > 0 ? 'text-green-400' : 'text-neutral-500'}`}>● {counts[r.id] ?? r.listening} listening</p>

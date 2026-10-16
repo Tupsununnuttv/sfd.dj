@@ -46,7 +46,7 @@ const badges: [string, string][] = [['Owner', '#f43f5e'], ['Admin', '#ef4444'], 
 const questions: [string, string][] = [
     ['Do I need an account?', 'Not to look around. As a guest you can open rooms, watch what is playing and read the chat. To chat, vote or DJ you need a free account.'],
     ['Where does the music come from?', 'Songs play through the official YouTube player. Paste a YouTube, SoundCloud or Spotify link and SFD-DJ.EU finds the song for you.'],
-    ['Is it really free?', 'Yes. Rooms, chat, playlists, the avatar shop and the API stay free. Plus and Premium are optional upgrades; nothing free becomes paid.'],
+    ['Is it really free?', 'Yes. Rooms, chat, playlists, the avatar shop and the API stay free. The Bronze, Silver, Gold, Plus, Pro and Premium subscriptions are optional upgrades; nothing free becomes paid.'],
     ['Can I make my own room?', 'Yes. Pick a name and a genre, set the rules, give roles to friends, or make it private.'],
 ];
 

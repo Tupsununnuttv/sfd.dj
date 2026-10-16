@@ -363,4 +363,31 @@ class CharacterTest extends TestCase
         $this->assertSame('char:fox', $owner->refresh()->character);
         $this->assertTrue($owner->items()->where('item', 'char:fox')->exists());
     }
+
+    public function test_adam_and_mochi_are_a_common_character_for_everybody_from_level_3(): void
+    {
+        $shelf = fn (User $user) => collect($this->actingAs($user)->get('/shop')->inertiaProps('catalog.avatar'))->keyBy('key');
+
+        // on the Common shelf (levels 1 to 3) for everybody, no role needed; level 3 costs 80 SFD Coins
+        $this->assertSame(
+            ['key' => 'char:adammochi', 'label' => 'Adam & Mochi', 'icon' => null, 'level' => 3, 'rarity' => 'common', 'price' => 80, 'owned' => false, 'character' => true],
+            $shelf($this->withRole(null))['char:adammochi'],
+        );
+
+        $low = $this->atLevel(2);
+        $low->forceFill(['coins' => 500])->save();
+        $this->actingAs($low)->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:adammochi']]])->assertSessionHasErrors('items.0.key'); // level 3
+
+        $user = $this->atLevel(3);
+        $user->forceFill(['coins' => 500])->save();
+        $this->actingAs($user)->post('/shop/equip', ['avatar' => 'char:adammochi'])->assertSessionHasErrors('avatar'); // has to be bought first
+        $this->actingAs($user)->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:adammochi']]])->assertSessionHasNoErrors();
+        $this->actingAs($user)->post('/shop/equip', ['avatar' => 'char:adammochi'])->assertSessionHasNoErrors();
+        $this->assertSame('char:adammochi', $user->refresh()->character);
+        $this->assertSame(420, $user->coins);
+
+        foreach (['standing', 'dancing', 'djing'] as $state) {
+            $this->get("/characters/{$state}/adammochi")->assertOk();
+        }
+    }
 }

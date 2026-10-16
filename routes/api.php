@@ -3,6 +3,7 @@
 use App\Http\Controllers\ApiController;
 use App\Http\Controllers\BotPresenceController;
 use App\Http\Controllers\DiscordBotController;
+use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\RoomModerationController;
 use App\Http\Controllers\RoomRoleController;
@@ -26,9 +27,27 @@ Route::get('/discord/announcements', [DiscordBotController::class, 'announcement
     ->middleware('throttle:60,1')
     ->name('api.discord.announcements');
 
+// The front door and the price list need no token: a tool can check the address, the version and the limits, and show the plans.
+Route::get('/v1', [ApiController::class, 'root'])->middleware('throttle:60,1')->name('api.v1.root');
+Route::get('/v1/plans', [ApiController::class, 'plans'])->middleware('throttle:60,1')->name('api.v1.plans');
+
 Route::prefix('v1')->name('api.v1.')->middleware([BlockBannedIps::class, 'auth:sanctum', MaintenanceMode::class, 'throttle:120,1', EnsureRoomAccess::class])->group(function () {
     Route::get('/me', [ApiController::class, 'me'])->name('me');
     Route::get('/users/{user}', [UserProfileController::class, 'card'])->name('users.show');
+    Route::get('/characters', [ApiController::class, 'characters'])->name('characters');
+
+    // your playlists: the same controller as the Playlists page, so the same rules (the limit of your plan, only your own lists)
+    Route::get('/playlists', [PlaylistController::class, 'list'])->name('playlists');
+    Route::post('/playlists', [PlaylistController::class, 'store'])->name('playlists.store');
+    Route::get('/playlists/{playlist}', [PlaylistController::class, 'show'])->name('playlists.show');
+    Route::patch('/playlists/{playlist}', [PlaylistController::class, 'update'])->name('playlists.update');
+    Route::delete('/playlists/{playlist}', [PlaylistController::class, 'destroy'])->name('playlists.destroy');
+    Route::post('/playlists/{playlist}/activate', [PlaylistController::class, 'activate'])->name('playlists.activate');
+    Route::put('/playlists/{playlist}/order', [PlaylistController::class, 'order'])->middleware('throttle:60,1')->name('playlists.order');
+    Route::post('/playlists/{playlist}/shuffle', [PlaylistController::class, 'shuffle'])->middleware('throttle:30,1')->name('playlists.shuffle');
+    Route::post('/playlists/{playlist}/songs', [PlaylistController::class, 'addSong'])->middleware('throttle:60,1')->name('playlists.songs.add');
+    Route::delete('/playlists/{playlist}/songs/{song}', [PlaylistController::class, 'removeSong'])->name('playlists.songs.remove');
+    Route::post('/playlists/{playlist}/import', [PlaylistController::class, 'import'])->middleware('throttle:6,1')->name('playlists.import');
 
     Route::get('/rooms', [ApiController::class, 'rooms'])->name('rooms');
     Route::get('/rooms/{room}', [ApiController::class, 'room'])->name('room');
@@ -43,6 +62,7 @@ Route::prefix('v1')->name('api.v1.')->middleware([BlockBannedIps::class, 'auth:s
     Route::post('/rooms/{room}/announce', [RoomController::class, 'announce'])->name('announce');
 
     Route::post('/rooms/{room}/queue', [RoomController::class, 'enqueue'])->name('queue.add');
+    Route::post('/rooms/{room}/queue-playlist', [RoomController::class, 'queuePlaylist'])->name('queue.playlist');
     Route::delete('/rooms/{room}/queue/{item}', [RoomController::class, 'removeItem'])->name('queue.remove');
     Route::delete('/rooms/{room}/waitlist', [RoomController::class, 'leaveWaitlist'])->name('waitlist.leave');
     Route::patch('/rooms/{room}/waitlist-settings', [RoomController::class, 'waitlistSettings'])->name('waitlist.settings');

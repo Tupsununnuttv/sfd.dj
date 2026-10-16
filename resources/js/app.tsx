@@ -1,5 +1,6 @@
 import '../css/app.css';
 
+import RoomLoading from '@/Components/RoomLoading';
 import { embedded } from '@/lib/embed';
 import { applyMotion } from '@/lib/motion';
 import { PageProps } from '@/types';
@@ -48,7 +49,7 @@ createInertiaApp({
 
         const root = createRoot(el);
 
-        root.render(<App {...props} />);
+        root.render(<><App {...props} /><RoomLoading /></>);
     },
     progress: {
         color: '#4B5563',
