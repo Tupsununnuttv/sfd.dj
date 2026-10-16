@@ -11,6 +11,7 @@ use App\Http\Controllers\DonationController;
 use App\Http\Controllers\EmoteController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FriendController;
+use App\Http\Controllers\LiveController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\MyStuffController;
 use App\Http\Controllers\PlaylistController;
@@ -28,6 +29,7 @@ use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\WhisperController;
+use App\Http\Controllers\WhisperGroupController;
 use App\Http\Controllers\YouTubeController;
 use App\Http\Middleware\EnsureRoomAccess;
 use App\Http\Middleware\VerifiedIfLoggedIn;
@@ -87,6 +89,7 @@ Route::get('/characters/{state}/{name}', [AvatarController::class, 'character'])
 // Pages guests may look at (nobody has to register to browse). Anyone logged in still needs a verified email.
 Route::middleware(VerifiedIfLoggedIn::class)->group(function () {
     Route::get('/dashboard', [RoomController::class, 'index'])->name('dashboard');
+    Route::get('/live', [LiveController::class, 'index'])->name('live');
     Route::get('/rooms/{room}', [RoomController::class, 'show'])->name('rooms.show');
     Route::get('/rooms/{room}/members', [RoomController::class, 'members'])->middleware('throttle:60,1')->name('rooms.members');
     Route::get('/history', [RoomController::class, 'history'])->name('history');
@@ -138,6 +141,18 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::post('/api/whispers', [WhisperController::class, 'send'])->middleware('throttle:30,1')->name('api.whispers.send');
     Route::post('/api/whispers/voice', [WhisperController::class, 'voice'])->middleware('throttle:10,1')->name('api.whispers.voice');
     Route::get('/api/whispers/{whisper}/audio', [WhisperController::class, 'audio'])->name('api.whispers.audio');
+
+    // whisper groups: messages are sent through api.whispers.send / api.whispers.voice with a group_id
+    Route::prefix('api/whisper-groups')->name('api.whisper-groups.')->group(function () {
+        Route::get('/', [WhisperGroupController::class, 'index'])->name('index');
+        Route::post('/', [WhisperGroupController::class, 'store'])->middleware('throttle:10,1')->name('store');
+        Route::get('/friends', [WhisperGroupController::class, 'friends'])->name('friends');
+        Route::get('/{group}', [WhisperGroupController::class, 'show'])->whereNumber('group')->name('show');
+        Route::patch('/{group}', [WhisperGroupController::class, 'update'])->whereNumber('group')->name('update');
+        Route::post('/{group}/read', [WhisperGroupController::class, 'read'])->whereNumber('group')->name('read');
+        Route::post('/{group}/members', [WhisperGroupController::class, 'add'])->whereNumber('group')->middleware('throttle:30,1')->name('members.add');
+        Route::delete('/{group}/members/{user}', [WhisperGroupController::class, 'remove'])->whereNumber(['group', 'user'])->name('members.remove');
+    });
 
     Route::get('/my-stuff', [MyStuffController::class, 'index'])->name('my-stuff');
     Route::post('/events', [EventController::class, 'store'])->name('events.store');
@@ -204,6 +219,8 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::delete('/rooms/{room}/waitlist', [RoomController::class, 'leaveWaitlist'])->name('rooms.leave');
     Route::post('/rooms/{room}/duration', [RoomController::class, 'updateDuration'])->name('rooms.duration');
     Route::post('/rooms/{room}/skip', [RoomController::class, 'skip'])->name('rooms.skip');
+    Route::post('/rooms/{room}/live', [RoomController::class, 'goLive'])->middleware('throttle:10,1')->name('rooms.live.start');
+    Route::delete('/rooms/{room}/live', [RoomController::class, 'endLive'])->name('rooms.live.end');
     Route::post('/rooms/{room}/vote', [RoomController::class, 'vote'])->name('rooms.vote');
     Route::post('/rooms/{room}/kick/{user}', [RoomController::class, 'kick'])->name('rooms.kick');
     Route::post('/rooms/{room}/ban/{user}', [RoomController::class, 'ban'])->name('rooms.ban');

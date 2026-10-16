@@ -4,13 +4,13 @@ import Badges from '@/Components/Badges';
 import { VERSION } from '@/lib/patchNotes';
 import ContextMenu, { MenuAnchor, MenuItem } from '@/Components/ContextMenu';
 import PeekCard from '@/Components/PeekCard';
-import { EMOTE_TOKEN, EmoteInfo, emoteUrl, parseToken, tokenOf, useGlobalEmotes } from '@/lib/emotes';
+import { EMOTE_TOKEN, EmoteInfo, emoteUrl, parseToken, useGlobalEmotes, withEmoteTokens } from '@/lib/emotes';
 import RoleBadge from '@/Components/RoleBadge';
 import { CardUser } from '@/Components/UserCard';
 import { getJson, post, send, sendJson, upload } from '@/lib/post';
 import { RoleInfo } from '@/types';
 import { Link } from '@inertiajs/react';
-import { AtSign, Check, Copy, Ellipsis, MessageCircle, Reply, Trash2, UserRound, X } from 'lucide-react';
+import { AtSign, Check, Copy, Ellipsis, MessageCircle, Reply, Send, Trash2, UserRound, X } from 'lucide-react';
 import { FormEvent, MouseEvent, ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export interface ChatMessageData {
@@ -47,13 +47,13 @@ const EMOJIS: Record<string, string[]> = {
 
 const systemIcon: Record<string, string> = {
     grab: '💾', kick: '🥾', ban: '🔨', promote: '⬆️', demote: '⬇️', skip: '⏭️',
-    remove: '🗑️', leave: '🚪', exit: '🚪', woot: '👍', meh: '👎', join: '👋', announcement: '📣', broadcast: '📢', welcome: '🎉', mute: '🔇', waitlist: '🔒', ended: '⏹️', donation: '💖',
+    remove: '🗑️', leave: '🚪', exit: '🚪', woot: '👍', meh: '👎', join: '👋', announcement: '📣', broadcast: '📢', welcome: '🎉', mute: '🔇', waitlist: '🔒', ended: '⏹️', donation: '💖', live: '🔴',
 };
 
 // every kind of system line has its own colour (full class names, so Tailwind keeps them)
 const systemTone: Record<string, string> = {
     join: 'text-emerald-400', promote: 'text-emerald-400', leave: 'text-orange-400', demote: 'text-orange-400', waitlist: 'text-sky-400',
-    ended: 'text-cyan-300', skip: 'text-yellow-400', remove: 'text-rose-400', grab: 'text-pink-400', exit: 'text-neutral-500', woot: 'text-lime-400', meh: 'text-rose-400', kick: 'text-red-400', ban: 'text-red-500', mute: 'text-fuchsia-400', donation: 'text-pink-300',
+    ended: 'text-cyan-300', skip: 'text-yellow-400', remove: 'text-rose-400', grab: 'text-pink-400', exit: 'text-neutral-500', woot: 'text-lime-400', meh: 'text-rose-400', kick: 'text-red-400', ban: 'text-red-500', mute: 'text-fuchsia-400', donation: 'text-pink-300', live: 'text-red-400',
 };
 
 export function RoomNotifications({ notifications, onDismiss }: {
@@ -85,20 +85,40 @@ type Picker = 'emoji' | 'gif' | 'sticker' | 'room' | 'bttv' | '7tv' | null;
 
 const SPLIT = new RegExp(`(${EMOTE_TOKEN}|:[a-z0-9_]{2,20}:)`);
 
-/** Replace :name: with the room's custom emoji image, and :bttv:ID: / :7tv:ID: with that emote. */
-function withEmojis(body: string, emojis: RoomEmojiData[]): ReactNode[] {
+/** Replace :name: with the room's custom emoji image, and :bttv:ID: / :7tv:ID: with that emote (`emoteSize` is the height class of an emote; a quote uses a smaller one). */
+export function withEmojis(body: string, emojis: RoomEmojiData[], emoteSize = 'h-7'): ReactNode[] {
     return body.split(SPLIT).map((part, i) => {
         if (new RegExp(`^${EMOTE_TOKEN}$`).test(part)) {
             const { source, id } = parseToken(part);
-            return <img key={i} src={emoteUrl(source, id)} alt="emote" title={source === 'bttv' ? 'BetterTTV emote' : '7TV emote'} loading="lazy" className="mx-0.5 inline h-7 w-auto max-w-20 align-middle" />;
+            return <img key={i} src={emoteUrl(source, id)} alt="emote" title={source === 'bttv' ? 'BetterTTV emote' : '7TV emote'} loading="lazy" className={`mx-0.5 inline ${emoteSize} w-auto max-w-20 align-middle`} />;
         }
         const e = emojis.find((x) => `:${x.name}:` === part);
         return e ? <img key={i} src={e.url} alt={part} title={part} className="mx-0.5 inline h-6 w-6 align-middle" /> : part;
     });
 }
 
+/** The emoji grid in its categories: click one to hand it to `onPick`. Chat and whispers share it. */
+export function EmojiPicker({ onPick }: { onPick: (emoji: string) => void }) {
+    const [tab, setTab] = useState('Smileys');
+
+    return (
+        <>
+            <div className="mb-2 flex gap-1 overflow-x-auto text-xs">
+                {Object.keys(EMOJIS).map((k) => (
+                    <button key={k} type="button" onClick={() => setTab(k)} className={`rounded px-2 py-1 ${tab === k ? 'bg-violet-600/30 text-violet-200' : 'text-neutral-400 hover:text-white'}`}>{k}</button>
+                ))}
+            </div>
+            <div className="grid grid-cols-8 gap-1 text-xl">
+                {EMOJIS[tab].map((e) => (
+                    <button key={e} type="button" onClick={() => onPick(e)} className="rounded hover:bg-neutral-800">{e}</button>
+                ))}
+            </div>
+        </>
+    );
+}
+
 /** BetterTTV (global set) or 7TV (global set + search): click an emote to put its name in the message. */
-function EmotePicker({ source, onPick }: { source: 'bttv' | '7tv'; onPick: (e: EmoteInfo) => void }) {
+export function EmotePicker({ source, onPick, gridClass = 'max-h-56' }: { source: 'bttv' | '7tv'; onPick: (e: EmoteInfo) => void; gridClass?: string }) {
     const globals = useGlobalEmotes();
     const [q, setQ] = useState('');
     const [found, setFound] = useState<EmoteInfo[] | null>(null);
@@ -126,7 +146,7 @@ function EmotePicker({ source, onPick }: { source: 'bttv' | '7tv'; onPick: (e: E
             {error && <p className="text-xs text-amber-300">{error}</p>}
             {globals === null && <p className="text-xs text-neutral-500">Loading emotes…</p>}
             {globals !== null && all.length === 0 && !found && <p className="text-xs text-neutral-500">Could not load the emote list right now.</p>}
-            <div className="grid max-h-56 grid-cols-7 gap-1 overflow-y-auto">
+            <div className={`grid ${gridClass} grid-cols-7 gap-1 overflow-y-auto`}>
                 {list.map((e) => (
                     <button key={e.id} onClick={() => onPick(e)} title={e.name} className="flex h-10 items-center justify-center rounded hover:bg-neutral-800">
                         <img src={emoteUrl(e.source, e.id)} alt={e.name} loading="lazy" className="max-h-8 max-w-full object-contain" />
@@ -258,7 +278,6 @@ export default function ChatPanel({
     const [text, setText] = useState('');
     const [replyTo, setReplyTo] = useState<ChatMessageData | null>(null);
     const [picker, setPicker] = useState<Picker>(null);
-    const [emojiTab, setEmojiTab] = useState('Smileys');
     const [menu, setMenu] = useState<{ m: ChatMessageData; anchor: MenuAnchor; row: DOMRect } | null>(null); // the open message menu
     const [copied, setCopied] = useState(false);
     const [peek, setPeek] = useState<{ user: CardUser; anchor: DOMRect } | null>(null); // the preview shown while the mouse rests on a name or picture
@@ -343,15 +362,12 @@ export default function ChatPanel({
         const whisper = typed.match(/^\/(?:w|whisper)\s+@?(\w+)\s+([\s\S]+)$/i);
         if (whisper) {
             setText('');
-            sendJson('POST', route('api.whispers.send'), { username: whisper[1], body: whisper[2] })
+            sendJson('POST', route('api.whispers.send'), { username: whisper[1], body: withEmoteTokens(whisper[2], globals, picked) })
                 .then(() => { setNotice(`Whispered to ${whisper[1]}.`); setError(''); })
                 .catch((err: Error) => { setText(typed); setNotice(''); setError(err.message); });
             return;
         }
-        // turn emote names into the tokens everyone's chat understands
-        const known = new Map<string, EmoteInfo>([...(globals?.bttv ?? []), ...(globals?.['7tv'] ?? [])].map((x) => [x.name, x]));
-        Object.values(picked).forEach((x) => known.set(x.name, x));
-        const body = typed.split(/(\s+)/).map((w) => (known.has(w) ? tokenOf(known.get(w)!) : w)).join('');
+        const body = withEmoteTokens(typed, globals, picked); // emote names become the tokens everyone's chat understands
         setText('');
         post(route('rooms.message', slug), { body, ...extra() }).then(sent).catch((err) => { setText(typed); fail(err); });
     };
@@ -496,20 +512,7 @@ export default function ChatPanel({
             <div className="relative shrink-0 border-t border-neutral-800 p-3">
                 {picker && (
                     <div className="absolute bottom-full left-2 right-2 mb-1 max-h-80 overflow-y-auto rounded-xl border border-neutral-700 bg-neutral-900 p-3 shadow-xl">
-                        {picker === 'emoji' && (
-                            <>
-                                <div className="mb-2 flex gap-1 overflow-x-auto text-xs">
-                                    {Object.keys(EMOJIS).map((k) => (
-                                        <button key={k} onClick={() => setEmojiTab(k)} className={`rounded px-2 py-1 ${emojiTab === k ? 'bg-violet-600/30 text-violet-200' : 'text-neutral-400 hover:text-white'}`}>{k}</button>
-                                    ))}
-                                </div>
-                                <div className="grid grid-cols-8 gap-1 text-xl">
-                                    {EMOJIS[emojiTab].map((e) => (
-                                        <button key={e} onClick={() => setText((t) => t + e)} className="rounded hover:bg-neutral-800">{e}</button>
-                                    ))}
-                                </div>
-                            </>
-                        )}
+                        {picker === 'emoji' && <EmojiPicker onPick={(e) => setText((t) => t + e)} />}
                         {picker === 'gif' && <GifPicker onPick={sendGif} />}
                         {(picker === 'bttv' || picker === '7tv') && (
                             <EmotePicker
@@ -563,15 +566,17 @@ export default function ChatPanel({
                     <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(e) => sendImage(e.target.files?.[0])} />
                 </div>
 
-                <form onSubmit={submit}>
+                <form onSubmit={submit} className="flex gap-2">
                     <input
                         ref={inputBox}
                         value={text}
                         onChange={(e) => { setText(e.target.value); if (e.target.value) onType(); }}
                         maxLength={300}
-                        placeholder="Type a message and press Enter… (/w name to whisper)"
-                        className={input}
+                        placeholder="Message… (/w name to whisper)"
+                        className={`${input} min-w-0 flex-1`}
                     />
+                    {/* the mouse way to send (Enter works too); mouse-down is not let take the focus from the box, so you can go on typing */}
+                    <button type="submit" disabled={!text.trim()} onMouseDown={(e) => e.preventDefault()} aria-label="Send message" title="Send (Enter)" className="flex shrink-0 items-center justify-center rounded border border-violet-500/40 bg-violet-600/20 px-3 text-violet-300 transition hover:bg-violet-600 hover:text-white disabled:pointer-events-none disabled:border-neutral-700 disabled:bg-neutral-900 disabled:text-neutral-600"><Send size={16} /></button>
                 </form>
             </div>
             )}

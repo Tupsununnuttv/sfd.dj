@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -69,8 +70,9 @@ class User extends Authenticatable implements MustVerifyEmail
                 : (AvatarController::starterCharacter() ?? 'char:foxy');
         });
 
-        static::deleting(function (User $user) { // the account goes, its photo and the voice messages it sent or got too
+        static::deleting(function (User $user) { // the account goes, its photo and the voice messages it sent or got too; a group it owned goes to somebody else
             $user->clearAvatarImage();
+            $user->whisperGroups()->get()->each->release($user);
             Whisper::forgetAudioOf($user);
         });
 
@@ -406,6 +408,21 @@ class User extends Authenticatable implements MustVerifyEmail
     public function violations(): HasMany
     {
         return $this->hasMany(Violation::class)->latest();
+    }
+
+    /** The whisper groups this person is in (their share of each: `since_id`, `read_id`). */
+    public function whisperGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(WhisperGroup::class, 'whisper_group_user', 'user_id', 'group_id')->withPivot('since_id', 'read_id')->withTimestamps();
+    }
+
+    /** Whether `$from` may whisper to this person (or put them in a group): everyone, only friends or nobody is what they chose; staff can always reach people. */
+    public function takesWhispersFrom(User $from): bool
+    {
+        $mode = $this->pref('privacy.whispers', 'everyone');
+        $friends = fn () => Friendship::where('status', 'accepted')->where(fn ($q) => $q->where(['user_id' => $from->id, 'friend_id' => $this->id])->orWhere(fn ($w) => $w->where(['user_id' => $this->id, 'friend_id' => $from->id])))->exists();
+
+        return $from->is_staff || ! ($mode === 'nobody' || ($mode === 'friends' && ! $friends()));
     }
 
     /** Accepted friends as User models. */

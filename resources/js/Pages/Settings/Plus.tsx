@@ -54,7 +54,7 @@ export default function Plus({ plans, mine, manageable, payments, paid }: { plan
                     )}
                 </Card>
 
-                <div className="flex justify-center"><IntervalSwitch value={period} onChange={setPeriod} /></div>
+                <div className="flex justify-center"><IntervalSwitch value={period} onChange={setPeriod} plans={plans} /></div>
 
                 <PlanCards
                     plans={plans}

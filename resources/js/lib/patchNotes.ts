@@ -3,6 +3,41 @@ export type Kind = 'new' | 'improved' | 'fixed';
 
 export const releases: { version: string; title: string; notes: [Kind, string][] }[] = [
     {
+        version: '1.65',
+        title: 'Live streams',
+        notes: [
+            ['new', 'Live streams. Stream your own songs and music on the big screen of a room: start a stream on YouTube, Twitch or Kick, press Go live in the room\'s menu (the host has it; other people need the new room right "Go live", which Co-Hosts get), paste the link and give it a title. Everybody in the room, guests too, sees it at once, with a red Live mark, and the chat goes on beside it. The same controls are in Room settings → Live stream.'],
+            ['new', 'A Live streams page in the menu lists every room that is live now, with the title, who streams and how many watch, and a number in the menu shows how many are on. The room cards on the dashboard and the home page get a red Live mark.'],
+            ['improved', 'While a stream is on, the songs in the waitlist wait (their clock stops) and Woot, Meh and Grab rest; when it ends they go on where they stopped. The host, Co-Hosts and moderators can end a stream, and one nobody ended stops after 24 hours. The room\'s moderation log and chat say when a stream starts and ends.'],
+        ],
+    },
+    {
+        version: '1.64',
+        title: 'New subscription prices',
+        notes: [
+            ['improved', 'New prices for the subscriptions. By the month: Bronze €2.99, Silver €4.49, Gold €6.99, Plus €9.99, Pro €14.99 and Premium €20.99. By the year: Bronze €19.99, Silver €29.99, Gold €39.99, Plus €59.99, Pro €79.99 and Premium €99.99, which is 44% to 60% less than twelve months.'],
+            ['improved', 'The Pricing page and Settings → Subscriptions say how many percent each plan saves when you pay by the year, instead of "2 months free".'],
+        ],
+    },
+    {
+        version: '1.63',
+        title: 'Group whispers',
+        notes: [
+            ['new', 'Groups in Whispers. Press the group button next to the search box, give the group a name and tick the friends to put in it. Up to 20 people, you included, and only your friends can be added. Everybody in the group gets what is written, live, with the writer\'s name over it. Emojis, emotes, replies and voice messages work in a group just like in a whisper to one person.'],
+            ['new', 'The owner of a group can add more friends, take people out and rename it (open People at the top of the group). Anybody can leave. When the owner leaves, the person who has been in the group the longest takes over, and a group with nobody left is gone. Somebody who joins later does not see what was written before they came.'],
+            ['improved', 'A send button, an arrow at the end of the text box, in the room chat and in Whispers, so you can send with the mouse as well as with Enter. In Whispers it stays next to the microphone while the box is empty.'],
+            ['improved', 'The red number on Whispers counts what groups have written too, and the pop-up and the browser notification say which group a whisper is from. Somebody who has set Privacy to whispers from nobody cannot be put in a group, and a group\'s name goes through the same checks as a message.'],
+        ],
+    },
+    {
+        version: '1.62',
+        title: 'Emojis, emotes and replies in Whispers',
+        notes: [
+            ['new', 'Emojis and emotes in Whispers. Press the smiley next to the text box and pick an emoji, a BetterTTV emote or a 7TV emote (search all of 7TV, like in a room\'s chat). Typing an emote\'s name works too: it turns into the emote when you send. They show in the conversation, in the list of conversations and in the reply, and /w username message in a room\'s chat can carry them as well.'],
+            ['new', 'Reply in Whispers. Point at a message and press the arrow next to it (on a phone it is always there): your next whisper, or voice message, quotes that message above it, so the other person sees what you are answering. Press ✕ above the text box to cancel.'],
+        ],
+    },
+    {
         version: '1.61',
         title: 'Voice messages, any Spotify playlist and Elementaarne',
         notes: [

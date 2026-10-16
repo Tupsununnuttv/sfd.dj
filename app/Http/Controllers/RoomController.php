@@ -27,6 +27,7 @@ use App\Services\Music;
 use App\Services\YouTube;
 use App\Support\Automod;
 use App\Support\LinkGuard;
+use App\Support\LiveStream;
 use App\Support\Presence;
 use App\Support\RoomCss;
 use App\Support\RoomPresence;
@@ -409,6 +410,55 @@ class RoomController extends Controller
         return response()->noContent();
     }
 
+    /**
+     * Put a live stream on the big screen instead of the DJs (`url`: a YouTube, Twitch or Kick stream), or switch to another one. Everybody in the room, guests too,
+     * sees it at once and the chat tells them. The songs in the waitlist wait until the stream ends.
+     */
+    public function goLive(Request $request, Room $room): Response
+    {
+        $me = $request->user();
+        abort_unless($room->can($me, 'go_live'), 403);
+
+        $data = $request->validate([
+            'url' => ['required', 'string', 'max:300'],
+            'title' => ['nullable', 'string', 'max:80', new NoOtherSites],
+        ]);
+
+        $stream = LiveStream::parse($data['url']);
+        if (! $stream) {
+            throw ValidationException::withMessages(['url' => 'Paste the link of a YouTube, Twitch or Kick live stream. For YouTube it is the address of the live video (youtube.com/watch?v=… or youtube.com/live/…), not the name of the channel.']);
+        }
+
+        $title = trim((string) ($data['title'] ?? ''));
+        if ($why = WordGuard::check($title)) {
+            throw ValidationException::withMessages(['title' => $why]);
+        }
+
+        $starting = ! $room->liveNow();
+        $room->goLive($me, $stream, $title);
+        $starting && ChatMessage::system($room, 'live', "{$me->name} is live: {$room->live['title']}", $me);
+        $room->log($me, 'live', null, $room->live['title']);
+        PlaybackUpdated::dispatch($room->refresh());
+
+        return response()->noContent();
+    }
+
+    /** The stream is over: the host and the others who may go live end it, and so can the moderators (a stream that should not be on is taken off at once). */
+    public function endLive(Request $request, Room $room): Response
+    {
+        $me = $request->user();
+        abort_unless($room->can($me, 'go_live') || $room->can($me, 'moderate_users'), 403);
+
+        if ($room->live) {
+            $room->endLive();
+            ChatMessage::system($room, 'live', 'The live stream has ended', $me);
+            $room->log($me, 'live_end');
+            PlaybackUpdated::dispatch($room->refresh());
+        }
+
+        return response()->noContent();
+    }
+
     /** Text, and optionally a sticker, a Tenor GIF and/or a reply to an earlier message. */
     public function message(Request $request, Room $room): Response
     {
@@ -738,6 +788,11 @@ class RoomController extends Controller
         // ponytail: "ended" is client-reported and cannot be verified; compare against the stored duration if it gets abused
         if (! $ended && ! $room->can($request->user(), 'skip') && $song?->user_id !== $request->user()->id) {
             abort(403);
+        }
+
+        // while a live stream is on the big screen nobody hears the songs: no "ended" report counts
+        if ($ended && $room->liveNow()) {
+            return response()->noContent();
         }
 
         // Several clients report "ended" at once; only the first one for the current song counts.

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\Plans;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -143,13 +144,19 @@ class PlansTest extends TestCase
     public function test_the_pages_show_the_plans_and_their_prices(): void
     {
         config(['services.stripe.secret' => null]);
-        $this->assertSame('€0.99', Plans::catalog()[0]['month']);
-        $this->assertSame('€2.99', Plans::catalog()[3]['month']);
-        $this->assertSame('€59.99', Plans::catalog()[5]['year']);
+
+        // the price list as the owner set it, in euro cents: [month, year]
+        $this->assertSame(
+            ['bronze' => [299, 1999], 'silver' => [449, 2999], 'gold' => [699, 3999], 'plus' => [999, 5999], 'pro' => [1499, 7999], 'premium' => [2099, 9999]],
+            collect(Plans::TIERS)->map(fn ($tier) => [$tier['month'], $tier['year']])->all(),
+        );
+        $this->assertSame('€2.99', Plans::catalog()[0]['month']);
+        $this->assertSame('€9.99', Plans::catalog()[3]['month']);
+        $this->assertSame('€99.99', Plans::catalog()[5]['year']);
 
         $this->get('/pricing')->assertInertia(fn (Assert $page) => $page->component('Site/Pricing')
             ->where('plans', fn ($plans) => $plans->pluck('key')->all() === ['bronze', 'silver', 'gold', 'plus', 'pro', 'premium'])
-            ->where('plans.3.month', '€2.99')->where('plans.3.year', '€29.99'));
+            ->where('plans.3.month', '€9.99')->where('plans.3.year', '€59.99')->where('plans.3.save', 50));
 
         $me = User::factory()->create();
         $this->actingAs($me)->get('/settings/plus')->assertInertia(fn (Assert $page) => $page->component('Settings/Plus')->where('mine', null)->where('payments', false)->has('plans', 6));
@@ -165,7 +172,8 @@ class PlansTest extends TestCase
             foreach (['month', 'xp', 'playlists', 'songs', 'emojis'] as $what) {
                 $this->assertGreaterThan($below[$what], $tier[$what], "{$key} gives more {$what} than the plan below it");
             }
-            $this->assertGreaterThan($tier['month'] * 9, $tier['year'], "{$key}: a year is about two months free");
+            $this->assertGreaterThan($below['year'] ?? 0, $tier['year'], "{$key}: a year costs more than the plan below it");
+            $this->assertGreaterThan($tier['month'], $tier['year'], "{$key}: a year costs more than a month");
             $this->assertLessThan($tier['month'] * 12, $tier['year'], "{$key}: a year costs less than twelve months");
             $below = $tier;
         }
@@ -187,19 +195,23 @@ class PlansTest extends TestCase
         Http::assertSent(fn (Request $r) => $r->url() === 'https://api.stripe.com/v1/checkout/sessions'
             && $r->hasHeader('Authorization', 'Bearer sk_test_123')
             && $r['mode'] === 'subscription'
-            && $r['line_items'][0]['price_data']['unit_amount'] === 5999
+            && $r['line_items'][0]['price_data']['unit_amount'] === 9999
             && $r['line_items'][0]['price_data']['recurring']['interval'] === 'year'
             && $r['line_items'][0]['price_data']['currency'] === 'eur'
             && $r['subscription_data']['metadata']['plan'] === 'premium'
             && $r['subscription_data']['metadata']['user_id'] === $me->id
             && $r['customer_email'] === $me->email);
 
-        // every plan is bought at its own price
+        // every plan is bought at its own price, by the month and by the year (twelve purchases in a row: the limit of ten a minute is not what is tested here)
+        $this->withoutMiddleware(ThrottleRequests::class);
         foreach (Plans::TIERS as $key => $tier) {
-            $this->actingAs($me)->post('/settings/plus/checkout', ['plan' => $key, 'interval' => 'month'])->assertRedirect('https://checkout.stripe.com/c/pay/cs_1');
-            Http::assertSent(fn (Request $r) => $r['subscription_data']['metadata']['plan'] === $key
-                && $r['line_items'][0]['price_data']['unit_amount'] === $tier['month']
-                && $r['line_items'][0]['price_data']['product_data']['name'] === "SFD-DJ.EU {$tier['name']}");
+            foreach (['month', 'year'] as $interval) {
+                $this->actingAs($me)->post('/settings/plus/checkout', ['plan' => $key, 'interval' => $interval])->assertRedirect('https://checkout.stripe.com/c/pay/cs_1');
+                Http::assertSent(fn (Request $r) => $r['subscription_data']['metadata']['plan'] === $key
+                    && $r['line_items'][0]['price_data']['recurring']['interval'] === $interval
+                    && $r['line_items'][0]['price_data']['unit_amount'] === $tier[$interval]
+                    && $r['line_items'][0]['price_data']['product_data']['name'] === "SFD-DJ.EU {$tier['name']}");
+            }
         }
 
         $this->actingAs($me)->post('/settings/plus/checkout', ['plan' => 'diamond', 'interval' => 'month'])->assertSessionHasErrors('plan');

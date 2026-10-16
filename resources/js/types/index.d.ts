@@ -62,6 +62,7 @@ export type PageProps<
     verification: { required: boolean; mail: boolean; status: string | null } | null;
     pendingFriends: number;
     unreadWhispers: number;
+    liveCount: number; // rooms with a live stream on (the number in the menu)
     community: Community;
     siteStats: { members: number; rooms: number; songs: number; listening: number } | null;
     recoveryCodes?: string[] | null;

@@ -104,6 +104,26 @@ const sections: Section[] = [
         ),
     },
     {
+        id: 'live',
+        icon: '📡',
+        title: 'Live streams',
+        summary: 'Stream your own music live on a room\'s big screen.',
+        body: (
+            <>
+                <P>A room can show a live stream on its big screen instead of the DJs: a YouTube, Twitch or Kick stream. Start the stream where you always do (OBS or your phone; only music? a still picture as the video works), then in your room press <b>Go live</b> in the menu on the left, paste the link and give it a title. Everybody in the room, guests too, sees it at once, and the chat goes on beside it. The same controls are in Room settings → Live stream.</P>
+                <List
+                    items={[
+                        <>Links that work: a YouTube live video (<K>youtube.com/watch?v=…</K> or <K>youtube.com/live/…</K>, not the channel's @name), <K>twitch.tv/yourname</K> and <K>kick.com/yourname</K>.</>,
+                        'The host can always go live. Other people need the room right “Go live” (Room settings → Roles): the Co-Host role has it.',
+                        'While a stream is on, the songs in the waitlist wait. When it ends they go on where they stopped, and a song that began meanwhile starts from the beginning. A stream nobody ended stops by itself after 24 hours.',
+                        'The host, the Co-Hosts and the moderators of the room can end a stream. The Live streams page in the menu lists every room that is live now, with the title, who streams and how many watch; the room cards show a red Live mark.',
+                    ]}
+                />
+                <Note>SFD-DJ.EU shows your stream, it does not make it: the picture and the sound come from YouTube, Twitch or Kick, so their rules apply too.</Note>
+            </>
+        ),
+    },
+    {
         id: 'playlists',
         icon: '📚',
         title: 'Playlists and importing',
@@ -150,7 +170,7 @@ const sections: Section[] = [
             <>
                 <List
                     items={[
-                        'Press Enter to send. Messages are up to 300 characters.',
+                        'Press Enter, or the arrow button at the end of the box, to send. Messages are up to 300 characters.',
                         'Under the box: emojis, GIFs (GIPHY), stickers, the room\'s own emojis, BetterTTV emotes, 7TV emotes and a picture button.',
                         'Point at a message for quick Reply and Copy buttons and a ⋯ menu (right-click works too): quick profile, reply, mention, whisper, copy the text or delete it (your own, or any if you moderate).',
                         'Room emojis are written like :name:. BetterTTV and 7TV emotes: click one in the picker, or type its exact name.',
@@ -159,7 +179,8 @@ const sections: Section[] = [
                     ]}
                 />
                 <H>Whispers</H>
-                <P>A whisper is a private message between two people. Open <b>Whispers</b> in the menu, or type <K>/w username message</K> in a room. Only the two of you can read it, and it arrives live.</P>
+                <P>A whisper is a private message between two people. Open <b>Whispers</b> in the menu, or type <K>/w username message</K> in a room. Only the two of you can read it, and it arrives live. The smiley next to the text box opens emojis, BetterTTV emotes and 7TV emotes, and the arrow next to a message replies to it.</P>
+                <P>A <b>group</b> is whispers for you and up to 19 friends together. Press the group button next to the search box in Whispers, name it and tick friends (only friends can be added). The owner can add friends, take people out and rename it from <b>People</b> at the top of the group; anybody can leave. Somebody who joins later does not see what was written before, and a person who takes whispers from nobody (Settings → Privacy) cannot be added.</P>
                 <P>System lines in italics tell you who joins and leaves the room, who woots, mehs and grabs a song, and about kicks, bans, mutes, role changes, skips, waitlist changes and announcements. The first line of the chat says which version of SFD-DJ.EU you are on. Settings → Appearance can switch the joins, leaves and votes off.</P>
             </>
         ),
@@ -290,7 +311,7 @@ curl -X POST ${origin()}/api/v1/rooms/my-room/messages \\
                                 ['POST / DELETE', '/rooms/{room}/mute/{user}', 'Mute (for: 10m, 1h, 24h, forever) / unmute'],
                                 ['PUT', '/rooms/{room}/members/{user}', 'room_role_id (or null): give or remove a room role'],
                                 ['GET', '/whispers, /whispers/{user}', 'Whisper conversations and one thread'],
-                                ['POST', '/whispers', 'user_id or username, and body'],
+                                ['POST', '/whispers', 'user_id, username or group_id, and body, optional reply_to_id'],
                             ].map(([method, path, what]) => (
                                 <tr key={method + path}>
                                     <td className="whitespace-nowrap px-3 py-2 font-mono text-violet-300">{method}</td>

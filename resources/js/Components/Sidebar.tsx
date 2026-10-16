@@ -13,13 +13,14 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { createContext, MouseEvent, useContext, useEffect, useRef, useState } from 'react';
 import {
     BookOpen, ChevronDown, CalendarDays, Clock, DoorOpen, Gavel, Gift, HelpCircle, LayoutDashboard, ListMusic, LogIn, LogOut, type LucideIcon,
-    MessageCircle, Package, PanelLeftClose, PanelLeftOpen, Radio, ScrollText, Settings, ShieldCheck, ShoppingBag, Trophy, UserPlus, Users,
+    MessageCircle, Package, PanelLeftClose, PanelLeftOpen, Radio, RadioTower, ScrollText, Settings, ShieldCheck, ShoppingBag, Trophy, UserPlus, Users,
 } from 'lucide-react';
 
 type NavLink = { label: string; routeName: string; icon: LucideIcon; params?: Record<string, string>; membersOnly?: boolean };
 
 const links: NavLink[] = [
     { label: 'Dashboard', routeName: 'dashboard', icon: LayoutDashboard },
+    { label: 'Live streams', routeName: 'live', icon: RadioTower },
     { label: 'Community', routeName: 'community', icon: Trophy },
     { label: 'Events', routeName: 'events', icon: CalendarDays },
     { label: 'Friends', routeName: 'friends', icon: Users, membersOnly: true },
@@ -57,9 +58,9 @@ const divider = 'my-3 border-t border-white/10 [@media(max-height:900px)]:my-1';
 const idle = 'text-neutral-400 hover:bg-white/5 hover:text-white';
 
 function NavItem({ label, routeName, icon: Icon, params }: NavLink) {
-    const { pendingFriends, unreadWhispers, auth } = usePage<PageProps>().props;
+    const { pendingFriends, unreadWhispers, liveCount, auth } = usePage<PageProps>().props;
     const expanded = useContext(ExpandedSidebar);
-    const badge = routeName === 'friends' && auth.user.preferences?.notifications?.friend_requests !== false ? pendingFriends : routeName === 'whispers' ? unreadWhispers : 0;
+    const badge = routeName === 'friends' && auth.user.preferences?.notifications?.friend_requests !== false ? pendingFriends : routeName === 'whispers' ? unreadWhispers : routeName === 'live' ? liveCount : 0;
 
     const url = route(routeName, params);
     const onOverlay = useOverlayClick(url, label);
@@ -180,7 +181,7 @@ function StatusMenu() {
 export default function Sidebar({
     room,
 }: {
-    room?: { slug: string; name: string; canEdit: boolean; canModerate: boolean; onRoom: () => void; onPlaylists: () => void; onWhispers: () => void; onOpenPage: (url: string, title: string) => void; onSettings: () => void; onModeration: () => void };
+    room?: { slug: string; name: string; canEdit: boolean; canModerate: boolean; canLive: boolean; isLive: boolean; onRoom: () => void; onPlaylists: () => void; onWhispers: () => void; onLive: () => void; onOpenPage: (url: string, title: string) => void; onSettings: () => void; onModeration: () => void };
 }) {
     const { auth: { user, guest }, unreadWhispers } = usePage<PageProps>().props;
     const [expanded, setExpanded] = useState(false);
@@ -253,6 +254,13 @@ export default function Sidebar({
                                 <MessageCircle size={18} className="shrink-0" />
                                 <span className={`${expanded ? 'inline' : 'hidden lg:inline'} flex-1 text-left`}>Whispers</span>
                                 {unreadWhispers > 0 && <span className="rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">{unreadWhispers}</span>}
+                            </button>
+                        )}
+                        {room.canLive && (
+                            <button onClick={room.onLive} title={room.isLive ? 'Live stream: controls' : 'Go live'} className={`${item} ${room.isLive ? 'font-semibold text-red-300 hover:bg-red-500/10' : idle}`}>
+                                <RadioTower size={18} className="shrink-0" />
+                                <span className={`${expanded ? 'inline' : 'hidden lg:inline'} flex-1 text-left`}>{room.isLive ? 'Live controls' : 'Go live'}</span>
+                                {room.isLive && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-500" aria-hidden />}
                             </button>
                         )}
                         <NavItem label="History" routeName="history" icon={Clock} params={{ room: room.slug }} />

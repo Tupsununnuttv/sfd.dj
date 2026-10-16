@@ -21,7 +21,17 @@ export const parseToken = (token: string) => {
     return { source, id };
 };
 
-type Sets = Record<EmoteSource, EmoteInfo[]>;
+/** A message with its emotes written as "(emote)", for the places that can only show text (a browser notification). */
+export const plainEmotes = (body: string) => body.replace(new RegExp(EMOTE_TOKEN, 'g'), '(emote)');
+
+export type Sets = Record<EmoteSource, EmoteInfo[]>;
+
+/** Typed text with every emote name turned into the token a message carries: the global sets, plus emotes picked from a 7TV search. */
+export function withEmoteTokens(text: string, globals: Sets | null, picked: Record<string, EmoteInfo>): string {
+    const known = new Map<string, EmoteInfo>([...(globals?.bttv ?? []), ...(globals?.['7tv'] ?? []), ...Object.values(picked)].map((x) => [x.name, x]));
+
+    return text.split(/(\s+)/).map((w) => (known.has(w) ? tokenOf(known.get(w)!) : w)).join('');
+}
 let loading: Promise<Sets> | null = null;
 
 /** The global BetterTTV and 7TV emotes, fetched once per page load. */

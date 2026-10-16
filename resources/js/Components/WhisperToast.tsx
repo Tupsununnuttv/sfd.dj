@@ -2,6 +2,7 @@ import { voiceTime } from '@/Components/VoiceBubble';
 import { PageProps } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
 import { echo } from '@laravel/echo-react';
+import { plainEmotes } from '@/lib/emotes';
 import { withDefaults } from '@/lib/prefs';
 import { useEffect, useRef, useState } from 'react';
 
@@ -9,10 +10,11 @@ interface Incoming {
     from_id: number;
     body: string;
     voice?: { seconds: number } | null; // a voice message has no text
+    group?: { id: number; name: string } | null; // a whisper to a group
     sender: { id: number; name: string };
 }
 
-const said = (w: Incoming) => (w.voice ? `🎤 Voice message (${voiceTime(w.voice.seconds)})` : w.body);
+const said = (w: Incoming) => (w.voice ? `🎤 Voice message (${voiceTime(w.voice.seconds)})` : plainEmotes(w.body));
 
 /** A small popup when someone whispers to you (not when you are already reading whispers). */
 export default function WhisperToast() {
@@ -32,7 +34,7 @@ export default function WhisperToast() {
 
             // a notification from the browser itself, when this tab is in the background
             if (!busy.current && prefs.current.desktop && document.hidden && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                new Notification(`${w.sender.name} whispered to you`, { body: said(w), tag: `whisper-${w.sender.id}` });
+                new Notification(w.group ? `${w.sender.name} in ${w.group.name}` : `${w.sender.name} whispered to you`, { body: said(w), tag: w.group ? `whisper-group-${w.group.id}` : `whisper-${w.sender.id}` });
             }
 
             if (!busy.current && prefs.current.whispers && !route().current('whispers')) {
@@ -49,10 +51,10 @@ export default function WhisperToast() {
 
     return (
         <div className="fixed bottom-4 left-4 z-50 w-72 rounded-xl border border-violet-500/40 bg-neutral-900 p-4 text-sm shadow-2xl">
-            <p className="text-xs font-semibold text-violet-300">💬 Whisper from {toast.sender.name}</p>
+            <p className="text-xs font-semibold text-violet-300">💬 Whisper from {toast.sender.name}{toast.group && <> in {toast.group.name}</>}</p>
             <p className="mt-1 line-clamp-3 wrap-break-word text-neutral-200">{said(toast)}</p>
             <div className="mt-3 flex gap-2">
-                <Link href={route('whispers', { with: toast.sender.id })} className="rounded-md bg-violet-600 px-3 py-1 text-xs font-semibold hover:bg-violet-500">Open</Link>
+                <Link href={route('whispers', toast.group ? { group: toast.group.id } : { with: toast.sender.id })} className="rounded-md bg-violet-600 px-3 py-1 text-xs font-semibold hover:bg-violet-500">Open</Link>
                 <button onClick={() => setToast(null)} className="rounded-md bg-neutral-800 px-3 py-1 text-xs hover:bg-neutral-700">Dismiss</button>
             </div>
         </div>

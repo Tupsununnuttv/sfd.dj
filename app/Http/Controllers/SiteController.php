@@ -34,6 +34,7 @@ class SiteController extends Controller
                 'user' => $r->user->only('name'),
                 'listening' => $listening[$r->id] ?? 0,
                 'now_playing' => $playing[$r->current_item_id] ?? null,
+                'live_title' => $r->liveNow()['title'] ?? null, // a live stream is on the big screen
             ]),
             'event' => $event ? [
                 'id' => $event->id,

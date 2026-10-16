@@ -121,7 +121,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
     }, []);
 
     const online = Object.values(counts).reduce((a, b) => a + b, 0);
-    const live = useMemo(() => rooms.filter((r) => (counts[r.id] ?? 0) > 0 || nowPlaying[r.id]).sort((a, b) => (counts[b.id] ?? 0) - (counts[a.id] ?? 0)).slice(0, 4), [rooms, counts, nowPlaying]);
+    const live = useMemo(() => rooms.filter((r) => (counts[r.id] ?? 0) > 0 || nowPlaying[r.id] || r.live).sort((a, b) => Number(!!b.live) - Number(!!a.live) || (counts[b.id] ?? 0) - (counts[a.id] ?? 0)).slice(0, 4), [rooms, counts, nowPlaying]); // rooms with a live stream first
 
     const source = tab === 'featured' ? featured : tab === 'mine' ? mine : rooms;
     const shown = useMemo(() => {

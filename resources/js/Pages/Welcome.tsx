@@ -20,6 +20,7 @@ interface HomeRoom {
     genre: string | null;
     listening: number;
     now_playing: string | null;
+    live_title: string | null; // a live stream is on the big screen
     items_count: number;
     user: { name: string };
 }
@@ -252,9 +253,10 @@ export default function Welcome({ rooms, event, topDjs, genres, stats }: Props) 
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                     <h3 className="max-w-full truncate font-semibold">{r.name}</h3>
                                     <RoomBadge badges={r.badges} />
+                                    {r.live_title && <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">Live</span>}
                                 </div>
                                 {r.genre && <span className="mt-1 inline-block rounded-full bg-violet-500/15 px-2 py-0.5 text-[11px] text-violet-300">🎵 {r.genre}</span>}
-                                <p className="mt-3 truncate text-sm text-neutral-300">{r.now_playing ? <>▶ {r.now_playing}</> : <span className="text-neutral-500">Waiting for the next DJ…</span>}</p>
+                                <p className="mt-3 truncate text-sm text-neutral-300">{r.live_title ? <>🔴 {r.live_title}</> : r.now_playing ? <>▶ {r.now_playing}</> : <span className="text-neutral-500">Waiting for the next DJ…</span>}</p>
                                 <div className="mt-3 flex items-center justify-between text-xs text-neutral-500">
                                     <span className={r.listening > 0 ? 'text-green-400' : ''}>● {r.listening} listening</span>
                                     <span>host {r.user.name}</span>

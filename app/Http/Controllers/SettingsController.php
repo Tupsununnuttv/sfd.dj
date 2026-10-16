@@ -130,7 +130,7 @@ class SettingsController extends Controller
     public function export(Request $request): JsonResponse
     {
         $me = $request->user();
-        $whispers = Whisper::where('from_id', $me->id)->orWhere('to_id', $me->id)->orderBy('id')->with(['sender:id,username', 'receiver:id,username'])->get();
+        $whispers = Whisper::where('from_id', $me->id)->orWhere('to_id', $me->id)->orderBy('id')->with(['sender:id,username', 'receiver:id,username', 'group:id,name'])->get();
 
         $data = [
             'exported_at' => now()->toIso8601String(),
@@ -140,7 +140,7 @@ class SettingsController extends Controller
             'friends' => $me->friends()->map->only('username', 'name')->values(),
             'rooms_created' => $me->rooms()->get(['name', 'slug', 'description', 'genre', 'is_private', 'created_at']),
             'playlists' => $me->playlists()->with('songs')->get()->map(fn ($p) => ['name' => $p->name, 'kind' => $p->kind, 'songs' => $p->songs->map->only('title', 'youtube_id')->values()]),
-            'whispers' => $whispers->map(fn ($w) => ['from' => $w->sender?->username, 'to' => $w->receiver?->username, 'body' => $w->body, 'at' => $w->created_at->toIso8601String()])->values(),
+            'whispers' => $whispers->map(fn ($w) => ['from' => $w->sender?->username, 'to' => $w->receiver?->username, 'group' => $w->group?->name, 'body' => $w->body, 'at' => $w->created_at->toIso8601String()])->values(),
             'violations' => $me->violations()->get(['reason', 'created_at']),
             'counts' => [
                 'songs_played' => PlaylistItem::where('user_id', $me->id)->whereNotNull('played_at')->count(),

@@ -44,7 +44,7 @@ export default function VoiceRecorderBar({ onSend, onCancel, onProblem }: { onSe
     }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once: the recording lasts as long as the strip does
 
     return (
-        <div className="flex items-center gap-3 border-t border-white/10 p-3" role="group" aria-label="Recording a voice message">
+        <div className="flex items-center gap-3 p-3" role="group" aria-label="Recording a voice message">
             <button type="button" onClick={() => keep.current.onCancel()} disabled={sending} aria-label="Throw the recording away" title="Throw it away" className="rounded-lg p-2.5 text-neutral-400 transition hover:bg-red-500/15 hover:text-red-300 disabled:opacity-40"><Trash2 size={18} /></button>
             <div className="flex min-w-0 flex-1 items-center gap-3 rounded-xl bg-white/6 px-3 py-2">
                 <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${live ? 'animate-pulse bg-red-500' : 'bg-neutral-600'}`} aria-hidden />

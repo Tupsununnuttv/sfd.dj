@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -24,11 +26,12 @@ class Room extends Model
         'edit_settings' => 'Edit room settings',
         'manage_roles' => 'Assign room roles',
         'moderate_users' => 'Kick and ban users',
+        'go_live' => 'Go live: put a live stream on the big screen',
     ];
 
     /** Roles every room starts with. rank: lower = more power. */
     public const DEFAULT_ROLES = [
-        ['name' => 'Co-Host', 'color' => '#f97316', 'rank' => 1, 'permissions' => ['moderate_chat', 'manage_queue', 'skip', 'edit_settings', 'manage_roles', 'moderate_users']],
+        ['name' => 'Co-Host', 'color' => '#f97316', 'rank' => 1, 'permissions' => ['moderate_chat', 'manage_queue', 'skip', 'edit_settings', 'manage_roles', 'moderate_users', 'go_live']],
         ['name' => 'Manager', 'color' => '#eab308', 'rank' => 2, 'permissions' => ['moderate_chat', 'manage_queue', 'skip', 'edit_settings', 'moderate_users']],
         ['name' => 'Bouncer', 'color' => '#22c55e', 'rank' => 3, 'permissions' => ['moderate_chat', 'skip', 'moderate_users']],
         ['name' => 'Resident DJ', 'color' => '#d946ef', 'rank' => 4, 'permissions' => ['skip']],
@@ -37,12 +40,15 @@ class Room extends Model
     /** How many people can be in the waitlist at once (the one who plays counts). */
     public const MAX_WAITLIST = 67;
 
+    /** A live stream nobody has ended is over after this many hours. */
+    public const LIVE_HOURS = 24;
+
     /** The badges staff can give a room, in the order they are shown. A room can have any of them at once. */
     public const BADGES = ['official', 'verified', 'partnered'];
 
     public const GENRES = ['Pop', 'Rock', 'Hip-Hop', 'R&B', 'Electronic', 'House', 'Techno', 'Drum & Bass', 'Dubstep', 'Lo-fi', 'Jazz', 'Classical', 'Metal', 'Indie', 'Country', 'Reggae', 'Latin', 'K-Pop', 'Mixed'];
 
-    protected $fillable = ['user_id', 'name', 'slug', 'description', 'current_item_id', 'current_started_at', 'badges', 'background', 'genre', 'is_private', 'is_featured', 'custom_background', 'welcome_message', 'rules', 'rule_list', 'custom_css', 'waitlist_locked', 'waitlist_cycle', 'automod', 'auto_host_bot_id', 'auto_host_playlist_id'];
+    protected $fillable = ['user_id', 'name', 'slug', 'description', 'current_item_id', 'current_started_at', 'badges', 'background', 'genre', 'is_private', 'is_featured', 'custom_background', 'welcome_message', 'rules', 'rule_list', 'custom_css', 'live', 'waitlist_locked', 'waitlist_cycle', 'automod', 'auto_host_bot_id', 'auto_host_playlist_id'];
 
     protected static function booted(): void
     {
@@ -104,7 +110,7 @@ class Room extends Model
 
     protected function casts(): array
     {
-        return ['current_item_id' => 'integer', 'auto_host_bot_id' => 'integer', 'auto_host_playlist_id' => 'integer', 'current_started_at' => 'datetime', 'is_private' => 'boolean', 'is_featured' => 'boolean', 'waitlist_locked' => 'boolean', 'waitlist_cycle' => 'boolean', 'automod' => 'array', 'badges' => 'array', 'rule_list' => 'array'];
+        return ['current_item_id' => 'integer', 'auto_host_bot_id' => 'integer', 'auto_host_playlist_id' => 'integer', 'current_started_at' => 'datetime', 'is_private' => 'boolean', 'is_featured' => 'boolean', 'waitlist_locked' => 'boolean', 'waitlist_cycle' => 'boolean', 'automod' => 'array', 'badges' => 'array', 'rule_list' => 'array', 'live' => 'array'];
     }
 
     /** Channels that carry a room's live events: the presence channel for people inside, plus a public viewing channel for guests (never for private rooms). */
@@ -459,6 +465,13 @@ class Room extends Model
     {
         $this->removeDuplicateWaitingItems();
 
+        if ($this->live) {
+            if ($this->liveNow()) {
+                return; // a live stream is on: the song that was playing waits for it
+            }
+            $this->endLive(); // nobody ended it in time
+        }
+
         for ($i = 0; $i < 50 && $this->current_item_id; $i++) {
             $item = PlaylistItem::find($this->current_item_id);
 
@@ -489,6 +502,61 @@ class Room extends Model
             'current_item_id' => $item?->id,
             'current_started_at' => $item ? now() : null,
         ]);
+    }
+
+    /** The live stream that is on the big screen now, as it is kept (kind, ref, url, thumbnail, title, user_id, started_at), or null. One that has run for too long is not on any more. */
+    public function liveNow(): ?array
+    {
+        $live = $this->live;
+
+        return $live && Carbon::parse($live['started_at'])->addHours(self::LIVE_HOURS)->isFuture() ? $live : null;
+    }
+
+    /**
+     * Put a live stream (see App\Support\LiveStream::parse) on the big screen, or change which one it is. The DJs wait meanwhile: the clock of the song that was
+     * playing stops (see endLive). Switching to another stream keeps the time it started.
+     */
+    public function goLive(User $by, array $stream, string $title): void
+    {
+        $this->liveNow() || $this->endLive(); // one nobody ended in time is over first
+
+        $this->update(['live' => [
+            'kind' => $stream['kind'], 'ref' => $stream['ref'], 'url' => $stream['url'], 'thumbnail' => $stream['thumbnail'],
+            'title' => $title !== '' ? $title : $this->name, 'user_id' => $by->id,
+            'started_at' => $this->live['started_at'] ?? now()->toIso8601String(),
+        ]]);
+    }
+
+    /** The stream is over and the DJs go on. The song that was playing continues where it stopped, and one that began meanwhile starts from the beginning. */
+    public function endLive(): void
+    {
+        if (! $this->live) {
+            return;
+        }
+
+        if ($this->current_started_at) {
+            $stopped = Carbon::parse($this->live['started_at'])->max($this->current_started_at);
+            $this->current_started_at = $this->current_started_at->copy()->addSeconds($stopped->diffInSeconds(now(), true));
+        }
+
+        $this->live = null;
+        $this->save();
+    }
+
+    /** The live stream as the pages get it: what it is, and who is streaming (shown at the booth and in the top bar). */
+    public function liveState(): ?array
+    {
+        $live = $this->liveNow();
+
+        if (! $live) {
+            return null;
+        }
+
+        $by = User::find($live['user_id']);
+
+        return Arr::except($live, ['user_id']) + [
+            'by' => $by ? ['id' => $by->id, 'name' => $by->name, 'avatar' => $by->avatar, 'character' => $by->character, 'cosmetics' => $by->cosmetics, 'role' => $by->primary_role, 'badges' => $by->badges, 'level' => $by->level] : null,
+        ];
     }
 
     /** woot / meh / grab totals for the song that is playing. */
@@ -536,6 +604,7 @@ class Room extends Model
             'locked' => $this->waitlist_locked,
             'cycle' => $this->waitlist_cycle,
             'max' => self::MAX_WAITLIST,
+            'live' => $this->liveState(),
         ];
     }
 }

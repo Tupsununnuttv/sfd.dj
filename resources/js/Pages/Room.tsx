@@ -5,6 +5,7 @@ import ChatPanel, { ChatMessageData, RoomEmojiData, RoomNotifications } from '@/
 import Flag, { FlagInfo } from '@/Components/Flag';
 import type { CardUser } from '@/Components/UserCard';
 import Live from '@/Components/Live';
+import LiveScreen from '@/Components/LiveScreen';
 import RoleBadge from '@/Components/RoleBadge';
 import RoleIcon, { RoleGlyph } from '@/Components/RoleIcon';
 import RoomFootbar from '@/Components/RoomFootbar';
@@ -21,6 +22,7 @@ import RoomScene from '@/Components/RoomScene';
 import VoteBar, { MyVotes, Votes } from '@/Components/VoteBar';
 import { SeatButton, WaitlistCard } from '@/Components/WaitlistCard';
 import { backgroundClass } from '@/lib/backgrounds';
+import type { LiveInfo } from '@/lib/live';
 import { getJson, post, send, sendJson } from '@/lib/post';
 import { refreshCounts } from '@/lib/counts';
 import { withDefaults } from '@/lib/prefs';
@@ -34,6 +36,7 @@ import { Disc3, ExternalLink, Footprints, Gavel, MessageCircle, ShieldCheck, Use
 import { FormEvent, lazy, ReactNode, Suspense, useEffect, useRef, useState } from 'react';
 
 const GrabDialog = lazy(() => import('@/Components/GrabDialog'));
+const LiveControls = lazy(() => import('@/Components/LiveControls'));
 const PageOverlay = lazy(() => import('@/Components/PageOverlay'));
 const SupportWidget = lazy(() => import('@/Components/SupportWidget'));
 const PlaylistManager = lazy(() => import('@/Components/PlaylistManager'));
@@ -64,6 +67,7 @@ interface Playback {
     locked: boolean;
     cycle: boolean;
     max: number; // how many people the waitlist holds
+    live: LiveInfo | null; // a live stream is on the big screen: the songs wait
 }
 
 interface Member {
@@ -116,7 +120,7 @@ const isTransientActivity = (message: ChatMessageData) => message.type === 'syst
     transientNotificationKinds.has(message.kind ?? '')
     || ((message.kind === 'join' || message.kind === 'leave') && /(?:joined|left) the waitlist/i.test(message.body))
 );
-type PanelName = 'info' | 'settings' | 'moderation' | 'playlists' | 'whispers' | null;
+type PanelName = 'info' | 'settings' | 'moderation' | 'playlists' | 'whispers' | 'live' | null;
 
 // Stamp each playback with arrival time so late joiners can add the time that passed since.
 const stamp = (p: Playback) => ({ ...p, receivedAt: Date.now() });
@@ -257,6 +261,9 @@ export default function Room({
     const current = playback.current;
     const currentRef = useRef(current);
     currentRef.current = current;
+    const live = playback.live ?? null;
+    const liveRef = useRef(live);
+    liveRef.current = live;
     const playbackRef = useRef(playback);
     playbackRef.current = playback;
     /** Where the room is in the song that plays now, in seconds. */
@@ -270,7 +277,7 @@ export default function Room({
     const resumePlaybackMuted = () => {
         const song = currentRef.current;
         const activePlayer = player.current;
-        if (!playbackOnRef.current || !song || !activePlayer) return;
+        if (!playbackOnRef.current || !song || !activePlayer || liveRef.current) return;
 
         const now = Date.now();
         if (lastResumeAttempt.current?.songId === song.id && now - lastResumeAttempt.current.at < 2000) return;
@@ -345,13 +352,16 @@ export default function Room({
     };
 
     // whoever's song is playing stands behind the booth
-    const dj: Member | null = current ? (users.find((u) => u.id === current.user_id) ?? current.dj ?? { id: current.user_id, name: current.added_by, avatar: null, role: USER_ROLE }) : null;
+    const dj: Member | null = live?.by
+        ? (users.find((u) => u.id === live.by!.id) ?? (live.by as Member)) // the one who streams
+        : current ? (users.find((u) => u.id === current.user_id) ?? current.dj ?? { id: current.user_id, name: current.added_by, avatar: null, role: USER_ROLE }) : null;
     // everybody stands until they press Woot or Grab: the server says who has, and my own press counts at once
     const dancing = new Set(playback.dancers ?? []);
     if (!guest) {
         if ((mine.woot || mine.grab) && !mine.meh) dancing.add(user.id);
         else dancing.delete(user.id);
     }
+    if (live) { users.forEach((u) => dancing.add(u.id)); if (!guest) dancing.add(user.id); } // a live show: everybody dances
     const canModerate = can.moderate_chat || can.manage_queue || can.moderate_users;
     const canEditRoom = can.edit_settings || can.manage_roles || can.manage_queue;
     // a song's video is being watched in a playlist or a search (VideoPreview): the room goes quiet until it closes
@@ -386,7 +396,7 @@ export default function Room({
     // If a song has run past its length and nobody's player said so (nobody joined, blocked embed), say it ourselves.
     const reportedEnd = useRef<number | null>(null);
     useEffect(() => {
-        if (guest || !current || current.duration <= 0) return;
+        if (guest || !current || current.duration <= 0 || live) return;
         const reportEndIfNeeded = () => {
             const elapsed = Math.max(0, playback.elapsed + (Date.now() - playback.receivedAt) / 1000);
             if (elapsed < current.duration + 3 || reportedEnd.current === current.id) return;
@@ -397,7 +407,7 @@ export default function Room({
         reportEndIfNeeded();
 
         return () => window.clearInterval(timer);
-    }, [guest, current?.id, current?.duration, playback.elapsed, playback.receivedAt, room.slug]);
+    }, [guest, current?.id, current?.duration, playback.elapsed, playback.receivedAt, room.slug, !!live]);
 
     // The host changed the room (its name, scene, rules, CSS ...): read it again. A moment apart, so a full room does not ask all at once.
     const reloadRoom = () => { window.setTimeout(() => router.reload({ only: ['room', 'backgrounds'] }), Math.random() * 1500); };
@@ -552,7 +562,7 @@ export default function Room({
         router.patch(route('settings.preferences'), { room: { autowoot: on } }, { preserveScroll: true, preserveState: true, only: ['auth'] });
     };
     useEffect(() => {
-        if (!autowoot || guest || !current || current.user_id === user.id) return;
+        if (!autowoot || guest || !current || current.user_id === user.id || live) return;
         const songId = current.id;
         const timer = setTimeout(() => {
             if (currentRef.current?.id !== songId || mineRef.current.woot || mineRef.current.meh) return;
@@ -562,7 +572,7 @@ export default function Room({
 
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [autowoot, guest, current?.id]);
+    }, [autowoot, guest, current?.id, !!live]);
 
     // A new song means new votes: forget what I voted on the last one, and the window for grabbing the last one closes.
     useEffect(() => setGrabbing(false), [current?.id]);
@@ -608,7 +618,7 @@ export default function Room({
     // Start/stop the video when the song changes, when the player is ready, or when playback is switched on/off.
     useEffect(() => {
         if (!ready || !player.current) return;
-        if (current && playbackOn) {
+        if (current && playbackOn && !live) {
             const at = () => playback.elapsed + (Date.now() - playback.receivedAt) / 1000;
             player.current.load(current.youtube_id, at());
 
@@ -628,7 +638,7 @@ export default function Room({
         }
         // Only a different song should reload the video, not a queue change.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [ready, playbackOn, current?.id]);
+    }, [ready, playbackOn, current?.id, !!live]);
 
     useEffect(() => {
         if (!ready || !current) return;
@@ -833,9 +843,12 @@ export default function Room({
                         name: room.name,
                         canEdit: canEditRoom,
                         canModerate,
+                        canLive: !!can.go_live,
+                        isLive: !!live,
                         onRoom: () => { setPage(null); setPanel(null); },
                         onPlaylists: () => setPanel('playlists'),
                         onWhispers: () => { setWhisperTo(null); setPanel('whispers'); },
+                        onLive: () => setPanel('live'),
                         onOpenPage: (url, title) => setPage({ url, title }),
                         onSettings: () => setPanel('settings'),
                         onModeration: () => setPanel('moderation'),
@@ -851,7 +864,8 @@ export default function Room({
                         listening={guest ? listening : users.length}
                         dj={dj}
                         title={current?.title ?? null}
-                        playing={!!current && playbackOn}
+                        live={live}
+                        playing={(!!current || !!live) && playbackOn}
                         elapsed={playback.elapsed}
                         receivedAt={playback.receivedAt}
                         duration={current?.duration || (current && discoveredDuration?.itemId === current.id ? discoveredDuration.seconds : 0)}
@@ -870,16 +884,17 @@ export default function Room({
                         users={users}
                         dj={dj}
                         dancing={dancing}
-                        playing={!!current && playbackOn}
+                        playing={(!!current || !!live) && playbackOn}
                         myId={user.id}
                         onUser={(u, anchor) => setCard({ user: u, anchor })}
                         waitlist={<WaitlistCard inList={inList} etaSeconds={etaSeconds} etaSince={etaSince} locked={closed} full={waitlist.length >= playback.max} busy={leaving} onClick={joinOrLeave} />}
                         seat={<SeatButton locked={closed} onClick={joinOrLeave} />}
-                        votes={<VoteBar votes={playback.votes} mine={mine} disabled={!current || current.user_id === user.id} ownSong={!!current && current.user_id === user.id} onVote={vote} autowoot={autowoot} onAutowoot={guest ? undefined : setAutowoot} />}
+                        votes={<VoteBar votes={playback.votes} mine={mine} disabled={!current || !!live || current.user_id === user.id} ownSong={!!current && current.user_id === user.id} onVote={vote} autowoot={autowoot} onAutowoot={guest ? undefined : setAutowoot} />}
                         screen={
                             <>
                                 <div ref={box} className="pointer-events-none absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
-                                {playbackOn && current && (
+                                {live && playbackOn && <LiveScreen live={live} volume={volume} muted={muted || previewing} />}
+                                {playbackOn && current && !live && (
                                     // point at the video and a button appears: it opens the song on YouTube (or SoundCloud), at the place it is at now
                                     <div className="group absolute inset-0">
                                         {isSoundCloud(current.youtube_id) ? (
@@ -904,7 +919,7 @@ export default function Room({
                                         )}
                                     </div>
                                 )}
-                                {silenced && playbackOn && current && (
+                                {silenced && playbackOn && current && !live && (
                                     // the browser keeps the sound back until a click: any click does, this one says so
                                     <div className="absolute inset-x-0 bottom-3 flex justify-center">
                                             <button onClick={() => { player.current?.unMute?.(); player.current?.playVideo?.(); setMuted(false); setSilenced(false); }} className="unscale flex origin-bottom items-center gap-2 rounded-full bg-black/80 px-4 py-2 text-sm font-semibold text-white shadow-lg ring-1 ring-white/25 hover:bg-violet-600">
@@ -917,7 +932,7 @@ export default function Room({
                                         <span className="unscale text-base">Playback is off. Click to turn it on.</span>
                                     </button>
                                 ) : (
-                                    !current && (
+                                    !current && !live && (
                                         <div className="absolute inset-0 flex items-center justify-center bg-neutral-900/90">
                                             <div className="unscale flex flex-col items-center gap-3 text-center">
                                                 <span className="text-lg font-semibold text-neutral-200">Waiting for the next DJ…</span>
@@ -940,7 +955,7 @@ export default function Room({
                         onOpenPage={(url, title) => setPage({ url, title })}
                         playbackOn={playbackOn}
                         onPlayback={() => setPlaybackOn(!playbackOn)}
-                        canSkip={!!current && canSkip(current)}
+                        canSkip={!!current && !live && canSkip(current)}
                         onSkip={() => current && post(route('rooms.skip', room.slug), { item_id: current.id })}
                         onPlaylists={() => setPanel('playlists')}
                         onRoomInfo={() => setPanel('info')}
@@ -1177,6 +1192,12 @@ export default function Room({
                 </Panel>
             )}
 
+            {panel === 'live' && (
+                <Panel title="Live stream" onClose={() => setPanel(null)}>
+                    <Suspense fallback={loadingPanel}><LiveControls slug={room.slug} live={live} /></Suspense>
+                </Panel>
+            )}
+
             {panel === 'playlists' && (
                 <Panel title="Playlists" onClose={() => setPanel(null)} full bare>
                     <Suspense fallback={loadingPanel}><PlaylistManager onClose={() => setPanel(null)} onChanged={() => setDeckKey((k) => k + 1)} className="min-h-0 flex-1" /></Suspense>
@@ -1221,6 +1242,7 @@ export default function Room({
                             permissionLabels={permissionLabels}
                             emojis={emojis}
                             canCss={user.id === host.id || user.is_staff}
+                            live={live}
                             locked={playback.locked}
                             cycle={playback.cycle}
                             onOpenPage={(url, title) => setPage({ url, title })}

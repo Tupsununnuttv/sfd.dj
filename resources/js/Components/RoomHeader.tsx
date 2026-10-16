@@ -3,6 +3,7 @@ import RoomBadge from '@/Components/RoomBadge';
 import { Dancer } from '@/Components/RoomScene';
 import { Equalizer } from '@/Components/ui';
 import { Cosmetics } from '@/lib/cosmetics';
+import { LIVE_SITES, LiveInfo } from '@/lib/live';
 import { mmss } from '@/lib/playlists';
 import { Link } from '@inertiajs/react';
 import SocialIcon, { socialLabels } from '@/Components/SocialIcon';
@@ -14,12 +15,13 @@ import { useEffect, useState } from 'react';
  * In the middle who is playing what, and under it how far the song is. On the right our social media as small icons (Discord, YouTube and so on;
  * the room info is in More, in the bar at the bottom) and the volume.
  */
-export default function RoomHeader({ room, host, listening, dj, title, playing, elapsed, receivedAt, duration, volume, muted, onVolume, onMute, social, onDj }: {
+export default function RoomHeader({ room, host, listening, dj, title, live, playing, elapsed, receivedAt, duration, volume, muted, onVolume, onMute, social, onDj }: {
     room: { name: string; badges: string[] | null };
     host: { name: string; avatar: string | null; cosmetics?: Cosmetics | null };
     listening: number;
     dj: Dancer | null;
     title: string | null; // the song that is playing
+    live: LiveInfo | null; // a live stream is on the big screen: it takes the place of the song
     playing: boolean; // and I can hear it
     elapsed: number; // seconds elapsed when the server sent the current playback
     receivedAt: number; // when this client received it
@@ -68,7 +70,26 @@ export default function RoomHeader({ room, host, listening, dj, title, playing, 
 
             {/* who is playing what, and under it how far the song is: in the exact middle of the bar (the two sides are equally wide) */}
             <div className="flex min-w-0 flex-1 items-center justify-center gap-2.5 md:w-full">
-                {title && dj ? (
+                {live ? (
+                    <>
+                        {dj && (
+                            <button onClick={(e) => onDj(dj, e.currentTarget.getBoundingClientRect())} title={`${dj.name}: quick profile`} className="shrink-0 rounded-full">
+                                <Avatar name={dj.name} avatar={dj.avatar} cosmetics={dj.cosmetics} className="h-8 w-8 text-sm" />
+                            </button>
+                        )}
+                        <div className="min-w-0 flex-1" data-live-bar>
+                            <p className="flex min-w-0 items-center gap-2 text-sm leading-tight">
+                                <span className="hidden shrink-0 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white sm:inline">Live</span>
+                                <span className="min-w-0 truncate">
+                                    {dj && <><span className="font-semibold" style={{ color: dj.role.color }}>{dj.name}</span> <span className="text-neutral-400">is live:</span>{' '}</>}
+                                    <span className="font-bold text-white" title={live.title}>{live.title}</span>
+                                </span>
+                                <span className="hidden shrink-0 sm:inline">{playing ? <Equalizer /> : <Music2 size={14} className="text-neutral-600" />}</span>
+                            </p>
+                            <p className="mt-1 hidden text-[10px] font-semibold leading-none text-neutral-400 sm:block">on {LIVE_SITES[live.kind]}</p>
+                        </div>
+                    </>
+                ) : title && dj ? (
                     <>
                         <button onClick={(e) => onDj(dj, e.currentTarget.getBoundingClientRect())} title={`${dj.name}: quick profile`} className="shrink-0 rounded-full">
                             <Avatar name={dj.name} avatar={dj.avatar} cosmetics={dj.cosmetics} className="h-8 w-8 text-sm" />

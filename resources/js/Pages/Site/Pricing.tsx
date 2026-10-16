@@ -20,7 +20,7 @@ export default function Pricing({ plans }: { plans: PlanInfo[] }) {
             <PageHeader crumbs={[['Pricing']]} title="Pricing" text="SFD-DJ.EU is free, and it stays free. Bronze, Silver, Gold, Plus, Pro and Premium are optional plans for people who want a role of their own with a gem next to their name, more XP and room for more." />
 
             <section className="mx-auto max-w-6xl space-y-6 px-6">
-                <div className="flex justify-center"><IntervalSwitch value={period} onChange={setPeriod} /></div>
+                <div className="flex justify-center"><IntervalSwitch value={period} onChange={setPeriod} plans={plans} /></div>
                 <PlanCards
                     plans={plans}
                     interval={period}

@@ -131,6 +131,45 @@ class WhispersDiscordCommunityTest extends TestCase
         $this->actingAs($a)->get('/dashboard')->assertInertia(fn (Assert $page) => $page->where('unreadWhispers', 1));
     }
 
+    public function test_a_whisper_can_carry_emojis_and_emotes_and_answer_an_earlier_whisper_of_the_same_conversation(): void
+    {
+        Storage::fake(config('filesystems.uploads'));
+        Event::fake([WhisperSent::class]);
+        $a = User::factory()->create();
+        $b = User::factory()->create();
+        $c = User::factory()->create();
+
+        // emojis and emote tokens are only text, kept as written (the word guard and the link guard let the emote codes through)
+        $emotes = 'hello 🔥 :7tv:01F6MQ33FG000FSP42K4V0K9M3: and :bttv:54fa925e01e468494b85b54d:';
+        $first = $this->actingAs($a)->postJson('/api/whispers', ['user_id' => $b->id, 'body' => $emotes])->assertCreated()->assertJsonPath('message.body', $emotes)->assertJsonPath('message.reply', null)->json('message.id');
+
+        // bob answers it; the quote names who wrote it and what it said, in the answer, on the wire, in the thread and in the list
+        $this->actingAs($b)->postJson('/api/whispers', ['user_id' => $a->id, 'body' => 'nice', 'reply_to_id' => $first])->assertCreated()
+            ->assertJsonPath('message.reply', ['id' => $first, 'from_id' => $a->id, 'body' => $emotes]);
+        $answer = Whisper::latest('id')->firstOrFail();
+        $this->assertSame($first, $answer->reply_to_id);
+        Event::assertDispatched(WhisperSent::class, fn ($e) => $e->whisper->is($answer) && $e->broadcastWith()['reply'] === ['id' => $first, 'from_id' => $a->id, 'body' => $emotes]);
+        $this->actingAs($a)->getJson("/api/whispers/{$b->id}")->assertJsonPath('messages.0.reply', null)->assertJsonPath('messages.1.reply.body', $emotes)->assertJsonPath('messages.1.reply.from_id', $a->id);
+        $this->actingAs($a)->getJson('/api/whispers')->assertJsonPath('0.last.reply.id', $first);
+
+        // a voice message can answer one, and is quoted as a voice message when it is answered
+        $voice = $this->actingAs($a)->postJson('/api/whispers/voice', ['user_id' => $b->id, 'audio' => UploadedFile::fake()->createWithContent('voice.wav', $this->wav()), 'seconds' => 3, 'reply_to_id' => $answer->id])
+            ->assertCreated()->assertJsonPath('message.reply.body', 'nice')->json('message.id');
+        $this->actingAs($b)->postJson('/api/whispers', ['user_id' => $a->id, 'body' => 'got it', 'reply_to_id' => $voice])->assertCreated()->assertJsonPath('message.reply.body', '🎤 Voice message');
+
+        // you may answer your own whisper too
+        $this->actingAs($a)->postJson('/api/whispers', ['user_id' => $b->id, 'body' => 'also', 'reply_to_id' => $first])->assertCreated()->assertJsonPath('message.reply.from_id', $a->id);
+
+        // an answer can only point into its own conversation: somebody else's whisper, or one that does not exist, is sent as a plain whisper and never quoted
+        $secret = Whisper::create(['from_id' => $c->id, 'to_id' => $a->id, 'body' => 'top secret'])->id;
+        foreach ([$secret, 99999] as $id) {
+            $this->actingAs($a)->postJson('/api/whispers', ['user_id' => $b->id, 'body' => 'sneaky', 'reply_to_id' => $id])->assertCreated()->assertJsonPath('message.reply', null)->assertDontSee('top secret');
+            $this->actingAs($a)->postJson('/api/whispers/voice', ['user_id' => $b->id, 'audio' => UploadedFile::fake()->createWithContent('voice.wav', $this->wav()), 'seconds' => 1, 'reply_to_id' => $id])->assertCreated()->assertJsonPath('message.reply', null);
+        }
+        $this->assertNull(Whisper::where('body', 'sneaky')->first()->reply_to_id);
+        $this->actingAs($a)->postJson('/api/whispers', ['user_id' => $b->id, 'body' => 'x', 'reply_to_id' => 'abc'])->assertJsonValidationErrors('reply_to_id');
+    }
+
     public function test_discord_linking(): void
     {
         $me = User::factory()->create();

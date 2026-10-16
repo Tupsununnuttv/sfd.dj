@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** A private message from one person to another: text, or a voice message (`audio`, with `body` empty). */
+/** A private message from one person to another, or to a group (`group_id`, with no `to_id`): text, or a voice message (`audio`, with `body` empty). */
 class Whisper extends Model
 {
     /** The longest voice message, in seconds. */
@@ -22,7 +22,7 @@ class Whisper extends Model
 
     private const CONTENT_TYPES = ['webm' => 'audio/webm', 'ogg' => 'audio/ogg', 'm4a' => 'audio/mp4', 'aac' => 'audio/aac', 'mp3' => 'audio/mpeg', 'wav' => 'audio/wav'];
 
-    protected $fillable = ['from_id', 'to_id', 'body', 'audio', 'audio_seconds', 'read_at'];
+    protected $fillable = ['from_id', 'to_id', 'group_id', 'body', 'audio', 'audio_seconds', 'reply_to_id', 'read_at'];
 
     protected static function booted(): void
     {
@@ -44,6 +44,17 @@ class Whisper extends Model
     public function receiver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'to_id');
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(WhisperGroup::class, 'group_id');
+    }
+
+    /** The whisper this one answers. */
+    public function replyTo(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reply_to_id');
     }
 
     /** Where the recording is on the uploads disk. */
@@ -76,10 +87,21 @@ class Whisper extends Model
             'mine' => $this->from_id === $me,
             'from_id' => $this->from_id,
             'to_id' => $this->to_id,
+            'group_id' => $this->group_id,
+            'from' => $this->group_id ? $this->sender->only('id', 'name', 'username', 'avatar') : null, // in a group the page needs to know who wrote it
             'body' => $this->body,
             'voice' => $this->voicePayload(),
+            'reply' => $this->replyPayload(),
             'at' => $this->created_at->toIso8601String(),
         ];
+    }
+
+    /** What the page quotes above a reply: who wrote the whisper it answers and what it said (a voice message has no text). Load `replyTo` first for many at once. */
+    public function replyPayload(): ?array
+    {
+        $original = $this->replyTo;
+
+        return $original ? ['id' => $original->id, 'from_id' => $original->from_id, 'body' => $original->audio ? '🎤 Voice message' : $original->body] : null;
     }
 
     /** What the page needs to show a voice message (it fetches the recording from api.whispers.audio). */

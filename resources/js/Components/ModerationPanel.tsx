@@ -42,7 +42,7 @@ const btn = 'w-full rounded bg-neutral-800 px-4 py-2 text-left text-sm hover:bg-
 const actionText: Record<string, string> = {
     kick: 'kicked', ban: 'banned', unban: 'unbanned', mute: 'muted', unmute: 'unmuted', role: 'changed the role of',
     clear_chat: 'cleared the chat', delete_message: 'deleted a message by', skip: 'skipped a song of', remove_song: 'removed a song of',
-    settings: 'changed', waitlist: 'changed', automod: 'blocked a message by',
+    settings: 'changed', waitlist: 'changed', automod: 'blocked a message by', live: 'started a live stream', live_end: 'ended the live stream',
 };
 
 const when = (iso: string) => new Date(iso).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });

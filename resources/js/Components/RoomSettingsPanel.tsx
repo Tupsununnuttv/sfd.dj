@@ -1,4 +1,5 @@
 import Avatar from '@/Components/Avatar';
+import LiveControls from '@/Components/LiveControls';
 import RoomEmojiManager from '@/Components/RoomEmojiManager';
 import RoomRolesEditor, { RoomRoleInfo } from '@/Components/RoomRolesEditor';
 import Toggle from '@/Components/Toggle';
@@ -7,10 +8,11 @@ import RulesModal, { RoomRule } from '@/Components/RulesModal';
 import SceneBackdrop from '@/Components/scene/Backdrop';
 import { backgrounds } from '@/lib/backgrounds';
 import { CSS_HOOKS } from '@/lib/cssHooks';
+import type { LiveInfo } from '@/lib/live';
 import { paletteOf } from '@/lib/scenes';
 import { getJson, send } from '@/lib/post';
 import { router } from '@inertiajs/react';
-import { ArrowDown, ArrowUp, Bot, Check, Code2, ExternalLink, Eye, ListMusic, LucideIcon, Plus, ScrollText, Settings2, ShieldCheck, Smile, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Bot, Check, Code2, ExternalLink, Eye, ListMusic, LucideIcon, Plus, RadioTower, ScrollText, Settings2, ShieldCheck, Smile, Trash2 } from 'lucide-react';
 import { FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
 
 /** A special time of the year (App\Support\Season): while it is on, every room shows one of its backgrounds. */
@@ -41,6 +43,7 @@ interface Props {
     permissionLabels: Record<string, string>;
     emojis: RoomEmojiData[];
     canCss: boolean; // the host (and staff) write the room's own CSS
+    live: LiveInfo | null; // the live stream that is on, if one is
     locked: boolean;
     cycle: boolean;
     onOpenPage: (url: string, title: string) => void; // a page of the site in the room's overlay, so nobody has to leave the room
@@ -69,19 +72,20 @@ function Card({ title, text, aside, children }: { title: string; text?: string; 
 /** How much of a text box is used, e.g. 12/50. */
 const count = (text: string, max: number) => <span className={`tabular-nums ${text.length >= max ? 'text-amber-300' : 'text-neutral-600'}`}>{text.length}/{max}</span>;
 
-type TabKey = 'General' | 'Rules' | 'Music & Waitlist' | 'Roles' | 'Emojis' | 'Room CSS';
+type TabKey = 'General' | 'Rules' | 'Music & Waitlist' | 'Live stream' | 'Roles' | 'Emojis' | 'Room CSS';
 const TABS: { key: TabKey; icon: LucideIcon; text: string }[] = [
     { key: 'General', icon: Settings2, text: 'The name, the welcome text, who can come in and the background.' },
     { key: 'Rules', icon: ScrollText, text: 'What people read and agree to when they come in.' },
     { key: 'Music & Waitlist', icon: ListMusic, text: 'The line, cycling, and the Auto Host that keeps the music going.' },
+    { key: 'Live stream', icon: RadioTower, text: 'Put a YouTube, Twitch or Kick stream on the big screen.' },
     { key: 'Roles', icon: ShieldCheck, text: 'Give people roles, and choose what each role may do.' },
     { key: 'Emojis', icon: Smile, text: "The room's own emojis for the chat." },
     { key: 'Room CSS', icon: Code2, text: 'Your own look for the room, written in CSS.' },
 ];
 
 /** Room settings: a list of parts on the left (across the top on a phone), the chosen part on the right. */
-export default function RoomSettingsPanel({ room, genres, backgrounds: pickable, seasons, canLock, can, roles, memberList, permissionLabels, emojis, canCss, locked, cycle, onOpenPage }: Props) {
-    const allowed: Record<TabKey, boolean> = { General: can.edit_settings, Rules: can.edit_settings, 'Music & Waitlist': can.manage_queue, Roles: can.manage_roles, Emojis: can.edit_settings, 'Room CSS': canCss };
+export default function RoomSettingsPanel({ room, genres, backgrounds: pickable, seasons, canLock, can, roles, memberList, permissionLabels, emojis, canCss, live, locked, cycle, onOpenPage }: Props) {
+    const allowed: Record<TabKey, boolean> = { General: can.edit_settings, Rules: can.edit_settings, 'Music & Waitlist': can.manage_queue, 'Live stream': can.go_live, Roles: can.manage_roles, Emojis: can.edit_settings, 'Room CSS': canCss };
     const tabs = TABS.filter((t) => allowed[t.key]);
     const [tab, setTab] = useState<TabKey>(tabs[0]?.key ?? 'General');
     const current = tabs.find((t) => t.key === tab) ?? tabs[0];
@@ -116,6 +120,7 @@ export default function RoomSettingsPanel({ room, genres, backgrounds: pickable,
                 {current.key === 'General' && <General room={room} genres={genres} backgrounds={pickable} seasons={seasons} canLock={canLock} />}
                 {current.key === 'Rules' && <RulesEditor slug={room.slug} name={room.name} saved={room.rule_list ?? []} />}
                 {current.key === 'Music & Waitlist' && <MusicWaitlist slug={room.slug} locked={locked} cycle={cycle} onOpenPage={onOpenPage} />}
+                {current.key === 'Live stream' && <Card title="Live stream" text="While a stream is on, everybody in the room sees it on the big screen and the songs of the DJs wait."><LiveControls slug={room.slug} live={live} /></Card>}
                 {current.key === 'Roles' && (
                     <div className="space-y-4">
                         <Card title="Give someone a role" text="Search anybody on SFD-DJ.EU by name. A role gives the rights you set below.">

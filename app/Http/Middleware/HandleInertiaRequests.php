@@ -3,9 +3,11 @@
 namespace App\Http\Middleware;
 
 use App\Models\Friendship;
+use App\Models\Room;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Whisper;
+use App\Models\WhisperGroup;
 use App\Support\MailStatus;
 use App\Support\Plans;
 use App\Support\PublicStats;
@@ -58,10 +60,11 @@ class HandleInertiaRequests extends Middleware
             'verification' => fn () => ($u = $request->user()) && ! $u->hasVerifiedEmail()
                 ? ['required' => Setting::verificationRequired(), 'mail' => MailStatus::configured(), 'status' => str_starts_with((string) $request->session()->get('status'), 'verification-link-') ? $request->session()->get('status') : null]
                 : null,
+            'liveCount' => fn () => Room::visibleTo($request->user())->whereNotNull('live')->count(), // rooms with a live stream on, for the number in the menu
             'pendingFriends' => fn () => $request->user()
                 ? Friendship::where('friend_id', $request->user()->id)->where('status', 'pending')->count()
                 : 0,
-            'unreadWhispers' => fn () => $request->user() ? Whisper::where('to_id', $request->user()->id)->whereNull('read_at')->count() : 0,
+            'unreadWhispers' => fn () => ($me = $request->user()) ? Whisper::where('to_id', $me->id)->whereNull('read_at')->count() + (int) WhisperGroup::unreadCounts($me)->sum() : 0, // from people, and from groups
             // social links and the donation goal, both edited in Admin panel → Community
             'community' => fn () => Setting::community(),
             // the numbers shown on the log in and register pages (nobody logged in needs more)

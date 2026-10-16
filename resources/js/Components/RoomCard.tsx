@@ -21,6 +21,7 @@ export interface RoomSummary {
     items_count: number;
     created_at?: string;
     user?: { name: string };
+    live?: { kind: string; title: string; thumbnail: string | null; started_at: string } | null; // a live stream is on the big screen
 }
 
 // a stable colour per room, so an empty room still has a face
@@ -36,16 +37,17 @@ export default function RoomCard({ room, listening = 0, playing }: { room: RoomS
             className="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/4 shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:border-violet-400/60 hover:shadow-violet-500/10"
         >
             <div className={`relative h-28 overflow-hidden bg-linear-to-br ${tintOf(room.id)}`}>
-                {playing?.thumbnail && <img src={playing.thumbnail} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-70 transition duration-500 group-hover:scale-105" />}
+                {(room.live?.thumbnail ?? playing?.thumbnail) && <img src={(room.live?.thumbnail ?? playing?.thumbnail)!} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} className="absolute inset-0 h-full w-full object-cover opacity-70 transition duration-500 group-hover:scale-105" />}
                 <div className="absolute inset-0 bg-linear-to-t from-neutral-950 via-neutral-950/30 to-transparent" />
                 <div className="absolute left-3 top-3 flex items-center gap-1.5">
+                    {room.live && <span className="flex items-center gap-1.5 rounded bg-red-600 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white" data-live-badge><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> Live</span>}
                     {room.is_featured && <span className="rounded-full bg-amber-400/90 px-2 py-0.5 text-[10px] font-bold text-black">⭐ Featured</span>}
                     {room.genre && <span className="rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-semibold text-violet-200 backdrop-blur">🎵 {room.genre}</span>}
                 </div>
                 <span className={`absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold backdrop-blur ${listening > 0 ? 'text-green-400' : 'text-neutral-400'}`}>
                     {listening > 0 && <Equalizer />} {listening} {listening === 1 ? 'listener' : 'listening'}
                 </span>
-                {!playing && <p className="absolute bottom-2 left-3 text-xs text-neutral-300">Waiting for the next DJ…</p>}
+                {!playing && !room.live && <p className="absolute bottom-2 left-3 text-xs text-neutral-300">Waiting for the next DJ…</p>}
             </div>
 
             <div className="flex flex-1 flex-col p-4">
@@ -54,7 +56,9 @@ export default function RoomCard({ room, listening = 0, playing }: { room: RoomS
                     <RoomBadge badges={room.badges} />
                     {room.is_private && <span title="Private room: staff only">🔒</span>}
                 </div>
-                {playing ? (
+                {room.live ? (
+                    <p className="mt-1 truncate text-sm text-neutral-200">🔴 {room.live.title}</p>
+                ) : playing ? (
                     <p className="mt-1 truncate text-sm text-neutral-200">▶ {playing.title} <span className="text-neutral-500">· {playing.dj}</span></p>
                 ) : (
                     room.description && <p className="mt-1 line-clamp-2 text-sm text-neutral-400">{room.description}</p>
