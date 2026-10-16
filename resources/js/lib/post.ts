@@ -53,6 +53,21 @@ export async function sendJson<T>(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', u
     return json as T;
 }
 
+/** Upload a file (multipart) and read the JSON that comes back. */
+export async function uploadJson<T>(url: string, form: FormData): Promise<T> {
+    const xsrf = decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '');
+
+    const res = await fetch(url, { method: 'POST', headers: { Accept: 'application/json', 'X-XSRF-TOKEN': xsrf }, body: form });
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+        const first = json.errors && (Object.values(json.errors)[0] as string[])[0];
+        throw new Error(first ?? json.message ?? 'Upload failed');
+    }
+
+    return json as T;
+}
+
 /** Upload a file (multipart). */
 export async function upload(url: string, form: FormData): Promise<void> {
     const xsrf = decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '');

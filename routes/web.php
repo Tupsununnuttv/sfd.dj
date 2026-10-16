@@ -134,7 +134,10 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::get('/whispers', [WhisperController::class, 'index'])->name('whispers');
     Route::get('/api/whispers', [WhisperController::class, 'conversations'])->name('api.whispers');
     Route::get('/api/whispers/{user}', [WhisperController::class, 'thread'])->name('api.whispers.thread');
+    Route::post('/api/whispers/{user}/read', [WhisperController::class, 'read'])->name('api.whispers.read');
     Route::post('/api/whispers', [WhisperController::class, 'send'])->middleware('throttle:30,1')->name('api.whispers.send');
+    Route::post('/api/whispers/voice', [WhisperController::class, 'voice'])->middleware('throttle:10,1')->name('api.whispers.voice');
+    Route::get('/api/whispers/{whisper}/audio', [WhisperController::class, 'audio'])->name('api.whispers.audio');
 
     Route::get('/my-stuff', [MyStuffController::class, 'index'])->name('my-stuff');
     Route::post('/events', [EventController::class, 'store'])->name('events.store');

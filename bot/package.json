@@ -1,0 +1,19 @@
+{
+    "name": "sfd-dj-bot",
+    "version": "1.0.0",
+    "private": true,
+    "description": "The SFD-DJ.EU Discord bot: support tickets, staff applications, giveaways, birthdays, welcome messages, moderation and website announcements.",
+    "type": "module",
+    "main": "index.js",
+    "engines": {
+        "node": ">=22"
+    },
+    "scripts": {
+        "start": "node index.js",
+        "dev": "node --watch index.js",
+        "test": "node --test"
+    },
+    "dependencies": {
+        "discord.js": "^14.27.0"
+    }
+}

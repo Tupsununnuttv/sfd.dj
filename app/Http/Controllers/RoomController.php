@@ -14,6 +14,7 @@ use App\Models\ChatMessage;
 use App\Models\Friendship;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
+use App\Models\PlaylistSong;
 use App\Models\Room;
 use App\Models\RoomBan;
 use App\Models\RoomBotPresence;
@@ -584,16 +585,22 @@ class RoomController extends Controller
             ])->all();
     }
 
-    /** Add to the waitlist: a search result (`video_id`) or a YouTube / SoundCloud / Spotify link (`url`). */
+    /** Add to the waitlist: a search result (`video_id`), a song of one of my own playlists (`song_id`) or a YouTube / SoundCloud / Spotify link (`url`). */
     public function enqueue(Request $request, Room $room, YouTube $youtube, Music $music): Response
     {
         $this->ensureWaitlistOpen($request, $room);
         $data = $request->validate([
             'url' => ['nullable', 'string', 'max:300'],
             'video_id' => ['nullable', 'regex:/^[\w-]{11}$/'],
+            'song_id' => ['nullable', 'integer'],
         ]);
 
-        if (isset($data['video_id'])) {
+        if (isset($data['song_id'])) {
+            // what the list saved is enough (a SoundCloud track has no YouTube video to ask about)
+            $song = PlaylistSong::whereIn('playlist_id', $request->user()->playlists()->select('id'))->find($data['song_id'])
+                ?? throw ValidationException::withMessages(['url' => 'That song is not in one of your playlists.']);
+            $songs = [$song->only('youtube_id', 'title', 'thumbnail', 'duration')];
+        } elseif (isset($data['video_id'])) {
             $info = $youtube->video($data['video_id']);
             if (! $info) {
                 throw ValidationException::withMessages(['url' => 'Video not found or cannot be embedded.']);
@@ -707,6 +714,8 @@ class RoomController extends Controller
             }
 
             $item->update(['duration' => $data['duration']]);
+            // the song in the DJ's playlist learns its length too (a SoundCloud track whose page did not say it), so the list shows it
+            $item->playlist_song_id && PlaylistSong::whereKey($item->playlist_song_id)->where('duration', 0)->update(['duration' => $data['duration']]);
 
             return true;
         });

@@ -33,6 +33,7 @@ class WhisperSent implements ShouldBroadcastNow
             'from_id' => $w->from_id,
             'to_id' => $w->to_id,
             'body' => $w->body,
+            'voice' => $w->voicePayload(),
             'at' => $w->created_at->toIso8601String(),
             'sender' => $w->sender->only('id', 'name', 'username', 'avatar'),
         ];

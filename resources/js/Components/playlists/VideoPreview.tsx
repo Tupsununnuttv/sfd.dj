@@ -1,9 +1,10 @@
+import { isSoundCloud, soundcloudEmbedUrl } from '@/lib/soundcloud';
 import { X } from 'lucide-react';
 import { ReactNode, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 /**
- * A song's video in a window over the page, to watch it before adding or queueing it. While it is open the room's own music goes quiet
+ * A song's video (or a SoundCloud track's player: `id` starts with "sc:") in a window over the page, to watch it before adding or queueing it. While it is open the room's own music goes quiet
  * (Room listens for "sfd:preview"), and it comes back when it closes. `children` are the buttons under the video (Add, Queue ...).
  */
 export default function VideoPreview({ id, title, channel, onClose, children }: { id: string; title: string; channel?: string | null; onClose: () => void; children?: ReactNode }) {
@@ -35,7 +36,7 @@ export default function VideoPreview({ id, title, channel, onClose, children }: 
                 </div>
                 <div className="aspect-video bg-black">
                     <iframe
-                        src={`https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+                        src={isSoundCloud(id) ? soundcloudEmbedUrl(id, true) : `https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
                         title={title}
                         allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                         allowFullScreen

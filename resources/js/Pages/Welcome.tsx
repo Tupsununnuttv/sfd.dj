@@ -45,7 +45,7 @@ const badges: [string, string][] = [['Owner', '#f43f5e'], ['Admin', '#ef4444'], 
 
 const questions: [string, string][] = [
     ['Do I need an account?', 'Not to look around. As a guest you can open rooms, watch what is playing and read the chat. To chat, vote or DJ you need a free account.'],
-    ['Where does the music come from?', 'Songs play through the official YouTube player. Paste a YouTube, SoundCloud or Spotify link and SFD-DJ.EU finds the song for you.'],
+    ['Where does the music come from?', 'Songs play through the official YouTube and SoundCloud players. Paste a YouTube, SoundCloud or Spotify link and SFD-DJ.EU finds the song for you.'],
     ['Is it really free?', 'Yes. Rooms, chat, playlists, the avatar shop and the API stay free. The Bronze, Silver, Gold, Plus, Pro and Premium subscriptions are optional upgrades; nothing free becomes paid.'],
     ['Can I make my own room?', 'Yes. Pick a name and a genre, set the rules, give roles to friends, or make it private.'],
 ];
@@ -178,7 +178,7 @@ export default function Welcome({ rooms, event, topDjs, genres, stats }: Props) 
                         <Link href={route('dashboard')} className={`${btn} bg-white/10 hover:bg-white/20`}>{guest ? 'Browse as guest' : 'Browse all rooms'}</Link>
                     </div>
                     <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-neutral-400">
-                        {['Free to use', 'Nothing to download', 'Plays through YouTube'].map((t) => <li key={t} className="flex items-center gap-1.5"><Check size={15} className="text-green-400" /> {t}</li>)}
+                        {['Free to use', 'Nothing to download', 'Plays through YouTube and SoundCloud'].map((t) => <li key={t} className="flex items-center gap-1.5"><Check size={15} className="text-green-400" /> {t}</li>)}
                     </ul>
                 </div>
                 <Preview playing={rooms.find((r) => r.now_playing)} />

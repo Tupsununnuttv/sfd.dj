@@ -2,6 +2,7 @@ import Avatar from '@/Components/Avatar';
 import RoleBadge from '@/Components/RoleBadge';
 import { Card, EmptyState, fieldClass, OnlineDot, primaryBtn, SectionTitle, StatTile, Tabs } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
+import { refreshCounts } from '@/lib/counts';
 import { STATUS, statusOf } from '@/lib/status';
 import { ago } from '@/lib/time';
 import { RoleInfo } from '@/types';
@@ -70,10 +71,10 @@ export default function Friends({ friends, incoming, outgoing, people, fans, sug
 
     const add = (e: FormEvent) => {
         e.preventDefault();
-        post(route('friends.store'), { preserveScroll: true, onSuccess: () => reset() });
+        post(route('friends.store'), { preserveScroll: true, onSuccess: () => reset(), onFinish: refreshCounts }); // adding somebody who had asked you first accepts
     };
-    const addUser = (userId: number) => router.post(route('friends.store'), { user_id: userId }, { preserveScroll: true });
-    const remove = (id: number) => router.delete(route('friends.destroy', id), { preserveScroll: true });
+    const addUser = (userId: number) => router.post(route('friends.store'), { user_id: userId }, { preserveScroll: true, onFinish: refreshCounts });
+    const remove = (id: number) => router.delete(route('friends.destroy', id), { preserveScroll: true, onFinish: refreshCounts });
     const addBtn = (userId: number) => <button onClick={() => addUser(userId)} className={`${btn} flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500`}><UserPlus size={13} /> Add</button>;
 
     const online = friends.filter((f) => f.online).length;
@@ -206,7 +207,7 @@ export default function Friends({ friends, incoming, outgoing, people, fans, sug
                             <Card className="divide-y divide-white/5">
                                 {incoming.map((p) => (
                                     <Row key={p.id} p={p}>
-                                        <button onClick={() => router.patch(route('friends.accept', p.id), {}, { preserveScroll: true })} className={`${btn} bg-violet-600 hover:bg-violet-500`}>Accept</button>
+                                        <button onClick={() => router.patch(route('friends.accept', p.id), {}, { preserveScroll: true, onFinish: refreshCounts })} className={`${btn} bg-violet-600 hover:bg-violet-500`}>Accept</button>
                                         <button onClick={() => remove(p.id)} className={`${btn} bg-white/10 hover:bg-white/20`}>Decline</button>
                                     </Row>
                                 ))}

@@ -71,7 +71,7 @@ export default function AddBar({ disabled, roomSlug, onAdd, onQueue, onNotice }:
                     aria-label="Add a song"
                     className="min-w-0 flex-1 border-0 bg-transparent px-1 py-3 text-sm text-neutral-100 placeholder-neutral-600 focus:ring-0"
                 />
-                <span title="Songs always play from YouTube. A SoundCloud or Spotify link is matched to the same song on YouTube, so check the result." className="hidden shrink-0 text-neutral-600 sm:block"><Info size={15} /></span>
+                <span title="YouTube songs play from YouTube and SoundCloud tracks from SoundCloud. A Spotify link is matched to the same song on YouTube, so check the result." className="hidden shrink-0 text-neutral-600 sm:block"><Info size={15} /></span>
                 {query && (
                     <button type="button" onClick={() => { setQuery(''); setResults(null); }} aria-label="Clear" className="shrink-0 rounded-lg p-1 text-neutral-500 hover:bg-white/10 hover:text-white"><X size={15} /></button>
                 )}

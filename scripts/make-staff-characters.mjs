@@ -1,10 +1,10 @@
 // Draws the staff characters in public/Avatars: for every character one looping SVG for each state (Standing, Dancing, DJing).
 //   - eight astronauts: Ice, Azure, Sun and Nebula, each in a standard and a slimmer "mini" build
 //   - the people: Fedora (with a boombox), Blaze and Echo (DJs with headphones) and their referee-shirt versions Blaze Ref and Echo Ref
-//   - Panda Bear (Brand Ambassador and above)
+//   - Panda Bear and Adam & Mochi, a bearded DJ in a black robe with his panda (Brand Ambassador and above; Skelly, the retrowave skeleton developer, is too but was drawn elsewhere and is not made here)
 //   - the Zoo S02 fox
 //   - Rift, the raven mage, Skully, a skeleton DJ, and Fox, a street fox in a bomber jacket (the Owner only)
-//   - for everybody, by level: Adam & Mochi, a bearded DJ in a black robe with his panda (3), Wilmer, a friend in a varsity jacket (4), Milky the milk carton (6), Pip, a penguin DJ in a beanie (7), Spooky the jack-o'-lantern scarecrow (14), Kiko & Mochi, a girl and her dancing Shiba (16), Boomer, a turtle with a boombox shell (20), Ember Dragon (30), Frost Dragon (35)
+//   - for everybody, by level: Wilmer, a friend in a varsity jacket (4), Milky the milk carton (6), Pip, a penguin DJ in a beanie (7), Elementaarne, a red pixel-art figure in a gas mask (12), Spooky the jack-o'-lantern scarecrow (14), Kiko & Mochi, a girl and her dancing Shiba (16), Boomer, a turtle with a boombox shell (20), Ember Dragon (30), Frost Dragon (35)
 // The others are for the roles named in AvatarController::ROLE_ONLY. The six simple characters everybody can wear are drawn by make-characters.mjs.
 // Run it with `node scripts/make-staff-characters.mjs`, or name the ones to redraw: `node scripts/make-staff-characters.mjs ice fedora`.
 import fs from 'node:fs';
@@ -15,6 +15,7 @@ import { astronaut } from './staff-characters/astronaut.mjs';
 import { boomer } from './staff-characters/boomer.mjs';
 import { dj } from './staff-characters/djs.mjs';
 import { dragon } from './staff-characters/dragon.mjs';
+import { elementaar } from './staff-characters/elementaar.mjs';
 import { fedora } from './staff-characters/fedora.mjs';
 import { fox } from './staff-characters/fox.mjs';
 import { kiko } from './staff-characters/kiko.mjs';
@@ -58,6 +59,7 @@ const characters = {
     pip,
     boomer,
     adammochi: adamMochi,
+    elementaar,
 };
 
 const only = process.argv.slice(2);

@@ -12,6 +12,66 @@ class Spotify
 {
     private const PAGE_SIZE = 50;
 
+    /** How many songs Spotify's public page shows of a playlist or an album. */
+    public const PUBLIC_LIMIT = 100;
+
+    /**
+     * "Artist - Title" for each track of a playlist or an album (`$kind`), the words to look the song up on YouTube with.
+     * Anybody's public playlist or album works, with no Spotify account at all: it is read from Spotify's public page (the first 100 songs).
+     * Somebody who connected Spotify gets the whole list from Spotify's API when it is theirs (private ones too, and more than 100 songs); when it is not, the public page answers.
+     *
+     * @return array<int, string>
+     */
+    public function queries(string $kind, string $id, ?User $user, int $limit): array
+    {
+        if ($kind === 'playlist' && $user && filled($user->spotify_refresh_token)) {
+            try {
+                if ($queries = $this->playlistQueries($user, $id, $limit)) {
+                    return $queries;
+                }
+            } catch (ValidationException) {
+                // not theirs to read (Spotify allows that to the owner and collaborators), or the connection is gone: the public page may still say
+            }
+        }
+
+        return $this->publicQueries($kind, $id, $limit);
+    }
+
+    /**
+     * What Spotify's public embed page (open.spotify.com/embed/playlist/<id>) says: the same page a website shows when somebody embeds the playlist.
+     * It needs no account and no key. A private playlist, or one that does not exist, has no track list there.
+     *
+     * @return array<int, string>
+     */
+    public function publicQueries(string $kind, string $id, int $limit): array
+    {
+        try {
+            $html = Http::timeout(8)->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; SFD-DJ.EU)'])->get("https://open.spotify.com/embed/{$kind}/{$id}")->body();
+        } catch (ConnectionException) {
+            $this->fail('Could not reach Spotify.');
+        }
+
+        $page = preg_match('~<script id="__NEXT_DATA__" type="application/json">(.*?)</script>~s', $html, $m) ? json_decode($m[1], true) : null;
+        $tracks = data_get($page, 'props.pageProps.state.data.entity.trackList');
+
+        if (! is_array($tracks)) {
+            $this->fail("Spotify shows nothing of this {$kind}: it is private or it does not exist. Make it public in Spotify (or connect the Spotify account that owns it, in Settings) and try again.");
+        }
+
+        $queries = [];
+        foreach ($tracks as $track) {
+            $title = trim((string) ($track['title'] ?? ''));
+            $artists = trim(str_replace("\u{a0}", ' ', (string) ($track['subtitle'] ?? ''))); // "Artist,<no-break space>Another artist"
+            if ($title !== '') {
+                $queries[] = $artists !== '' ? $artists.' - '.$title : $title;
+            }
+        }
+
+        $queries !== [] || $this->fail("There are no songs to read in this Spotify {$kind}.");
+
+        return array_slice($queries, 0, $limit);
+    }
+
     /** @return array<int, string> */
     public function playlistQueries(User $user, string $playlistId, int $limit): array
     {

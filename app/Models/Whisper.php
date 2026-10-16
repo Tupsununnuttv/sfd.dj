@@ -2,14 +2,32 @@
 
 namespace App\Models;
 
+use App\Http\Controllers\MediaController;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** A private message from one person to another. */
+/** A private message from one person to another: text, or a voice message (`audio`, with `body` empty). */
 class Whisper extends Model
 {
-    protected $fillable = ['from_id', 'to_id', 'body', 'read_at'];
+    /** The longest voice message, in seconds. */
+    public const VOICE_SECONDS = 120;
+
+    /** What a recording may be (by its real type, never the name the browser gave it) and the extension it is stored with. Browsers record WebM (Chrome, Edge, Firefox use Ogg) or MP4 (Safari). */
+    public const VOICE_TYPES = [
+        'audio/webm' => 'webm', 'video/webm' => 'webm', 'audio/ogg' => 'ogg', 'application/ogg' => 'ogg', 'video/ogg' => 'ogg',
+        'audio/mp4' => 'm4a', 'video/mp4' => 'm4a', 'audio/x-m4a' => 'm4a', 'audio/aac' => 'aac',
+        'audio/mpeg' => 'mp3', 'audio/wav' => 'wav', 'audio/x-wav' => 'wav', 'audio/vnd.wave' => 'wav',
+    ];
+
+    private const CONTENT_TYPES = ['webm' => 'audio/webm', 'ogg' => 'audio/ogg', 'm4a' => 'audio/mp4', 'aac' => 'audio/aac', 'mp3' => 'audio/mpeg', 'wav' => 'audio/wav'];
+
+    protected $fillable = ['from_id', 'to_id', 'body', 'audio', 'audio_seconds', 'read_at'];
+
+    protected static function booted(): void
+    {
+        static::deleting(fn (Whisper $whisper) => $whisper->forgetAudio());
+    }
 
     /** Every whisper between these two people, either direction. */
     public function scopeBetween(Builder $query, int $a, int $b): void
@@ -28,6 +46,29 @@ class Whisper extends Model
         return $this->belongsTo(User::class, 'to_id');
     }
 
+    /** Where the recording is on the uploads disk. */
+    public function audioPath(): ?string
+    {
+        return $this->audio ? 'whispers/'.$this->audio : null;
+    }
+
+    public function contentType(): string
+    {
+        return self::CONTENT_TYPES[pathinfo((string) $this->audio, PATHINFO_EXTENSION)] ?? 'application/octet-stream';
+    }
+
+    /** The recording goes when the whisper does. */
+    public function forgetAudio(): void
+    {
+        $this->audio && MediaController::disk()->delete($this->audioPath());
+    }
+
+    /** Every recording sent to or by somebody, for when their account is deleted (the database takes the whispers with it, but not the files). */
+    public static function forgetAudioOf(User $user): void
+    {
+        static::where(fn ($q) => $q->where('from_id', $user->id)->orWhere('to_id', $user->id))->whereNotNull('audio')->get()->each->forgetAudio();
+    }
+
     public function payload(int $me): array
     {
         return [
@@ -36,7 +77,14 @@ class Whisper extends Model
             'from_id' => $this->from_id,
             'to_id' => $this->to_id,
             'body' => $this->body,
+            'voice' => $this->voicePayload(),
             'at' => $this->created_at->toIso8601String(),
         ];
+    }
+
+    /** What the page needs to show a voice message (it fetches the recording from api.whispers.audio). */
+    public function voicePayload(): ?array
+    {
+        return $this->audio ? ['seconds' => (int) $this->audio_seconds] : null;
     }
 }

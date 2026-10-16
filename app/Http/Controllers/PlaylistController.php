@@ -16,14 +16,14 @@ use Inertia\Response;
 
 /**
  * The user's playlists. The page is Inertia; the playlist manager itself (also used inside rooms) talks to the JSON routes below.
- * Songs always play from YouTube; SoundCloud and Spotify links are matched to a YouTube video (see Music).
+ * YouTube songs play from YouTube and SoundCloud tracks from SoundCloud; a Spotify link is matched to a YouTube video (see Music).
  * One list is the person's active one: its first song is their next track (the footbar of a room shows it), and "Join Waitlist" queues it.
  */
 class PlaylistController extends Controller
 {
     public const MAX_PLAYLISTS = 100; // without a plan: the paid plans allow more (App\Support\Plans)
 
-    private const SONG_FIELDS = ['id', 'youtube_id', 'title', 'channel', 'thumbnail', 'duration', 'origin', 'position'];
+    private const SONG_FIELDS = ['id', 'youtube_id', 'title', 'channel', 'thumbnail', 'duration', 'origin', 'origin_url', 'position'];
 
     public function index(): Response
     {
@@ -53,7 +53,7 @@ class PlaylistController extends Controller
         return response()->json($playlist->songs()->get(self::SONG_FIELDS));
     }
 
-    public function checkAvailability(Request $request, Playlist $playlist, YouTube $youtube): JsonResponse
+    public function checkAvailability(Request $request, Playlist $playlist, YouTube $youtube, Music $music): JsonResponse
     {
         $this->own($request, $playlist);
         $songIds = $request->validate([
@@ -63,11 +63,14 @@ class PlaylistController extends Controller
         $songs = $playlist->songs()->whereIn('id', $songIds)->get(['id', 'youtube_id']);
         abort_if($songs->count() !== count($songIds), 404);
 
-        $availability = $youtube->availability($songs->pluck('youtube_id')->all());
+        // SoundCloud tracks are asked of SoundCloud, the rest of YouTube
+        [$soundcloud, $videos] = $songs->partition(fn (PlaylistSong $song) => Music::isSoundCloud($song->youtube_id));
+        $availability = $videos->isEmpty() ? [] : $youtube->availability($videos->pluck('youtube_id')->all());
         abort_if($availability === null, 503, 'Could not check YouTube availability. Try again later or configure YOUTUBE_API_KEY.');
+        $onSoundcloud = $soundcloud->isEmpty() ? [] : $music->soundcloudAvailability($soundcloud->pluck('youtube_id', 'id')->all());
 
         return response()->json([
-            'availability' => $songs->mapWithKeys(fn (PlaylistSong $song) => [$song->id => $availability[$song->youtube_id] ?? false]),
+            'availability' => $songs->mapWithKeys(fn (PlaylistSong $song) => [$song->id => Music::isSoundCloud($song->youtube_id) ? $onSoundcloud[$song->id] : ($availability[$song->youtube_id] ?? false)]),
         ]);
     }
 
@@ -178,7 +181,7 @@ class PlaylistController extends Controller
 
         return [
             'lists' => Playlist::where('user_id', $user->id)->where('kind', 'custom')->withCount('songs')->orderBy('name')->get(['id', 'name', 'is_active']),
-            'next' => $active?->songs()->first(['id', 'youtube_id', 'title', 'channel', 'thumbnail', 'duration', 'origin']),
+            'next' => $active?->songs()->first(['id', 'youtube_id', 'title', 'channel', 'thumbnail', 'duration', 'origin', 'origin_url']),
         ];
     }
 

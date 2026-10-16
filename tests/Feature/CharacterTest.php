@@ -364,30 +364,92 @@ class CharacterTest extends TestCase
         $this->assertTrue($owner->items()->where('item', 'char:fox')->exists());
     }
 
-    public function test_adam_and_mochi_are_a_common_character_for_everybody_from_level_3(): void
+    public function test_adam_and_mochi_and_skelly_are_for_brand_ambassadors_and_up(): void
     {
         $shelf = fn (User $user) => collect($this->actingAs($user)->get('/shop')->inertiaProps('catalog.avatar'))->keyBy('key');
 
-        // on the Common shelf (levels 1 to 3) for everybody, no role needed; level 3 costs 80 SFD Coins
-        $this->assertSame(
-            ['key' => 'char:adammochi', 'label' => 'Adam & Mochi', 'icon' => null, 'level' => 3, 'rarity' => 'common', 'price' => 80, 'owned' => false, 'character' => true],
-            $shelf($this->withRole(null))['char:adammochi'],
-        );
+        foreach (['char:adammochi' => 'Adam & Mochi', 'char:skelly' => 'Skelly'] as $key => $label) {
+            // on the Staff shelf: only people with the role see them, and for them they are free
+            $this->assertFalse($shelf($this->withRole(null))->has($key), "a plain user does not see {$label}");
+            $this->assertFalse($shelf($this->withRole('moderator'))->has($key), "a Moderator does not see {$label}");
+            $card = $shelf($this->withRole('brand_ambassador'))[$key];
+            $this->assertSame([$label, 'staff', 'brand_ambassador', 0, true], [$card['label'], $card['rarity'], $card['role']['key'], $card['price'], $card['owned']]);
 
-        $low = $this->atLevel(2);
-        $low->forceFill(['coins' => 500])->save();
-        $this->actingAs($low)->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:adammochi']]])->assertSessionHasErrors('items.0.key'); // level 3
+            // not even level 50 and plenty of coins open them: the role does
+            $plain = $this->atLevel(50);
+            $plain->forceFill(['coins' => 5000])->save();
+            $this->actingAs($plain)->post('/shop/equip', ['avatar' => $key])->assertSessionHasErrors('avatar');
+            $this->actingAs($plain)->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => $key]]])->assertSessionHasErrors('items.0.key');
 
-        $user = $this->atLevel(3);
-        $user->forceFill(['coins' => 500])->save();
-        $this->actingAs($user)->post('/shop/equip', ['avatar' => 'char:adammochi'])->assertSessionHasErrors('avatar'); // has to be bought first
-        $this->actingAs($user)->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:adammochi']]])->assertSessionHasNoErrors();
-        $this->actingAs($user)->post('/shop/equip', ['avatar' => 'char:adammochi'])->assertSessionHasNoErrors();
-        $this->assertSame('char:adammochi', $user->refresh()->character);
-        $this->assertSame(420, $user->coins);
+            foreach (['brand_ambassador', 'lead_moderator', 'admin', 'developer', 'owner'] as $role) {
+                $user = $this->withRole($role);
+                $this->actingAs($user)->post('/shop/equip', ['avatar' => $key])->assertSessionHasNoErrors();
+                $this->assertSame($key, $user->refresh()->character, "{$role} may wear {$label}");
+            }
 
-        foreach (['standing', 'dancing', 'djing'] as $state) {
-            $this->get("/characters/{$state}/adammochi")->assertOk();
+            foreach (['standing', 'dancing', 'djing'] as $state) {
+                $this->get('/characters/'.$state.'/'.substr($key, 5))->assertOk();
+            }
         }
+
+        // Skelly was drawn elsewhere: "Always play animations" has to find (and drop) the reduced-motion clause in his own spelling too
+        foreach (['standing', 'dancing', 'djing'] as $state) {
+            $moving = $this->get("/characters/{$state}/skelly?motion=1")->assertOk()->getContent();
+            $this->assertStringNotContainsString('prefers-reduced-motion', $moving);
+            $this->assertStringContainsString('@keyframes', $moving);
+        }
+
+        // whoever bought Adam & Mochi while they were a Common character gets the coins back and another character; a Brand Ambassador keeps them
+        $buyer = $this->withRole(null);
+        $buyer->forceFill(['character' => 'char:adammochi', 'coins' => 5])->save();
+        $buyer->items()->create(['slot' => 'avatar', 'item' => 'char:adammochi', 'price' => 80]);
+        $ambassador = $this->withRole('brand_ambassador');
+        $ambassador->items()->create(['slot' => 'avatar', 'item' => 'char:adammochi', 'price' => 80]);
+        $ambassador->forceFill(['character' => 'char:adammochi'])->save();
+
+        (require database_path('migrations/2026_11_11_000001_make_adam_mochi_brand_ambassador_only.php'))->up();
+
+        $this->assertSame(85, $buyer->refresh()->coins);
+        $this->assertNotSame('char:adammochi', $buyer->character);
+        $this->assertFalse($buyer->items()->where('item', 'char:adammochi')->exists());
+        $this->assertSame('char:adammochi', $ambassador->refresh()->character);
+        $this->assertTrue($ambassador->items()->where('item', 'char:adammochi')->exists());
+    }
+
+    public function test_elementaarne_is_an_epic_pixel_character_for_everybody_from_level_twelve(): void
+    {
+        $card = fn (User $user) => collect($this->actingAs($user)->get('/shop')->inertiaProps('catalog.avatar'))->firstWhere('key', 'char:elementaar');
+
+        $first = $card($this->atLevel(1));
+        $this->assertSame(['Elementaarne', 12, 'epic', true], [$first['label'], $first['level'], $first['rarity'], $first['character']]);
+
+        // not for sale below level 12; from level 12 it costs the coins of an Epic and can be worn
+        $early = $this->atLevel(11);
+        $early->forceFill(['coins' => 5000])->save();
+        $this->actingAs($early)->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:elementaar']]])->assertSessionHasErrors('items.0.key');
+
+        $user = $this->atLevel(12);
+        $user->forceFill(['coins' => 5000])->save();
+        $price = $card($user)['price'];
+        $this->assertGreaterThan(0, $price);
+        $this->actingAs($user)->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:elementaar']]])->assertSessionHasNoErrors();
+        $this->actingAs($user)->post('/shop/equip', ['avatar' => 'char:elementaar'])->assertSessionHasNoErrors();
+        $this->assertSame(5000 - $price, $user->refresh()->coins);
+        $this->assertSame('char:elementaar', $user->character);
+
+        // three pictures of pixels (a few rectangles each, so a small file) with the sign of Cancer on the cap, and a still pose for a computer that is set to reduce motion
+        foreach (['standing', 'dancing', 'djing'] as $state) {
+            $file = $this->get("/characters/{$state}/elementaar")->assertOk()->baseResponse->getFile()->getPathname();
+            $svg = file_get_contents($file);
+            $this->assertLessThan(60_000, strlen($svg), "{$state} stays a small picture");
+            $this->assertStringContainsString('aria-label="Elementaarne, '.$state.'"', $svg);
+            $this->assertStringContainsString('prefers-reduced-motion', $svg);
+            $this->assertStringContainsString('crispEdges', $svg);
+
+            $moving = $this->get("/characters/{$state}/elementaar?motion=1")->assertOk()->getContent();
+            $this->assertStringNotContainsString('prefers-reduced-motion', $moving);
+            $this->assertStringContainsString('steps(1,end)', $moving);
+        }
+        $this->assertStringContainsString('<circle', file_get_contents(public_path('Avatars/Standing/elementaar.svg')), 'the Cancer sign is on the cap');
     }
 }

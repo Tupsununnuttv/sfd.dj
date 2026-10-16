@@ -115,7 +115,7 @@ function DiscordConnection({ discord }: { discord: DiscordState }) {
 
 function SpotifyConnection({ spotify }: { spotify: SpotifyState }) {
     return (
-        <SettingsSection title="Spotify" text="Connect Spotify to import playlists that account owns or collaborates on. Public visibility alone does not guarantee API access.">
+        <SettingsSection title="Spotify" text="You do not need this to import a public Spotify playlist or album: just paste its link. Connect Spotify only for your own private playlists, or for playlists with more than 100 songs.">
             <div className="space-y-3">
                 {spotify.notice && <p className={`rounded-lg px-3 py-2 text-sm ${spotify.notice_ok ? 'bg-green-500/10 text-green-200' : 'bg-red-500/10 text-red-200'}`}>{spotify.notice}</p>}
                 {spotify.connected ? (

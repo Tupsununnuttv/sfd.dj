@@ -1,6 +1,7 @@
 import ContextMenu, { MenuAnchor, MenuItem } from '@/Components/ContextMenu';
 import VideoPreview from '@/Components/playlists/VideoPreview';
 import { mmss, originLabel, Song, watchUrl } from '@/lib/playlists';
+import { isSoundCloud } from '@/lib/soundcloud';
 import { ArrowDownToLine, ArrowUpToLine, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink, GripVertical, Link2, ListPlus, MoreVertical, Music2, Play, Trash2 } from 'lucide-react';
 import { DragEvent, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -62,6 +63,8 @@ export default function TrackList({ songs, availability, filter, isActive, roomS
 
     const itemsFor = (song: Song): MenuItem[][] => {
         const index = songs.findIndex((s) => s.id === song.id);
+        const soundcloud = isSoundCloud(song.youtube_id);
+        const page = watchUrl(song);
 
         return [
             ...(roomSlug ? [[{ label: 'Queue in this room', icon: ListPlus, onSelect: () => onQueue(song) }]] : []),
@@ -70,9 +73,11 @@ export default function TrackList({ songs, availability, filter, isActive, roomS
                 ...(index < songs.length - 1 ? [{ label: 'Move to the bottom', icon: ArrowDownToLine, onSelect: () => move(song, 'bottom') }] : []),
             ],
             [
-                { label: 'Watch video', icon: Play, onSelect: () => setWatching(song) },
-                { label: 'Open on YouTube', icon: ExternalLink, onSelect: () => window.open(watchUrl(song.youtube_id), '_blank', 'noopener,noreferrer') },
-                { label: 'Copy link', icon: Link2, onSelect: () => navigator.clipboard?.writeText(watchUrl(song.youtube_id)).then(() => onNotice('Link copied.'), () => onNotice('Could not copy the link.')) },
+                { label: soundcloud ? 'Listen' : 'Watch video', icon: Play, onSelect: () => setWatching(song) },
+                ...(page ? [
+                    { label: soundcloud ? 'Open on SoundCloud' : 'Open on YouTube', icon: ExternalLink, onSelect: () => window.open(page, '_blank', 'noopener,noreferrer') },
+                    { label: 'Copy link', icon: Link2, onSelect: () => navigator.clipboard?.writeText(page).then(() => onNotice('Link copied.'), () => onNotice('Could not copy the link.')) },
+                ] : []),
             ],
             [{ label: 'Remove from playlist', icon: Trash2, danger: true, onSelect: () => onRemove(song) }],
         ].filter((g) => g.length);

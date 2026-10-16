@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Music;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
@@ -56,13 +57,15 @@ class Playlist extends Model
                 break;
             }
 
+            // a song grabbed in a room says only what plays: a SoundCloud one is still SoundCloud, and its address is somewhere in somebody's list already
+            $origin = $song['origin'] ?? (Music::isSoundCloud($song['youtube_id']) ? 'soundcloud' : 'youtube');
             $row = $this->songs()->firstOrCreate(['youtube_id' => $song['youtube_id']], [
                 'title' => $song['title'],
                 'channel' => $song['channel'] ?? null,
                 'thumbnail' => $song['thumbnail'] ?? null,
                 'duration' => $song['duration'] ?? 0,
-                'origin' => $song['origin'] ?? 'youtube',
-                'origin_url' => $song['origin_url'] ?? null,
+                'origin' => $origin,
+                'origin_url' => $song['origin_url'] ?? ($origin === 'soundcloud' ? PlaylistSong::where('youtube_id', $song['youtube_id'])->whereNotNull('origin_url')->value('origin_url') : null),
                 'position' => $position + 1,
             ]);
 

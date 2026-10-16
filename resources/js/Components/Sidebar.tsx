@@ -5,6 +5,7 @@ import Flag from '@/Components/Flag';
 import RoleBadge from '@/Components/RoleBadge';
 import StatusDot from '@/Components/StatusDot';
 import { PageProps } from '@/types';
+import { COUNTS_EVENT } from '@/lib/counts';
 import { embedded } from '@/lib/embed';
 import { levelPercent, xpText } from '@/lib/level';
 import { STATUS, STATUSES, Status, statusOf } from '@/lib/status';
@@ -183,6 +184,19 @@ export default function Sidebar({
 }) {
     const { auth: { user, guest }, unreadWhispers } = usePage<PageProps>().props;
     const [expanded, setExpanded] = useState(false);
+
+    // a friend request answered or a whisper read (here, or in the overlay of this room): the red numbers are read again
+    useEffect(() => {
+        if (guest || embedded) return; // inside an overlay there is no menu to update: the room around it hears about it instead
+        let timer = 0;
+        const again = () => {
+            window.clearTimeout(timer);
+            timer = window.setTimeout(() => router.reload({ only: ['pendingFriends', 'unreadWhispers'] }), 150); // several changes at once ask once
+        };
+        window.addEventListener(COUNTS_EVENT, again);
+
+        return () => { window.clearTimeout(timer); window.removeEventListener(COUNTS_EVENT, again); };
+    }, [guest]);
 
     useEffect(() => {
         if (!expanded) return;

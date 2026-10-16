@@ -1,4 +1,5 @@
 /** What the playlist manager and the footbar of a room share: the shapes of the data, and a few ways of writing a time. */
+import { isSoundCloud } from '@/lib/soundcloud';
 
 export interface PlaylistInfo {
     id: number;
@@ -17,6 +18,7 @@ export interface Song {
     thumbnail: string | null;
     duration: number;
     origin: 'youtube' | 'soundcloud' | 'spotify';
+    origin_url?: string | null; // where the link came from: for a SoundCloud song, its page
     position?: number;
 }
 
@@ -46,4 +48,6 @@ export const playtime = (s: number) => {
 
 export const isLink = (s: string) => /^https?:\/\//i.test(s.trim());
 
-export const watchUrl = (youtubeId: string) => `https://www.youtube.com/watch?v=${youtubeId}`;
+/** Where a song lives on the web: its YouTube page, or its SoundCloud page (null when that address is not known, as for a SoundCloud song that was grabbed in a room). */
+export const watchUrl = (song: Pick<Song, 'youtube_id' | 'origin_url'>): string | null =>
+    isSoundCloud(song.youtube_id) ? (song.origin_url ?? null) : `https://www.youtube.com/watch?v=${song.youtube_id}`;

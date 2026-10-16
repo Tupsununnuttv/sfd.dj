@@ -69,7 +69,10 @@ class User extends Authenticatable implements MustVerifyEmail
                 : (AvatarController::starterCharacter() ?? 'char:foxy');
         });
 
-        static::deleting(fn (User $user) => $user->clearAvatarImage()); // the account goes, its photo too
+        static::deleting(function (User $user) { // the account goes, its photo and the voice messages it sent or got too
+            $user->clearAvatarImage();
+            Whisper::forgetAudioOf($user);
+        });
 
         // an avatar that needs a role goes when the role does
         static::saving(function (User $user) {

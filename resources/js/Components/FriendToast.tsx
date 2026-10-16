@@ -1,4 +1,5 @@
 import Avatar from '@/Components/Avatar';
+import { refreshCounts } from '@/lib/counts';
 import { PageProps } from '@/types';
 import { router, usePage } from '@inertiajs/react';
 import { echo } from '@laravel/echo-react';
@@ -33,7 +34,7 @@ export default function FriendToast() {
 
     const close = (id: number) => setRequests((cur) => cur.filter((r) => r.id !== id));
     const answer = (r: Request, accept: boolean) => {
-        const opts = { preserveScroll: true, preserveState: true, onFinish: () => close(r.id) };
+        const opts = { preserveScroll: true, preserveState: true, onFinish: () => { close(r.id); refreshCounts(); } };
         if (accept) router.patch(route('friends.accept', r.id), {}, opts);
         else router.delete(route('friends.destroy', r.id), opts);
     };

@@ -8,8 +8,9 @@
     "scripts": {
         "build": "tsc && vite build",
         "dev": "concurrently --names web,bot \"vite\" \"npm:bot:dev\"",
-        "bot:dev": "node --watch bot/index.js",
-        "bot:start": "node bot/index.js"
+        "bot:install": "npm --prefix bot install",
+        "bot:dev": "npm --prefix bot run dev",
+        "bot:start": "npm --prefix bot start"
     },
     "devDependencies": {
         "@headlessui/react": "^2.2.10",
@@ -33,7 +34,6 @@
     },
     "dependencies": {
         "@laravel/echo-react": "^2.6.1",
-        "discord.js": "^14.27.0",
         "laravel-echo": "^2.6.1",
         "lucide-react": "^1.57.0",
         "node": "^26.12.0",

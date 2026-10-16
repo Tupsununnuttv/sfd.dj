@@ -1,7 +1,7 @@
 // Adam & Mochi: a bearded DJ in a black robe with red storm-cloud emblems, a metal headband and wrapped hands, and his panda Mochi in a robe of her own.
 // Standing, Adam waves hello while Mochi nibbles a bamboo shoot; dancing, they bounce in turn, Adam throws his arms about and brings his hands together in a
 // seal, Mochi flaps her arms, and little storm clouds rise behind them; at the decks, seen from behind, Adam scratches with one hand and pumps the other while
-// Mochi bobs beside him. Everybody can wear them from level 3 (a Common character).
+// Mochi bobs beside him. Brand Ambassadors and the roles above them can wear them (AvatarController::ROLE_ONLY).
 // Drawn on the 200 x 276 frame like the others, but in the coordinates of the first sketch (Adam's middle is x = 65, his feet stand on y = 225, Mochi stands at
 // x = 137 and is moved 4 closer), so the whole pair sits in one group that is scaled to fit the frame. The Mochi parts are named p...; Adam's left parts are
 // drawn once and the right ones are their mirror image (around x = 65), so L and R share their joints.

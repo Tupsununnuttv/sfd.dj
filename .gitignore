@@ -21,6 +21,8 @@
 /storage/*.key
 /storage/pail
 /storage/app/discord-bot-settings.json
+/bot/node_modules
+/bot/data
 /vendor
 _ide_helper.php
 Homestead.json
@@ -28,3 +30,4 @@ Homestead.yaml
 Thumbs.db
 
 .env*
+!/bot/.env.example

@@ -36,7 +36,7 @@ export const features: Feature[] = [
         tagline: 'Bring your songs from anywhere.',
         intro: 'Build playlists once and queue them in any room. Add songs by searching, or paste a link.',
         points: [
-            ['YouTube, SoundCloud, Spotify', 'Paste a link from any of them. Songs always play from YouTube: SoundCloud and Spotify tracks are matched to the same song there.'],
+            ['YouTube, SoundCloud, Spotify', 'Paste a link from any of them. YouTube songs play from YouTube and SoundCloud tracks from SoundCloud; Spotify tracks are matched to the same song on YouTube.'],
             ['Import in bulk', 'Paste a YouTube playlist or a list of links and import up to 1,000 songs at a time.'],
             ['Your order', 'Drag the tracks of a playlist into the order they should play in. The first one is your next track, and Join Waitlist queues it.'],
             ['Queue all', 'Put a whole playlist (up to 50 songs) into the waitlist with one button, from inside the room.'],
@@ -158,7 +158,7 @@ export const legal: LegalDoc[] = [
         sections: [
             ['Using SFD-DJ.EU', ['You may use SFD-DJ.EU as a guest to watch and read, or with an account to take part. You must give an email address you control.', 'You are responsible for what you do with your account and for keeping your password and tokens safe.', 'You agree to follow the Community rules.']],
             ['Your content', ['You keep the rights to what you write and upload. By posting it you let SFD-DJ.EU show it to the people in the room and store it so the service works.', 'Do not upload or link anything you have no right to share. We can remove content that breaks the rules or the law.']],
-            ['Music', ['SFD-DJ.EU does not host music. Songs play from YouTube through its official player and follow YouTube\'s terms. A song can stop working when its owner removes it or blocks embedding.']],
+            ['Music', ['SFD-DJ.EU does not host music. Songs play from YouTube or SoundCloud through their official players and follow their terms. A song can stop working when its owner removes it or blocks embedding.']],
             ['The service', ['SFD-DJ.EU is provided as it is. It may change, break, or be offline for maintenance. We do not promise it is always available.', 'We may suspend or remove accounts that break these terms.']],
             ['Paid plans', ['The SFD-DJ.EU subscriptions (Bronze, Silver, Gold, Plus, Pro and Premium) are optional plans, paid by the month or the year through Stripe. Their price is shown before you pay. Everything that is free stays free.', 'A plan renews by itself until you cancel it in Settings → Subscriptions. When you cancel, you keep the plan until the end of the time you paid for, and you are not charged again.', 'What a plan gives is listed on the Pricing page. If an account is removed for breaking the rules, its plan ends with it.']],
             ['Developers and bots', ['The API is for building room bots, extensions and tools. Do not use it to spam, scrape private data, or avoid bans. Bot accounts are marked, and their owner is responsible for them.']],

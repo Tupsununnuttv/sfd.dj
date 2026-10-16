@@ -22,12 +22,15 @@ import VoteBar, { MyVotes, Votes } from '@/Components/VoteBar';
 import { SeatButton, WaitlistCard } from '@/Components/WaitlistCard';
 import { backgroundClass } from '@/lib/backgrounds';
 import { getJson, post, send, sendJson } from '@/lib/post';
+import { refreshCounts } from '@/lib/counts';
 import { withDefaults } from '@/lib/prefs';
+import RoomPlayer from '@/lib/roomPlayer';
+import { isSoundCloud } from '@/lib/soundcloud';
 import { PageProps, RoleInfo } from '@/types';
 import { roomUserWeight, sortRoomUsersByWeight } from '@/lib/roomUserSort';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { echo } from '@laravel/echo-react';
-import { Disc3, Footprints, Gavel, MessageCircle, ShieldCheck, UserCheck, VolumeX, X } from 'lucide-react';
+import { Disc3, ExternalLink, Footprints, Gavel, MessageCircle, ShieldCheck, UserCheck, VolumeX, X } from 'lucide-react';
 import { FormEvent, lazy, ReactNode, Suspense, useEffect, useRef, useState } from 'react';
 
 const GrabDialog = lazy(() => import('@/Components/GrabDialog'));
@@ -114,13 +117,6 @@ const isTransientActivity = (message: ChatMessageData) => message.type === 'syst
     || ((message.kind === 'join' || message.kind === 'leave') && /(?:joined|left) the waitlist/i.test(message.body))
 );
 type PanelName = 'info' | 'settings' | 'moderation' | 'playlists' | 'whispers' | null;
-
-declare global {
-    interface Window {
-        YT?: any;
-        onYouTubeIframeAPIReady?: () => void;
-    }
-}
 
 // Stamp each playback with arrival time so late joiners can add the time that passed since.
 const stamp = (p: Playback) => ({ ...p, receivedAt: Date.now() });
@@ -254,13 +250,21 @@ export default function Room({
     const canLock = user.id === host.id || user.is_staff;
 
     const box = useRef<HTMLDivElement>(null);
-    const player = useRef<any>(null);
+    const player = useRef<RoomPlayer | null>(null);
     const [ready, setReady] = useState(false);
     const [discoveredDuration, setDiscoveredDuration] = useState<{ itemId: number; seconds: number } | null>(null);
     const reportedDuration = useRef<number | null>(null);
     const current = playback.current;
     const currentRef = useRef(current);
     currentRef.current = current;
+    const playbackRef = useRef(playback);
+    playbackRef.current = playback;
+    /** Where the room is in the song that plays now, in seconds. */
+    const roomPosition = () => {
+        const now = playbackRef.current;
+
+        return now.current ? Math.max(0, now.elapsed + (Date.now() - now.receivedAt) / 1000) : 0;
+    };
     const playbackSync = useRef({ songId: current?.id ?? null, receivedAt: playback.receivedAt, lastSeekAt: 0 });
     const lastResumeAttempt = useRef<{ songId: number; at: number } | null>(null);
     const resumePlaybackMuted = () => {
@@ -571,45 +575,28 @@ export default function Room({
         setMine(NO_VOTES);
     }, [current?.id]);
 
-    // Create the YouTube player once.
+    // Create the player once: YouTube's, with SoundCloud's beside it for the songs that come from there (RoomPlayer picks the one that has the song).
     useEffect(() => {
-        const mount = document.createElement('div');
-        box.current?.appendChild(mount);
+        if (!box.current) return;
 
-        const init = () => {
-            player.current = new window.YT.Player(mount, {
-                width: '100%',
-                height: '100%',
-                playerVars: { autoplay: 1, controls: 0, disablekb: 1, rel: 0, modestbranding: 1, playsinline: 1 },
-                events: {
-                    onReady: () => setReady(true),
-                    onAutoplayBlocked: resumePlaybackMuted,
-                    onStateChange: (e: { data: number }) => {
-                        // 0 = ended. Every client reports it; the server ignores duplicates.
-                        if (e.data === 0 && currentRef.current && !guest) {
-                            post(route('rooms.skip', room.slug), { item_id: currentRef.current.id, ended: true }).catch(() => {});
-                        }
-                        if (e.data === 2 && currentRef.current && playbackOnRef.current) {
-                            const songId = currentRef.current.id;
-                            window.setTimeout(() => {
-                                const activePlayer = player.current;
-                                if (document.visibilityState !== 'visible' || !playbackOnRef.current || currentRef.current?.id !== songId || activePlayer?.getPlayerState?.() !== 2) return;
-                                resumePlaybackMuted();
-                            }, 750);
-                        }
-                    },
-                },
-            });
-        };
-
-        if (window.YT?.Player) {
-            init();
-        } else {
-            window.onYouTubeIframeAPIReady = init;
-            const s = document.createElement('script');
-            s.src = 'https://www.youtube.com/iframe_api';
-            document.head.appendChild(s);
-        }
+        player.current = new RoomPlayer(box.current, {
+            onReady: () => setReady(true),
+            onAutoplayBlocked: resumePlaybackMuted,
+            onStateChange: (e: { data: number }) => {
+                // 0 = ended. Every client reports it; the server ignores duplicates.
+                if (e.data === 0 && currentRef.current && !guest) {
+                    post(route('rooms.skip', room.slug), { item_id: currentRef.current.id, ended: true }).catch(() => {});
+                }
+                if (e.data === 2 && currentRef.current && playbackOnRef.current) {
+                    const songId = currentRef.current.id;
+                    window.setTimeout(() => {
+                        const activePlayer = player.current;
+                        if (document.visibilityState !== 'visible' || !playbackOnRef.current || currentRef.current?.id !== songId || activePlayer?.getPlayerState?.() !== 2) return;
+                        resumePlaybackMuted();
+                    }, 750);
+                }
+            },
+        }, roomPosition);
 
         return () => {
             player.current?.destroy?.();
@@ -620,18 +607,18 @@ export default function Room({
 
     // Start/stop the video when the song changes, when the player is ready, or when playback is switched on/off.
     useEffect(() => {
-        if (!ready) return;
+        if (!ready || !player.current) return;
         if (current && playbackOn) {
             const at = () => playback.elapsed + (Date.now() - playback.receivedAt) / 1000;
-            player.current.loadVideoById({ videoId: current.youtube_id, startSeconds: at() });
+            player.current.load(current.youtube_id, at());
 
             // Not playing after a moment (or playing without sound): the browser wants a click first. Muted it may always play, so it does, from the right second.
             const t = setTimeout(() => {
                 const p = player.current;
                 const state = p?.getPlayerState?.();
-                if ((state === 1 || state === 3) && !p.isMuted()) return;
+                if ((state === 1 || state === 3) && !p?.isMuted?.()) return;
                 p?.mute?.();
-                (state === 1 || state === 3) || p?.loadVideoById?.({ videoId: current.youtube_id, startSeconds: at() });
+                (state === 1 || state === 3) || p?.load?.(current.youtube_id, at());
                 p?.playVideo?.();
                 setSilenced(true);
             }, 2500);
@@ -734,7 +721,7 @@ export default function Room({
     }, [silenced]);
 
     useEffect(() => {
-        if (ready) player.current.setVolume(effectiveVolume);
+        if (ready) player.current?.setVolume(effectiveVolume);
     }, [ready, effectiveVolume, current?.id, playbackOn]);
 
     const typing = Object.entries(typers).filter(([id]) => +id !== user.id).map(([, n]) => n);
@@ -893,17 +880,28 @@ export default function Room({
                             <>
                                 <div ref={box} className="pointer-events-none absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
                                 {playbackOn && current && (
-                                    // point at the video and a button appears: it opens the song on YouTube, at the place it is at now
+                                    // point at the video and a button appears: it opens the song on YouTube (or SoundCloud), at the place it is at now
                                     <div className="group absolute inset-0">
-                                        <a
-                                            href={`https://www.youtube.com/watch?v=${current.youtube_id}&t=${Math.floor(position)}s`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            title="Open this video on YouTube, at the place it is at now"
-                                            className="unscale absolute right-3 top-3 flex origin-top-right items-center gap-1.5 rounded-lg bg-black/75 px-3 py-1.5 text-xs font-bold text-white opacity-0 shadow-lg ring-1 ring-white/25 transition hover:bg-red-600 focus-visible:opacity-100 group-hover:opacity-100"
-                                        >
-                                            <SocialIcon name="youtube" size={15} /> Open on YouTube
-                                        </a>
+                                        {isSoundCloud(current.youtube_id) ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => window.open(player.current?.openUrl?.(roomPosition()) ?? `https://soundcloud.com/search?q=${encodeURIComponent(current.title)}`, '_blank', 'noopener,noreferrer')}
+                                                title="Open this track on SoundCloud, at the place it is at now"
+                                                className="unscale absolute right-3 top-3 flex origin-top-right items-center gap-1.5 rounded-lg bg-black/75 px-3 py-1.5 text-xs font-bold text-white opacity-0 shadow-lg ring-1 ring-white/25 transition hover:bg-orange-600 focus-visible:opacity-100 group-hover:opacity-100"
+                                            >
+                                                <ExternalLink size={15} /> Open on SoundCloud
+                                            </button>
+                                        ) : (
+                                            <a
+                                                href={`https://www.youtube.com/watch?v=${current.youtube_id}&t=${Math.floor(position)}s`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                title="Open this video on YouTube, at the place it is at now"
+                                                className="unscale absolute right-3 top-3 flex origin-top-right items-center gap-1.5 rounded-lg bg-black/75 px-3 py-1.5 text-xs font-bold text-white opacity-0 shadow-lg ring-1 ring-white/25 transition hover:bg-red-600 focus-visible:opacity-100 group-hover:opacity-100"
+                                            >
+                                                <SocialIcon name="youtube" size={15} /> Open on YouTube
+                                            </a>
+                                        )}
                                     </div>
                                 )}
                                 {silenced && playbackOn && current && (
@@ -1145,7 +1143,7 @@ export default function Room({
                 </Suspense>
             )}
 
-            {page && <Suspense fallback={null}><PageOverlay url={page.url} title={page.title} onClose={() => setPage(null)} /></Suspense>}
+            {page && <Suspense fallback={null}><PageOverlay url={page.url} title={page.title} onClose={() => { setPage(null); refreshCounts(); }} /></Suspense>}
             <Suspense fallback={null}><SupportWidget launcher={false} /></Suspense>{/* no bubble in the room: More → Contact support opens it */}
 
             {grabbing && current && (

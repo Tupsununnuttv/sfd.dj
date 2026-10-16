@@ -3,6 +3,7 @@ import AddBar from '@/Components/playlists/AddBar';
 import TrackList from '@/Components/playlists/TrackList';
 import { PlaylistInfo, playtime, Song, watchUrl } from '@/lib/playlists';
 import { getJson, post, sendJson } from '@/lib/post';
+import { isSoundCloud } from '@/lib/soundcloud';
 import { PageProps } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { ArrowUpDown, CircleDot, ClipboardPaste, Download, ListMusic, Music2, Pencil, Plus, Search, Shuffle, Trash2, X } from 'lucide-react';
@@ -236,6 +237,13 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
             say('Added to the waitlist.');
         });
 
+    // a song from one of my lists: a SoundCloud one has no YouTube video to look up, so the server takes what the list saved
+    const queueSong = (song: Song) =>
+        run(async () => {
+            await post(route('rooms.enqueue', roomSlug!), isSoundCloud(song.youtube_id) ? { song_id: song.id } : { video_id: song.youtube_id });
+            say('Added to the waitlist.');
+        });
+
     const queueAll = () =>
         current &&
         run(async () => {
@@ -245,13 +253,14 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
 
     const exportList = () => {
         if (!current) return;
-        const url = URL.createObjectURL(new Blob([`${songs.map((s) => watchUrl(s.youtube_id)).join('\n')}\n`], { type: 'text/plain' }));
+        const links = songs.map(watchUrl).filter((link): link is string => !!link);
+        const url = URL.createObjectURL(new Blob([`${links.join('\n')}\n`], { type: 'text/plain' }));
         const a = document.createElement('a');
         a.href = url;
         a.download = `${current.name.replace(/[^\w\- ]+/g, '').trim() || 'playlist'}.txt`;
         a.click();
         URL.revokeObjectURL(url);
-        say(`Saved ${songs.length} links. Paste them into Import to bring the list back.`);
+        say(`Saved ${links.length} links. Paste them into Import to bring the list back.`);
     };
 
     const seconds = songs.length || !current ? songs.reduce((n, s) => n + s.duration, 0) : Number(current.songs_sum_duration ?? 0);
@@ -397,7 +406,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                                         placeholder={'One link per line:\nhttps://www.youtube.com/playlist?list=...\nhttps://soundcloud.com/artist/track\nhttps://open.spotify.com/track/...'}
                                         className="w-full rounded-xl border-white/10 bg-black/40 font-mono text-xs text-neutral-100 placeholder-neutral-600 focus:border-violet-400 focus:ring-violet-500/30"
                                     />
-                                    <p className="text-xs text-neutral-500">YouTube playlists import up to 1,000 songs. Spotify tracks are matched to YouTube; connect Spotify in Settings to import playlists you own or collaborate on.</p>
+                                    <p className="text-xs text-neutral-500">YouTube playlists import up to 1,000 songs. Anybody's public Spotify playlist or album works, with no Spotify account needed (the first 100 songs, each matched to YouTube).</p>
                                     <div className="flex flex-wrap items-center gap-3">
                                         <button disabled={busy || !importText.trim()} className="rounded-xl bg-linear-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-xs font-bold text-white hover:opacity-90 disabled:opacity-40">{busy ? 'Importing…' : 'Import'}</button>
                                         <button type="button" onClick={() => setImportOpen(false)} className="text-xs font-semibold text-neutral-400 hover:text-white">Close</button>
@@ -437,7 +446,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                                     roomSlug={roomSlug}
                                     busy={busy}
                                     onReorder={reorder}
-                                    onQueue={(s) => queueId(s.youtube_id)}
+                                    onQueue={queueSong}
                                     onRemove={removeSong}
                                     onCheckAvailability={checkAvailability}
                                     checkingAvailability={checkingAvailability}

@@ -3,6 +3,34 @@ export type Kind = 'new' | 'improved' | 'fixed';
 
 export const releases: { version: string; title: string; notes: [Kind, string][] }[] = [
     {
+        version: '1.61',
+        title: 'Voice messages, any Spotify playlist and Elementaarne',
+        notes: [
+            ['new', 'Voice messages in Whispers. Press the microphone next to the text box, talk (up to 2 minutes) and send it, or throw it away with the bin. The other person plays it in the conversation, with a play button, a bar that fills as it plays and its length. Only the two of you can hear it, and it is deleted with the conversation and with the account.'],
+            ['new', 'You can import any public Spotify playlist or album now, somebody else\'s too: paste its link in the search bar of a playlist. You do not have to connect Spotify and you do not have to be its owner. The first 100 songs are read and each is matched to the same song on YouTube. A private playlist, or more than 100 songs, needs Spotify connected with the account that owns it.'],
+            ['new', 'Elementaarne, a new character: a red pixel-art figure in a cap with the sign of Cancer on it, aviator goggles, a gas mask and a zip hoodie, glowing red. Epic, from level 12 (490 SFD Coins). Standing it breathes and its goggles glint, dancing it hops and throws its arms about, and at the decks (seen from behind) it pumps one fist.'],
+            ['fixed', 'The red number on Friends goes away as soon as you accept or decline the request, also in a room where the Friends page opens on top of the room.'],
+            ['fixed', 'The red number on Whispers goes away as soon as you have opened the conversation and read it, also in a room, and a whisper that arrives in the conversation you are looking at no longer leaves a number behind.'],
+        ],
+    },
+    {
+        version: '1.60',
+        title: 'SoundCloud plays from SoundCloud',
+        notes: [
+            ['new', 'A SoundCloud link now adds the SoundCloud track itself. Before, the site looked for "the same song" on YouTube and often found none ("No playable YouTube match"). Paste the link of one track in the search bar of a playlist and it is added with its picture and length; in a room it plays from SoundCloud on the big screen, in step with everybody else, with the same volume, mute and "Tap to start playback with sound" as a YouTube song. Somebody who comes in halfway is put at the right second.'],
+            ['improved', 'A SoundCloud track in a playlist has Listen (a small player before you decide), Open on SoundCloud and Copy link, and "Check visible" asks SoundCloud whether it is still there. On the screen of a room the Open on SoundCloud button opens the track at the second it is at.'],
+            ['improved', 'Private tracks, SoundCloud playlists (sets) and artist pages cannot be added. Spotify links are still matched to the same song on YouTube.'],
+        ],
+    },
+    {
+        version: '1.59',
+        title: 'Skelly joins the Staff shelf',
+        notes: [
+            ['new', 'Skelly, a new character for Brand Ambassadors and above: a retrowave skeleton developer in a neon techwear jacket with "SFD DEVELOPER" on the back, a beanie with his name on it and a little SFD ghost floating at his side. Standing, he waves hello; dancing, he throws his arms up and grins; at the decks, seen from behind, he rocks his arms to the beat while the ghost bobs beside him.'],
+            ['improved', 'Adam & Mochi moved from the Common shelf to the Staff shelf in the Avatar shop: Brand Ambassadors and above can wear them now, for free. Anybody else who had bought them got the 80 SFD Coins back and a free character in their place.'],
+        ],
+    },
+    {
         version: '1.58',
         title: 'Staff applications without Discord',
         notes: [

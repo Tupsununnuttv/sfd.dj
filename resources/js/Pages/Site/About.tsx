@@ -16,7 +16,7 @@ export default function About() {
 
             <section className="mx-auto max-w-3xl space-y-4 px-6 text-neutral-300">
                 <p>SFD-DJ.EU is a set of live music rooms. In each room one person plays at a time while everyone else listens, chats and votes. When the song ends, the next person in the waitlist plays.</p>
-                <p>Songs play through the official YouTube player, so there is nothing to download and no music is stored on our servers. SoundCloud and Spotify links are matched to the same song on YouTube.</p>
+                <p>Songs play through the official YouTube and SoundCloud players, so there is nothing to download and no music is stored on our servers. Spotify links are matched to the same song on YouTube.</p>
                 <p>The site is built to feel like the classic social DJ rooms: roles, levels, badges, emotes and communities that make a room feel like a place, not just a playlist.</p>
             </section>
 

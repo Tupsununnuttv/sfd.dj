@@ -4,19 +4,30 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Turns a pasted link into playable songs. Rooms play YouTube, so SoundCloud and Spotify tracks are
- * matched to the same song on YouTube (a search, so it can pick the wrong version).
+ * Turns a pasted link into playable songs. YouTube links play from YouTube and SoundCloud tracks play from SoundCloud (its own player, see soundcloud()).
+ * Spotify tracks cannot be played from Spotify, so they are matched to the same song on YouTube (a search, so it can pick the wrong version).
  *
  * Every song comes back as: youtube_id, title, channel, thumbnail, duration, origin, origin_url.
+ * `youtube_id` is "what plays": an 11-character YouTube video id, or `sc:` and a SoundCloud track number (see isSoundCloud).
  */
 class Music
 {
-    /** Songs per import. Matching a SoundCloud/Spotify track costs one YouTube search (100 quota units). */
+    /** Songs per import. Matching a Spotify track costs one YouTube search (100 quota units). */
     public const IMPORT_LIMIT = 1000;
+
+    /** A SoundCloud song's `youtube_id` starts with this, so it can never be taken for a YouTube video id (those are 11 characters, no colon). */
+    public const SOUNDCLOUD = 'sc:';
+
+    public static function isSoundCloud(?string $id): bool
+    {
+        return str_starts_with((string) $id, self::SOUNDCLOUD);
+    }
 
     /** Spotify tracks must each be searched on YouTube, unlike a native YouTube playlist import. */
     private array $importWarnings = [];
@@ -86,22 +97,71 @@ class Music
         $this->fail('Not a YouTube video or playlist link.');
     }
 
+    /**
+     * One SoundCloud track, played by SoundCloud's own player (no API key needed): oEmbed names the track (its number sits in the player address),
+     * its title ("Song name by Artist"), artist and picture, and the track page says how long it is.
+     */
     private function soundcloud(string $url): array
     {
         if (str_contains($url, '/sets/')) {
             $this->fail('SoundCloud playlists cannot be imported (SoundCloud needs separate API access). Add the tracks one by one.');
         }
 
+        [$seconds, $address] = $this->soundcloudPage(strtok($url, '?#') ?: $url); // a shared link carries tracking: ?si=...&utm_source=...
+
         try {
-            $res = Http::timeout(5)->get('https://soundcloud.com/oembed', ['format' => 'json', 'url' => $url]);
+            $res = Http::timeout(6)->get('https://soundcloud.com/oembed', ['format' => 'json', 'url' => $address]);
         } catch (ConnectionException) {
             $this->fail('Could not reach SoundCloud.');
         }
 
         $res->successful() || $this->fail('SoundCloud track not found.');
 
-        // oEmbed titles look like "Song name by Artist"
-        return $this->matchOnYoutube((string) $res->json('title'), 'soundcloud', $url);
+        $player = urldecode((string) $res->json('html')); // ...player/?url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F2159496900&...
+        preg_match('~api\.soundcloud\.com/tracks/(\d+)~', $player, $track) || $this->fail('That SoundCloud link is not a single track. Paste the link of one track.');
+        str_contains($player, 'secret_token') && $this->fail('A private SoundCloud track cannot be played here. Make it public on SoundCloud first.');
+
+        return $this->song(self::SOUNDCLOUD.$track[1], [
+            'title' => (string) $res->json('title'),
+            'channel' => $res->json('author_name'),
+            'thumbnail' => $res->json('thumbnail_url'),
+            'duration' => $seconds,
+        ], 'soundcloud', $address);
+    }
+
+    /**
+     * What the track's page says: its length in seconds (schema.org `duration`, "PT00H03M15S") and its own address (so a short on.soundcloud.com link becomes the real one).
+     * If the page cannot be read the length is 0 and the room reads it from the player when the song plays (RoomController::updateDuration).
+     *
+     * @return array{0: int, 1: string}
+     */
+    private function soundcloudPage(string $url): array
+    {
+        try {
+            $html = Http::timeout(5)->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; SFD-DJ.EU)'])->get($url)->body();
+        } catch (ConnectionException) {
+            return [0, $url];
+        }
+
+        $seconds = preg_match('/itemprop="duration"\s+content="PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?"/', $html, $m) ? (int) ($m[1] ?? 0) * 3600 + (int) ($m[2] ?? 0) * 60 + (int) ($m[3] ?? 0) : 0;
+        $address = preg_match('~<meta property="og:url" content="(https://soundcloud\.com/[^"?#]+)"~', $html, $m) ? $m[1] : $url;
+
+        return [$seconds, $address];
+    }
+
+    /**
+     * Is each SoundCloud track still there? `$ids` are `sc:` song ids; the answer says true for the ones SoundCloud still shares (its oEmbed answers for them).
+     *
+     * @param  array<int, string>  $ids  song row id => youtube_id
+     * @return array<int, bool> song row id => available
+     */
+    public function soundcloudAvailability(array $ids): array
+    {
+        $answers = Http::pool(fn (Pool $pool) => collect($ids)->map(
+            fn (string $id, int $songId) => $pool->as((string) $songId)->timeout(6)->get('https://soundcloud.com/oembed', ['format' => 'json', 'url' => 'https://api.soundcloud.com/tracks/'.substr($id, 3)]),
+        )->all()); // 3 = the length of "sc:"
+
+        return collect($ids)->keys()->mapWithKeys(fn (int $songId) => [$songId => ($answers[(string) $songId] ?? null) instanceof Response && $answers[(string) $songId]->successful()])->all();
     }
 
     private function spotify(string $url, ?User $user): array
@@ -114,28 +174,25 @@ class Music
             return [$this->matchOnYoutube($this->spotifyTrackQuery($url), 'spotify', $url)];
         }
 
-        if ($m[1] === 'playlist') {
-            preg_match('~^([A-Za-z0-9]{22})$~', $m[2], $id) || $this->fail('Spotify playlist links must include a valid 22-character playlist ID.');
+        // a playlist or an album: any public one, with no Spotify account (see Spotify::queries)
+        preg_match('~^([A-Za-z0-9]{22})$~', $m[2], $id) || $this->fail("Spotify {$m[1]} links must include a valid 22-character {$m[1]} ID.");
+        $this->youtube->hasKey() || $this->fail("Matching Spotify {$m[1]} tracks needs the YouTube API key.");
 
-            $user || $this->fail('Connect Spotify in Settings → Account before importing playlist tracks.');
-            $this->youtube->hasKey() || $this->fail('Matching Spotify playlist tracks needs the YouTube API key.');
-
-            $queries = $this->spotify->playlistQueries($user, $id[1], self::IMPORT_LIMIT);
-            $queries || $this->fail('Spotify playlist is empty or not publicly accessible.');
-
-            $songs = [];
-            foreach ($queries as $query) {
-                try {
-                    $songs[] = $this->matchOnYoutube($query, 'spotify', $url);
-                } catch (ValidationException $e) {
-                    $this->importWarnings[] = $query.': '.collect($e->errors())->flatten()->first();
-                }
-            }
-
-            return $songs;
+        $queries = $this->spotify->queries($m[1], $id[1], $user, self::IMPORT_LIMIT);
+        if (count($queries) === Spotify::PUBLIC_LIMIT) {
+            $this->importWarnings[] = "{$url}: Spotify gives out the first ".Spotify::PUBLIC_LIMIT." songs of a public {$m[1]}. If it has more, the rest is not in this import (connect Spotify in Settings if it is yours).";
         }
 
-        $this->fail('Spotify album imports are not supported. Paste individual Spotify track links instead.');
+        $songs = [];
+        foreach ($queries as $query) {
+            try {
+                $songs[] = $this->matchOnYoutube($query, 'spotify', $url);
+            } catch (ValidationException $e) {
+                $this->importWarnings[] = $query.': '.collect($e->errors())->flatten()->first();
+            }
+        }
+
+        return $songs;
     }
 
     /** "Artist Title" for a Spotify track, read from the page's og: tags (artist is the first part of og:description). */

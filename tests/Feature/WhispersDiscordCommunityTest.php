@@ -9,8 +9,10 @@ use App\Models\User;
 use App\Models\Whisper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -54,6 +56,79 @@ class WhispersDiscordCommunityTest extends TestCase
         $this->app['auth']->forgetGuards();
         $this->getJson('/api/whispers')->assertUnauthorized();
         $this->get('/whispers')->assertRedirect('/login');
+    }
+
+    /** A tenth of a second of silence: a real WAV, small enough to keep in a test. */
+    private function wav(): string
+    {
+        $data = str_repeat("\x80", 800);
+
+        return 'RIFF'.pack('V', 36 + strlen($data)).'WAVEfmt '.pack('VvvVVvv', 16, 1, 1, 8000, 8000, 1, 8).'data'.pack('V', strlen($data)).$data;
+    }
+
+    public function test_a_voice_message_is_kept_privately_and_only_its_two_people_can_hear_it(): void
+    {
+        Storage::fake(config('filesystems.uploads'));
+        Event::fake([WhisperSent::class]);
+        $a = User::factory()->create();
+        $b = User::factory()->create();
+        $c = User::factory()->create();
+        $voice = fn (User $from, array $extra = []) => $this->actingAs($from)->postJson('/api/whispers/voice', $extra + ['user_id' => $b->id, 'audio' => UploadedFile::fake()->createWithContent('voice.wav', $this->wav()), 'seconds' => 7]);
+
+        $voice($a)->assertCreated()->assertJsonPath('message.voice.seconds', 7)->assertJsonPath('message.body', '')->assertJsonPath('message.mine', true);
+        $whisper = Whisper::firstOrFail();
+        $this->assertStringEndsWith('.wav', $whisper->audio);
+        Storage::disk(config('filesystems.uploads'))->assertExists('whispers/'.$whisper->audio);
+        Event::assertDispatched(WhisperSent::class, fn ($event) => $event->broadcastWith()['voice'] === ['seconds' => 7] && $event->broadcastWith()['body'] === '');
+
+        // the two of them hear it (it is not a public file); nobody else, and not somebody who is not logged in
+        $url = "/api/whispers/{$whisper->id}/audio";
+        $heard = $this->actingAs($b)->get($url)->assertOk()->assertHeader('Content-Type', 'audio/wav')->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->assertSame($this->wav(), $heard->streamedContent());
+        $this->actingAs($a)->get($url)->assertOk();
+        $this->actingAs($c)->get($url)->assertNotFound();
+        $this->app['auth']->forgetGuards();
+        $this->getJson($url)->assertUnauthorized();
+
+        // it shows in the thread and the list as a voice message, and counts as unread until the thread is opened
+        $this->actingAs($b)->getJson('/api/whispers')->assertJsonPath('0.unread', 1)->assertJsonPath('0.last.voice.seconds', 7);
+        $this->actingAs($b)->getJson("/api/whispers/{$a->id}")->assertJsonPath('messages.0.voice.seconds', 7);
+        $this->actingAs($b)->getJson('/api/whispers')->assertJsonPath('0.unread', 0);
+
+        // what a recording may be: audio, up to 120 seconds, to somebody else who takes whispers from you
+        $voice($a, ['seconds' => 121])->assertJsonValidationErrors('seconds');
+        $voice($a, ['seconds' => 0])->assertJsonValidationErrors('seconds');
+        $voice($a, ['audio' => UploadedFile::fake()->createWithContent('voice.txt', 'not sound')])->assertJsonValidationErrors('audio');
+        $voice($a, ['audio' => UploadedFile::fake()->create('big.wav', 3000, 'audio/wav')])->assertJsonValidationErrors('audio');
+        $voice($a, ['user_id' => $a->id])->assertStatus(422);
+        $b->forceFill(['preferences' => ['privacy' => ['whispers' => 'nobody']]])->save();
+        $voice($a)->assertForbidden();
+        $this->assertSame(1, Whisper::count());
+
+        // the recording goes with the whisper, and with the account
+        $b->forceFill(['preferences' => null])->save();
+        $voice($a)->assertCreated();
+        $second = Whisper::latest('id')->firstOrFail();
+        $second->delete();
+        Storage::disk(config('filesystems.uploads'))->assertMissing('whispers/'.$second->audio);
+        $a->delete();
+        Storage::disk(config('filesystems.uploads'))->assertMissing('whispers/'.$whisper->audio);
+    }
+
+    public function test_whispers_can_be_marked_read_on_screen_and_only_the_other_persons_are_touched(): void
+    {
+        Event::fake([WhisperSent::class]);
+        $a = User::factory()->create();
+        $b = User::factory()->create();
+        $this->actingAs($a)->postJson('/api/whispers', ['user_id' => $b->id, 'body' => 'to bob'])->assertCreated();
+        $this->actingAs($b)->postJson('/api/whispers', ['user_id' => $a->id, 'body' => 'to alice'])->assertCreated();
+
+        $this->actingAs($b)->postJson("/api/whispers/{$a->id}/read")->assertNoContent();
+
+        $this->assertNotNull(Whisper::where('to_id', $b->id)->first()->read_at, 'what alice wrote to bob is read');
+        $this->assertNull(Whisper::where('to_id', $a->id)->first()->read_at, "bob's reading does not read alice's");
+        $this->actingAs($b)->get('/dashboard')->assertInertia(fn (Assert $page) => $page->where('unreadWhispers', 0));
+        $this->actingAs($a)->get('/dashboard')->assertInertia(fn (Assert $page) => $page->where('unreadWhispers', 1));
     }
 
     public function test_discord_linking(): void

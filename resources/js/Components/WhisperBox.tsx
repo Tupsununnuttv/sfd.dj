@@ -1,11 +1,15 @@
 import Avatar from '@/Components/Avatar';
 import { fieldClass } from '@/Components/ui';
-import { getJson, sendJson } from '@/lib/post';
+import VoiceBubble from '@/Components/VoiceBubble';
+import VoiceRecorderBar from '@/Components/VoiceRecorderBar';
+import { refreshCounts } from '@/lib/counts';
+import { getJson, post, sendJson, uploadJson } from '@/lib/post';
 import { ago } from '@/lib/time';
+import { canRecordVoice, Recording } from '@/lib/voiceRecorder';
 import { PageProps } from '@/types';
 import { router, usePage } from '@inertiajs/react';
 import { echo } from '@laravel/echo-react';
-import { ArrowLeft, MessageCirclePlus, Search, Send, UserRound } from 'lucide-react';
+import { ArrowLeft, MessageCirclePlus, Mic, Search, Send, UserRound } from 'lucide-react';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface Person {
@@ -20,6 +24,7 @@ interface Line {
     from_id: number;
     to_id: number;
     body: string;
+    voice?: { seconds: number } | null; // a voice message: `body` is empty, the recording is fetched from api.whispers.audio
     at: string;
 }
 interface Conversation {
@@ -59,15 +64,18 @@ export default function WhisperBox({ start, friends = [], openProfile, className
     const [find, setFind] = useState('');
     const [unreadOnly, setUnreadOnly] = useState(false);
     const [error, setError] = useState('');
+    const [recording, setRecording] = useState(false); // the strip that records a voice message is open
     const otherRef = useRef<Person | null>(null);
     otherRef.current = other;
+    const unseen = useRef<number | null>(null); // somebody wrote while this tab was in the background: read when it comes back
+    const markRead = useCallback((id: number) => { post(route('api.whispers.read', id)).then(refreshCounts).catch(() => {}); }, []);
     const end = useRef<HTMLDivElement>(null);
     const box = useRef<HTMLTextAreaElement>(null);
 
     const loadList = useCallback(() => getJson<Conversation[]>(route('api.whispers')).then(setList).catch(() => {}), []);
     const open = useCallback((id: number) => {
         getJson<{ user: Person; messages: Line[] }>(route('api.whispers.thread', id))
-            .then((t) => { setOther(t.user); setComposing(false); setLines(t.messages); setError(''); loadList(); })
+            .then((t) => { setOther(t.user); setComposing(false); setLines(t.messages); setError(''); loadList(); refreshCounts(); }) // opening it marks theirs as read
             .catch((e: Error) => setError(e.message));
     }, [loadList]);
 
@@ -81,16 +89,25 @@ export default function WhisperBox({ start, friends = [], openProfile, className
             const partner = mine ? w.to_id : w.from_id;
             if (partner === otherRef.current?.id) {
                 setLines((p) => (p.some((x) => x.id === w.id) ? p : [...p, { ...w, mine }]));
-                if (!mine) getJson(route('api.whispers.thread', partner)).catch(() => {}); // it is on screen: mark read
+                if (!mine) {
+                    if (document.visibilityState === 'visible') markRead(partner); // it is on screen: read
+                    else unseen.current = partner;
+                }
             }
             loadList();
         };
         ch.listen('.whisper', onWhisper);
+        const back = () => {
+            if (document.visibilityState === 'visible' && unseen.current !== null && unseen.current === otherRef.current?.id) markRead(unseen.current);
+            if (document.visibilityState === 'visible') unseen.current = null;
+        };
+        document.addEventListener('visibilitychange', back);
 
-        return () => { ch.stopListening('.whisper', onWhisper); };
-    }, [me, start, open, loadList]);
+        return () => { ch.stopListening('.whisper', onWhisper); document.removeEventListener('visibilitychange', back); };
+    }, [me, start, open, loadList, markRead]);
 
     useEffect(() => { end.current?.scrollIntoView({ block: 'end' }); }, [lines, other]);
+    useEffect(() => setRecording(false), [other?.id]);
     useEffect(() => {
         const el = box.current;
         if (el) { el.style.height = 'auto'; el.style.height = `${Math.min(el.scrollHeight, 120)}px`; }
@@ -109,6 +126,25 @@ export default function WhisperBox({ start, friends = [], openProfile, className
                 loadList();
             })
             .catch((er: Error) => { setText(body); setError(er.message); });
+    };
+
+    const startVoice = () => {
+        if (!other && !to.trim()) return setError('Pick who it is for first.');
+        setError('');
+        setRecording(true);
+    };
+
+    const sendVoice = async (recorded: Recording) => {
+        const form = new FormData();
+        if (other) form.append('user_id', String(other.id));
+        else form.append('username', to.trim().replace(/^@/, ''));
+        form.append('audio', recorded.blob, `voice.${recorded.extension}`);
+        form.append('seconds', String(recorded.seconds));
+        const r = await uploadJson<{ message: Line; user: Person }>(route('api.whispers.voice'), form);
+        setError('');
+        setRecording(false);
+        if (!other) { setOther(r.user); setComposing(false); setTo(''); setLines([r.message]); } else setLines((p) => (p.some((x) => x.id === r.message.id) ? p : [...p, r.message]));
+        loadList();
     };
 
     const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -178,7 +214,7 @@ export default function WhisperBox({ start, friends = [], openProfile, className
                                         <span className="shrink-0 text-[11px] text-neutral-500">{ago(c.last.at)}</span>
                                     </span>
                                     <span className="flex items-center justify-between gap-2">
-                                        <span className={`truncate text-xs ${c.unread ? 'text-neutral-200' : 'text-neutral-500'}`}>{c.last.mine ? 'You: ' : ''}{c.last.body}</span>
+                                        <span className={`truncate text-xs ${c.unread ? 'text-neutral-200' : 'text-neutral-500'}`}>{c.last.mine ? 'You: ' : ''}{c.last.voice ? `🎤 Voice message (${Math.floor(c.last.voice.seconds / 60)}:${String(c.last.voice.seconds % 60).padStart(2, '0')})` : c.last.body}</span>
                                         {c.unread > 0 && <span className="shrink-0 rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">{c.unread}</span>}
                                     </span>
                                 </span>
@@ -239,7 +275,7 @@ export default function WhisperBox({ start, friends = [], openProfile, className
                                     {heading && <p className="my-4 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-500">{heading}</p>}
                                     <div className={`flex ${m.mine ? 'justify-end' : 'justify-start'} ${first ? 'mt-3' : 'mt-0.5'}`}>
                                         <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${m.mine ? 'rounded-br-md bg-linear-to-br from-fuchsia-600 to-violet-600 text-white' : 'rounded-bl-md bg-white/10'}`}>
-                                            <p className="whitespace-pre-wrap wrap-break-word">{m.body}</p>
+                                            {m.voice ? <VoiceBubble id={m.id} seconds={m.voice.seconds} mine={m.mine} /> : <p className="whitespace-pre-wrap wrap-break-word">{m.body}</p>}
                                             {last && <p className={`mt-0.5 text-[10px] ${m.mine ? 'text-white/60' : 'text-neutral-500'}`}>{clock(m.at)}</p>}
                                         </div>
                                     </div>
@@ -249,11 +285,19 @@ export default function WhisperBox({ start, friends = [], openProfile, className
                         </div>
 
                         {error && <p className="px-4 pb-1 text-xs text-red-400">{error}</p>}
-                        <form onSubmit={send} className="flex items-end gap-2 border-t border-white/10 p-3">
-                            <textarea ref={box} rows={1} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} placeholder={other ? `Whisper to ${other.name}…` : 'Write a whisper…'} maxLength={500} className={`${fieldClass} max-h-28 resize-none`} />
-                            {text.length > 400 && <span className="pb-2 text-[11px] text-neutral-500">{500 - text.length}</span>}
-                            <button disabled={!text.trim()} aria-label="Send" className="rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 p-2.5 text-white transition hover:opacity-90 disabled:opacity-40"><Send size={17} /></button>
-                        </form>
+                        {recording ? (
+                            <VoiceRecorderBar onSend={sendVoice} onCancel={() => setRecording(false)} onProblem={setError} />
+                        ) : (
+                            <form onSubmit={send} className="flex items-end gap-2 border-t border-white/10 p-3">
+                                <textarea ref={box} rows={1} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} placeholder={other ? `Whisper to ${other.name}…` : 'Write a whisper…'} maxLength={500} className={`${fieldClass} max-h-28 resize-none`} />
+                                {text.length > 400 && <span className="pb-2 text-[11px] text-neutral-500">{500 - text.length}</span>}
+                                {!text.trim() && canRecordVoice() ? (
+                                    <button type="button" onClick={startVoice} aria-label="Record a voice message" title="Record a voice message" className="rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 p-2.5 text-white transition hover:opacity-90"><Mic size={17} /></button>
+                                ) : (
+                                    <button disabled={!text.trim()} aria-label="Send" className="rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 p-2.5 text-white transition hover:opacity-90 disabled:opacity-40"><Send size={17} /></button>
+                                )}
+                            </form>
+                        )}
                     </>
                 )}
             </section>
