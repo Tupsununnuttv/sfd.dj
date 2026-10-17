@@ -12,7 +12,7 @@ import { STATUS, STATUSES, Status, statusOf } from '@/lib/status';
 import { Link, router, usePage } from '@inertiajs/react';
 import { createContext, MouseEvent, useContext, useEffect, useRef, useState } from 'react';
 import {
-    BookOpen, ChevronDown, CalendarDays, Clock, DoorOpen, Gavel, Gift, HelpCircle, LayoutDashboard, ListMusic, LogIn, LogOut, type LucideIcon,
+    BookOpen, Bot, ChevronDown, CalendarDays, Clock, DoorOpen, Gavel, Gift, HelpCircle, LayoutDashboard, ListMusic, LogIn, LogOut, type LucideIcon,
     MessageCircle, Package, PanelLeftClose, PanelLeftOpen, Radio, RadioTower, ScrollText, Settings, ShieldCheck, ShoppingBag, Trophy, UserPlus, Users,
 } from 'lucide-react';
 
@@ -25,6 +25,7 @@ const links: NavLink[] = [
     { label: 'Events', routeName: 'events', icon: CalendarDays },
     { label: 'Friends', routeName: 'friends', icon: Users, membersOnly: true },
     { label: 'Whispers', routeName: 'whispers', icon: MessageCircle, membersOnly: true },
+    { label: 'Selfbots', routeName: 'selfbots', icon: Bot, membersOnly: true },
     { label: 'Avatar shop', routeName: 'shop', icon: ShoppingBag, membersOnly: true },
     { label: 'Referral', routeName: 'referral', icon: Gift, membersOnly: true },
 ];

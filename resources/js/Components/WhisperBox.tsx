@@ -89,6 +89,10 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
     const [showGroup, setShowGroup] = useState(false); // the open group's people and settings are shown instead of its whispers
     const [composing, setComposing] = useState(false); // the "new whisper" picker is open
     const [lines, setLines] = useState<Line[]>([]);
+    const [hasMore, setHasMore] = useState(false);
+    const [loadingOlder, setLoadingOlder] = useState(false);
+    const historyScroll = useRef<HTMLDivElement>(null);
+    const restoredScroll = useRef<{ height: number; top: number } | null>(null);
     const [text, setText] = useState('');
     const [to, setTo] = useState('');
     const [find, setFind] = useState('');
@@ -115,13 +119,13 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
         }).catch(() => {});
     }, []);
     const open = useCallback((id: number) => {
-        getJson<{ user: Person; messages: Line[] }>(route('api.whispers.thread', id))
-            .then((t) => { setOther(t.user); setGroup(null); setComposing(false); setMakingGroup(false); setLines(t.messages); setError(''); loadList(); refreshCounts(); }) // opening it marks theirs as read
+        getJson<{ user: Person; messages: Line[]; has_more: boolean }>(route('api.whispers.thread', id))
+            .then((t) => { restoredScroll.current = null; setHasMore(t.has_more); setOther(t.user); setGroup(null); setComposing(false); setMakingGroup(false); setLines(t.messages); setError(''); loadList(); refreshCounts(); }) // opening it marks theirs as read
             .catch((e: Error) => setError(e.message));
     }, [loadList]);
     const openGroup = useCallback((id: number) => {
-        getJson<{ group: Group; messages: Line[] }>(route('api.whisper-groups.show', id))
-            .then((t) => { setGroup(t.group); setOther(null); setComposing(false); setMakingGroup(false); setShowGroup(false); setLines(t.messages); setError(''); loadList(); refreshCounts(); })
+        getJson<{ group: Group; messages: Line[]; has_more: boolean }>(route('api.whisper-groups.show', id))
+            .then((t) => { restoredScroll.current = null; setHasMore(t.has_more); setGroup(t.group); setOther(null); setComposing(false); setMakingGroup(false); setShowGroup(false); setLines(t.messages); setError(''); loadList(); refreshCounts(); })
             .catch((e: Error) => setError(e.message));
     }, [loadList]);
 
@@ -159,7 +163,27 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
         return () => { ch.stopListening('.whisper', onWhisper); ch.stopListening('.whisper-group', onGroup); document.removeEventListener('visibilitychange', back); };
     }, [me, start, startGroup, open, openGroup, loadList, markRead]); // eslint-disable-line react-hooks/exhaustive-deps -- targetOf only reads `me`
 
-    useEffect(() => { end.current?.scrollIntoView({ block: 'end' }); }, [lines, other, group?.id, showGroup]);
+    useEffect(() => {
+        if (restoredScroll.current && historyScroll.current) {
+            historyScroll.current.scrollTop = restoredScroll.current.top + historyScroll.current.scrollHeight - restoredScroll.current.height;
+            restoredScroll.current = null;
+        } else end.current?.scrollIntoView({ block: 'end' });
+    }, [lines, other, group?.id, showGroup]);
+
+    const loadOlder = async () => {
+        if (loadingOlder || !lines.length || (!group && !other)) return;
+        const key = openKey.current;
+        setLoadingOlder(true);
+        try {
+            const url = group ? route('api.whisper-groups.show', group.id) : route('api.whispers.thread', other!.id);
+            const result = await getJson<{ messages: Line[]; has_more: boolean }>(`${url}?before=${lines[0].id}`);
+            if (key !== openKey.current) return;
+            if (historyScroll.current) restoredScroll.current = { height: historyScroll.current.scrollHeight, top: historyScroll.current.scrollTop };
+            setLines((now) => [...result.messages.filter((m) => !now.some((n) => n.id === m.id)), ...now]);
+            setHasMore(result.has_more);
+        } catch (err) { if (key === openKey.current) setError((err as Error).message); }
+        finally { setLoadingOlder(false); }
+    };
     useEffect(() => { setRecording(false); setReplyTo(null); setPicker(null); setShowGroup(false); }, [other?.id, group?.id]);
     useEffect(() => {
         const el = box.current;
@@ -378,7 +402,8 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
                             />
                         ) : (
                             <>
-                                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                                <div ref={historyScroll} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                                    {(other || group) && hasMore && <button type="button" disabled={loadingOlder} onClick={loadOlder} className="mb-4 w-full rounded-lg bg-white/5 py-2 text-xs text-violet-300 hover:bg-white/10 disabled:opacity-50">{loadingOlder ? 'Loading…' : 'Load older messages'}</button>}
                                     {!other && !group && (
                                         <div className="mb-4">
                                             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">Friends and recent</p>

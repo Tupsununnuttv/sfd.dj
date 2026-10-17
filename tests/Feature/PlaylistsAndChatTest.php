@@ -395,6 +395,30 @@ class PlaylistsAndChatTest extends TestCase
         $this->actingAs($host)->post('/profile/photo', ['photo' => $this->realFile('x.png', '<svg onload="1"/>')])->assertSessionHasErrors('photo');
     }
 
+    public function test_members_can_send_picture_replies_and_muted_uploads_leave_no_file(): void
+    {
+        Storage::fake('local');
+        config(['filesystems.uploads' => 'local']);
+        Event::fake([MessageSent::class]);
+        $host = User::factory()->create();
+        $member = User::factory()->create();
+        $room = $host->rooms()->create(['name' => 'Pictures', 'slug' => 'pictures']);
+        $original = $room->messages()->create(['user_id' => $host->id, 'body' => 'Show me']);
+        $this->actingAs($member)->post('/rooms/pictures/chat-image', [
+            'image' => $this->png(), 'body' => 'My picture', 'reply_to_id' => $original->id,
+        ])->assertNoContent();
+        $message = $room->messages()->latest('id')->first();
+        $this->assertSame('My picture', $message->body);
+        $this->assertEquals($original->id, $message->reply_to_id);
+        Storage::disk('local')->assertExists('chat/'.$message->image);
+        Event::assertDispatched(MessageSent::class);
+
+        $room->mutes()->create(['user_id' => $member->id, 'muted_by' => $host->id]);
+        $this->post('/rooms/pictures/chat-image', ['image' => $this->png()])->assertSessionHasErrors('body');
+        $this->assertCount(1, Storage::disk('local')->files('chat'));
+        $this->assertSame(2, $room->messages()->count());
+    }
+
     public function test_room_emojis_are_host_only_and_listed_in_the_room(): void
     {
         Storage::fake('local');

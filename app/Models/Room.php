@@ -182,6 +182,11 @@ class Room extends Model
         return $this->belongsTo(User::class, 'auto_host_bot_id');
     }
 
+    public function currentItem(): BelongsTo
+    {
+        return $this->belongsTo(PlaylistItem::class, 'current_item_id');
+    }
+
     public function autoHostPlaylist(): BelongsTo
     {
         return $this->belongsTo(Playlist::class, 'auto_host_playlist_id');
@@ -221,6 +226,11 @@ class Room extends Model
     public function clearsLogs(?User $user): bool
     {
         return $user && ($user->id === $this->user_id || $user->is_staff);
+    }
+
+    public function canDelete(?User $user): bool
+    {
+        return $user && ($user->id === $this->user_id || $user->is_staff || $user->hasPermission('rooms.manage'));
     }
 
     /** Write a line in the moderation log. */
@@ -400,6 +410,9 @@ class Room extends Model
     /** Cycling: a DJ who has just played goes to the back of the line. Their next turn is the next song of their active playlist; a song that did not come from a playlist plays again. */
     private function requeue(PlaylistItem $played): void
     {
+        if ($played->user_id === $this->auto_host_bot_id) {
+            return; // self DJs only play when the human queue is empty
+        }
         $data = $played->only('user_id', 'youtube_id', 'title', 'thumbnail', 'duration');
 
         if ($played->playlist_song_id) {

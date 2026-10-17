@@ -363,7 +363,7 @@ export default function Room({
     }
     if (live) { users.forEach((u) => dancing.add(u.id)); if (!guest) dancing.add(user.id); } // a live show: everybody dances
     const canModerate = can.moderate_chat || can.manage_queue || can.moderate_users;
-    const canEditRoom = can.edit_settings || can.manage_roles || can.manage_queue;
+    const canEditRoom = can.edit_settings || can.manage_roles || can.manage_queue || can.delete_room || can.selfbots;
     // a song's video is being watched in a playlist or a search (VideoPreview): the room goes quiet until it closes
     const [previewing, setPreviewing] = useState(false);
     useEffect(() => {

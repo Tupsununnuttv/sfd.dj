@@ -13,7 +13,7 @@ use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response as MediaResponse;
 
 /** Whispers: private messages between two people, or inside a group (see WhisperGroupController). The page and the in-room panel both use the JSON routes. */
 class WhisperController extends Controller
@@ -47,13 +47,13 @@ class WhisperController extends Controller
     /** The conversation with one person; opening it marks theirs as read. */
     public function thread(Request $request, User $user): JsonResponse
     {
+        $request->validate(['before' => ['nullable', 'integer', 'min:1']]);
         $me = $request->user()->id;
         Whisper::where('from_id', $user->id)->where('to_id', $me)->whereNull('read_at')->update(['read_at' => now()]);
 
         return response()->json([
             'user' => $user->only('id', 'name', 'username', 'avatar'),
-            'messages' => Whisper::with('replyTo')->between($me, $user->id)->latest('id')->limit(100)->get()->reverse()->map->payload($me)->values(),
-        ]);
+        ] + Whisper::history(Whisper::with('replyTo')->between($me, $user->id), $me, $request->integer('before')));
     }
 
     /** The conversation with this person is on screen: what they wrote is read (the red number in the menu). */
@@ -114,18 +114,57 @@ class WhisperController extends Controller
     }
 
     /** The recording of a voice message: only the people of the conversation may hear it (of a group: those who were in it when it was sent). */
-    public function audio(Request $request, Whisper $whisper): StreamedResponse
+    public function audio(Request $request, Whisper $whisper): MediaResponse
     {
         abort_unless($whisper->audio && $this->mayHear($request->user(), $whisper), 404);
 
         $disk = Storage::disk(config('filesystems.uploads'));
         abort_unless($disk->exists($whisper->audioPath()), 404);
 
-        return $disk->response($whisper->audioPath(), $whisper->audio, [
+        $headers = [
             'Content-Type' => $whisper->contentType(),
-            'Cache-Control' => 'private, max-age=86400',
+            'Cache-Control' => 'private, no-store',
             'X-Content-Type-Options' => 'nosniff',
-        ]);
+            'Content-Disposition' => 'inline',
+            'Accept-Ranges' => 'bytes',
+        ];
+        if (config('filesystems.disks.'.config('filesystems.uploads').'.driver') === 'local') {
+            // BinaryFileResponse supports byte ranges, which browsers need to seek and replay recordings.
+            return response()->file($disk->path($whisper->audioPath()), $headers);
+        }
+
+        // Remote recordings remain private: never redirect to a public storage URL.
+        $size = $disk->size($whisper->audioPath());
+        $start = 0;
+        $end = $size - 1;
+        $status = 200;
+        if ($range = $request->header('Range')) {
+            if (! preg_match('/^bytes=(\d*)-(\d*)$/', $range, $match) || ($match[1] === '' && $match[2] === '')) {
+                return response('', 416, $headers + ['Content-Range' => "bytes */{$size}"]);
+            }
+            $start = $match[1] === '' ? max(0, $size - (int) $match[2]) : (int) $match[1];
+            $end = $match[1] === '' || $match[2] === '' ? $size - 1 : min($size - 1, (int) $match[2]);
+            if ($start > $end || $start >= $size) return response('', 416, $headers + ['Content-Range' => "bytes */{$size}"]);
+            $headers['Content-Range'] = "bytes {$start}-{$end}/{$size}";
+            $status = 206;
+        }
+        $headers['Content-Length'] = (string) max(0, $end - $start + 1);
+        return response()->stream(function () use ($disk, $whisper, $start, $end) {
+            $stream = $disk->readStream($whisper->audioPath());
+            if (! is_resource($stream)) return;
+            try {
+                // Some cloud streams cannot seek; discard only the bounded prefix requested.
+                $skip = $start;
+                while ($skip > 0 && ! feof($stream)) $skip -= strlen(fread($stream, min(8192, $skip)));
+                $remaining = $end - $start + 1;
+                while ($remaining > 0 && ! feof($stream)) {
+                    $chunk = fread($stream, min(8192, $remaining));
+                    if ($chunk === false || $chunk === '') break;
+                    echo $chunk;
+                    $remaining -= strlen($chunk);
+                }
+            } finally { fclose($stream); }
+        }, $status, $headers);
     }
 
     private function mayHear(User $user, Whisper $whisper): bool

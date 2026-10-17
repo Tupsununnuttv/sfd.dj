@@ -39,11 +39,11 @@ export const releases: { version: string; title: string; notes: [Kind, string][]
     },
     {
         version: '1.61',
-        title: 'Voice messages, any Spotify playlist and Elementaarne',
+        title: 'Voice messages, any Spotify playlist and Elementary',
         notes: [
             ['new', 'Voice messages in Whispers. Press the microphone next to the text box, talk (up to 2 minutes) and send it, or throw it away with the bin. The other person plays it in the conversation, with a play button, a bar that fills as it plays and its length. Only the two of you can hear it, and it is deleted with the conversation and with the account.'],
             ['new', 'You can import any public Spotify playlist or album now, somebody else\'s too: paste its link in the search bar of a playlist. You do not have to connect Spotify and you do not have to be its owner. The first 100 songs are read and each is matched to the same song on YouTube. A private playlist, or more than 100 songs, needs Spotify connected with the account that owns it.'],
-            ['new', 'Elementaarne, a new character: a red pixel-art figure in a cap with the sign of Cancer on it, aviator goggles, a gas mask and a zip hoodie, glowing red. Epic, from level 12 (490 SFD Coins). Standing it breathes and its goggles glint, dancing it hops and throws its arms about, and at the decks (seen from behind) it pumps one fist.'],
+            ['new', 'Elementary, a new character: a red pixel-art figure in a cap with the sign of Cancer on it, aviator goggles, a gas mask and a zip hoodie, glowing red. Epic, from level 12 (490 SFD Coins). Standing it breathes and its goggles glint, dancing it hops and throws its arms about, and at the decks (seen from behind) it pumps one fist.'],
             ['fixed', 'The red number on Friends goes away as soon as you accept or decline the request, also in a room where the Friends page opens on top of the room.'],
             ['fixed', 'The red number on Whispers goes away as soon as you have opened the conversation and read it, also in a room, and a whisper that arrives in the conversation you are looking at no longer leaves a number behind.'],
         ],

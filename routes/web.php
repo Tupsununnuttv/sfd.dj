@@ -21,6 +21,7 @@ use App\Http\Controllers\RoomEmojiController;
 use App\Http\Controllers\RoomModerationController;
 use App\Http\Controllers\RoomRoleController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\SelfDjBotController;
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\SpotifyController;
 use App\Http\Controllers\StaffApplicationController;
@@ -108,6 +109,11 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::post('/staff/apply', [StaffApplicationController::class, 'store'])->middleware('throttle:3,60')->name('staff-application.store');
 
     Route::get('/playlists', [PlaylistController::class, 'index'])->name('playlists');
+    Route::get('/selfbots', [SelfDjBotController::class, 'index'])->name('selfbots');
+    Route::post('/selfbots', [SelfDjBotController::class, 'store'])->middleware('throttle:10,1')->name('selfbots.store');
+    Route::put('/selfbots/{selfbot}', [SelfDjBotController::class, 'update'])->whereNumber('selfbot')->name('selfbots.update');
+    Route::patch('/selfbots/{selfbot}/enabled', [SelfDjBotController::class, 'toggle'])->whereNumber('selfbot')->name('selfbots.toggle');
+    Route::delete('/selfbots/{selfbot}', [SelfDjBotController::class, 'destroy'])->whereNumber('selfbot')->name('selfbots.destroy');
     // JSON used by the playlist manager (on the Playlists page and inside rooms)
     Route::prefix('api/playlists')->name('api.playlists.')->group(function () {
         Route::get('/', [PlaylistController::class, 'list'])->name('list');
@@ -200,6 +206,7 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
 
     Route::post('/rooms', [RoomController::class, 'store'])->name('rooms.store');
     Route::patch('/rooms/{room}', [RoomController::class, 'update'])->name('rooms.update');
+    Route::delete('/rooms/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
     Route::put('/rooms/{room}/rules', [RoomController::class, 'rules'])->name('rooms.rules');
     Route::put('/rooms/{room}/css', [RoomController::class, 'css'])->middleware('throttle:20,1')->name('rooms.css');
     Route::get('/gifs', [RoomController::class, 'gifs'])->middleware('throttle:30,1')->name('gifs');
@@ -262,9 +269,9 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::get('/settings/violations', [SettingsController::class, 'violations'])->name('settings.violations');
     Route::patch('/settings/preferences', [SettingsController::class, 'updatePreferences'])->name('settings.preferences');
 
-    Route::post('/two-factor', [TwoFactorController::class, 'enable'])->name('two-factor.enable');
-    Route::post('/two-factor/confirm', [TwoFactorController::class, 'confirm'])->name('two-factor.confirm');
-    Route::delete('/two-factor', [TwoFactorController::class, 'destroy'])->name('two-factor.destroy');
+    Route::post('/two-factor', [TwoFactorController::class, 'enable'])->middleware('throttle:6,1')->name('two-factor.enable');
+    Route::post('/two-factor/confirm', [TwoFactorController::class, 'confirm'])->middleware('throttle:6,1')->name('two-factor.confirm');
+    Route::delete('/two-factor', [TwoFactorController::class, 'destroy'])->middleware('throttle:6,1')->name('two-factor.destroy');
 });
 
 require __DIR__.'/auth.php';

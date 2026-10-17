@@ -6,6 +6,7 @@ import { getJson, post, sendJson } from '@/lib/post';
 import { isSoundCloud } from '@/lib/soundcloud';
 import { PageProps } from '@/types';
 import { usePage } from '@inertiajs/react';
+import StreamingImport, { ImportProvider } from '@/Components/StreamingImport';
 import { ArrowUpDown, CircleDot, ClipboardPaste, Download, ListMusic, Music2, Pencil, Plus, Search, Shuffle, Trash2, X } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 
@@ -56,6 +57,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
     const [importOpen, setImportOpen] = useState(false);
     const [importText, setImportText] = useState('');
     const [importErrors, setImportErrors] = useState<string[]>([]);
+    const [importProvider, setImportProvider] = useState<ImportProvider>('');
 
     const current = lists.find((l) => l.id === selected) ?? null;
     const say = (text: string) => setNotice({ text, n: Date.now() });
@@ -187,7 +189,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
         e.preventDefault();
         if (selected === null || !importText.trim()) return;
         run(async () => {
-            const r = await sendJson<{ added: number; found: number; errors: string[] }>('POST', route('api.playlists.import', selected), { text: importText });
+            const r = await sendJson<{ added: number; found: number; errors: string[] }>('POST', route('api.playlists.import', selected), { text: importText, provider: importProvider || null });
             setImportErrors(r.errors);
             say(`Found ${r.found} song${r.found === 1 ? '' : 's'}, added ${r.added} new.`);
             if (r.added) setImportText('');
@@ -379,7 +381,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                                     <button onClick={() => setFilterOpen(!filterOpen)} aria-label="Search in this playlist" title="Search in this playlist" aria-pressed={filterOpen} className={`${iconBtn} ${filterOpen ? 'border-violet-400/50! bg-violet-500/20! text-white!' : ''}`}><Search size={16} /></button>
                                     <button onClick={() => setRenaming(current.name)} aria-label="Rename" title="Rename" className={iconBtn}><Pencil size={16} /></button>
                                     <button onClick={shuffle} disabled={busy || songs.length < 2} aria-label="Shuffle the order" title="Shuffle the order" className={iconBtn}><Shuffle size={16} /></button>
-                                    <button onClick={() => setImportOpen(!importOpen)} aria-label="Import links" title="Import links" aria-pressed={importOpen} className={`${iconBtn} ${importOpen ? 'border-violet-400/50! bg-violet-500/20! text-white!' : ''}`}><ClipboardPaste size={16} /></button>
+                                    <button onClick={() => setImportOpen(!importOpen)} aria-label="Import via streaming" title="Import via streaming" aria-pressed={importOpen} className={`flex h-9 shrink-0 items-center gap-2 rounded-xl border border-violet-400/30 bg-violet-500/10 px-3 text-xs font-semibold text-violet-200 hover:bg-violet-500/20 ${importOpen ? 'border-violet-400/60' : ''}`}><ClipboardPaste size={16} /> Import via streaming</button>
                                     <button onClick={exportList} disabled={songs.length === 0} aria-label="Download the links" title="Download the links" className={iconBtn}><Download size={16} /></button>
                                     <button
                                         onClick={remove}
@@ -397,23 +399,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                                 <AddBar disabled={busy} roomSlug={roomSlug} onAdd={addSong} onQueue={queueId} onNotice={say} />
                             </div>
 
-                            {importOpen && (
-                                <form onSubmit={submitImport} className="mt-3 space-y-3 rounded-2xl border border-white/10 bg-black/25 p-4">
-                                    <textarea
-                                        value={importText}
-                                        onChange={(e) => setImportText(e.target.value)}
-                                        rows={5}
-                                        placeholder={'One link per line:\nhttps://www.youtube.com/playlist?list=...\nhttps://soundcloud.com/artist/track\nhttps://open.spotify.com/track/...'}
-                                        className="w-full rounded-xl border-white/10 bg-black/40 font-mono text-xs text-neutral-100 placeholder-neutral-600 focus:border-violet-400 focus:ring-violet-500/30"
-                                    />
-                                    <p className="text-xs text-neutral-500">YouTube playlists import up to 1,000 songs. Anybody's public Spotify playlist or album works, with no Spotify account needed (the first 100 songs, each matched to YouTube).</p>
-                                    <div className="flex flex-wrap items-center gap-3">
-                                        <button disabled={busy || !importText.trim()} className="rounded-xl bg-linear-to-r from-fuchsia-500 to-violet-500 px-4 py-2 text-xs font-bold text-white hover:opacity-90 disabled:opacity-40">{busy ? 'Importing…' : 'Import'}</button>
-                                        <button type="button" onClick={() => setImportOpen(false)} className="text-xs font-semibold text-neutral-400 hover:text-white">Close</button>
-                                    </div>
-                                    {importErrors.length > 0 && <ul className="space-y-1 text-xs text-red-400">{importErrors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
-                                </form>
-                            )}
+                            {importOpen && <StreamingImport provider={importProvider} onProvider={setImportProvider} text={importText} onText={setImportText} busy={busy} errors={importErrors} onSubmit={submitImport} onClose={() => setImportOpen(false)} />}
 
                             <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
                                 <div>

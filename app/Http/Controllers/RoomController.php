@@ -228,7 +228,7 @@ class RoomController extends Controller
             ] + ($this->ownsCss($user, $room) ? ['css_source' => $room->custom_css, 'css_notes' => $css['notes']] : []), // the host sees what they wrote and what was left out
             'genres' => Room::GENRES,
             'host' => $room->user->only('id', 'name', 'avatar', 'cosmetics') + ['primary_role' => $room->user->primary_role],
-            'can' => array_fill_keys($can, true),
+            'can' => array_fill_keys($can, true) + ['delete_room' => $room->canDelete($user), 'selfbots' => $user && ($user->id === $room->user_id || $user->is_staff)],
             'roles' => $room->roles()->get(['id', 'name', 'color', 'rank', 'permissions', 'builtin']),
             'roleOrder' => array_map(fn (Role $role) => $role->value, Role::manual()),
             'roleGroupOf' => collect(Role::manual())->mapWithKeys(fn (Role $role) => [$role->value => $role->group()]),
@@ -481,6 +481,15 @@ class RoomController extends Controller
         ]);
     }
 
+    /** Only the room owner and site staff may permanently delete a room. */
+    public function destroy(Request $request, Room $room): RedirectResponse
+    {
+        abort_unless($room->canDelete($request->user()), 403);
+        $room->delete();
+
+        return redirect()->route('dashboard');
+    }
+
     /** A picture from the device, with an optional caption. */
     public function image(Request $request, Room $room): Response
     {
@@ -490,11 +499,17 @@ class RoomController extends Controller
             'reply_to_id' => ['nullable', 'integer'],
         ]);
 
-        return $this->post($request, $room, [
-            'body' => $data['body'] ?? '',
-            'image' => MediaController::store($request->file('image'), 'chat'),
-            'reply_to_id' => $data['reply_to_id'] ?? null,
-        ]);
+        $image = MediaController::store($request->file('image'), 'chat');
+        try {
+            return $this->post($request, $room, [
+                'body' => $data['body'] ?? '',
+                'image' => $image,
+                'reply_to_id' => $data['reply_to_id'] ?? null,
+            ]);
+        } catch (ValidationException $e) {
+            MediaController::disk()->delete('chat/'.$image);
+            throw $e;
+        }
     }
 
     /** Remove one message: your own, or anyone's with the clear-chat permission. */

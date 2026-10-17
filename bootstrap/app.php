@@ -3,6 +3,7 @@
 use App\Http\Middleware\AllowSameOriginFrames;
 use App\Http\Middleware\BlockBannedIps;
 use App\Http\Middleware\EnsureEmailIsVerified;
+use App\Http\Middleware\EnsureCurrentSession;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\MaintenanceMode;
 use App\Http\Middleware\TrackLastSeen;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*', headers: Request::HEADER_X_FORWARDED_PROTO);
 
         $middleware->web(append: [
+            EnsureCurrentSession::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             BlockBannedIps::class,

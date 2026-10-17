@@ -10,7 +10,7 @@ import { CardUser } from '@/Components/UserCard';
 import { getJson, post, send, sendJson, upload } from '@/lib/post';
 import { RoleInfo } from '@/types';
 import { Link } from '@inertiajs/react';
-import { AtSign, Check, Copy, Ellipsis, MessageCircle, Reply, Send, Trash2, UserRound, X } from 'lucide-react';
+import { AtSign, Check, Copy, Ellipsis, ImagePlus, MessageCircle, Reply, Send, Trash2, UserRound, X } from 'lucide-react';
 import { FormEvent, MouseEvent, ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export interface ChatMessageData {
@@ -276,6 +276,16 @@ export default function ChatPanel({
     onPatchNotes?: () => void; // opens the patch notes (the first line of the chat has a link to them)
 }) {
     const [text, setText] = useState('');
+    const [attachment, setAttachment] = useState<File | null>(null);
+    const [preview, setPreview] = useState('');
+    const [uploading, setUploading] = useState(false);
+    const uploadBusy = useRef(false);
+    useEffect(() => {
+        if (!attachment) { setPreview(''); return; }
+        const url = URL.createObjectURL(attachment);
+        setPreview(url);
+        return () => URL.revokeObjectURL(url);
+    }, [attachment]);
     const [replyTo, setReplyTo] = useState<ChatMessageData | null>(null);
     const [picker, setPicker] = useState<Picker>(null);
     const [menu, setMenu] = useState<{ m: ChatMessageData; anchor: MenuAnchor; row: DOMRect } | null>(null); // the open message menu
@@ -355,6 +365,8 @@ export default function ChatPanel({
 
     const submit = (e: FormEvent) => {
         e.preventDefault();
+        if (uploadBusy.current) return;
+        if (attachment) { void sendImage(attachment); return; }
         const typed = text.trim();
         if (!typed) return;
 
@@ -383,13 +395,33 @@ export default function ChatPanel({
         post(route('rooms.message', slug), { gif, ...extra() }).then(sent).catch(fail);
     };
 
-    const sendImage = (file?: File) => {
-        if (!file) return;
+    const pickImage = (file?: File) => {
+        if (!file || uploadBusy.current) return;
+        if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type)) {
+            setError('Choose a PNG, JPG, WEBP or GIF picture.');
+            return;
+        }
+        if (file.size > 3 * 1024 * 1024) { setError('Pictures can be up to 3 MB.'); return; }
+        setError('');
+        setAttachment(file);
+        inputBox.current?.focus();
+    };
+
+    const sendImage = async (file: File) => {
+        if (uploadBusy.current) return;
+        uploadBusy.current = true;
+        setUploading(true);
         const form = new FormData();
         form.append('image', file);
+        form.append('body', withEmoteTokens(text.trim(), globals, picked));
         if (replyTo) form.append('reply_to_id', String(replyTo.id));
-        upload(route('rooms.image', slug), form).then(sent).catch(fail);
-        if (fileInput.current) fileInput.current.value = '';
+        try {
+            await upload(route('rooms.image', slug), form);
+            setAttachment(null);
+            setText('');
+            sent();
+        } catch (err) { fail(err); }
+        finally { uploadBusy.current = false; setUploading(false); }
     };
 
     const toolbar: [Picker, string, string][] = [['emoji', '😀', 'Emojis'], ['gif', 'GIF', 'GIFs'], ['sticker', '🏷️', 'Stickers'], ['room', '⭐', 'Room emojis'], ['bttv', 'BTTV', 'BetterTTV emotes'], ['7tv', '7TV', '7TV emotes']];
@@ -553,7 +585,7 @@ export default function ChatPanel({
                 {error && <p className="mb-2 text-xs text-red-400">{error}</p>}
                 {notice && !error && <p className="mb-2 text-xs text-violet-300">💬 {notice}</p>}
 
-                <div className="mb-2 flex items-center gap-1 text-sm">
+                <div className="mb-2 flex flex-wrap items-center gap-1 text-sm">
                     {toolbar.map(([key, label, title]) => (
                         <button key={key} onClick={() => setPicker(picker === key ? null : key)} title={title} className={`rounded px-2 py-1 ${picker === key ? 'bg-violet-600/30 text-violet-200' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'} ${key === 'gif' || key === 'bttv' || key === '7tv' ? 'text-xs font-bold' : ''}`}>
                             {label}
@@ -562,21 +594,31 @@ export default function ChatPanel({
                     {canDelete && (
                         <button onClick={() => confirm('Clear the chat for everyone? Every message goes, and it does not come back when the page is refreshed.') && send('DELETE', route('rooms.clear', slug)).catch(fail)} title="Clear chat" className="ml-auto rounded px-2 py-1 text-xs text-neutral-400 hover:bg-neutral-800 hover:text-red-300">🧹 Clear</button>
                     )}
-                    <button onClick={() => fileInput.current?.click()} title="Send a picture" className="rounded px-2 py-1 text-neutral-400 hover:bg-neutral-800 hover:text-white">🖼️</button>
-                    <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(e) => sendImage(e.target.files?.[0])} />
+                    <button disabled={uploading} onClick={() => fileInput.current?.click()} title="Attach a picture (PNG, JPG, WEBP or GIF, up to 3 MB)" className="flex shrink-0 items-center gap-1 rounded px-2 py-1 text-neutral-400 hover:bg-neutral-800 hover:text-white disabled:opacity-50"><ImagePlus size={16} /> <span className="text-xs">Picture</span></button>
+                    <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(e) => { pickImage(e.target.files?.[0]); e.target.value = ''; }} />
                 </div>
 
+                {attachment && <div className="mb-2 flex items-center gap-2 rounded-lg bg-neutral-800 p-2">
+                    {preview && <img src={preview} alt="Picture to send" className="h-16 w-16 rounded object-contain" />}
+                    <span className="min-w-0 flex-1 truncate text-xs text-neutral-300">{uploading ? 'Sending picture…' : attachment.name}</span>
+                    <button type="button" disabled={uploading} onClick={() => setAttachment(null)} aria-label="Remove attached picture"><X size={16} /></button>
+                </div>}
                 <form onSubmit={submit} className="flex gap-2">
                     <input
                         ref={inputBox}
                         value={text}
+                        disabled={uploading}
+                        onPaste={(e) => {
+                            const file = Array.from(e.clipboardData.files).find((f) => f.type.startsWith('image/'));
+                            if (file) { e.preventDefault(); pickImage(file); }
+                        }}
                         onChange={(e) => { setText(e.target.value); if (e.target.value) onType(); }}
                         maxLength={300}
                         placeholder="Message… (/w name to whisper)"
                         className={`${input} min-w-0 flex-1`}
                     />
                     {/* the mouse way to send (Enter works too); mouse-down is not let take the focus from the box, so you can go on typing */}
-                    <button type="submit" disabled={!text.trim()} onMouseDown={(e) => e.preventDefault()} aria-label="Send message" title="Send (Enter)" className="flex shrink-0 items-center justify-center rounded border border-violet-500/40 bg-violet-600/20 px-3 text-violet-300 transition hover:bg-violet-600 hover:text-white disabled:pointer-events-none disabled:border-neutral-700 disabled:bg-neutral-900 disabled:text-neutral-600"><Send size={16} /></button>
+                    <button type="submit" disabled={uploading || (!text.trim() && !attachment)} onMouseDown={(e) => e.preventDefault()} aria-label="Send message" title="Send (Enter)" className="flex shrink-0 items-center justify-center rounded border border-violet-500/40 bg-violet-600/20 px-3 text-violet-300 transition hover:bg-violet-600 hover:text-white disabled:pointer-events-none disabled:border-neutral-700 disabled:bg-neutral-900 disabled:text-neutral-600"><Send size={16} /></button>
                 </form>
             </div>
             )}

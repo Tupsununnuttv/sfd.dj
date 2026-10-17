@@ -15,23 +15,25 @@ export default function VoiceBubble({ id, seconds, mine }: { id: number; seconds
     const [state, setState] = useState<'idle' | 'loading' | 'playing' | 'paused' | 'error'>('idle');
     const [at, setAt] = useState(0);
     const audio = useRef<HTMLAudioElement | null>(null);
-    const file = useRef<string | null>(null);
+    const [problem, setProblem] = useState('');
     const bars = useRef(heights(id));
 
     useEffect(() => () => {
         audio.current?.pause();
         if (playing === audio.current) playing = null;
-        if (file.current) URL.revokeObjectURL(file.current);
+        if (audio.current) { audio.current.removeAttribute('src'); audio.current.load(); }
     }, []);
 
-    const load = async (): Promise<HTMLAudioElement> => {
+    const load = (): HTMLAudioElement => {
         if (audio.current) return audio.current;
-        setState('loading');
-        const res = await fetch(route('api.whispers.audio', id), { credentials: 'same-origin' });
-        if (!res.ok) throw new Error('The voice message could not be loaded.');
-        file.current = URL.createObjectURL(await res.blob());
-        const a = new Audio(file.current);
+        // Start play in the user's click, not after an asynchronous fetch (Safari loses user activation).
+        const a = new Audio(route('api.whispers.audio', id));
+        a.preload = 'none';
         a.addEventListener('timeupdate', () => setAt(Math.min(seconds, a.currentTime)));
+        a.addEventListener('playing', () => { setState('playing'); setProblem(''); });
+        a.addEventListener('pause', () => setState((s) => s === 'error' ? s : 'paused'));
+        a.addEventListener('waiting', () => setState('loading'));
+        a.addEventListener('error', () => { setState('error'); setProblem('Could not load this recording. Tap to retry.'); });
         a.addEventListener('ended', () => { setState('paused'); setAt(0); a.currentTime = 0; });
         audio.current = a;
 
@@ -40,14 +42,18 @@ export default function VoiceBubble({ id, seconds, mine }: { id: number; seconds
 
     const toggle = async () => {
         try {
-            const a = await load();
+            const a = load();
             if (!a.paused) { a.pause(); setState('paused'); return; }
             if (playing && playing !== a) playing.pause(); // the one that was playing stops where it is
             playing = a;
+            if (state === 'error') a.load();
+            setState('loading');
+            setProblem('');
             await a.play();
             setState('playing');
-        } catch {
+        } catch (error) {
             setState('error');
+            setProblem(error instanceof DOMException && error.name === 'NotAllowedError' ? 'Playback was blocked. Tap to try again.' : 'Could not play this recording. Tap to retry.');
         }
     };
 
@@ -67,13 +73,14 @@ export default function VoiceBubble({ id, seconds, mine }: { id: number; seconds
             <button
                 type="button"
                 onClick={toggle}
+                disabled={state === 'loading'}
                 aria-label={running ? 'Pause the voice message' : 'Play the voice message'}
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition ${mine ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-violet-500/30 text-violet-100 hover:bg-violet-500/50'}`}
             >
                 {state === 'loading' ? <Loader2 size={17} className="animate-spin" /> : running ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" className="ml-0.5" />}
             </button>
             <div className="min-w-0 flex-1">
-                <div className="flex h-8 items-center gap-px" role="slider" aria-label="Voice message position" aria-valuemin={0} aria-valuemax={seconds} aria-valuenow={Math.round(at)}>
+                <div className="flex h-8 items-center gap-px" role="slider" tabIndex={0} onKeyDown={(e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); seek(Math.max(0, Math.min(1, (at + (e.key === 'ArrowRight' ? 5 : -5)) / Math.max(1, seconds)))); } }} aria-label="Voice message position" aria-valuemin={0} aria-valuemax={seconds} aria-valuenow={Math.round(at)}>
                     {bars.current.map((h, i) => (
                         <button
                             key={i}
@@ -85,7 +92,7 @@ export default function VoiceBubble({ id, seconds, mine }: { id: number; seconds
                         />
                     ))}
                 </div>
-                <p className={`text-[10px] tabular-nums ${state === 'error' ? 'text-red-300' : mine ? 'text-white/70' : 'text-neutral-400'}`}>{state === 'error' ? 'Could not play it' : voiceTime(state === 'idle' || state === 'loading' ? seconds : at)}{state !== 'idle' && state !== 'error' && state !== 'loading' && ` / ${voiceTime(seconds)}`}</p>
+                <p role={state === 'error' ? 'alert' : undefined} className={`text-[10px] tabular-nums ${state === 'error' ? 'text-red-300' : mine ? 'text-white/70' : 'text-neutral-400'}`}>{state === 'error' ? problem : voiceTime(state === 'idle' || state === 'loading' ? seconds : at)}{state !== 'idle' && state !== 'error' && state !== 'loading' && ` / ${voiceTime(seconds)}`}</p>
             </div>
         </div>
     );

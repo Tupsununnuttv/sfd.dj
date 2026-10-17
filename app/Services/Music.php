@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Support\StreamingUrl;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
@@ -38,15 +39,15 @@ class Music
     public function resolve(string $url, ?User $user = null): array
     {
         $url = trim($url);
-        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        $provider = StreamingUrl::provider($url);
 
-        if (preg_match('/(^|\.)soundcloud\.com$/', $host)) {
+        if ($provider === 'soundcloud') {
             return [$this->soundcloud($url)];
         }
-        if ($host === 'open.spotify.com') {
+        if ($provider === 'spotify') {
             return $this->spotify($url, $user);
         }
-        if (str_contains($host, 'youtube.com') || $host === 'youtu.be') {
+        if ($provider === 'youtube') {
             return $this->youtubeLink($url, $user);
         }
 
@@ -54,7 +55,7 @@ class Music
     }
 
     /** Resolve one link per line. Returns the songs found and an error message for each line that failed. */
-    public function resolveMany(string $text, ?User $user = null): array
+    public function resolveMany(string $text, ?User $user = null, ?string $provider = null): array
     {
         $songs = [];
         $errors = [];
@@ -63,6 +64,9 @@ class Music
 
         foreach ($lines as $line) {
             try {
+                if ($provider && StreamingUrl::provider($line) !== $provider) {
+                    $this->fail('This link does not match the selected streaming service. Choose Mixed links to import several services.');
+                }
                 foreach ($this->resolve($line, $user) as $song) {
                     $songs[] = $song;
                     if (count($songs) >= self::IMPORT_LIMIT) {
@@ -138,7 +142,7 @@ class Music
     private function soundcloudPage(string $url): array
     {
         try {
-            $html = Http::timeout(5)->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; SFD-DJ.EU)'])->get($url)->body();
+            $html = StreamingUrl::page($url)->body();
         } catch (ConnectionException) {
             return [0, $url];
         }
@@ -199,7 +203,7 @@ class Music
     private function spotifyTrackQuery(string $url): string
     {
         try {
-            $html = Http::timeout(6)->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; SFD-DJ.EU)'])->get($url)->body();
+            $html = StreamingUrl::page($url)->body();
         } catch (ConnectionException) {
             $this->fail('Could not reach Spotify.');
         }

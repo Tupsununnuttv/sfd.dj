@@ -49,14 +49,14 @@ class WhisperGroupController extends Controller
     /** The group with what you may read of it; opening it marks it read. */
     public function show(Request $request, WhisperGroup $group): JsonResponse
     {
+        $request->validate(['before' => ['nullable', 'integer', 'min:1']]);
         $me = $request->user();
         $group = $this->mine($request, $group)->load('members');
         $group->markReadBy($me);
 
         return response()->json([
             'group' => $group->summary(),
-            'messages' => $group->readable()->with(['replyTo', 'sender:id,name,username,avatar'])->latest('id')->limit(100)->get()->reverse()->map->payload($me->id)->values(),
-        ]);
+        ] + Whisper::history($group->readable()->with(['replyTo', 'sender:id,name,username,avatar']), $me->id, $request->integer('before')));
     }
 
     /** The group is on screen: what was written is read (the red number in the menu). */

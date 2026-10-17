@@ -57,7 +57,7 @@ export default function UpdatePasswordForm({
 
                 <p className="mt-1 text-sm text-neutral-400">
                     Ensure your account is using a long, random password to stay
-                    secure.
+                    secure. Changing your password signs out your other devices and revokes your personal API tokens.
                 </p>
             </header>
 

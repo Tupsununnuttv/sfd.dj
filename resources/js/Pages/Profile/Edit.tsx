@@ -28,6 +28,7 @@ export default function Edit({ mustVerifyEmail, status, genres, countries }: Pag
         country: user.flag?.code ?? '',
         pronouns: user.pronouns ?? '',
         email: user.email,
+        current_password: '',
     });
     const flag = data.country && countries[data.country] ? { code: data.country, name: countries[data.country] } : null;
     const myStatus = statusOf(user.status);
@@ -36,7 +37,7 @@ export default function Edit({ mustVerifyEmail, status, genres, countries }: Pag
 
     const submit = (e: FormEvent) => {
         e.preventDefault();
-        patch(route('profile.update'), { preserveScroll: true });
+        patch(route('profile.update'), { preserveScroll: true, onSuccess: () => setData('current_password', '') });
     };
 
     const unverified = mustVerifyEmail && user.email_verified_at === null;
@@ -122,6 +123,9 @@ export default function Edit({ mustVerifyEmail, status, genres, countries }: Pag
                                 <Field label="Email" htmlFor="email" error={errors.email} hint="Only you see it. Changing it means you confirm the new address again.">
                                     <TextInput id="email" type="email" className="block w-full" value={data.email} onChange={(e) => setData('email', e.target.value)} required autoComplete="email" />
                                 </Field>
+                                {emailChanged && <Field label="Confirm your current password" htmlFor="email-current-password" error={errors.current_password} hint="Your password is required to change the account's email address.">
+                                    <TextInput id="email-current-password" type="password" autoComplete="current-password" className="block w-full" value={data.current_password} onChange={(e) => setData('current_password', e.target.value)} required />
+                                </Field>}
 
                                 {emailChanged && <p className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"><MailWarning size={18} className="mt-0.5 shrink-0" /> After you save, we email a link to the new address, and you confirm it again.</p>}
 

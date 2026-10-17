@@ -31,7 +31,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Throwable;
 
 #[Fillable(['name', 'username', 'email', 'password', 'avatar', 'character', 'cosmetics', 'bio', 'favorite_genre', 'country', 'pronouns', 'status'])]
-#[Hidden(['discord_id', 'spotify_id', 'spotify_display_name', 'spotify_access_token', 'spotify_refresh_token', 'youtube_channel_id', 'youtube_channel_title', 'youtube_access_token', 'youtube_refresh_token', 'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'referral_code', 'referred_by', 'coins', 'daily_coins_on', 'stripe_customer_id', 'stripe_subscription_id'])]
+#[Hidden(['discord_id', 'spotify_id', 'spotify_display_name', 'spotify_access_token', 'spotify_refresh_token', 'youtube_channel_id', 'youtube_channel_title', 'youtube_access_token', 'youtube_refresh_token', 'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'referral_code', 'referred_by', 'coins', 'daily_coins_on', 'stripe_customer_id', 'stripe_subscription_id', 'auth_version', 'two_factor_last_used_at'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
@@ -455,6 +455,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',
+            'two_factor_last_used_at' => 'integer',
+            'auth_version' => 'integer',
             'spotify_access_token' => 'encrypted',
             'spotify_refresh_token' => 'encrypted',
             'spotify_token_expires_at' => 'datetime',

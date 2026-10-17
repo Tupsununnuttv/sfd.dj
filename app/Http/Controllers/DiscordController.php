@@ -88,12 +88,14 @@ class DiscordController extends Controller
         $request->session()->regenerate();
 
         if ($user->two_factor_enabled) {
-            $request->session()->put(['two_factor.id' => $user->id, 'two_factor.remember' => false]);
+            \App\Support\AccountSecurity::challenge($request, $user, false);
 
             return to_route('two-factor.challenge');
         }
 
         Auth::login($user);
+        $request->session()->forget('two_factor');
+        $request->session()->put('auth_version', (int) $user->auth_version);
 
         return redirect()->intended(route('dashboard', absolute: false));
     }

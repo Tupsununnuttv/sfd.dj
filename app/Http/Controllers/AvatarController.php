@@ -47,7 +47,7 @@ class AvatarController extends Controller
     ];
 
     /** Shop names that are not just the file name with a capital letter. */
-    private const CHARACTER_LABELS = ['icemini' => 'Ice Mini', 'azuremini' => 'Azure Mini', 'sunmini' => 'Sun Mini', 'nebulamini' => 'Nebula Mini', 'blazeref' => 'Blaze Ref', 'echoref' => 'Echo Ref', 'zoos02' => 'Zoo S02', 'pandabear' => 'Panda Bear', 'emberdragon' => 'Ember Dragon', 'frostdragon' => 'Frost Dragon', 'kikomochi' => 'Kiko & Mochi', 'wilmer' => 'Wilmer', 'adammochi' => 'Adam & Mochi', 'elementaar' => 'Elementaarne'];
+    private const CHARACTER_LABELS = ['icemini' => 'Ice Mini', 'azuremini' => 'Azure Mini', 'sunmini' => 'Sun Mini', 'nebulamini' => 'Nebula Mini', 'blazeref' => 'Blaze Ref', 'echoref' => 'Echo Ref', 'zoos02' => 'Zoo S02', 'pandabear' => 'Panda Bear', 'emberdragon' => 'Ember Dragon', 'frostdragon' => 'Frost Dragon', 'kikomochi' => 'Kiko & Mochi', 'wilmer' => 'Wilmer', 'adammochi' => 'Adam & Mochi', 'elementaar' => 'Elementary'];
 
     /** Where to look for a state's picture, in order: a character with no DJing picture dances on the stage, and one with no Dancing picture just stands. */
     private const CHARACTER_FOLDERS = ['standing' => ['Standing'], 'dancing' => ['Dancing', 'Standing'], 'djing' => ['DJing', 'Dancing', 'Standing']];

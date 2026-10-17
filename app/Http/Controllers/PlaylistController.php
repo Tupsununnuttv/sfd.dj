@@ -158,9 +158,9 @@ class PlaylistController extends Controller
     public function import(Request $request, Playlist $playlist, Music $music): JsonResponse
     {
         $this->own($request, $playlist);
-        $text = $request->validate(['text' => ['required', 'string', 'max:100000']])['text'];
+        $data = $request->validate(['text' => ['required', 'string', 'max:100000'], 'provider' => ['nullable', 'in:youtube,spotify,soundcloud']]);
 
-        [$songs, $errors] = $music->resolveMany($text, $request->user());
+        [$songs, $errors] = $music->resolveMany($data['text'], $request->user(), $data['provider'] ?? null);
 
         return response()->json(['added' => $playlist->addSongs($songs), 'found' => count($songs), 'errors' => $errors]);
     }

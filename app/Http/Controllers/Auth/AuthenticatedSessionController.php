@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\DiscordController;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Support\AccountSecurity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -36,14 +37,17 @@ class AuthenticatedSessionController extends Controller
 
         // 2FA users finish logging in on the challenge page.
         if ($request->user()->two_factor_enabled) {
-            $id = $request->user()->id;
+            $user = $request->user();
             Auth::logout();
-            $request->session()->put(['two_factor.id' => $id, 'two_factor.remember' => $request->boolean('remember')]);
+            AccountSecurity::challenge($request, $user, $request->boolean('remember'));
 
             return to_route('two-factor.challenge');
         }
 
-        $request->session()->regenerate();
+        Auth::login($request->user(), $request->boolean('remember'));
+        $request->session()->forget('two_factor');
+        $request->session()->put('auth_version', (int) $request->user()->auth_version);
+        $request->session()->regenerate(true);
 
         return redirect()->intended(route('dashboard', absolute: false));
     }

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Role;
+use App\Models\Room;
 use App\Models\User;
+use App\Services\SelfDjPlayback;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -61,10 +63,13 @@ class DeveloperController extends Controller
         return back()->with('new_token', ['for' => $bot->name, 'token' => $bot->createToken('first token')->plainTextToken]);
     }
 
-    public function destroyBot(Request $request, User $bot): RedirectResponse
+    public function destroyBot(Request $request, User $bot, SelfDjPlayback $playback): RedirectResponse
     {
         abort_unless($bot->is_bot && $bot->bot_owner_id === $request->user()->id, 403);
 
+        foreach (Room::where('auto_host_bot_id', $bot->id)->get() as $room) {
+            $playback->configure($room, null, null);
+        }
         $bot->tokens()->delete();
         $bot->delete();
 

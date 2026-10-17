@@ -23,6 +23,7 @@ class PasswordController extends Controller
         $request->user()->update([
             'password' => Hash::make($validated['password']),
         ]);
+        \App\Support\AccountSecurity::revoke($request->user(), $request);
         $request->user()->sendPasswordChangedNotification($request->ip());
 
         return back();

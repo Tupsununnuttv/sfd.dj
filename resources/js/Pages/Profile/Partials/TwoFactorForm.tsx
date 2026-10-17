@@ -18,7 +18,8 @@ export default function TwoFactorForm({ state, className = '' }: { state: TwoFac
     const [qr, setQr] = useState('');
 
     const confirm = useForm({ code: '' });
-    const disable = useForm({ password: '' });
+    const disable = useForm({ password: '', code: '' });
+    const enable = useForm({ password: '' });
 
     useEffect(() => {
         if (state.otpauth) QRCode.toDataURL(state.otpauth, { margin: 1, width: 192 }).then(setQr);
@@ -59,6 +60,8 @@ export default function TwoFactorForm({ state, className = '' }: { state: TwoFac
                         <p className="text-sm text-green-400">Two-factor authentication is on.</p>
                         <TextInput type="password" value={disable.data.password} onChange={(e) => disable.setData('password', e.target.value)} placeholder="Current password" className="block w-full max-w-xs" />
                         <InputError message={disable.errors.password} />
+                        <TextInput aria-label="Authenticator or recovery code" autoComplete="one-time-code" value={disable.data.code} onChange={(e) => disable.setData('code', e.target.value)} placeholder="Authenticator or recovery code" className="block w-full max-w-xs" />
+                        <InputError message={disable.errors.code} />
                         <button disabled={disable.processing} className="rounded-md bg-red-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:bg-red-500 disabled:opacity-50">
                             Turn off
                         </button>
@@ -77,7 +80,11 @@ export default function TwoFactorForm({ state, className = '' }: { state: TwoFac
                 )}
 
                 {!state.enabled && !state.pending && (
-                    <PrimaryButton onClick={() => router.post(route('two-factor.enable'), {}, { preserveScroll: true })}>Set up</PrimaryButton>
+                    <form onSubmit={(e) => { e.preventDefault(); enable.post(route('two-factor.enable'), { preserveScroll: true, onSuccess: () => enable.reset() }); }} className="space-y-3">
+                        <TextInput type="password" autoComplete="current-password" aria-label="Current password to set up two-factor authentication" value={enable.data.password} onChange={(e) => enable.setData('password', e.target.value)} placeholder="Current password" className="block w-full max-w-xs" />
+                        <InputError message={enable.errors.password} />
+                        <PrimaryButton disabled={enable.processing}>Set up</PrimaryButton>
+                    </form>
                 )}
             </div>
         </section>

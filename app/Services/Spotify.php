@@ -46,7 +46,7 @@ class Spotify
     public function publicQueries(string $kind, string $id, int $limit): array
     {
         try {
-            $html = Http::timeout(8)->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; SFD-DJ.EU)'])->get("https://open.spotify.com/embed/{$kind}/{$id}")->body();
+            $html = \App\Support\StreamingUrl::page("https://open.spotify.com/embed/{$kind}/{$id}")->body();
         } catch (ConnectionException) {
             $this->fail('Could not reach Spotify.');
         }

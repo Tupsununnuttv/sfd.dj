@@ -2,18 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\PlaybackUpdated;
 use App\Models\ChatMessage;
 use App\Models\Room;
-use App\Models\RoomBotPresence;
+use App\Models\SelfDjBot;
 use App\Models\User;
+use App\Services\SelfDjPlayback;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Auto Host (Room settings → Music & Waitlist): the host hosts one of their own bots in the room, with no script of their own to run. Whenever nobody else
+ * Legacy Auto Host endpoints, kept in sync with Self DJ Bots: the host hosts one of their own bots in the room. Whenever nobody else
  * is in the waitlist, the bot plays the next song of one of the host's playlists (Room::autoHostItem); when somebody joins, they play after the bot's song.
  * Only the host of the room (or SFD-DJ.EU staff) can switch it, and only with their own bot and their own playlist.
  */
@@ -32,15 +33,13 @@ class AutoHostController extends Controller
     }
 
     /** Switch it on with `bot_id` and `playlist_id`, or off with no `bot_id`. */
-    public function update(Request $request, Room $room): Response
+    public function update(Request $request, Room $room, SelfDjPlayback $playback): Response
     {
         $me = $this->allow($request, $room);
         $data = $request->validate(['bot_id' => ['nullable', 'integer'], 'playlist_id' => ['nullable', 'integer']]);
-        $before = $room->autoHostBot;
 
         if (empty($data['bot_id'])) {
-            $room->update(['auto_host_bot_id' => null, 'auto_host_playlist_id' => null]);
-            $this->stop($room, $before);
+            $playback->configure($room, null, null);
 
             return response()->noContent();
         }
@@ -52,31 +51,23 @@ class AutoHostController extends Controller
             throw ValidationException::withMessages(['playlist_id' => "“{$playlist->name}” has no songs yet."]);
         }
 
-        if ($before && $before->id !== $bot->id) {
-            $this->stop($room, $before);
+        if ($room->bans()->where('user_id', $bot->id)->exists()) {
+            throw ValidationException::withMessages(['bot_id' => 'This bot is banned from the room.']);
         }
 
-        $room->update(['auto_host_bot_id' => $bot->id, 'auto_host_playlist_id' => $playlist->id]);
-        RoomBotPresence::hold($room, $bot);
-        $before?->id === $bot->id || ChatMessage::system($room, 'join', "{$bot->name} is the Auto Host now: it plays when nobody else is in the waitlist", $me);
-
-        $room->startAutoHostIfIdle();
-        PlaybackUpdated::dispatch($room->refresh());
+        DB::transaction(function () use ($room, $me, $bot, $playlist, $playback) {
+            $room = Room::whereKey($room->id)->lockForUpdate()->firstOrFail();
+            $existing = SelfDjBot::where('room_id', $room->id)->first();
+            SelfDjBot::updateOrCreate(['room_id' => $room->id], [
+                'user_id' => $me->id, 'bot_id' => $bot->id, 'playlist_id' => $playlist->id,
+                'managed_account' => $existing?->bot_id === $bot->id && $existing->managed_account,
+            ]);
+            $before = $room->auto_host_bot_id;
+            $playback->configure($room, $bot, $playlist);
+            $before === $bot->id || ChatMessage::system($room, 'join', "{$bot->name} is the self DJ now: it plays when nobody else is in the waitlist", $me);
+        });
 
         return response()->noContent();
-    }
-
-    /** The bot leaves the room; a song of its that is playing stops. */
-    private function stop(Room $room, ?User $bot): void
-    {
-        if (! $bot) {
-            return;
-        }
-
-        RoomBotPresence::leave($room, $bot);
-        $room->takeOut($bot);
-
-        PlaybackUpdated::dispatch($room->refresh());
     }
 
     private function allow(Request $request, Room $room): User

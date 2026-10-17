@@ -49,7 +49,8 @@ class LoginRequest extends FormRequest
             ? Str::lower($login)
             : (User::whereRaw('lower(username) = ?', [Str::lower($login)])->value('email') ?? $login);
 
-        if (! Auth::attempt(['email' => $email, 'password' => $this->input('password')], $this->boolean('remember'))) {
+        // Remember-me is issued only after all authentication factors have passed.
+        if (! Auth::attempt(['email' => $email, 'password' => $this->input('password'), 'is_bot' => false], false)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

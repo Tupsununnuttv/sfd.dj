@@ -122,6 +122,7 @@ class SettingsController extends Controller
     {
         $request->validate(['password' => ['required', 'current_password']]);
         DB::table(config('session.table', 'sessions'))->where('user_id', $request->user()->id)->where('id', '!=', $request->session()->getId())->delete();
+        \App\Support\AccountSecurity::revoke($request->user(), $request, false);
 
         return back();
     }

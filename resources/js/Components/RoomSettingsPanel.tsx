@@ -72,20 +72,22 @@ function Card({ title, text, aside, children }: { title: string; text?: string; 
 /** How much of a text box is used, e.g. 12/50. */
 const count = (text: string, max: number) => <span className={`tabular-nums ${text.length >= max ? 'text-amber-300' : 'text-neutral-600'}`}>{text.length}/{max}</span>;
 
-type TabKey = 'General' | 'Rules' | 'Music & Waitlist' | 'Live stream' | 'Roles' | 'Emojis' | 'Room CSS';
+type TabKey = 'General' | 'Rules' | 'Music & Waitlist' | 'Selfbots' | 'Live stream' | 'Roles' | 'Emojis' | 'Room CSS' | 'Delete room';
 const TABS: { key: TabKey; icon: LucideIcon; text: string }[] = [
     { key: 'General', icon: Settings2, text: 'The name, the welcome text, who can come in and the background.' },
     { key: 'Rules', icon: ScrollText, text: 'What people read and agree to when they come in.' },
-    { key: 'Music & Waitlist', icon: ListMusic, text: 'The line, cycling, and the Auto Host that keeps the music going.' },
+    { key: 'Music & Waitlist', icon: ListMusic, text: 'Who can join the queue, and what happens after a DJ plays.' },
+    { key: 'Selfbots', icon: Bot, text: 'A resident DJ that keeps this room playing when the queue is empty.' },
     { key: 'Live stream', icon: RadioTower, text: 'Put a YouTube, Twitch or Kick stream on the big screen.' },
     { key: 'Roles', icon: ShieldCheck, text: 'Give people roles, and choose what each role may do.' },
     { key: 'Emojis', icon: Smile, text: "The room's own emojis for the chat." },
     { key: 'Room CSS', icon: Code2, text: 'Your own look for the room, written in CSS.' },
+    { key: 'Delete room', icon: Trash2, text: 'Permanently delete this room and its chat, queue and settings.' },
 ];
 
 /** Room settings: a list of parts on the left (across the top on a phone), the chosen part on the right. */
 export default function RoomSettingsPanel({ room, genres, backgrounds: pickable, seasons, canLock, can, roles, memberList, permissionLabels, emojis, canCss, live, locked, cycle, onOpenPage }: Props) {
-    const allowed: Record<TabKey, boolean> = { General: can.edit_settings, Rules: can.edit_settings, 'Music & Waitlist': can.manage_queue, 'Live stream': can.go_live, Roles: can.manage_roles, Emojis: can.edit_settings, 'Room CSS': canCss };
+    const allowed: Record<TabKey, boolean> = { General: can.edit_settings, Rules: can.edit_settings, 'Music & Waitlist': can.manage_queue, Selfbots: can.selfbots, 'Live stream': can.go_live, Roles: can.manage_roles, Emojis: can.edit_settings, 'Room CSS': canCss, 'Delete room': can.delete_room };
     const tabs = TABS.filter((t) => allowed[t.key]);
     const [tab, setTab] = useState<TabKey>(tabs[0]?.key ?? 'General');
     const current = tabs.find((t) => t.key === tab) ?? tabs[0];
@@ -118,8 +120,13 @@ export default function RoomSettingsPanel({ room, genres, backgrounds: pickable,
                 </header>
 
                 {current.key === 'General' && <General room={room} genres={genres} backgrounds={pickable} seasons={seasons} canLock={canLock} />}
+                {current.key === 'Delete room' && <DeleteRoom slug={room.slug} name={room.name} />}
                 {current.key === 'Rules' && <RulesEditor slug={room.slug} name={room.name} saved={room.rule_list ?? []} />}
-                {current.key === 'Music & Waitlist' && <MusicWaitlist slug={room.slug} locked={locked} cycle={cycle} onOpenPage={onOpenPage} />}
+                {current.key === 'Music & Waitlist' && <MusicWaitlist slug={room.slug} locked={locked} cycle={cycle} />}
+                {current.key === 'Selfbots' && <Card title="Your room's resident DJ" text="Create a bot, choose a playlist and let it take over when nobody is queued. Real DJs play after its current track finishes.">
+                    <button type="button" onClick={() => onOpenPage(route('selfbots', { room: room.slug }), 'Self DJ Bots')} className="flex items-center gap-2 rounded-xl bg-linear-to-r from-violet-600 to-fuchsia-600 px-4 py-3 text-sm font-semibold text-white hover:brightness-110"><Bot size={17} /> Open Self DJ Bots <ExternalLink size={14} /></button>
+                    <p className="mt-3 text-xs text-neutral-500">Create, edit, pause or remove bots without leaving the room.</p>
+                </Card>}
                 {current.key === 'Live stream' && <Card title="Live stream" text="While a stream is on, everybody in the room sees it on the big screen and the songs of the DJs wait."><LiveControls slug={room.slug} live={live} /></Card>}
                 {current.key === 'Roles' && (
                     <div className="space-y-4">
@@ -136,6 +143,21 @@ export default function RoomSettingsPanel({ room, genres, backgrounds: pickable,
             </section>
         </div>
     );
+}
+
+function DeleteRoom({ slug, name }: { slug: string; name: string }) {
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+    return <div className="space-y-3">
+        <p className="text-sm text-neutral-300">The room owner and site staff can delete this room. This cannot be undone.</p>
+        {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+        <button type="button" disabled={busy} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" onClick={() => {
+            if (!confirm(`Permanently delete "${name}" and its chat, queue and settings? This cannot be undone.`)) return;
+            setBusy(true);
+            setError('');
+            router.delete(route('rooms.destroy', slug), { onError: (errors) => setError(Object.values(errors)[0] ?? 'Could not delete the room.'), onFinish: () => setBusy(false) });
+        }}>{busy ? 'Deleting…' : 'Delete room'}</button>
+    </div>;
 }
 
 function General({ room, genres, backgrounds: pickable, seasons, canLock }: Pick<Props, 'room' | 'genres' | 'backgrounds' | 'seasons' | 'canLock'>) {
@@ -304,7 +326,7 @@ function General({ room, genres, backgrounds: pickable, seasons, canLock }: Pick
     );
 }
 
-function MusicWaitlist({ slug, locked, cycle, onOpenPage }: { slug: string; locked: boolean; cycle: boolean; onOpenPage: Props['onOpenPage'] }) {
+function MusicWaitlist({ slug, locked, cycle }: { slug: string; locked: boolean; cycle: boolean }) {
     const [error, setError] = useState('');
     const set = (patch: { locked?: boolean; cycle?: boolean }) =>
         send('PATCH', route('rooms.waitlist.settings', slug), patch).then(() => setError('')).catch((e: Error) => setError(e.message));
@@ -318,108 +340,7 @@ function MusicWaitlist({ slug, locked, cycle, onOpenPage }: { slug: string; lock
                 </div>
                 {error && <p className="pt-3 text-sm text-red-400">{error}</p>}
             </Card>
-            <AutoHost slug={slug} onOpenPage={onOpenPage} />
         </div>
-    );
-}
-
-type AutoHostState = { bot_id: number | null; playlist_id: number | null; bots: { id: number; name: string }[]; playlists: { id: number; name: string; songs_count: number }[] };
-
-/**
- * Auto Host, for the host of the room (AutoHostController): one of your own bots keeps the music going. Whenever nobody is in the waitlist it plays the next song
- * of a playlist of yours; somebody who joins plays after the bot's song. The site runs the bot itself: no script, no token. A bot can be made right here,
- * and Settings → Developers opens over the room, so nobody has to leave it.
- */
-function AutoHost({ slug, onOpenPage }: { slug: string; onOpenPage: Props['onOpenPage'] }) {
-    const [state, setState] = useState<AutoHostState | null>(null);
-    const [botId, setBotId] = useState('');
-    const [listId, setListId] = useState('');
-    const [error, setError] = useState('');
-    const [notice, setNotice] = useState('');
-    const [making, setMaking] = useState(false);
-    const [botName, setBotName] = useState('');
-
-    const show = (st: AutoHostState, pick?: number) => {
-        setState(st);
-        setBotId(String(pick ?? st.bot_id ?? st.bots[0]?.id ?? ''));
-        setListId((id) => id || String(st.playlist_id ?? st.playlists.find((p) => p.songs_count > 0)?.id ?? ''));
-    };
-
-    useEffect(() => {
-        getJson<AutoHostState>(route('rooms.auto-host', slug))
-            .then((st) => show(st))
-            .catch(() => setState(null)); // not the host: nothing to show
-    }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    if (!state) return null;
-
-    const on = state.bot_id !== null;
-    const save = (enable: boolean) =>
-        send('PUT', route('rooms.auto-host.update', slug), enable ? { bot_id: Number(botId), playlist_id: Number(listId) } : { bot_id: null })
-            .then(() => {
-                setState({ ...state, bot_id: enable ? Number(botId) : null, playlist_id: enable ? Number(listId) : null });
-                setError('');
-                setNotice(enable ? 'Auto Host is on. If nobody is playing, it starts now.' : 'Auto Host is off.');
-            })
-            .catch((e: Error) => setError(e.message));
-    const makeBot = (e: FormEvent) => {
-        e.preventDefault();
-        setError('');
-        send('POST', route('developers.bots.store'), { name: botName.trim() })
-            .then(() => getJson<AutoHostState>(route('rooms.auto-host', slug)))
-            .then((st) => {
-                const newest = Math.max(...st.bots.map((b) => b.id));
-                setMaking(false);
-                setBotName('');
-                setNotice(`${st.bots.find((b) => b.id === newest)?.name ?? 'The bot'} is ready. Pick a playlist and turn Auto Host on.`);
-                show(st, newest);
-            })
-            .catch((err: Error) => setError(err.message));
-    };
-    const playing = on ? `${state.bots.find((b) => b.id === state.bot_id)?.name ?? 'Your bot'} plays from “${state.playlists.find((p) => p.id === state.playlist_id)?.name ?? 'a playlist'}”.` : null;
-    const botForm = (
-        <form onSubmit={makeBot} className="flex flex-wrap items-center gap-2" data-make-bot>
-            <input value={botName} onChange={(e) => setBotName(e.target.value)} maxLength={30} placeholder="Name the bot, e.g. Night Bot" aria-label="Bot name" className={`${bare} min-w-0 flex-1`} />
-            <button disabled={botName.trim().length < 2} className="flex shrink-0 items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-40"><Bot size={15} /> Make a bot</button>
-        </form>
-    );
-
-    return (
-        <Card
-            title="🤖 Auto Host"
-            text="One of your bots keeps the music going. Whenever nobody is in the waitlist, it plays the next song of the playlist you pick; somebody who joins plays right after the bot's song. The site runs the bot for you."
-            aside={on && <span className="shrink-0 rounded-md bg-emerald-500/20 px-2 py-1 text-[11px] font-bold text-emerald-300">ON</span>}
-        >
-            <div className="space-y-3" data-auto-host={on ? 'on' : 'off'}>
-                {playing && <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">{playing}</p>}
-                {state.bots.length === 0 ? (
-                    <>
-                        <p className="text-xs text-amber-200">You need a bot for this. Make one here; it takes a second.</p>
-                        {botForm}
-                    </>
-                ) : (
-                    <>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <select value={botId} onChange={(e) => setBotId(e.target.value)} aria-label="Bot" className={`${bare} w-44`}>
-                                {state.bots.map((b) => <option key={b.id} value={b.id}>🤖 {b.name}</option>)}
-                            </select>
-                            <select value={listId} onChange={(e) => setListId(e.target.value)} aria-label="Playlist" className={`${bare} w-56`}>
-                                <option value="">Pick a playlist…</option>
-                                {state.playlists.map((p) => <option key={p.id} value={p.id} disabled={p.songs_count === 0}>{p.name} ({p.songs_count})</option>)}
-                            </select>
-                            <button onClick={() => save(true)} disabled={!botId || !listId} className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-40">{on ? 'Save' : 'Turn on'}</button>
-                            {on && <button onClick={() => save(false)} className="rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold text-neutral-200 hover:bg-white/20">Turn off</button>}
-                        </div>
-                        {making ? botForm : <button type="button" onClick={() => setMaking(true)} className="flex items-center gap-1.5 text-xs font-semibold text-violet-300 hover:text-violet-200"><Plus size={13} /> Make another bot</button>}
-                    </>
-                )}
-                {error && <p className="text-sm text-red-400">{error}</p>}
-                {notice && !error && <p className="text-xs text-emerald-300">{notice}</p>}
-                <button type="button" onClick={() => onOpenPage(route('settings.developers'), 'Developers')} className="flex items-center gap-1.5 border-t border-white/5 pt-3 text-xs text-neutral-400 hover:text-white">
-                    <ExternalLink size={13} /> Manage your bots and their tokens in Settings → Developers (it opens over the room)
-                </button>
-            </div>
-        </Card>
     );
 }
 

@@ -21,6 +21,7 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'current_password' => [Rule::excludeIf($this->input('email') === $this->user()->email), 'required', 'current_password'],
             'username' => ['sometimes', 'required', 'string', 'min:3', 'max:20', 'regex:/^[A-Za-z0-9_]+$/', function (string $attribute, mixed $value, Closure $fail) {
                 if (User::whereRaw('lower(username) = ?', [mb_strtolower($value)])->when(request()->user(), fn ($q, $me) => $q->where('id', '!=', $me->id))->exists()) {
                     $fail('That username is taken.');

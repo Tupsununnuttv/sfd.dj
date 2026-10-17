@@ -32,8 +32,15 @@ class Whisper extends Model
     /** Every whisper between these two people, either direction. */
     public function scopeBetween(Builder $query, int $a, int $b): void
     {
-        $query->where(fn ($q) => $q->where('from_id', $a)->where('to_id', $b))
-            ->orWhere(fn ($q) => $q->where('from_id', $b)->where('to_id', $a));
+        $query->whereNull('group_id')->where(fn ($pair) => $pair
+            ->where(fn ($q) => $q->where('from_id', $a)->where('to_id', $b))
+            ->orWhere(fn ($q) => $q->where('from_id', $b)->where('to_id', $a)));
+    }
+
+    public static function history(Builder|\Illuminate\Database\Eloquent\Relations\HasMany $query, int $me, int $before = 0): array
+    {
+        $messages = $query->when($before > 0, fn ($q) => $q->where('id', '<', $before))->latest('id')->limit(101)->get();
+        return ['messages' => $messages->take(100)->reverse()->map->payload($me)->values(), 'has_more' => $messages->count() > 100];
     }
 
     public function sender(): BelongsTo
