@@ -19,6 +19,18 @@ use Illuminate\Support\Collection;
  */
 class WhisperGroupController extends Controller
 {
+    /** Only the current owner can remove the entire group, including its recordings. */
+    public function destroy(Request $request, WhisperGroup $group): Response
+    {
+        $group = $this->ownedBy($request, $group);
+        $people = $group->members->modelKeys();
+        $id = $group->id;
+        $group->delete();
+        WhisperGroupChanged::dispatch($id, $people, deleted: true);
+
+        return response()->noContent();
+    }
+
     /** Your groups, with the newest whisper of each and how many you have not read. */
     public function index(Request $request): JsonResponse
     {

@@ -5,6 +5,7 @@
 // Run it with `node scripts/make-characters.mjs`. To add a character, add a line to `characters` below, or drop your own pictures
 // (svg, webp, gif or png, named like the character) into the three folders: the shop lists every name found in Standing.
 import fs from 'node:fs';
+import { writeCharacterPosters } from './character-posters.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -212,3 +213,4 @@ for (const state of ['Standing', 'Dancing', 'DJing']) {
 }
 
 console.log(`wrote ${Object.keys(characters).length * 3} pictures to ${out}`);
+writeCharacterPosters();

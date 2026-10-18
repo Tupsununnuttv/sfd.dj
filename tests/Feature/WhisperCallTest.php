@@ -11,6 +11,38 @@ class WhisperCallTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_invitation_rings_before_signaling_and_requires_acceptance(): void
+    {
+        $caller = User::factory()->create();
+        $callee = User::factory()->create();
+        $id = $this->actingAs($caller)->postJson('/api/whisper-calls', ['user_id' => $callee->id, 'video' => false])
+            ->assertCreated()->assertJsonPath('call.status', 'ringing')->json('call.id');
+        $this->patchJson('/api/whisper-calls/'.$id, ['action' => 'offer', 'offer' => "v=0\r\n"])->assertStatus(409);
+        $this->patchJson('/api/whisper-calls/'.$id, ['action' => 'accept'])->assertStatus(409);
+        $this->actingAs($callee)->getJson('/api/whisper-calls')->assertJsonPath('call.offer', null)->assertJsonPath('call.status', 'ringing');
+        $this->patchJson('/api/whisper-calls/'.$id, ['action' => 'accept'])->assertOk()->assertJsonPath('call.status', 'active');
+        $this->patchJson('/api/whisper-calls/'.$id, ['action' => 'accept'])->assertStatus(409);
+        $this->patchJson('/api/whisper-calls/'.$id, ['action' => 'offer', 'offer' => "v=0\r\n"])->assertStatus(409);
+        $this->actingAs($caller)->patchJson('/api/whisper-calls/'.$id, ['action' => 'offer', 'offer' => "v=0\r\n"])->assertOk();
+        $this->actingAs($callee)->patchJson('/api/whisper-calls/'.$id, ['action' => 'answer', 'answer' => "v=0\r\n"])->assertOk();
+        $this->patchJson('/api/whisper-calls/'.$id, ['action' => 'end'])->assertOk();
+    }
+
+    public function test_sdp_line_endings_survive_offer_and_answer_delivery(): void
+    {
+        $caller = User::factory()->create();
+        $callee = User::factory()->create();
+        $offer = "v=0\r\no=- 123 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=ssrc:1286796424 msid:stream-id track-id\r\n";
+        $answer = "v=0\r\no=- 456 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=ssrc:987654321 msid:other-stream other-track\r\n";
+        $id = $this->actingAs($caller)->postJson('/api/whisper-calls', ['user_id' => $callee->id, 'video' => false, 'offer' => $offer])
+            ->assertCreated()->json('call.id');
+        $this->assertSame($offer, WhisperCall::findOrFail($id)->offer);
+        $this->actingAs($callee)->getJson('/api/whisper-calls')->assertJsonPath('call.offer', $offer);
+        $this->patchJson('/api/whisper-calls/'.$id, ['action' => 'answer', 'answer' => $answer])->assertOk();
+        $this->assertSame($answer, WhisperCall::findOrFail($id)->answer);
+        $this->actingAs($caller)->getJson('/api/whisper-calls')->assertJsonPath('call.answer', $answer);
+    }
+
     private function start(User $from, User $to, bool $video = false): string
     {
         return $this->actingAs($from)->postJson('/api/whisper-calls', ['user_id' => $to->id, 'video' => $video, 'offer' => "v=0\r\no=test"])

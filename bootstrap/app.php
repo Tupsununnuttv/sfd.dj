@@ -24,6 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*', headers: Request::HEADER_X_FORWARDED_PROTO);
 
+        // SDP is a wire format: its trailing CRLF must survive request processing.
+        $middleware->trimStrings(except: ['offer', 'answer']);
+
         $middleware->web(append: [
             EnsureCurrentSession::class,
             HandleInertiaRequests::class,

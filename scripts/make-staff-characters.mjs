@@ -8,6 +8,7 @@
 // The others are for the roles named in AvatarController::ROLE_ONLY. The six simple characters everybody can wear are drawn by make-characters.mjs.
 // Run it with `node scripts/make-staff-characters.mjs`, or name the ones to redraw: `node scripts/make-staff-characters.mjs ice fedora`.
 import fs from 'node:fs';
+import { writeCharacterPosters } from './character-posters.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { adamMochi } from './staff-characters/adam.mjs';
@@ -81,3 +82,4 @@ for (const state of STATES) {
 }
 
 console.log(`wrote ${names.length * STATES.length} pictures to ${out}`);
+writeCharacterPosters();

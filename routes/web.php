@@ -155,6 +155,7 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::post('/api/whispers', [WhisperController::class, 'send'])->middleware('throttle:30,1')->name('api.whispers.send');
     Route::post('/api/whispers/voice', [WhisperController::class, 'voice'])->middleware('throttle:10,1')->name('api.whispers.voice');
     Route::get('/api/whispers/{whisper}/audio', [WhisperController::class, 'audio'])->name('api.whispers.audio');
+    Route::delete('/api/whispers/messages/{whisper}', [WhisperController::class, 'destroy'])->whereNumber('whisper')->name('api.whispers.destroy');
 
     // whisper groups: messages are sent through api.whispers.send / api.whispers.voice with a group_id
     Route::prefix('api/whisper-groups')->name('api.whisper-groups.')->group(function () {
@@ -163,6 +164,7 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
         Route::get('/friends', [WhisperGroupController::class, 'friends'])->name('friends');
         Route::get('/{group}', [WhisperGroupController::class, 'show'])->whereNumber('group')->name('show');
         Route::patch('/{group}', [WhisperGroupController::class, 'update'])->whereNumber('group')->name('update');
+        Route::delete('/{group}', [WhisperGroupController::class, 'destroy'])->whereNumber('group')->name('destroy');
         Route::post('/{group}/read', [WhisperGroupController::class, 'read'])->whereNumber('group')->name('read');
         Route::post('/{group}/members', [WhisperGroupController::class, 'add'])->whereNumber('group')->middleware('throttle:30,1')->name('members.add');
         Route::delete('/{group}/members/{user}', [WhisperGroupController::class, 'remove'])->whereNumber(['group', 'user'])->name('members.remove');

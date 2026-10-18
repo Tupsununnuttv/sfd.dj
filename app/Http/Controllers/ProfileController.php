@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Room;
 use App\Models\User;
+use App\Support\AccountSecurity;
 use App\Support\Countries;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -48,6 +49,7 @@ class ProfileController extends Controller
 
         // a new address has to be confirmed again: the message goes to it now
         if ($changed) {
+            AccountSecurity::revoke($request->user(), $request);
             $result = $request->user()->sendEmailVerificationNotification();
             $request->session()->put('verification_mail', $result);
 

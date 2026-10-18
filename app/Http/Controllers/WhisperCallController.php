@@ -52,7 +52,7 @@ class WhisperCallController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate(['user_id' => ['required', 'integer', 'exists:users,id'], 'video' => ['required', 'boolean'], 'offer' => ['required', 'string', 'max:60000', 'starts_with:v=0']]);
+        $data = $request->validate(['user_id' => ['required', 'integer', 'exists:users,id'], 'video' => ['required', 'boolean'], 'offer' => ['nullable', 'string', 'max:60000', 'starts_with:v=0']]);
         $other = User::findOrFail($data['user_id']);
         $this->allowed($request->user(), $other);
         WhisperCall::expire();
@@ -61,7 +61,7 @@ class WhisperCallController extends Controller
             User::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
             abort_if(WhisperCall::whereIn('status', ['ringing', 'active'])->where(fn ($q) => $q->whereIn('caller_id', $ids)->orWhereIn('callee_id', $ids))->exists(), 409, 'One of you is already in a call.');
 
-            return WhisperCall::create(['caller_id' => $ids[0], 'callee_id' => $ids[1], 'video' => $data['video'], 'offer' => $data['offer'], 'caller_seen' => now()]);
+            return WhisperCall::create(['caller_id' => $ids[0], 'callee_id' => $ids[1], 'video' => $data['video'], 'offer' => $data['offer'] ?? null, 'caller_seen' => now()]);
         });
 
         return response()->json(['call' => $this->payload($call->refresh(), $request->user()->id)], 201);
@@ -70,7 +70,7 @@ class WhisperCallController extends Controller
     public function update(Request $request, WhisperCall $call)
     {
         $this->participant($request, $call);
-        $data = $request->validate(['action' => ['required', 'in:heartbeat,answer,end'], 'answer' => ['required_if:action,answer', 'nullable', 'string', 'max:60000', 'starts_with:v=0']]);
+        $data = $request->validate(['action' => ['required', 'in:heartbeat,accept,offer,answer,end'], 'offer' => ['required_if:action,offer', 'nullable', 'string', 'max:60000', 'starts_with:v=0'], 'answer' => ['required_if:action,answer', 'nullable', 'string', 'max:60000', 'starts_with:v=0']]);
         WhisperCall::expire();
         DB::transaction(function () use ($request, $call, $data) {
             $call = WhisperCall::whereKey($call->id)->lockForUpdate()->firstOrFail();
@@ -80,8 +80,18 @@ class WhisperCallController extends Controller
                 return;
             }
             abort_if($call->status === 'ended', 409, 'This call has ended.');
-            if ($data['action'] === 'answer') {
+            if ($data['action'] === 'accept') {
                 abort_unless($request->user()->id === $call->callee_id && $call->status === 'ringing', 409);
+                $this->allowed(User::findOrFail($call->caller_id), $request->user());
+                $call->status = 'active';
+            }
+            if ($data['action'] === 'offer') {
+                abort_unless($request->user()->id === $call->caller_id && $call->status === 'active' && $call->offer === null, 409);
+                $this->allowed($request->user(), User::findOrFail($call->callee_id));
+                $call->offer = $data['offer'];
+            }
+            if ($data['action'] === 'answer') {
+                abort_unless($request->user()->id === $call->callee_id && $call->answer === null && $call->offer !== null, 409);
                 $this->allowed(User::findOrFail($call->caller_id), $request->user());
                 $call->answer = $data['answer'];
                 $call->status = 'active';

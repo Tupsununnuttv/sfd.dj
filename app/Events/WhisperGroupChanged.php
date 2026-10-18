@@ -12,7 +12,7 @@ class WhisperGroupChanged implements ShouldBroadcastNow
     use Dispatchable;
 
     /** @param  array<int, int>  $userIds */
-    public function __construct(public int $groupId, public array $userIds, public ?int $removed = null) {}
+    public function __construct(public int $groupId, public array $userIds, public ?int $removed = null, public bool $deleted = false) {}
 
     public function broadcastOn(): array
     {
@@ -26,6 +26,6 @@ class WhisperGroupChanged implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
-        return ['group_id' => $this->groupId, 'removed' => $this->removed];
+        return ['group_id' => $this->groupId, 'removed' => $this->removed, 'deleted' => $this->deleted];
     }
 }

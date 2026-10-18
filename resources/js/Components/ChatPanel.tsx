@@ -1,7 +1,7 @@
 import { Cosmetics } from '@/lib/cosmetics';
 import Avatar from '@/Components/Avatar';
 import Badges from '@/Components/Badges';
-import { VERSION } from '@/lib/patchNotes';
+import { VERSION } from '@/lib/latestRelease';
 import ContextMenu, { MenuAnchor, MenuItem } from '@/Components/ContextMenu';
 import PeekCard from '@/Components/PeekCard';
 import { EmoteInfo, emoteUrl, useGlobalEmotes, withEmoteTokens } from '@/lib/emotes';

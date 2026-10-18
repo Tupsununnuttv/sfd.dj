@@ -88,10 +88,11 @@ class EmailConfirmationTest extends TestCase
         $user = User::factory()->create(['email' => 'kate@example.com', 'password' => Hash::make('old-pass-123')]);
         $this->mailIsDown();
 
-        // Forgot password: no error page, the person is told the email could not go out
+        // Delivery failures are logged privately; public responses must not reveal accounts.
         $this->from('/forgot-password')->post('/forgot-password', ['email' => 'kate@example.com'])
             ->assertRedirect('/forgot-password')
-            ->assertSessionHasErrors(['email' => 'We could not send the email right now. Try again in a few minutes, or ask a staff member to help you.']);
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status', 'If an account matches, a password reset link will be sent. Check your inbox and spam folder.');
 
         // A new password from a reset link is saved, even though the "your password was changed" email cannot go out
         $this->post('/reset-password', ['token' => Password::createToken($user), 'email' => 'kate@example.com', 'password' => 'new-pass-456', 'password_confirmation' => 'new-pass-456'])

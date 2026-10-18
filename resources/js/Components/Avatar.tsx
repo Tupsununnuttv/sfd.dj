@@ -36,7 +36,7 @@ export default function Avatar({
             <span
                 className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold text-white ${avatar ? 'bg-neutral-800' : color} ${className}`}
             >
-                {photo && failedPhoto !== photo ? <img src={photo} alt="" onError={() => setFailedPhoto(photo)} className="h-full w-full object-cover" /> : character ? <img src={characterUrl(character, 'standing')} alt="" draggable={false} className="h-full w-full max-w-none origin-[50%_54%] translate-y-[-4%] scale-[1.3] object-cover object-top" /> : animated ? <AnimatedAvatar name={animated} /> : avatar ?? name.charAt(0).toUpperCase()}
+                {photo && failedPhoto !== photo ? <img src={photo} alt="" loading="lazy" decoding="async" onError={() => setFailedPhoto(photo)} className="h-full w-full object-cover" /> : character ? <img src={characterUrl(character, 'standing')} alt="" loading="lazy" decoding="async" draggable={false} className="h-full w-full max-w-none origin-[50%_54%] translate-y-[-4%] scale-[1.3] object-cover object-top" /> : animated ? <AnimatedAvatar name={animated} /> : avatar ?? name.charAt(0).toUpperCase()}
             </span>
             {accessory && <AccessoryLayers name={accessory} />}
         </span>

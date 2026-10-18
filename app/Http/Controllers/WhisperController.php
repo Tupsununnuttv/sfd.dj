@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\WhisperDeleted;
 use App\Events\WhisperSent;
 use App\Models\User;
 use App\Models\Whisper;
@@ -10,6 +11,7 @@ use App\Support\WordGuard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,6 +20,23 @@ use Symfony\Component\HttpFoundation\Response as MediaResponse;
 /** Whispers: private messages between two people, or inside a group (see WhisperGroupController). The page and the in-room panel both use the JSON routes. */
 class WhisperController extends Controller
 {
+    /** Authors can remove their text or voice message for every participant. */
+    public function destroy(Request $request, Whisper $whisper): HttpResponse
+    {
+        abort_unless($whisper->from_id === $request->user()->id, 404);
+        $people = $whisper->group_id
+            ? DB::table('whisper_group_user')->where('group_id', $whisper->group_id)->pluck('user_id')->all()
+            : [$whisper->from_id, $whisper->to_id];
+        $id = $whisper->id;
+        DB::transaction(function () use ($whisper) {
+            Whisper::where('reply_to_id', $whisper->id)->update(['reply_to_id' => null]);
+            $whisper->delete(); // The model removes any private voice recording too.
+        });
+        WhisperDeleted::dispatch($id, array_values(array_unique($people)));
+
+        return response()->noContent();
+    }
+
     public function index(Request $request): Response
     {
         return Inertia::render('Whispers', [

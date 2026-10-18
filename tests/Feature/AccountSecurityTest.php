@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
@@ -13,6 +14,48 @@ use Tests\TestCase;
 class AccountSecurityTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_login_attempts_share_a_budget_between_email_and_username(): void
+    {
+        $user = User::factory()->create(['username' => 'SafeMember']);
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/login', ['email' => $i % 2 ? 'SAFEMEMBER' : $user->email, 'password' => 'incorrect'])
+                ->assertSessionHasErrors('email');
+        }
+        $this->post('/login', ['email' => $user->email, 'password' => 'password'])->assertSessionHasErrors('email');
+        $this->assertGuest();
+        $this->travel(61)->seconds();
+        $this->post('/login', ['email' => 'SafeMember', 'password' => 'password'])->assertSessionHasNoErrors();
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_password_reset_public_response_does_not_reveal_account_existence(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create();
+        $status = 'If an account matches, a password reset link will be sent. Check your inbox and spam folder.';
+        foreach ([$user->email, 'missing@example.test', $user->email] as $email) {
+            $this->from('/forgot-password')->post('/forgot-password', ['email' => $email])
+                ->assertRedirect('/forgot-password')->assertSessionHasNoErrors()->assertSessionHas('status', $status);
+        }
+        Notification::assertSentTo($user, ResetPasswordNotification::class);
+    }
+
+    public function test_email_changes_revoke_other_access_and_keep_the_current_session(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create(['remember_token' => 'old-token']);
+        $user->createToken('other-device');
+        $this->actingAs($user)->patch('/profile', ['name' => $user->name, 'email' => 'updated@example.test', 'current_password' => 'password'])
+            ->assertSessionHasNoErrors();
+        $user->refresh();
+        $this->assertSame(1, $user->auth_version);
+        $this->assertNotSame('old-token', $user->remember_token);
+        $this->assertSame(0, $user->tokens()->count());
+        $this->assertNull($user->email_verified_at);
+        $this->get('/settings/account')->assertOk();
+        $this->withSession(['auth_version' => 0])->getJson('/settings/account')->assertUnauthorized();
+    }
 
     private function securedUser(): User
     {

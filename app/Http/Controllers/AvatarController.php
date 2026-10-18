@@ -60,14 +60,14 @@ class AvatarController extends Controller
         'rookie' => 'Rookie', 'selector' => 'Selector', 'digger' => 'Crate Digger', 'bassline' => 'Bassline',
         'streak' => 'Hot Streak', 'nightowl' => 'Night Owl', 'voltage' => 'Voltage',
         'goldenear' => 'Golden Ear', 'diamond' => 'Diamond Cut', 'spotlight' => 'Spotlight', 'platinum' => 'Platinum Disc', 'laureate' => 'Laureate',
-        'royal' => 'Royal', 'cosmic' => 'Cosmic', 'dragonseal' => 'Dragon Seal', 'legend' => 'Legend',
+        'royal' => 'Royal', 'cosmic' => 'Cosmic', 'dragonseal' => 'Dragon Seal', 'legend' => 'Legend', 'phoenixheart' => 'Phoenix Heart',
     ];
 
     public const ACCESSORIES = [
         'headphones' => 'DJ Headphones', 'shades' => 'Aviators', 'cap' => 'Snapback', 'beanie' => 'Beanie',
         'catears' => 'Cat Ears', 'foxears' => 'Fox Ears', 'flowers' => 'Flower Crown', 'halo' => 'Halo',
         'visor' => 'Cyber Visor', 'laurel' => 'Laurel Wreath', 'horns' => 'Devil Horns', 'tophat' => 'Top Hat', 'crown' => 'Royal Crown',
-        'wings' => 'Angel Wings', 'dragon' => 'Dragon Horns', 'phoenix' => 'Phoenix Crest',
+        'wings' => 'Angel Wings', 'dragon' => 'Dragon Horns', 'phoenix' => 'Phoenix Crest', 'lunarfox' => 'Lunar Fox Companion',
     ];
 
     public const FRAMES = [
@@ -82,15 +82,17 @@ class AvatarController extends Controller
         'sparkles' => 'Sparkles', 'notes' => 'Music Notes', 'hearts' => 'Hearts',
         'petals' => 'Sakura', 'snow' => 'Snowfall', 'flames' => 'Flames', 'lightning' => 'Thunder',
         'toxic' => 'Toxic Haze', 'cosmic' => 'Cosmic Dust', 'void' => 'Void',
+        'fireflyswarm' => 'Firefly Garden', 'butterflies' => 'Prism Butterflies', 'auroraveil' => 'Aurora Veil',
+        'hologram' => 'Holographic Pulse', 'meteors' => 'Meteor Shower', 'eclipse' => 'Solar Eclipse',
     ];
 
     /** The level that unlocks an item. Everything not listed here is free from level 1. */
     public const UNLOCK = [
         'avatar' => ['char:neko' => 2, 'char:bun' => 3, 'char:wilmer' => 4, 'char:panda' => 5, 'char:milky' => 6, 'char:pip' => 7, 'char:wolfie' => 8, 'char:robo' => 10, 'char:elementaar' => 12, 'char:lumen' => 9, 'char:aether' => 18, 'char:solstice' => 25, 'char:veyra' => 28, 'char:kaida' => 32, 'char:spooky' => 14, 'char:kikomochi' => 16, 'char:boomer' => 20, 'char:emberdragon' => 30, 'char:frostdragon' => 35],
-        'badge' => ['digger' => 2, 'bassline' => 3, 'streak' => 4, 'nightowl' => 6, 'voltage' => 8, 'goldenear' => 10, 'diamond' => 13, 'spotlight' => 16, 'platinum' => 20, 'laureate' => 24, 'royal' => 28, 'cosmic' => 34, 'dragonseal' => 42, 'legend' => 55],
-        'accessory' => ['cap' => 2, 'beanie' => 3, 'catears' => 4, 'foxears' => 5, 'flowers' => 7, 'halo' => 9, 'visor' => 10, 'laurel' => 12, 'horns' => 15, 'tophat' => 18, 'crown' => 22, 'wings' => 26, 'dragon' => 32, 'phoenix' => 45],
+        'badge' => ['digger' => 2, 'bassline' => 3, 'streak' => 4, 'nightowl' => 6, 'voltage' => 8, 'goldenear' => 10, 'diamond' => 13, 'spotlight' => 16, 'platinum' => 20, 'laureate' => 24, 'royal' => 28, 'phoenixheart' => 30, 'cosmic' => 34, 'dragonseal' => 42, 'legend' => 55],
+        'accessory' => ['cap' => 2, 'beanie' => 3, 'catears' => 4, 'foxears' => 5, 'flowers' => 7, 'halo' => 9, 'visor' => 10, 'laurel' => 12, 'horns' => 15, 'tophat' => 18, 'crown' => 22, 'lunarfox' => 24, 'wings' => 26, 'dragon' => 32, 'phoenix' => 45],
         'frame' => ['gold' => 2, 'fireflies' => 3, 'neon' => 4, 'comic' => 5, 'carbon' => 6, 'emerald' => 8, 'web' => 9, 'vinyl' => 11, 'candles' => 12, 'equalizer' => 14, 'skulls' => 16, 'thorns' => 18, 'lanterns' => 20, 'frost' => 22, 'crystals' => 25, 'hellfire' => 28, 'portal' => 32, 'aurora' => 38, 'prism' => 50],
-        'effect' => ['waves' => 2, 'sparkles' => 4, 'notes' => 6, 'hearts' => 8, 'petals' => 11, 'snow' => 15, 'flames' => 19, 'lightning' => 23, 'toxic' => 27, 'cosmic' => 36, 'void' => 48],
+        'effect' => ['waves' => 2, 'sparkles' => 4, 'fireflyswarm' => 5, 'notes' => 6, 'hearts' => 8, 'petals' => 11, 'butterflies' => 13, 'snow' => 15, 'flames' => 19, 'auroraveil' => 21, 'lightning' => 23, 'toxic' => 27, 'hologram' => 29, 'meteors' => 33, 'cosmic' => 36, 'eclipse' => 45, 'void' => 48],
     ];
 
     private const SLOTS = ['avatar', 'badge', 'accessory', 'frame', 'effect'];

@@ -96,10 +96,10 @@ class ShopUpgradeTest extends TestCase
                 $this->assertArrayNotHasKey($old, $catalog, "{$old} was an old item");
             }
         }
-        $this->assertSame(16, count(AvatarController::BADGES));
-        $this->assertSame(16, count(AvatarController::ACCESSORIES));
+        $this->assertSame(17, count(AvatarController::BADGES));
+        $this->assertSame(17, count(AvatarController::ACCESSORIES));
         $this->assertSame(21, count(AvatarController::FRAMES));
-        $this->assertSame(12, count(AvatarController::EFFECTS));
+        $this->assertSame(18, count(AvatarController::EFFECTS));
 
         // the old things somebody wore are taken off; what they already picked from the new shop stays, and nobody is given anything
         $migration = require database_path('migrations/2026_10_28_000001_reset_shop_cosmetics.php');
@@ -129,9 +129,9 @@ class ShopUpgradeTest extends TestCase
             ->where('catalog.frame.3', ['key' => 'fireflies', 'label' => 'Fireflies', 'icon' => null, 'level' => 3, 'rarity' => 'common', 'price' => 50, 'owned' => false])
             ->where('catalog.frame.18', ['key' => 'portal', 'label' => 'Rift Portal', 'icon' => null, 'level' => 32, 'rarity' => 'legendary', 'price' => 1090, 'owned' => false])
             ->where('catalog.frame.20', ['key' => 'prism', 'label' => 'Prism', 'icon' => null, 'level' => 50, 'rarity' => 'legendary', 'price' => 1940, 'owned' => false])
-            ->where('catalog.badge.15', ['key' => 'legend', 'label' => 'Legend', 'icon' => null, 'level' => 55, 'rarity' => 'legendary', 'price' => 1760, 'owned' => false])
+            ->where('catalog.badge.16', ['key' => 'legend', 'label' => 'Legend', 'icon' => null, 'level' => 55, 'rarity' => 'legendary', 'price' => 1760, 'owned' => false])
             ->where('catalog.accessory.1.key', 'shades')
-            ->where('catalog.effect.11.key', 'void'));
+            ->where('catalog.effect.17.key', 'void'));
     }
 
     public function test_the_shop_has_no_plain_emoji_and_no_animated_avatars_only_characters(): void
@@ -199,6 +199,40 @@ class ShopUpgradeTest extends TestCase
         $this->actingAs($user)->post('/shop/buy', ['items' => [['slot' => 'frame', 'key' => 'aurora']]])->assertSessionHasNoErrors();
         $this->actingAs($user)->post('/shop/cosmetic', ['slot' => 'frame', 'key' => 'aurora'])->assertSessionHasNoErrors();
         $this->assertSame('aurora', $user->refresh()->cosmetics['frame']);
+    }
+
+    public function test_lunar_fox_companion_requires_level_twenty_four_and_can_be_equipped(): void
+    {
+        $user = $this->atLevel(23, 10000);
+        $this->actingAs($user)->post('/shop/buy', ['items' => [['slot' => 'accessory', 'key' => 'lunarfox']]])->assertSessionHasErrors('items.0.key');
+        $user->forceFill(['xp' => User::xpFor(24)])->save();
+        $this->post('/shop/buy', ['items' => [['slot' => 'accessory', 'key' => 'lunarfox']]])->assertSessionHasNoErrors();
+        $this->post('/shop/cosmetic', ['slot' => 'accessory', 'key' => 'lunarfox'])->assertSessionHasNoErrors();
+        $this->assertSame('lunarfox', $user->refresh()->cosmetics['accessory']);
+        $this->assertLessThan(10000, $user->coins);
+    }
+
+    public function test_phoenix_heart_badge_unlocks_at_level_thirty_and_can_be_worn(): void
+    {
+        $user = $this->atLevel(29, 10000);
+        $this->actingAs($user)->post('/shop/buy', ['items' => [['slot' => 'badge', 'key' => 'phoenixheart']]])->assertSessionHasErrors('items.0.key');
+        $user->forceFill(['xp' => User::xpFor(30)])->save();
+        $this->post('/shop/buy', ['items' => [['slot' => 'badge', 'key' => 'phoenixheart']]])->assertSessionHasNoErrors();
+        $this->post('/shop/cosmetic', ['slot' => 'badge', 'key' => 'phoenixheart'])->assertSessionHasNoErrors();
+        $this->assertSame('phoenixheart', $user->refresh()->cosmetics['badge']);
+        $this->assertLessThan(10000, $user->coins);
+    }
+
+    public function test_new_effects_respect_levels_and_can_be_bought_and_equipped(): void
+    {
+        $user = $this->atLevel(44, 20000);
+        $this->actingAs($user)->post('/shop/buy', ['items' => [['slot' => 'effect', 'key' => 'eclipse']]])->assertSessionHasErrors('items.0.key');
+        $user->forceFill(['xp' => User::xpFor(45)])->save();
+        $this->post('/shop/buy', ['items' => [['slot' => 'effect', 'key' => 'eclipse']]])->assertSessionHasNoErrors();
+        $this->post('/shop/cosmetic', ['slot' => 'effect', 'key' => 'eclipse'])->assertSessionHasNoErrors();
+        $this->assertSame('eclipse', $user->refresh()->cosmetics['effect']);
+        $this->assertLessThan(20000, $user->coins);
+        $this->assertDatabaseHas('user_items', ['user_id' => $user->id, 'slot' => 'effect', 'item' => 'eclipse']);
     }
 
     public function test_staff_can_wear_everything_and_what_you_already_wear_stays_yours(): void

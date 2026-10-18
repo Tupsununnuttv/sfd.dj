@@ -8,13 +8,13 @@ import { GroupAvatar, GroupInfo, NewGroup } from '@/Components/WhisperGroupPanel
 import { refreshCounts } from '@/lib/counts';
 import { startWhisperCall } from '@/lib/calls';
 import { EmoteInfo, useGlobalEmotes, withEmoteTokens } from '@/lib/emotes';
-import { getJson, post, sendJson, uploadJson } from '@/lib/post';
+import { getJson, post, send as request, sendJson, uploadJson } from '@/lib/post';
 import { ago } from '@/lib/time';
 import { canRecordVoice, Recording } from '@/lib/voiceRecorder';
 import { PageProps } from '@/types';
 import { router, usePage } from '@inertiajs/react';
 import { echo } from '@laravel/echo-react';
-import { ArrowLeft, MessageCirclePlus, Mic, Phone, Video, Reply, Search, Send, Smile, UserRound, UsersRound } from 'lucide-react';
+import { ArrowLeft, MessageCirclePlus, Mic, Phone, Video, Reply, Search, Send, Smile, Trash2, UserRound, UsersRound } from 'lucide-react';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface Person {
@@ -100,6 +100,7 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
     const [find, setFind] = useState('');
     const [unreadOnly, setUnreadOnly] = useState(false);
     const [error, setError] = useState('');
+    const [deleting, setDeleting] = useState<number | null>(null);
     const [recording, setRecording] = useState(false); // the strip that records a voice message is open
     const [replyTo, setReplyTo] = useState<Line | null>(null); // the whisper the next one answers
     const [picker, setPicker] = useState<'emoji' | 'bttv' | '7tv' | null>(null); // the emoji and emote panel above the text box
@@ -117,7 +118,7 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
         getJson<Conversation[]>(route('api.whispers')).then(setList).catch(() => {});
         getJson<GroupConversation[]>(route('api.whisper-groups.index')).then((all) => {
             setGroups(all);
-            setGroup((now) => (now ? all.find((g) => g.group.id === now.id)?.group ?? now : now)); // the open group may have a new name or new people
+            setGroup((now) => (now ? all.find((g) => g.group.id === now.id)?.group ?? null : now));
         }).catch(() => {});
     }, []);
     const open = useCallback((id: number) => {
@@ -149,12 +150,22 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
             }
             loadList();
         };
-        const onGroup = (g: { group_id: number; removed: number | null }) => {
-            if (g.removed === me) setGroup((now) => (now?.id === g.group_id ? null : now)); // you were taken out
+        const onGroup = (g: { group_id: number; removed: number | null; deleted?: boolean }) => {
+            if (g.removed === me || g.deleted) {
+                if (openKey.current === keyOf({ group: g.group_id })) { setLines([]); setReplyTo(null); setShowGroup(false); }
+                setGroup((now) => (now?.id === g.group_id ? null : now));
+            }
             loadList();
+            refreshCounts();
+        };
+        const onDeleted = (w: { id: number }) => {
+            setLines((now) => now.filter((m) => m.id !== w.id).map((m) => m.reply?.id === w.id ? { ...m, reply: null } : m));
+            setReplyTo((now) => now?.id === w.id ? null : now);
+            loadList(); refreshCounts();
         };
         ch.listen('.whisper', onWhisper);
         ch.listen('.whisper-group', onGroup);
+        ch.listen('.whisper-deleted', onDeleted);
         const back = () => {
             if (document.visibilityState !== 'visible') return;
             if (unseen.current && keyOf(unseen.current) === openKey.current) markRead(unseen.current);
@@ -162,7 +173,7 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
         };
         document.addEventListener('visibilitychange', back);
 
-        return () => { ch.stopListening('.whisper', onWhisper); ch.stopListening('.whisper-group', onGroup); document.removeEventListener('visibilitychange', back); };
+        return () => { ch.stopListening('.whisper', onWhisper); ch.stopListening('.whisper-group', onGroup); ch.stopListening('.whisper-deleted', onDeleted); document.removeEventListener('visibilitychange', back); };
     }, [me, start, startGroup, open, openGroup, loadList, markRead]); // eslint-disable-line react-hooks/exhaustive-deps -- targetOf only reads `me`
 
     useEffect(() => {
@@ -171,6 +182,18 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
             restoredScroll.current = null;
         } else end.current?.scrollIntoView({ block: 'end' });
     }, [lines, other, group?.id, showGroup]);
+
+    const deleteMessage = async (message: Line) => {
+        if (!message.mine || deleting !== null || !confirm('Delete this message for everyone? This cannot be undone.')) return;
+        setDeleting(message.id); setError('');
+        try {
+            await request('DELETE', route('api.whispers.destroy', message.id));
+            setLines((now) => now.filter((m) => m.id !== message.id).map((m) => m.reply?.id === message.id ? { ...m, reply: null } : m));
+            setReplyTo((now) => now?.id === message.id ? null : now);
+            loadList(); refreshCounts();
+        } catch (e) { setError(e instanceof Error ? e.message : 'Could not delete the message.'); }
+        finally { setDeleting(null); }
+    };
 
     const loadOlder = async () => {
         if (loadingOlder || !lines.length || (!group && !other)) return;
@@ -402,7 +425,7 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
                                 group={group}
                                 me={me}
                                 onChanged={(g) => { setGroup(g); loadList(); }}
-                                onLeft={() => { setGroup(null); setShowGroup(false); loadList(); refreshCounts(); }}
+                                onLeft={() => { setGroup(null); setLines([]); setReplyTo(null); setShowGroup(false); loadList(); refreshCounts(); }}
                             />
                         ) : (
                             <>
@@ -431,6 +454,7 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
                                             <div key={m.id}>
                                                 {heading && <p className="my-4 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-500">{heading}</p>}
                                                 <div className={`group flex items-center gap-1 ${m.mine ? 'justify-end' : 'justify-start'} ${first ? 'mt-3' : 'mt-0.5'}`}>
+                                                    {m.mine && <button type="button" onClick={() => void deleteMessage(m)} disabled={deleting !== null} aria-label="Delete message for everyone" title="Delete message" className="shrink-0 rounded-md p-1.5 text-neutral-500 opacity-0 transition hover:bg-red-500/15 hover:text-red-300 focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100 disabled:opacity-40"><Trash2 size={14} /></button>}
                                                     {m.mine && replyButton}
                                                     <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${m.mine ? 'rounded-br-md bg-linear-to-br from-fuchsia-600 to-violet-600 text-white' : 'rounded-bl-md bg-white/10'}`}>
                                                         {group && !m.mine && first && <p className="mb-0.5 text-xs font-semibold text-violet-300">{m.from?.name}</p>}

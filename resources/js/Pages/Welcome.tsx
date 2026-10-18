@@ -5,7 +5,7 @@ import Crowd from '@/Components/Crowd';
 import RoleBadge from '@/Components/RoleBadge';
 import RoomBadge from '@/Components/RoomBadge';
 import SiteLayout from '@/Layouts/SiteLayout';
-import { releases } from '@/lib/patchNotes';
+import { latestRelease } from '@/lib/latestRelease';
 import { features, Partner, partners } from '@/lib/siteContent';
 import { countdown, until, useNow } from '@/lib/time';
 import { PageProps, RoleInfo } from '@/types';
@@ -148,7 +148,7 @@ export default function Welcome({ rooms, event, topDjs, genres, stats: initialSt
     const guest = auth.guest;
     const goal = community.donation;
     const genreList = Object.keys(genres).length ? Object.keys(genres) : fallbackGenres;
-    const news = releases[0];
+    const news = latestRelease;
 
     return (
         <SiteLayout>

@@ -3,7 +3,7 @@ import Checkbox from '@/Components/Checkbox';
 import { fieldClass, ghostBtn, primaryBtn } from '@/Components/ui';
 import type { Group, Person } from '@/Components/WhisperBox';
 import { getJson, send, sendJson } from '@/lib/post';
-import { Crown, LogOut, UserPlus, UsersRound, X } from 'lucide-react';
+import { Crown, LogOut, Trash2, UserPlus, UsersRound, X } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 
 /** How many people a group holds, the owner too (the server enforces it: App\Models\WhisperGroup::MAX_MEMBERS). */
@@ -111,6 +111,7 @@ export function GroupInfo({ group, me, onChanged, onLeft }: { group: Group; me: 
     const add = () => void run(sendJson<Group>('POST', route('api.whisper-groups.members.add', group.id), { user_ids: adding }).then((g) => { setAdding([]); onChanged(g); }));
     const remove = (p: Person) => confirm(`Take ${p.name} out of ${group.name}?`) && void run(send('DELETE', route('api.whisper-groups.members.remove', [group.id, p.id])).then(() => onChanged({ ...group, members: group.members.filter((m) => m.id !== p.id) })));
     const leave = () => confirm(`Leave ${group.name}? You will not see its whispers any more.`) && void run(send('DELETE', route('api.whisper-groups.members.remove', [group.id, me])).then(onLeft));
+    const destroy = () => confirm(`Delete ${group.name} for everyone? All messages and voice recordings will be permanently deleted.`) && void run(send('DELETE', route('api.whisper-groups.destroy', group.id)).then(onLeft));
 
     const members = [...group.members].sort((a, b) => Number(b.id === group.owner_id) - Number(a.id === group.owner_id));
     const room = MAX_MEMBERS - group.members.length;
@@ -155,6 +156,7 @@ export function GroupInfo({ group, me, onChanged, onLeft }: { group: Group; me: 
             {error && <p className="text-sm text-red-400">{error}</p>}
 
             <button onClick={leave} disabled={busy} className="flex items-center gap-2 rounded-lg bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500/20 disabled:opacity-50"><LogOut size={15} /> Leave group</button>
+            {owner && <section className="rounded-xl border border-red-400/20 p-4"><h3 className="text-sm font-semibold text-red-300">Delete group</h3><p className="mt-1 text-xs text-neutral-400">Permanently remove this group, all messages and voice recordings for everyone.</p><button onClick={destroy} disabled={busy} className="mt-3 flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"><Trash2 size={15} /> Delete group for everyone</button></section>}
         </div>
     );
 }

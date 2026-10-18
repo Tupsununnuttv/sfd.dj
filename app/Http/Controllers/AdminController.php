@@ -59,7 +59,7 @@ class AdminController extends Controller
                 'songs_played' => PlaylistItem::whereNotNull('played_at')->count(),
             ],
             'overview' => fn () => $this->overview($actor),
-            'users' => fn () => User::query()
+            'users' => fn () => User::query()->with('activeSubscriptionGifts')->withCount('violations')
                 ->when($q, fn ($query) => $query->where(fn ($w) => $w->whereLike('name', "%{$q}%")->orWhereLike('username', "%{$q}%")->orWhereLike('email', "%{$q}%")))
                 ->when($role, fn ($query) => $query->whereJsonContains('roles', $role))
                 ->when($type === 'bots', fn ($query) => $query->where('is_bot', true))
@@ -77,7 +77,7 @@ class AdminController extends Controller
                     'plan_paid' => $u->activePlan() && filled($u->stripe_subscription_id), // bought through Stripe: Stripe runs it
                     'email_verified' => $u->hasVerifiedEmail(),
                     'editable' => $actor->hasPermission('users.manage') && $actor->outranks($u),
-                    'violations' => $u->violations()->count(),
+                    'violations' => $u->violations_count,
                     'joined' => $u->created_at->toIso8601String(),
                     'last_seen_at' => $u->last_seen_at?->toIso8601String(),
                 ]),
@@ -85,21 +85,21 @@ class AdminController extends Controller
             'awardList' => Awards::catalog(),
             'planList' => array_map(fn ($key, $t) => ['key' => $key, 'name' => $t['name'], 'color' => $t['color']], array_keys(Plans::TIERS), Plans::TIERS),
             'roleOptions' => array_values(array_filter(Role::meta(), fn ($r) => $r['key'] !== 'member')),
-            'rooms' => Room::with('user:id,name')->withCount('items')->latest()->get(),
-            'counts' => (object) RoomPresence::counts(),
-            'openTickets' => SupportTicket::where('status', 'open')->count(),
+            'rooms' => fn () => Room::with('user:id,name')->withCount('items')->latest()->get(),
+            'counts' => fn () => (object) RoomPresence::counts(),
+            'openTickets' => fn () => SupportTicket::where('status', 'open')->count(),
             'assignable' => array_values(array_map(fn (Role $r) => $r->info(), $this->grantable($actor))),
-            'matrix' => [
+            'matrix' => fn () => [
                 'roles' => Role::meta(), // every role in rank order, the plain User last (it shows what everybody has: nothing extra)
                 'permissions' => Role::PERMISSIONS,
                 'granted' => SitePermission::matrix(),
                 'editable' => $this->isOwner($actor),
             ],
-            'announcements' => Announcement::latest()->limit(10)->get(['id', 'message', 'level', 'created_at']),
-            'ipBans' => IpBan::latest()->get(['id', 'ip', 'reason', 'created_at']),
-            'maintenance' => Setting::get('maintenance') === '1',
+            'announcements' => fn () => Announcement::latest()->limit(10)->get(['id', 'message', 'level', 'created_at']),
+            'ipBans' => fn () => IpBan::latest()->get(['id', 'ip', 'reason', 'created_at']),
+            'maintenance' => fn () => Setting::get('maintenance') === '1',
             // the mail setup (server, from address) goes only to those who may open the Email tab
-            'email' => $actor->hasPermission('maintenance.toggle') ? MailStatus::describe() + [
+            'email' => fn () => $actor->hasPermission('maintenance.toggle') ? MailStatus::describe() + [
                 'choice' => Setting::get('email_verification') ?? 'required', // what staff chose
                 'enforced' => Setting::verificationRequired(), // what is true now: "required" only counts while the site can send mail
                 'unverified' => User::where('is_bot', false)->whereNull('email_verified_at')->count(),

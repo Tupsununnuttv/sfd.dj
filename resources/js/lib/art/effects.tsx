@@ -12,6 +12,87 @@ const FLAKE = 'M0 -6.4V6.4M-5.5 -3.2L5.5 3.2M-5.5 3.2L5.5 -3.2M-1.6 -5L0 -3.6L1.
 const halo = (id: string, color: string, o: number, from = 0.62) => rad(id, [[from - 0.12, color, 0], [from, color, o], [from + 0.2, color, o * 0.35], [1, color, 0]]);
 
 export const effectArt: Record<string, (u: Ids) => ReactNode> = {
+    fireflyswarm: (u) => (
+        <>
+            <defs>{halo(u('garden'), '#84cc16', .2)}{rad(u('fly'), [[0, '#fffde0', 1], [.25, '#ecfccb', .9], [1, '#a3e635', 0]])}</defs>
+            <circle cx="50" cy="50" r="80" fill={ref(u, 'garden')} />
+            {[[-12, 24], [7, -8], [41, -23], [91, -7], [112, 30], [116, 81], [88, 113], [48, 121], [7, 105], [-20, 70]].map(([x, y], i) => (
+                <g key={i} transform={`translate(${x} ${y})`}>
+                    <g className="cos-bob" style={{ ...after(-i * .47), animationDuration: `${3.1 + i % 3}s` }}>
+                        <circle className="cos-twinkle" style={after(-i * .33)} r={i % 2 ? 6 : 8} fill={ref(u, 'fly')} />
+                        <circle r="1.3" fill="#fffac2" />
+                    </g>
+                </g>
+            ))}
+        </>
+    ),
+    butterflies: (u) => (
+        <>
+            <defs>{lin(u('wing'), [[0, '#fff0f8'], [.4, '#d8b4fe'], [1, '#38bdf8']], [0, 0, 1, 1])}</defs>
+            {[[-14, 19, -28, .95], [106, 5, 24, 1.05], [117, 79, -15, .8], [1, 104, 32, .8], [60, -22, 15, .6]].map(([x, y, angle, size], i) => (
+                <g key={i} transform={`translate(${x} ${y}) rotate(${angle}) scale(${size})`}>
+                    <g className="cos-bob" style={after(-i * .65)}>
+                        <g className="cos-flicker" style={{ ...after(-i * .21), animationDuration: '1.6s' }}>
+                            <path d="M0 1C-5-20-20-14-15-3L-7 2C-17 4-10 15 0 5C10 15 17 4 7 2L15-3C20-14 5-20 0 1Z" fill={ref(u, 'wing')} stroke="#e9d5ff" strokeWidth=".8" />
+                            <path d="M-3-1L-11-8M3-1L11-8M-3 5L-7 9M3 5L7 9" stroke="#a78bfa" strokeWidth=".7" fill="none" />
+                            <path d="M0-3V7M0-3L-3-7M0-3L3-7" stroke="#fdf4ff" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                        </g>
+                    </g>
+                </g>
+            ))}
+        </>
+    ),
+    auroraveil: (u) => (
+        <>
+            <defs>{lin(u('aurora'), [[0, '#38bdf8', 0], [.2, '#5eead4', .75], [.5, '#c4b5fd', .65], [.8, '#f0abfc', .7], [1, '#818cf8', 0]], [0, 1, 1, 0])}{halo(u('sky'), '#67e8f9', .18)}</defs>
+            <circle cx="50" cy="50" r="84" fill={ref(u, 'sky')} />
+            {[-1, 1].map((side) => (
+                <g key={side} transform={side < 0 ? 'translate(100 0) scale(-1 1)' : undefined}>
+                    <g className="cos-sway" style={{ ...after(side < 0 ? -2 : 0), animationDuration: '6s' }}>
+                        <path d="M-29 79Q-21-17 40-26Q1-9 8 39Q-11 22-29 79Z" fill={ref(u, 'aurora')} />
+                        <path d="M-18 85Q-13-4 38-20" fill="none" stroke="#99f6e4" strokeOpacity=".65" strokeWidth="1.2" />
+                    </g>
+                </g>
+            ))}
+            {[[-9, 91], [17, -12], [92, -1], [111, 98]].map(([x, y], i) => <path key={i} className="cos-twinkle" style={after(-i * .7)} d={sparkle(.5, x, y)} fill="#ecfeff" />)}
+        </>
+    ),
+    hologram: (u) => (
+        <>
+            <defs>{halo(u('holo'), '#22d3ee', .25)}</defs>
+            <circle cx="50" cy="50" r="81" fill={ref(u, 'holo')} />
+            <g className="cos-orbit" style={{ animationDuration: '24s' }}>
+                <circle cx="50" cy="50" r="60" fill="none" stroke="#67e8f9" strokeOpacity=".7" strokeWidth="1.3" strokeDasharray="18 8 2 8" />
+                {[0, 90, 180, 270].map((a) => <path key={a} transform={`rotate(${a} 50 50)`} d="M38-21H27V-10M62-21H73V-10M50-27V-18" fill="none" stroke="#a5f3fc" strokeWidth="1.5" strokeLinecap="round" />)}
+            </g>
+            {[0, 1, 2].map((i) => <ellipse key={i} className="cos-ripple" style={{ ...after(-i * 1.4), animationDuration: '4.2s' }} cx="50" cy="50" rx="62" ry="40" fill="none" stroke={i % 2 ? '#c4b5fd' : '#67e8f9'} strokeWidth="1" opacity=".65" />)}
+        </>
+    ),
+    meteors: (u) => (
+        <>
+            <defs>{lin(u('trail'), [[0, '#818cf8', 0], [.6, '#67e8f9', .45], [1, '#fff', 1]], [0, 0, 1, 1])}</defs>
+            {[[-23, 1, 1], [98, -25, .9], [111, 44, .8], [16, 93, .7], [61, -28, .55]].map(([x, y, size], i) => (
+                <g key={i} transform={`translate(${x} ${y}) scale(${size})`}>
+                    <g className="cos-meteor" style={{ ...after(-i * .83), animationDuration: `${4 + i % 2}s` }}>
+                        <path d="M-20-28L3 2L0 5L-4 2Z" fill={ref(u, 'trail')} />
+                        <circle r="2.5" cy="3" fill="#f0f9ff" />
+                        <path d={sparkle(.4, 0, 3)} fill="#a5f3fc" />
+                    </g>
+                </g>
+            ))}
+        </>
+    ),
+    eclipse: (u) => (
+        <>
+            <defs>{rad(u('corona'), [[.52, '#ffedd5', 0], [.61, '#ffedd5', .9], [.69, '#fb923c', .65], [.85, '#db2777', .2], [1, '#7c3aed', 0]])}</defs>
+            <circle className="cos-pulse" style={{ animationDuration: '5s' }} cx="50" cy="50" r="85" fill={ref(u, 'corona')} />
+            <g className="cos-orbit" style={{ animationDuration: '30s' }}>
+                {[0, 120, 240].map((a) => <g key={a} transform={`rotate(${a} 50 50)`}><path d="M1 23Q-1-5 30-6Q11-3 8 17" fill="none" stroke="#fed7aa" strokeWidth="1.4" strokeLinecap="round" /><circle cx="21" cy="-4" r="2" fill="#fff7ed" /></g>)}
+            </g>
+            <circle cx="50" cy="50" r="51.5" fill="none" stroke="#ffedd5" strokeOpacity=".9" strokeWidth="1.7" />
+            {[[-7, 61], [106, 34], [63, -7], [32, 107]].map(([x, y], i) => <path key={i} className="cos-twinkle" style={after(-i * 1.1)} d={sparkle(.55, x, y)} fill="#ffedd5" />)}
+        </>
+    ),
     glow: (u) => (
         <>
             <defs>{halo(u('g'), '#a78bfa', 0.6, 0.64)}</defs>

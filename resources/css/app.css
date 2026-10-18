@@ -463,6 +463,11 @@ html {
 
 /* The Avatar shop: badges, accessories, frames and effects are small drawings (lib/cosmetics.tsx) that move only when animations are allowed. */
 @keyframes cos-spin { to { transform: rotate(360deg); } }
+@keyframes cos-meteor { 0%, 10% { transform: translate(-5px, -7px); opacity: 0; } 28% { opacity: 1; } 80%, 100% { transform: translate(12px, 20px); opacity: 0; } }
+.cos-meteor { animation: cos-meteor 4s ease-in infinite; }
+@media (prefers-reduced-motion: reduce) {
+    :root:not([data-motion='always']) .cos-meteor { animation: none !important; }
+}
 @keyframes cos-pulse { 0%, 100% { opacity: 0.6; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1.05); } }
 @keyframes cos-twinkle { 0%, 100% { opacity: 0.2; transform: scale(0.55); } 50% { opacity: 1; transform: scale(1.1); } }
 @keyframes cos-rise { 0% { transform: translateY(10px) scale(0.7); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-34px) scale(1); opacity: 0; } }

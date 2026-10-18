@@ -45,7 +45,7 @@ class PasswordResetLinkController extends Controller
         $devLink = null;
 
         try {
-            $status = Password::sendResetLink(['email' => $email], function ($user, $token) use ($request, &$devLink) {
+            Password::sendResetLink(['email' => $email], function ($user, $token) use ($request, &$devLink) {
                 $user->sendPasswordResetNotification($token);
 
                 // Only on your own computer with mail still set to "log": no email can arrive, so show the link here instead.
@@ -54,19 +54,10 @@ class PasswordResetLinkController extends Controller
                 }
             });
         } catch (Throwable $e) {
-            report($e); // the mail server said no (a wrong login in .env, or it is down): say so instead of showing an error page
-
-            throw ValidationException::withMessages([
-                'email' => ['We could not send the email right now. Try again in a few minutes, or ask a staff member to help you.'],
-            ]);
+            report($e); // Log delivery failures privately; a public error would reveal that this account exists.
         }
 
-        if ($status == Password::RESET_LINK_SENT) {
-            return back()->with('status', __($status))->with('dev_reset_link', $devLink);
-        }
-
-        throw ValidationException::withMessages([
-            'email' => [trans($status)],
-        ]);
+        // Identical public response for unknown accounts, throttled tokens and delivery failures.
+        return back()->with('status', 'If an account matches, a password reset link will be sent. Check your inbox and spam folder.')->with('dev_reset_link', $devLink);
     }
 }

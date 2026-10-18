@@ -12,6 +12,41 @@ const sides = (draw: (side: number) => ReactNode) => <>{draw(0)}{mirror(draw(1))
 const GOLD = [[0, '#fff6c2'], [0.35, '#f7c948'], [0.7, '#c98a14'], [1, '#7a4a05']] as const;
 
 export const accessoryArt: Record<string, Art> = {
+    lunarfox: {
+        back: (u) => (
+            <>
+                <defs>{rad(u('moon'), [[0, '#b7a5ff', .32], [1, '#818cf8', 0]])}</defs>
+                <circle className="cos-pulse" style={{ animationDuration: '5s' }} cx="114" cy="68" r="27" fill={ref(u, 'moon')} />
+                <path className="cos-bob" style={{ animationDuration: '3.8s' }} d="M112 78C137 75 139 55 126 43C147 57 141 87 119 89Z" fill="#c4b5fd" stroke="#ede9fe" strokeWidth=".8" />
+            </>
+        ),
+        front: (u) => (
+            <>
+                <defs>
+                    {lin(u('fur'), [[0, '#fffaf0'], [.5, '#e9ddff'], [1, '#9f8ee0']], [0, 0, 1, 1])}
+                    {lin(u('tail'), [[0, '#fffaf0'], [.45, '#c4b5fd'], [1, '#67e8f9']], [0, 0, 1, 1])}
+                    {rad(u('gem'), [[0, '#fff'], [.4, '#b2fff2'], [1, '#14b8a6']])}
+                </defs>
+                <g className="cos-bob" style={{ animationDuration: '3.8s' }}>
+                    <ellipse cx="113" cy="93" rx="17" ry="3.5" fill="#0f172a" opacity=".35" />
+                    <path d="M113 87Q132 92 127 73Q141 82 133 93Q123 103 109 93Z" fill={ref(u, 'tail')} stroke="#7663af" strokeWidth=".8" />
+                    <path d="M124 91Q134 88 127 73Q140 82 134 91Z" fill="#f8faff" opacity=".9" />
+                    <path d="M103 74Q112 68 120 75L124 89Q119 96 107 93L100 87Z" fill={ref(u, 'fur')} stroke="#7663af" strokeWidth=".9" />
+                    <path d="M111 78Q119 77 118 88Q115 94 109 90Z" fill="#fffaf4" />
+                    <path d="M102 89L108 89M115 92L121 92" stroke="#fdfaff" strokeWidth="3.8" strokeLinecap="round" />
+                    <path d="M99 61L96 42L107 50Q113 48 119 51L131 45L126 65Q127 74 115 79L100 72Z" fill={ref(u, 'fur')} stroke="#7663af" strokeWidth="1" strokeLinejoin="round" />
+                    <path d="M100 55L99 47L105 53ZM122 55L128 49L125 59Z" fill="#f0abfc" opacity=".8" />
+                    <path d="M99 64Q105 59 112 66Q118 61 125 64L121 73L113 77L103 71Z" fill="#fffaf4" />
+                    <path d="M102 62Q105 59 108 62M117 62Q120 60 123 63" fill="none" stroke="#40365c" strokeWidth="1.5" strokeLinecap="round" />
+                    <path d="M110 67L115 67L113 70Z" fill="#615083" /><path d="M113 70L112 73M112 73L109 72M112 73L115 73" fill="none" stroke="#615083" strokeWidth=".7" strokeLinecap="round" />
+                    <path d="M112 52L115 56L112 60L109 56Z" fill={ref(u, 'gem')} stroke="#fff" strokeWidth=".5" />
+                    <path d="M105 78L117 81" stroke="#655097" strokeWidth="2" /><circle cx="112" cy="81" r="2.3" fill={ref(u, 'gem')} stroke="#fff" strokeWidth=".5" />
+                </g>
+                <path className="cos-twinkle" d={sparkle(.45, 135, 31)} fill="#a5f3fc" />
+                <path className="cos-twinkle" style={after(-1.2)} d={sparkle(.3, 91, 88)} fill="#e9d5ff" />
+            </>
+        ),
+    },
     headphones: {
         front: (u) => (
             <>

@@ -6,7 +6,8 @@
     },
     "type": "module",
     "scripts": {
-        "build": "tsc && vite build",
+        "avatars:previews": "node scripts/character-posters.mjs",
+        "build": "node scripts/character-posters.mjs && tsc && vite build",
         "dev": "concurrently --names web,bot \"vite\" \"npm:bot:dev\"",
         "bot:install": "npm --prefix bot install",
         "bot:dev": "npm --prefix bot run dev",

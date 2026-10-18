@@ -62,33 +62,37 @@ class RoomController extends Controller
     public function index(Request $request): InertiaResponse
     {
         $me = $request->user();
-        $rooms = Room::visibleTo($me)->withCount('items')->with('user:id,name')->latest()->get();
+        $roomList = null;
+        // Resolve once, and only when a requested prop needs the room catalogue.
+        $rooms = function () use ($me, &$roomList) {
+            return $roomList ??= Room::visibleTo($me)->withCount('items')->with('user:id,name')->latest()->get();
+        };
         $mineId = $me?->id;
 
         return Inertia::render('Dashboard', [
             'rooms' => $rooms,
-            'mine' => $rooms->where('user_id', $mineId)->values(),
-            'featured' => $rooms->where('is_featured', true)->values(),
+            'mine' => fn () => $rooms()->where('user_id', $mineId)->values(),
+            'featured' => fn () => $rooms()->where('is_featured', true)->values(),
             'genres' => Room::GENRES,
             // re-fetched every few seconds by the page (partial reload): live listener counts, what plays where, the feed
             'counts' => fn () => (object) RoomPresence::counts(),
-            'nowPlaying' => fn () => (object) $this->nowPlaying($rooms),
+            'nowPlaying' => fn () => (object) $this->nowPlaying($rooms()),
             'activity' => fn () => $this->recentActivity($me),
-            'stats' => $me ? $this->myStats($me) : null,
+            'stats' => fn () => $me ? $this->myStats($me) : null,
             'daily' => $me ? ['amount' => User::DAILY_COINS, 'claimable' => ! $me->daily_coins_on?->isToday()] : null, // the daily SFD Coins
-            'friendIds' => $me ? $this->friendIds($me) : [],
-            'events' => SiteEvent::with('room')->withCount('attendees')
+            'friendIds' => fn () => $me ? $this->friendIds($me) : [],
+            'events' => fn () => SiteEvent::with('room')->withCount('attendees')
                 ->where(fn ($q) => $q->where('ends_at', '>', now())->orWhere(fn ($w) => $w->whereNull('ends_at')->where('starts_at', '>', now()->subHours(3))))
                 ->orderBy('starts_at')->limit(3)->get()
                 ->map(fn (SiteEvent $e) => ['id' => $e->id, 'title' => $e->title, 'starts_at' => $e->starts_at->toIso8601String(), 'going_count' => $e->attendees_count, 'room' => $e->room && $e->room->canEnter($me) ? $e->room->only('name', 'slug') : null])->values(),
             'goals' => fn () => $me ? $this->goals($me) : [],
-            'continue' => fn () => $me ? $this->continueRoom($me, $rooms) : null,
+            'continue' => fn () => $me ? $this->continueRoom($me, $rooms()) : null,
             'friendsOnline' => fn () => $me ? $this->friendsOnline($me) : [],
-            'recommended' => fn () => $me ? $this->recommended($me, $rooms) : ['reason' => '', 'rooms' => []],
-            'topDjs' => User::where('is_bot', false)->withCount(['playlistItems as plays' => fn ($q) => $q->whereNotNull('played_at')])
+            'recommended' => fn () => $me ? $this->recommended($me, $rooms()) : ['reason' => '', 'rooms' => []],
+            'topDjs' => fn () => User::where('is_bot', false)->withCount(['playlistItems as plays' => fn ($q) => $q->whereNotNull('played_at')])
                 ->orderByDesc('plays')->limit(5)->get()->filter(fn ($u) => $u->plays > 0)
                 ->map(fn ($u) => $u->only('id', 'name', 'avatar') + ['plays' => $u->plays])->values(),
-            'mySongs' => $me ? PlaylistItem::where('user_id', $me->id)->whereNotNull('played_at')->with('room:id,name,slug')->latest('played_at')->limit(5)->get()
+            'mySongs' => fn () => $me ? PlaylistItem::where('user_id', $me->id)->whereNotNull('played_at')->with('room:id,name,slug')->latest('played_at')->limit(5)->get()
                 ->map(fn ($i) => ['id' => $i->id, 'title' => $i->title, 'thumbnail' => $i->thumbnail, 'played_at' => $i->played_at->toIso8601String(), 'room' => $i->room->only('name', 'slug')])->values() : [],
         ]);
     }

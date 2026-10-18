@@ -59,7 +59,7 @@ export default function Admin(props: AdminProps) {
             if (document.hidden || pending) return;
             pending = true; setRefreshing(true);
             const editing = document.activeElement?.matches('input, select, textarea, [contenteditable="true"]');
-            router.reload({ only: ['stats', 'overview', 'openTickets', ...((tab === 'Users' || tab === 'Accounts') && !editing ? ['users'] : [])],
+            router.reload({ only: ['stats', 'openTickets', ...(tab === 'Overview' ? ['overview'] : []), ...((tab === 'Users' || tab === 'Accounts') && !editing ? ['users'] : [])],
                 onSuccess: () => setRefreshError(false),
                 onHttpException: () => { setRefreshError(true); return false; },
                 onNetworkError: () => { setRefreshError(true); return false; },

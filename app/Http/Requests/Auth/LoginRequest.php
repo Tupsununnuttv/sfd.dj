@@ -29,8 +29,8 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string'], // an email address or a username
-            'password' => ['required', 'string'],
+            'email' => ['required', 'string', 'max:255'], // an email address or a username
+            'password' => ['required', 'string', 'max:4096'],
         ];
     }
 
@@ -89,6 +89,10 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        $login = Str::lower(trim($this->string('email')->toString()));
+        $userId = User::query()->whereRaw(str_contains($login, '@') ? 'lower(email) = ?' : 'lower(username) = ?', [$login])->value('id');
+
+        // Both ways of addressing an account share one budget. Hash unknown identifiers too.
+        return 'login:'.hash('sha256', ($userId ? 'user:'.$userId : 'unknown:'.$login).'|'.$this->ip());
     }
 }

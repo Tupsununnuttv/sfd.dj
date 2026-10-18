@@ -1,4 +1,5 @@
 import Avatar from '@/Components/Avatar';
+import ShopCharacterPreview from '@/Components/ShopCharacterPreview';
 import Badges from '@/Components/Badges';
 import { CoinIcon, CoinPill } from '@/Components/CoinIcon';
 import { RoleGlyph } from '@/Components/RoleIcon';
@@ -146,10 +147,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
 
     const preview = (it: Item) =>
         tab === 'avatar' && it.character ? (
-            <span className="flex h-full items-end justify-center">
-                <img src={characterUrl(characterOf(it.key)!, 'standing')} alt="" draggable={false} className="h-full group-hover/card:hidden" />
-                <img src={characterUrl(characterOf(it.key)!, 'dancing')} alt="" draggable={false} loading="lazy" className="hidden h-full group-hover/card:block" />
-            </span>
+            <ShopCharacterPreview key={it.key} name={characterOf(it.key)!} />
         ) : tab === 'avatar' ? (
             <Avatar name={user.name} avatar={it.key} className={big} />
         ) : tab === 'badge' ? (

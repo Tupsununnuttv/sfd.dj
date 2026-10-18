@@ -9,7 +9,7 @@ import RoleBadge from '@/Components/RoleBadge';
 import RoomCard, { NowPlaying, RoomSummary } from '@/Components/RoomCard';
 import SocialIcon from '@/Components/SocialIcon';
 import { Card, chip, Equalizer, OnlineDot, ProgressBar, SectionTitle, StatTile } from '@/Components/ui';
-import { releases } from '@/lib/patchNotes';
+import { latestRelease } from '@/lib/latestRelease';
 import AppLayout from '@/Layouts/AppLayout';
 import { PageProps } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -397,11 +397,11 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                     )}
 
                     <section>
-                        <SectionTitle title={`What's new · v${releases[0].version}`} action={<Link href={route('patch-notes')} className="text-xs text-violet-400 hover:underline">All notes →</Link>} />
+                        <SectionTitle title={`What's new · v${latestRelease.version}`} action={<Link href={route('patch-notes')} className="text-xs text-violet-400 hover:underline">All notes →</Link>} />
                         <Card className="p-4">
-                            <p className="font-semibold">{releases[0].title}</p>
+                            <p className="font-semibold">{latestRelease.title}</p>
                             <ul className="mt-2 space-y-2 text-sm text-neutral-400">
-                                {releases[0].notes.slice(0, 3).map(([kind, text]) => (
+                                {latestRelease.notes.slice(0, 3).map(([kind, text]) => (
                                     <li key={text} className="flex gap-2"><span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${kind === 'new' ? 'bg-violet-400' : kind === 'improved' ? 'bg-sky-400' : 'bg-emerald-400'}`} />{text}</li>
                                 ))}
                             </ul>

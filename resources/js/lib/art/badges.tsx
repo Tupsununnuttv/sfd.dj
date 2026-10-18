@@ -52,6 +52,11 @@ const medal = (u: Ids, shape: Shape, tone: Tone) => {
 
 /** The signs, drawn round (0, 0) in about 18 units. `c` is the colour of the sign, `a` a second colour for its details. */
 const SIGN: Record<string, (c: string, a: string) => ReactNode> = {
+    phoenixheart: (c, a) => <>
+        <path d="M-1-2Q-7-4-9-10Q-10-3-6 1L-9-1Q-8 5-3 5L-5 9L0 6L5 9L3 5Q8 5 9-1L6 1Q10-3 9-10Q7-4 1-2L2-6L0-9L-2-6Z" fill={c} stroke={c} strokeWidth=".4" strokeLinejoin="round" />
+        <path d="M0 1C-4-2-5 2 0 5C5 2 4-2 0 1Z" fill={a} />
+        <path d="M-7-4L-4 0M7-4L4 0" fill="none" stroke={a} strokeWidth=".8" strokeLinecap="round" />
+    </>,
     rookie: (c, a) => <><circle r="7.6" fill={c} /><circle r="5.4" fill="none" stroke={a} strokeOpacity=".5" strokeWidth=".8" /><circle r="2.7" fill={a} /><circle r=".9" fill={c} /><path d="M-5.2 -2.6A5.8 5.8 0 0 1 -2.4 -5" fill="none" stroke={a} strokeWidth="1" strokeLinecap="round" /></>,
     selector: (c) => <><path d="M-6.6 2.6V-1A6.6 6.6 0 0 1 6.6 -1V2.6" fill="none" stroke={c} strokeWidth="1.9" strokeLinecap="round" /><rect x="-8.6" y="0.6" width="4.6" height="8.4" rx="2" fill={c} /><rect x="4" y="0.6" width="4.6" height="8.4" rx="2" fill={c} /></>,
     digger: (c, a) => <><g transform="rotate(-14 -4 2)"><rect x="-6.2" y="-8.6" width="3.4" height="11.4" rx="1.2" fill={c} /></g><rect x="-1.8" y="-9.8" width="3.6" height="12.4" rx="1.2" fill={c} /><g transform="rotate(14 4 2)"><rect x="2.8" y="-8.6" width="3.4" height="11.4" rx="1.2" fill={c} /></g><path d="M-8.6 0.2H8.6L7.4 9H-7.4Z" fill={c} /><path d="M-5.6 3.6H5.6M-5.2 6.4H5.2" stroke={a} strokeOpacity=".7" strokeWidth="1.1" strokeLinecap="round" /><circle cy="-4" r="1.1" fill={a} /></>,
@@ -87,6 +92,7 @@ const MEDAL: Record<string, [Shape, Tone]> = {
     streak: ['hex', 'ember'], nightowl: ['hex', 'indigo'], voltage: ['hex', 'volt'],
     goldenear: ['shield', 'gold'], diamond: ['shield', 'aqua'], spotlight: ['shield', 'violet'], platinum: ['shield', 'platinum'], laureate: ['shield', 'teal'],
     royal: ['burst', 'gold'], cosmic: ['burst', 'violet'], dragonseal: ['burst', 'ruby'], legend: ['burst', 'gold'],
+    phoenixheart: ['burst', 'ember'],
 };
 
 export const badgeArt: Record<string, (u: Ids) => ReactNode> = Object.fromEntries(
