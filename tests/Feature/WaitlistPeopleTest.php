@@ -148,6 +148,7 @@ class WaitlistPeopleTest extends TestCase
         $this->actingAs($host)->postJson("/rooms/{$room->slug}/join");
         $item = PlaylistItem::where('room_id', $room->id)->sole();
 
+        $this->travel(200)->seconds(); // the server verifies the song has had time to finish
         $this->actingAs($host)->post("/rooms/{$room->slug}/skip", ['item_id' => $item->id, 'ended' => true])->assertNoContent();
         $this->assertDatabaseHas('chat_messages', ['room_id' => $room->id, 'kind' => 'ended', 'body' => "“Song a” by {$host->name} has ended"]);
         $this->assertDatabaseMissing('chat_messages', ['room_id' => $room->id, 'kind' => 'skip']);

@@ -149,8 +149,9 @@ Their rooms, playlists, messages and friends go with it. This cannot be undone.`
                     ))}
                 </select>
                 <select value={filters.type ?? ''} onChange={(e) => go({ type: e.target.value || null })} className={select}>
-                    <option value="">Everyone</option>
-                    <option value="online">Online now</option>
+                    <option value="">All accounts</option>
+                    <option value="members">Members (no bots)</option>
+                    <option value="online">Members active in last 5 min</option>
                     <option value="bots">Bots</option>
                 </select>
                 <select value={filters.sort} onChange={(e) => go({ sort: e.target.value })} className={select}>
@@ -162,6 +163,7 @@ Their rooms, playlists, messages and friends go with it. This cannot be undone.`
                 <button className="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20">Search</button>
             </form>
 
+            <p className="text-xs text-neutral-500">{users.total.toLocaleString()} matching accounts ? Showing {users.from ?? 0}?{users.to ?? 0}</p>
             <Card className="overflow-x-auto">
                 <table className="w-full text-sm">
                     <thead className="border-b border-white/10">

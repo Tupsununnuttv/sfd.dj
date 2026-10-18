@@ -88,8 +88,8 @@ class CoinsTest extends TestCase
         foreach (User::factory()->count(5)->create() as $fan) {
             Vote::create(['playlist_item_id' => $room->fresh()->current_item_id, 'user_id' => $fan->id, 'type' => 'woot']);
         }
-        $this->travel(3)->minutes(); // it was heard
-        $room->refresh()->advance();
+        $this->travel(200)->seconds(); // it finished naturally
+        $room->refresh()->advance(completed: true);
 
         $this->assertSame(5 + 2, $dj->refresh()->coins, '5 coins, and 2 more for 5 woots');
         $this->assertSame('song', $dj->coinHistory()->first()->reason);
@@ -103,20 +103,20 @@ class CoinsTest extends TestCase
         $room = User::factory()->create()->rooms()->create(['name' => 'Lobby', 'slug' => 'lobby-skip']);
         $room->enqueue(['youtube_id' => 'aaaaaaaaaaa', 'title' => 'A', 'thumbnail' => null, 'duration' => 200], $dj->id);
 
-        $room->advance(); // nothing was heard
+        $room->refresh()->advance(); // nothing was heard
         $this->assertSame(0, $dj->coinHistory()->where('reason', 'song')->count());
 
-        // a short song is heard when most of it has played; ten seconds into a long one is not enough
+        // Ten seconds into a long song is not enough.
         $room->enqueue(['youtube_id' => 'bbbbbbbbbbb', 'title' => 'B', 'thumbnail' => null, 'duration' => 200], $dj->id);
         $this->travel(10)->seconds();
-        $room->advance();
+        $room->refresh()->advance();
         $this->assertSame(0, $dj->coinHistory()->where('reason', 'song')->count());
 
-        // heard for a minute, it pays
+        // Even after a minute, a manual skip does not pay.
         $room->enqueue(['youtube_id' => 'ccccccccccc', 'title' => 'C', 'thumbnail' => null, 'duration' => 200], $dj->id);
         $this->travel(1)->minutes();
-        $room->advance();
-        $this->assertSame(1, $dj->coinHistory()->where('reason', 'song')->count());
+        $room->refresh()->advance();
+        $this->assertSame(0, $dj->coinHistory()->where('reason', 'song')->count());
     }
 
     public function test_a_grab_pays_the_owner_of_the_song_2_coins_and_only_the_first_time(): void

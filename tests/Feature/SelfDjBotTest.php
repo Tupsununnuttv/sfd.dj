@@ -7,6 +7,7 @@ use App\Models\Room;
 use App\Models\SelfDjBot;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
@@ -14,9 +15,11 @@ class SelfDjBotTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function setupDj(): array
+    private function setupDj(bool $fakeEvents = true): array
     {
-        Event::fake();
+        if ($fakeEvents) {
+            Event::fake();
+        }
         $user = User::factory()->create();
         $room = $user->rooms()->create(['name' => 'Night Radio', 'slug' => 'night-radio']);
         $playlist = $user->playlists()->create(['name' => 'Night Mix', 'kind' => 'custom']);
@@ -34,6 +37,30 @@ class SelfDjBotTest extends TestCase
         $this->post('/selfbots', ['name' => 'Midnight DJ', 'room' => $room->slug, 'playlist_id' => $playlist->id, 'enabled' => $enabled])->assertRedirect()->assertSessionHasNoErrors();
 
         return SelfDjBot::where('room_id', $room->id)->firstOrFail();
+    }
+
+    public function test_embedded_create_and_refresh_with_real_playback_and_presence_events(): void
+    {
+        [$user, $room, $playlist] = $this->setupDj(false);
+        $url = '/selfbots?room='.$room->slug.'&embed=1';
+        $this->get($url)->assertOk();
+        $this->from($url)->post('/selfbots', [
+            'name' => 'Midnight DJ', 'room' => $room->slug,
+            'playlist_id' => $playlist->id, 'enabled' => true,
+        ])->assertRedirect($url)->assertSessionHasNoErrors();
+
+        $this->get($url)->assertInertia(fn ($page) => $page->component('Selfbots')
+            ->has('bots', 1)->where('bots.0.status', 'playing'));
+    }
+
+    public function test_bot_creation_respects_the_production_username_column_limit(): void
+    {
+        [$user, $room, $playlist] = $this->setupDj(false);
+        // SQLite ignores VARCHAR lengths; enforce the same constraint as strict MySQL/PostgreSQL.
+        DB::unprepared("CREATE TRIGGER enforce_username_length BEFORE INSERT ON users WHEN length(NEW.username) > 20 BEGIN SELECT RAISE(ABORT, 'username exceeds VARCHAR(20)'); END");
+        $config = $this->createBot($room, $playlist);
+        $this->assertLessThanOrEqual(20, strlen($config->bot->username));
+        $this->assertSame($config->bot_id, $room->refresh()->currentItem->user_id);
     }
 
     public function test_create_pause_resume_delete_and_status_without_creating_api_tokens(): void

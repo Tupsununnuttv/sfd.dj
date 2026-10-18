@@ -4,7 +4,7 @@ import { Card, EmptyState, ghostBtn, ProgressBar, SectionTitle, StatTile } from 
 import AppLayout from '@/Layouts/AppLayout';
 import { ago } from '@/lib/time';
 import { RoleInfo } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { Check, Copy, Gift, Mail, Share2, Trophy, UserPlus, Zap } from 'lucide-react';
 import { useState } from 'react';
 
@@ -15,26 +15,36 @@ interface Props {
     referrals: { id: number; name: string; avatar: string | null; level: number; created_at: string; primary_role: RoleInfo }[];
     topInviters: { id: number; name: string; avatar: string | null; count: number }[];
     rank: number | null;
+    pendingCode: string;
+    invitedBy: { id: number; name: string } | null;
+    coinReward: number;
+    coinsEarned: number;
 }
 
 const MILESTONES = [1, 5, 10, 25, 50];
 
 const steps = [
     [UserPlus, 'Share your link', 'Send it to friends, post it in your Discord, put it in your bio.'],
-    [Gift, 'They register', 'They sign up through your link. It works once their account exists.'],
+    [Gift, 'They join your circle', 'New members register with your link. Existing members sign in and accept your code here.'],
     [Zap, 'You get XP', 'The XP lands on your account right away. No limit on how many you invite.'],
 ] as const;
 
-export default function Referral({ link, code, reward, referrals, topInviters, rank }: Props) {
+export default function Referral({ link, code, reward, referrals, topInviters, rank, pendingCode, invitedBy, coinReward, coinsEarned }: Props) {
+    const claim = useForm({ code: pendingCode || '' });
+    const [copyError, setCopyError] = useState('');
     const [copied, setCopied] = useState<'link' | 'code' | null>(null);
     const count = referrals.length;
     const next = MILESTONES.find((m) => m > count) ?? null;
     const prev = [...MILESTONES].reverse().find((m) => m <= count) ?? 0;
 
     const copy = async (what: 'link' | 'code') => {
-        await navigator.clipboard?.writeText(what === 'link' ? link : code).catch(() => {});
-        setCopied(what);
-        setTimeout(() => setCopied(null), 2000);
+        setCopyError('');
+        try {
+            if (!navigator.clipboard) throw new Error('Clipboard unavailable');
+            await navigator.clipboard.writeText(what === 'link' ? link : code);
+            setCopied(what);
+            setTimeout(() => setCopied(null), 2000);
+        } catch { setCopyError('Could not copy automatically. Select the link above and copy it manually.'); }
     };
 
     const text = `Come listen to music with me on SFD-DJ.EU: live rooms where everyone hears the same song at the same second.`;
@@ -47,16 +57,19 @@ export default function Referral({ link, code, reward, referrals, topInviters, r
     ];
 
     return (
-        <AppLayout title="Invite & earn" subtitle={<>Bring friends to SFD-DJ.EU. Every friend who registers with your link gives you <span className="font-semibold text-violet-300">{reward} XP</span>.</>}>
+        <AppLayout title="Your invite circle" subtitle="Good music is better together. Invite new friends or connect with members already here.">
             <Head title="Referral" />
 
             {/* the link */}
             <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-fuchsia-600/25 via-violet-600/15 to-sky-600/10 p-6 sm:p-8">
                 <div className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 rounded-full bg-fuchsia-500/20 blur-3xl" />
                 <div className="relative">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-violet-300/20 bg-violet-500/10 px-3 py-1 text-xs font-bold text-violet-200"><Gift size={14} /> Invite. Connect. Earn.</span>
+                    <h2 className="mt-4 max-w-xl text-3xl font-black tracking-tight sm:text-4xl">Bring your people.<br /><span className="text-violet-300">Build your music circle.</span></h2>
+                    <p className="mb-6 mt-3 max-w-xl text-sm leading-relaxed text-neutral-300">Earn {reward} XP for each unique accepted invite, plus {coinReward} coins for each of your first 20 referrals. Existing accounts can join too, if they have not used an invite before.</p>
                     <p className="text-xs font-bold uppercase tracking-wider text-violet-200">Your personal invite link</p>
                     <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                        <input readOnly value={link} onFocus={(e) => e.target.select()} className="min-w-0 flex-1 rounded-xl border-white/10 bg-black/30 font-mono text-sm text-neutral-100" />
+                        <input aria-label="Your referral link" readOnly value={link} onFocus={(e) => e.target.select()} className="min-w-0 flex-1 rounded-xl border-white/10 bg-black/30 font-mono text-sm text-neutral-100" />
                         <button onClick={() => copy('link')} className="flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold transition hover:opacity-90">
                             {copied === 'link' ? <><Check size={16} /> Copied</> : <><Copy size={16} /> Copy link</>}
                         </button>
@@ -64,7 +77,7 @@ export default function Referral({ link, code, reward, referrals, topInviters, r
                     <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-neutral-300">
                         Or share just your code
                         <button onClick={() => copy('code')} className="rounded-md bg-black/30 px-2.5 py-1 font-mono text-sm font-bold tracking-widest text-white hover:bg-black/50">{copied === 'code' ? 'Copied' : code}</button>
-                        <span className="text-xs text-neutral-400">(they add <code>?ref={code}</code> to the register address)</span>
+                        <span className="text-xs text-neutral-400">They can enter it in “Accept an invite” below.</span>
                     </p>
 
                     <div className="mt-5 flex flex-wrap gap-2">
@@ -76,7 +89,13 @@ export default function Referral({ link, code, reward, referrals, topInviters, r
                         ))}
                         <a href={`mailto:?subject=${encodeURIComponent('Join me on SFD-DJ.EU')}&body=${encodeURIComponent(`${text}\n\n${link}`)}`} className="flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20"><Mail size={15} /> Email</a>
                     </div>
+                    {copyError && <p role="alert" className="mt-3 text-sm text-amber-300">{copyError}</p>}
                 </div>
+            </section>
+
+            <section className="grid gap-5 rounded-2xl border border-violet-400/25 bg-violet-500/5 p-5 sm:grid-cols-2 sm:p-6">
+                <div><h2 className="flex items-center gap-2 text-lg font-bold"><UserPlus size={20} className="text-violet-300" /> Accept an invite</h2><p className="mt-2 text-sm leading-relaxed text-neutral-300">Already registered? You can still credit the friend who invited you. Their referral count and rewards update when you accept.</p><p className="mt-2 text-xs leading-relaxed text-neutral-400">One inviter per account. You cannot use your own code or switch inviters. Opening a link again does not give extra rewards.</p></div>
+                {invitedBy ? <div className="flex items-center gap-3 rounded-xl border border-emerald-400/20 bg-emerald-500/10 p-4"><Check className="shrink-0 text-emerald-300" /><div><p className="text-sm font-semibold text-emerald-200">Invite accepted</p><Link href={route('users.show', invitedBy.id)} className="mt-1 block text-sm text-neutral-200 hover:underline">Invited by {invitedBy.name}</Link><p className="mt-1 text-xs text-neutral-400">You can still share your own link with other people.</p></div></div> : <form onSubmit={(e) => { e.preventDefault(); claim.post(route('referral.claim'), { preserveScroll: true }); }} className="self-center"><label htmlFor="invite-code" className="mb-2 block text-sm font-semibold">Your friend’s invite code</label><div className="flex flex-wrap gap-2"><input id="invite-code" required maxLength={64} autoComplete="off" value={claim.data.code} onChange={(e) => claim.setData('code', e.target.value)} placeholder="Enter an invite code" className="min-w-0 flex-1 rounded-xl border-white/20 bg-neutral-900 text-sm text-white placeholder-neutral-400 focus:border-violet-400 focus:ring-violet-400" /><button disabled={claim.processing || !claim.data.code.trim()} className="rounded-xl bg-violet-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-50">{claim.processing ? 'Accepting…' : 'Accept invite'}</button></div>{claim.errors.code && <p role="alert" className="mt-2 text-sm text-red-300">{claim.errors.code}</p>}</form>}
             </section>
 
             {/* numbers */}
@@ -84,7 +103,7 @@ export default function Referral({ link, code, reward, referrals, topInviters, r
                 <StatTile icon={UserPlus} tone="violet" label="Friends invited" value={count} />
                 <StatTile icon={Zap} tone="amber" label="XP earned" value={(count * reward).toLocaleString()} />
                 <StatTile icon={Trophy} tone="fuchsia" label="Inviter rank" value={rank ? `#${rank}` : '–'} hint={rank ? undefined : 'Invite someone to get ranked'} />
-                <StatTile icon={Gift} tone="emerald" label="Per friend" value={`+${reward} XP`} />
+                <StatTile icon={Gift} tone="emerald" label="Referral coins earned" value={coinsEarned.toLocaleString()} hint={`${Math.max(0, 20 - count)} coin-reward invites remaining`} />
             </div>
 
             {/* milestones */}
@@ -119,7 +138,7 @@ export default function Referral({ link, code, reward, referrals, topInviters, r
                 <section className="lg:col-span-2">
                     <SectionTitle title={`Friends you invited (${count})`} />
                     {count === 0 ? (
-                        <EmptyState icon="💌" title="Nobody yet" text="Copy your link above and send it to someone. They will show up here as soon as they register." />
+                        <EmptyState icon="💌" title="Your circle starts with one friend" text="Share your link. New signups and existing members who accept your invite will appear here." />
                     ) : (
                         <Card className="divide-y divide-white/5">
                             {referrals.map((r) => (

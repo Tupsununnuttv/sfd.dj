@@ -12,16 +12,15 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\DiscordController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
+Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
 
-    Route::post('register', [RegisteredUserController::class, 'store'])->middleware('throttle:10,10');
+Route::middleware('guest')->group(function () {
+    Route::post('register', [RegisteredUserController::class, 'store'])->middleware('throttle:10,10,register');
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
-    Route::post('login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:30,1');
+    Route::post('login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:30,1,login');
 
     Route::get('auth/discord/login', [DiscordController::class, 'login'])->name('discord.login');
     Route::get('auth/discord/login/callback', [DiscordController::class, 'loginCallback'])->name('discord.login.callback');
@@ -30,14 +29,14 @@ Route::middleware('guest')->group(function () {
         ->name('password.request');
 
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
-        ->middleware('throttle:5,1')
+        ->middleware('throttle:5,1,password-email')
         ->name('password.email');
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
         ->name('password.reset');
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
-        ->middleware('throttle:10,1')
+        ->middleware('throttle:10,1,password-reset')
         ->name('password.store');
 });
 
@@ -58,9 +57,9 @@ Route::middleware('auth')->group(function () {
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');
 
-    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store'])->middleware('throttle:6,1');
+    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store'])->middleware('throttle:6,1,password-confirm');
 
-    Route::put('password', [PasswordController::class, 'update'])->middleware('throttle:6,1')->name('password.update');
+    Route::put('password', [PasswordController::class, 'update'])->middleware('throttle:6,1,password-update')->name('password.update');
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');

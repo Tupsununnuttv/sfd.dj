@@ -22,15 +22,22 @@ class AccountSecurity
     /** Versioned sessions also invalidate file/Redis sessions, without needing to enumerate them. */
     public static function revoke(User $user, ?Request $keep = null, bool $revokeTokens = true): void
     {
-        $user->increment('auth_version');
-        $user->forceFill(['remember_token' => Str::random(60)])->save();
-        if ($revokeTokens) $user->tokens()->delete();
-        if (config('session.driver') === 'database') {
-            DB::connection(config('session.connection'))->table(config('session.table', 'sessions'))
-                ->where('user_id', $user->id)->when($keep, fn ($q) => $q->where('id', '!=', $keep->session()->getId()))->delete();
-        }
+        $version = DB::transaction(function () use ($user, $keep, $revokeTokens) {
+            $locked = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $locked->forceFill(['auth_version' => (int) $locked->auth_version + 1, 'remember_token' => Str::random(60)])->save();
+            if ($revokeTokens) {
+                $locked->tokens()->delete();
+            }
+            if (config('session.driver') === 'database') {
+                DB::connection(config('session.connection'))->table(config('session.table', 'sessions'))
+                    ->where('user_id', $user->id)->when($keep, fn ($q) => $q->where('id', '!=', $keep->session()->getId()))->delete();
+            }
+
+            return (int) $locked->auth_version;
+        });
+        $user->refresh();
         if ($keep) {
-            $keep->session()->put('auth_version', (int) $user->auth_version);
+            $keep->session()->put('auth_version', $version);
             $keep->session()->regenerate(true);
             $keep->session()->regenerateToken();
         }

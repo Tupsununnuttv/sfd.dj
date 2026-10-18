@@ -8,6 +8,7 @@ use App\Models\Room;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Vote;
+use App\Support\Referrals;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -150,8 +151,14 @@ class CommunityController extends Controller
     public function referral(Request $request): Response
     {
         $me = $request->user();
+        $request->validate(['ref' => ['nullable', 'string', 'max:64']]);
+        $pending = $request->query('ref', $request->session()->get('ref', ''));
 
         return Inertia::render('Referral', [
+            'pendingCode' => is_string($pending) ? $pending : '',
+            'invitedBy' => $me->referrer?->only('id', 'name'),
+            'coinReward' => User::REFERRAL_COINS,
+            'coinsEarned' => (int) $me->coinHistory()->where('reason', 'referral')->sum('amount'),
             'link' => url('/register?ref='.$me->referral_code),
             'code' => $me->referral_code,
             'reward' => self::REFERRAL_XP,
@@ -163,5 +170,14 @@ class CommunityController extends Controller
                 ? User::where('is_bot', false)->has('referrals', '>', $me->referrals()->count())->count() + 1
                 : null,
         ]);
+    }
+
+    public function claimReferral(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['code' => ['required', 'string', 'max:64']]);
+        Referrals::claim($request->user(), trim($data['code']));
+        $request->session()->forget('ref');
+
+        return to_route('referral');
     }
 }

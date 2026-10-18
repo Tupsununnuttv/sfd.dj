@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Support\StreamingUrl;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -46,7 +47,7 @@ class Spotify
     public function publicQueries(string $kind, string $id, int $limit): array
     {
         try {
-            $html = \App\Support\StreamingUrl::page("https://open.spotify.com/embed/{$kind}/{$id}")->body();
+            $html = StreamingUrl::page("https://open.spotify.com/embed/{$kind}/{$id}")->body();
         } catch (ConnectionException) {
             $this->fail('Could not reach Spotify.');
         }

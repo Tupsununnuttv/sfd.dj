@@ -99,8 +99,9 @@ class EmailConfirmationTest extends TestCase
             ->assertRedirect(route('login', absolute: false));
         $this->assertTrue(Hash::check('new-pass-456', $user->refresh()->password));
 
-        // and so is a new password chosen in the profile
-        $this->actingAs($user)->from('/profile')->put('/password', ['current_password' => 'new-pass-456', 'password' => 'third-pass-789', 'password_confirmation' => 'third-pass-789'])
+        // A reset revokes old sessions; sign in with the new password before changing it in the profile.
+        $this->post('/login', ['email' => $user->email, 'password' => 'new-pass-456'])->assertSessionHasNoErrors();
+        $this->from('/profile')->put('/password', ['current_password' => 'new-pass-456', 'password' => 'third-pass-789', 'password_confirmation' => 'third-pass-789'])
             ->assertSessionHasNoErrors()
             ->assertRedirect('/profile');
         $this->assertTrue(Hash::check('third-pass-789', $user->refresh()->password));
@@ -155,7 +156,7 @@ class EmailConfirmationTest extends TestCase
         $this->mailWorks();
         $user = User::factory()->create();
 
-        $this->actingAs($user)->patch('/profile', ['username' => $user->username, 'name' => $user->name, 'email' => 'fresh@example.com'])->assertRedirect(route('profile.edit'))->assertSessionHas('status', 'verification-link-sent');
+        $this->actingAs($user)->patch('/profile', ['username' => $user->username, 'name' => $user->name, 'email' => 'fresh@example.com', 'current_password' => 'password'])->assertRedirect(route('profile.edit'))->assertSessionHas('status', 'verification-link-sent');
 
         $this->assertNull($user->refresh()->email_verified_at);
         Notification::assertSentTo($user, VerifyEmailNotification::class);

@@ -1,4 +1,5 @@
 import PlanCards, { Interval, IntervalSwitch, PlanInfo } from '@/Components/PlanCards';
+import SubscriptionGifts, { GiftMember, SubscriptionGiftInfo } from '@/Components/SubscriptionGifts';
 import { Card } from '@/Components/ui';
 import SettingsLayout from '@/Layouts/SettingsLayout';
 import { Head, router } from '@inertiajs/react';
@@ -16,7 +17,7 @@ interface Mine {
 const day = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
 
 /** SFD-DJ.EU Subscriptions (Bronze, Silver, Gold, Plus, Pro and Premium): what you have, the plans and their prices, and buying one on Stripe. */
-export default function Plus({ plans, mine, manageable, payments, paid }: { plans: PlanInfo[]; mine: Mine | null; manageable: boolean; payments: boolean; paid: boolean }) {
+export default function Plus({ plans, mine, manageable, payments, paid, giftPayments, giftSent, giftRecipient, receivedGifts, sentGifts }: { plans: PlanInfo[]; mine: Mine | null; manageable: boolean; payments: boolean; paid: boolean; giftPayments: boolean; giftSent: boolean; giftRecipient: GiftMember | null; receivedGifts: SubscriptionGiftInfo[]; sentGifts: SubscriptionGiftInfo[] }) {
     const [period, setPeriod] = useState<Interval>('month');
     const [busy, setBusy] = useState<string | null>(null);
     const buy = (plan: string) => { setBusy(plan); router.post(route('settings.plus.checkout'), { plan, interval: period }, { onFinish: () => setBusy(null) }); };
@@ -27,6 +28,7 @@ export default function Plus({ plans, mine, manageable, payments, paid }: { plan
         <SettingsLayout title="SFD-DJ.EU Subscriptions" subtitle="Optional plans that give you the role of the same name, more XP and room for more playlists and emojis. Everything that is free stays free.">
             <Head title="SFD-DJ.EU Subscriptions" />
             <div className="max-w-5xl space-y-6">
+                {giftSent && <p className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">Thank you! Once Stripe confirms payment, your gift appears in the recipient's subscriptions. Check Sent gifts below for its delivery status.</p>}
                 {paid && (
                     <p className="flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
                         <CheckCircle2 size={18} /> Thank you! Your plan comes on as soon as Stripe tells us the payment went through, usually within a minute.
@@ -53,6 +55,8 @@ export default function Plus({ plans, mine, manageable, payments, paid }: { plan
                         </button>
                     )}
                 </Card>
+
+                <SubscriptionGifts plans={plans} payments={giftPayments} recipient={giftRecipient} received={receivedGifts} sent={sentGifts} hasPlan={!!mine} />
 
                 <div className="flex justify-center"><IntervalSwitch value={period} onChange={setPeriod} plans={plans} /></div>
 

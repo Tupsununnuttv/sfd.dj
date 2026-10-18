@@ -364,11 +364,137 @@ class CharacterTest extends TestCase
         $this->assertTrue($owner->items()->where('item', 'char:fox')->exists());
     }
 
-    public function test_adam_and_mochi_and_skelly_are_for_brand_ambassadors_and_up(): void
+    public function test_skelly_is_for_the_owner_alone_and_stands_on_the_owner_shelf(): void
     {
         $shelf = fn (User $user) => collect($this->actingAs($user)->get('/shop')->inertiaProps('catalog.avatar'))->keyBy('key');
 
-        foreach (['char:adammochi' => 'Adam & Mochi', 'char:skelly' => 'Skelly'] as $key => $label) {
+        foreach ([null, 'brand_ambassador', 'admin', 'developer'] as $role) {
+            $user = $this->withRole($role);
+            $this->assertFalse($shelf($user)->has('char:skelly'), ($role ?? 'a plain user').' does not see the fox in the shop');
+            $this->actingAs($user)->post('/shop/equip', ['avatar' => 'char:skelly'])->assertSessionHasErrors('avatar');
+        }
+
+        $owner = $this->withRole('owner');
+        $fox = $shelf($owner)['char:skelly'];
+        $this->assertSame('owner', $fox['rarity'], 'on the shelf of the Owner');
+        $this->assertSame('Skelly', $fox['label']);
+        $this->actingAs($owner)->post('/shop/equip', ['avatar' => 'char:skelly'])->assertSessionHasNoErrors();
+        $this->assertSame('char:skelly', $owner->refresh()->character);
+
+        // whoever bought him before gets the coins back and another character; the Owner keeps him
+        $buyer = $this->withRole(null);
+        $buyer->forceFill(['character' => 'char:skelly', 'coins' => 5])->save();
+        $buyer->items()->create(['slot' => 'avatar', 'item' => 'char:skelly', 'price' => 430]);
+        $owner->items()->create(['slot' => 'avatar', 'item' => 'char:skelly', 'price' => 430]);
+
+        (require database_path('migrations/2026_11_18_000001_make_skelly_owner_only.php'))->up();
+
+        $this->assertSame(435, $buyer->refresh()->coins);
+        $this->assertNotSame('char:skelly', $buyer->character);
+        $this->assertFalse($buyer->items()->where('item', 'char:skelly')->exists());
+        $this->assertSame('char:skelly', $owner->refresh()->character);
+        $this->assertTrue($owner->items()->where('item', 'char:skelly')->exists());
+    }
+
+    public function test_lumen_is_a_level_nine_character_with_three_distinct_states(): void
+    {
+        $catalog = collect($this->actingAs($this->atLevel(9))->get('/shop')->inertiaProps('catalog.avatar'))->keyBy('key');
+        $this->assertSame('Lumen', $catalog['char:lumen']['label']);
+        $this->assertSame(9, $catalog['char:lumen']['level']);
+        $pictures = [];
+        foreach (['standing', 'dancing', 'djing'] as $state) {
+            $file = $this->get('/characters/'.$state.'/lumen')->assertOk()->baseResponse->getFile()->getPathname();
+            $svg = file_get_contents($file);
+            $this->assertStringContainsString('aria-label="Lumen, '.$state.'"', $svg);
+            $this->assertStringContainsString('prefers-reduced-motion', $svg);
+            $pictures[] = $svg;
+        }
+        $this->assertCount(3, array_unique($pictures));
+    }
+
+    public function test_veyra_is_legendary_and_unlocks_at_level_twenty_eight(): void
+    {
+        $early = $this->atLevel(27);
+        $early->forceFill(['coins' => 10000])->save();
+        $this->actingAs($early)->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:veyra']]])->assertSessionHasErrors('items.0.key');
+        $buyer = $this->atLevel(28);
+        $buyer->forceFill(['coins' => 10000])->save();
+        $catalog = collect($this->actingAs($buyer)->get('/shop')->inertiaProps('catalog.avatar'))->keyBy('key');
+        $card = $catalog['char:veyra'];
+        $this->assertSame(['Veyra', 28, 'legendary'], [$card['label'], $card['level'], $card['rarity']]);
+        $this->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:veyra']]])->assertSessionHasNoErrors();
+        $this->post('/shop/equip', ['avatar' => 'char:veyra'])->assertSessionHasNoErrors();
+        $this->assertSame('char:veyra', $buyer->refresh()->character);
+        foreach (['standing', 'dancing', 'djing'] as $state) {
+            $file = $this->get('/characters/'.$state.'/veyra')->assertOk()->baseResponse->getFile()->getPathname();
+            $svg = file_get_contents($file);
+            $this->assertSame(60, preg_match_all('/class="veyraframe veyraframe[0-9]+"/', $svg));
+            $this->assertStringContainsString('aria-label="Veyra, '.$state.'"', $svg);
+            $this->assertStringContainsString('.veyraframe0{opacity:1}', $svg);
+            $this->assertStringContainsString('prefers-reduced-motion', $svg);
+            $this->assertStringNotContainsString('NaN', $svg);
+            $this->assertLessThan(500000, strlen($svg));
+        }
+    }
+
+    public function test_solstice_is_legendary_and_unlocks_at_level_twenty_five(): void
+    {
+        $early = $this->atLevel(24);
+        $early->forceFill(['coins' => 10000])->save();
+        $this->actingAs($early)->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:solstice']]])->assertSessionHasErrors('items.0.key');
+        $buyer = $this->atLevel(25);
+        $buyer->forceFill(['coins' => 10000])->save();
+        $catalog = collect($this->actingAs($buyer)->get('/shop')->inertiaProps('catalog.avatar'))->keyBy('key');
+        $card = $catalog['char:solstice'];
+        $this->assertSame(['Solstice', 25, 'legendary'], [$card['label'], $card['level'], $card['rarity']]);
+        $this->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:solstice']]])->assertSessionHasNoErrors();
+        $this->post('/shop/equip', ['avatar' => 'char:solstice'])->assertSessionHasNoErrors();
+        $this->assertSame('char:solstice', $buyer->refresh()->character);
+        $this->assertSame(10000 - $card['price'], $buyer->coins);
+        foreach (['standing', 'dancing', 'djing'] as $state) {
+            $file = $this->get('/characters/'.$state.'/solstice')->assertOk()->baseResponse->getFile()->getPathname();
+            $svg = file_get_contents($file);
+            $this->assertSame(72, preg_match_all('/class="solframe solframe[0-9]+"/', $svg));
+            $this->assertStringContainsString('aria-label="Solstice, '.$state.'"', $svg);
+            $this->assertStringContainsString('.solframe0{opacity:1}', $svg);
+            $this->assertStringContainsString('prefers-reduced-motion', $svg);
+            $this->assertStringNotContainsString('NaN', $svg);
+            $this->assertLessThan(450000, strlen($svg));
+            $this->get('/characters/'.$state.'/solstice?motion=1')->assertOk()->assertDontSee('prefers-reduced-motion', false);
+        }
+    }
+
+    public function test_aether_has_articulated_animation_and_can_be_bought_at_level_eighteen(): void
+    {
+        $early = $this->atLevel(17);
+        $early->forceFill(['coins' => 5000])->save();
+        $this->actingAs($early)->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:aether']]])->assertSessionHasErrors('items.0.key');
+        $buyer = $this->atLevel(18);
+        $buyer->forceFill(['coins' => 5000])->save();
+        $catalog = collect($this->actingAs($buyer)->get('/shop')->inertiaProps('catalog.avatar'))->keyBy('key');
+        $this->assertSame('Aether', $catalog['char:aether']['label']);
+        $this->assertSame(18, $catalog['char:aether']['level']);
+        $this->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:aether']]])->assertSessionHasNoErrors();
+        $this->post('/shop/equip', ['avatar' => 'char:aether'])->assertSessionHasNoErrors();
+        $this->assertSame('char:aether', $buyer->refresh()->character);
+        foreach (['standing', 'dancing', 'djing'] as $state) {
+            $file = $this->get('/characters/'.$state.'/aether')->assertOk()->baseResponse->getFile()->getPathname();
+            $svg = file_get_contents($file);
+            $this->assertSame(48, preg_match_all('/class="pose pose[0-9]+"/', $svg));
+            $this->assertStringContainsString('prefers-reduced-motion', $svg);
+            $this->assertStringContainsString('.pose0{opacity:1}', $svg);
+            $this->assertStringNotContainsString('NaN', $svg);
+            $this->assertLessThan(250000, strlen($svg));
+            $this->assertStringContainsString($state === 'djing' ? 'href="#headBack"' : 'href="#headFront"', $svg);
+            $this->get('/characters/'.$state.'/aether?motion=1')->assertOk()->assertDontSee('prefers-reduced-motion', false);
+        }
+    }
+
+    public function test_adam_and_mochi_are_for_brand_ambassadors_and_up(): void
+    {
+        $shelf = fn (User $user) => collect($this->actingAs($user)->get('/shop')->inertiaProps('catalog.avatar'))->keyBy('key');
+
+        foreach (['char:adammochi' => 'Adam & Mochi'] as $key => $label) {
             // on the Staff shelf: only people with the role see them, and for them they are free
             $this->assertFalse($shelf($this->withRole(null))->has($key), "a plain user does not see {$label}");
             $this->assertFalse($shelf($this->withRole('moderator'))->has($key), "a Moderator does not see {$label}");
@@ -421,7 +547,7 @@ class CharacterTest extends TestCase
         $card = fn (User $user) => collect($this->actingAs($user)->get('/shop')->inertiaProps('catalog.avatar'))->firstWhere('key', 'char:elementaar');
 
         $first = $card($this->atLevel(1));
-        $this->assertSame(['Elementaarne', 12, 'epic', true], [$first['label'], $first['level'], $first['rarity'], $first['character']]);
+        $this->assertSame(['Elementary', 12, 'epic', true], [$first['label'], $first['level'], $first['rarity'], $first['character']]);
 
         // not for sale below level 12; from level 12 it costs the coins of an Epic and can be worn
         $early = $this->atLevel(11);
@@ -442,7 +568,7 @@ class CharacterTest extends TestCase
             $file = $this->get("/characters/{$state}/elementaar")->assertOk()->baseResponse->getFile()->getPathname();
             $svg = file_get_contents($file);
             $this->assertLessThan(60_000, strlen($svg), "{$state} stays a small picture");
-            $this->assertStringContainsString('aria-label="Elementaarne, '.$state.'"', $svg);
+            $this->assertStringContainsString('aria-label="Elementary, '.$state.'"', $svg);
             $this->assertStringContainsString('prefers-reduced-motion', $svg);
             $this->assertStringContainsString('crispEdges', $svg);
 

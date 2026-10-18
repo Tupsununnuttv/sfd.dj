@@ -16,7 +16,7 @@ import { FormEventHandler, useState } from 'react';
 
 const bar = ['bg-neutral-700', 'bg-red-500', 'bg-amber-500', 'bg-lime-500', 'bg-green-500'];
 
-export default function Register({ inviter }: { inviter: { name: string; avatar: string | null } | null }) {
+export default function Register({ inviter, referralCode = '' }: { inviter: { name: string; avatar: string | null } | null; referralCode?: string }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         username: '',
         name: '',
@@ -24,6 +24,7 @@ export default function Register({ inviter }: { inviter: { name: string; avatar:
         password: '',
         password_confirmation: '',
         terms: false as boolean,
+        referral_code: referralCode,
     });
 
     const [save, setSave] = useState(false);
@@ -62,7 +63,7 @@ export default function Register({ inviter }: { inviter: { name: string; avatar:
         >
             <Head title="Register" />
 
-            {inviter && (
+            {inviter && data.referral_code === referralCode && (
                 <p className="mb-5 flex items-center gap-3 rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-sm text-violet-100">
                     <Avatar name={inviter.name} avatar={inviter.avatar} className="h-9 w-9" />
                     <span><b>{inviter.name}</b> invited you to SFD-DJ.EU. Welcome!</span>
@@ -148,6 +149,9 @@ export default function Register({ inviter }: { inviter: { name: string; avatar:
                 </Field>
 
                 {step(3, 'Almost done')}
+                <Field label="Your friend's invite code (optional)" htmlFor="referral_code" error={errors.referral_code} hint="Have an invite? Enter your friend's code to give them credit. A code from an invite link is filled in automatically.">
+                    <TextInput id="referral_code" name="referral_code" value={data.referral_code} onChange={(e) => setData('referral_code', e.target.value.trim())} maxLength={64} autoComplete="off" placeholder="Enter an invite code" className="block w-full py-3" />
+                </Field>
                 <div className="space-y-2.5">
                     <label className="flex items-start gap-2.5 text-sm text-neutral-300">
                         <Checkbox className="mt-0.5" checked={data.terms} onChange={(e) => setData('terms', e.target.checked)} />

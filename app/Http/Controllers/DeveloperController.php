@@ -52,7 +52,7 @@ class DeveloperController extends Controller
             throw ValidationException::withMessages(['name' => 'You can have at most '.self::MAX_BOTS.' bots.']);
         }
 
-        $base = 'bot_'.Str::substr(preg_replace('/[^a-z0-9]+/', '_', Str::lower(Str::ascii($name))), 0, 12);
+        $base = 'bot_'.Str::substr(preg_replace('/[^a-z0-9]+/', '_', Str::lower(Str::ascii($name))), 0, 11);
         do {
             $username = trim($base, '_').'_'.Str::lower(Str::random(4));
         } while (User::whereRaw('lower(username) = ?', [$username])->exists());

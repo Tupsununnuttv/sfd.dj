@@ -31,7 +31,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Throwable;
 
 #[Fillable(['name', 'username', 'email', 'password', 'avatar', 'character', 'cosmetics', 'bio', 'favorite_genre', 'country', 'pronouns', 'status'])]
-#[Hidden(['discord_id', 'spotify_id', 'spotify_display_name', 'spotify_access_token', 'spotify_refresh_token', 'youtube_channel_id', 'youtube_channel_title', 'youtube_access_token', 'youtube_refresh_token', 'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'referral_code', 'referred_by', 'coins', 'daily_coins_on', 'stripe_customer_id', 'stripe_subscription_id', 'auth_version', 'two_factor_last_used_at'])]
+#[Hidden(['discord_id', 'spotify_id', 'spotify_display_name', 'spotify_access_token', 'spotify_refresh_token', 'youtube_channel_id', 'youtube_channel_title', 'youtube_access_token', 'youtube_refresh_token', 'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'referral_code', 'referred_by', 'coins', 'daily_coins_on', 'stripe_customer_id', 'stripe_subscription_id', 'auth_version', 'two_factor_last_used_at', 'activeSubscriptionGifts'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
@@ -188,9 +188,28 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /** ponytail: XP is bumped in place, no ledger table; add one if you need XP history. Every new level pays coins (see coinsForLevel). */
     /** The paid plan someone has now (bronze, silver, gold, plus, pro or premium: App\Support\Plans), or null. A plan without an end date was given for good. */
-    public function activePlan(): ?string
+    public function directPlan(): ?string
     {
         return isset(Plans::TIERS[$this->plan]) && (! $this->plan_until || $this->plan_until->isFuture()) ? $this->plan : null;
+    }
+
+    public function activeSubscriptionGifts(): HasMany
+    {
+        return $this->hasMany(SubscriptionGift::class, 'recipient_id')->whereNotNull('paid_at')->whereNotNull('activated_at')->whereNull('revoked_at')->where('expires_at', '>', now());
+    }
+
+    /** Gifts never write to Stripe's billing fields. The highest active entitlement wins. */
+    public function activePlan(): ?string
+    {
+        $plans = $this->exists ? $this->activeSubscriptionGifts->filter(fn ($gift) => $gift->expires_at->isFuture())->pluck('plan')->all() : [];
+        $plans[] = $this->directPlan();
+        foreach (array_reverse(array_keys(Plans::TIERS)) as $plan) {
+            if (in_array($plan, $plans, true)) {
+                return $plan;
+            }
+        }
+
+        return null;
     }
 
     /** How much someone may have: playlists, songs in each, emojis in the rooms they host. More with a plan. */

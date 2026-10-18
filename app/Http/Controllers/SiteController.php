@@ -6,6 +6,7 @@ use App\Models\PlaylistItem;
 use App\Models\Room;
 use App\Models\SiteEvent;
 use App\Models\User;
+use App\Support\PublicStats;
 use App\Support\RoomPresence;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -47,12 +48,7 @@ class SiteController extends Controller
             'topDjs' => User::where('is_bot', false)->withCount(['playlistItems as plays' => fn ($q) => $q->whereNotNull('played_at')])->orderByDesc('plays')->limit(3)->get()
                 ->filter(fn ($u) => $u->plays > 0)->map(fn ($u) => $u->only('id', 'name', 'avatar', 'primary_role') + ['plays' => $u->plays])->values(),
             'genres' => Room::where('is_private', false)->whereNotNull('genre')->selectRaw('genre, count(*) as n')->groupBy('genre')->orderByDesc('n')->limit(8)->pluck('n', 'genre'),
-            'stats' => [
-                'members' => User::where('is_bot', false)->count(),
-                'rooms' => Room::where('is_private', false)->count(),
-                'songs_played' => PlaylistItem::whereNotNull('played_at')->count(),
-                'listening' => array_sum($listening),
-            ],
+            'stats' => (fn ($stats) => $stats + ['songs_played' => $stats['songs']])(PublicStats::get()),
         ]);
     }
 }

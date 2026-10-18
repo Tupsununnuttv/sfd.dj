@@ -42,7 +42,7 @@ export interface AdminRoom {
 export interface Day { day: string; n: number }
 
 export interface Overview {
-    kpis: { online: number; listening: number; active_24h: number; new_7d: number; messages_24h: number; songs_24h: number; bots: number; violations_7d: number };
+    kpis: { online: number; listening: number | null; active_24h: number; new_7d: number; messages_24h: number; songs_24h: number; bots: number; violations_7d: number };
     series: { users: Day[]; messages: Day[]; songs: Day[] };
     recentUsers: { id: number; name: string; avatar: string | null; is_bot: boolean; joined: string }[];
     recentViolations: { id: number; user: string | null; by: string | null; reason: string; at: string }[];
@@ -53,9 +53,9 @@ export interface Overview {
 export interface AdminProps {
     q: string;
     filters: { role: string | null; type: string | null; sort: string };
-    stats: { users: number; rooms: number; messages: number; songs_played: number };
+    stats: { accounts: number; bots: number; online: number; updated_at: string; users: number; rooms: number; messages: number; songs_played: number };
     overview: Overview;
-    users: { data: AdminUser[]; next_page_url: string | null; prev_page_url: string | null };
+    users: { total: number; from: number | null; to: number | null; data: AdminUser[]; next_page_url: string | null; prev_page_url: string | null };
     roleGroups: RoleGroups;
     awardList: { key: string; label: string; text: string; color: string }[];
     planList: { key: string; name: string; color: string }[];

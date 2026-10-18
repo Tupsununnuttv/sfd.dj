@@ -1,6 +1,7 @@
 import '../css/app.css';
 
 import RoomLoading from '@/Components/RoomLoading';
+import WhisperCalls from '@/Components/WhisperCalls';
 import { embedded } from '@/lib/embed';
 import { applyMotion } from '@/lib/motion';
 import { PageProps } from '@/types';
@@ -49,7 +50,8 @@ createInertiaApp({
 
         const root = createRoot(el);
 
-        root.render(<><App {...props} /><RoomLoading /></>);
+        const auth = (props.initialPage.props as unknown as PageProps).auth;
+        root.render(<><App {...props} /><RoomLoading />{!embedded && <WhisperCalls initialUser={auth?.guest ? null : auth?.user?.id ?? null} />}</>);
     },
     progress: {
         color: '#4B5563',

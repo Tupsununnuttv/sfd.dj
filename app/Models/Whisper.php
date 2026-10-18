@@ -6,6 +6,7 @@ use App\Http\Controllers\MediaController;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /** A private message from one person to another, or to a group (`group_id`, with no `to_id`): text, or a voice message (`audio`, with `body` empty). */
 class Whisper extends Model
@@ -37,9 +38,10 @@ class Whisper extends Model
             ->orWhere(fn ($q) => $q->where('from_id', $b)->where('to_id', $a)));
     }
 
-    public static function history(Builder|\Illuminate\Database\Eloquent\Relations\HasMany $query, int $me, int $before = 0): array
+    public static function history(Builder|HasMany $query, int $me, int $before = 0): array
     {
         $messages = $query->when($before > 0, fn ($q) => $q->where('id', '<', $before))->latest('id')->limit(101)->get();
+
         return ['messages' => $messages->take(100)->reverse()->map->payload($me)->values(), 'has_more' => $messages->count() > 100];
     }
 

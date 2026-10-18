@@ -4,16 +4,19 @@ import Badges from '@/Components/Badges';
 import { VERSION } from '@/lib/patchNotes';
 import ContextMenu, { MenuAnchor, MenuItem } from '@/Components/ContextMenu';
 import PeekCard from '@/Components/PeekCard';
-import { EMOTE_TOKEN, EmoteInfo, emoteUrl, parseToken, useGlobalEmotes, withEmoteTokens } from '@/lib/emotes';
+import { EmoteInfo, emoteUrl, useGlobalEmotes, withEmoteTokens } from '@/lib/emotes';
+import { withEmojis, type RoomEmojiData } from '@/lib/chatEmojis';
+export type { RoomEmojiData } from '@/lib/chatEmojis';
 import RoleBadge from '@/Components/RoleBadge';
 import { CardUser } from '@/Components/UserCard';
 import { getJson, post, send, sendJson, upload } from '@/lib/post';
 import { RoleInfo } from '@/types';
-import { Link } from '@inertiajs/react';
-import { AtSign, Check, Copy, Ellipsis, ImagePlus, MessageCircle, Reply, Send, Trash2, UserRound, X } from 'lucide-react';
-import { FormEvent, MouseEvent, ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Link, router } from '@inertiajs/react';
+import { AtSign, Check, Copy, Ellipsis, Gift, ImagePlus, MessageCircle, Reply, Send, Smile, Trash2, UserRound, X } from 'lucide-react';
+import { FormEvent, MouseEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export interface ChatMessageData {
+    reactions?: { emoji: string; users: number[] }[];
     id: number;
     created_at?: string;
     type: 'user' | 'system';
@@ -29,12 +32,6 @@ export interface ChatMessageData {
     sticker?: string | null;
     image_url?: string | null;
     reply?: { id: number; user: string | null; body: string | null } | null;
-}
-
-export interface RoomEmojiData {
-    id: number;
-    name: string;
-    url: string;
 }
 
 const EMOJIS: Record<string, string[]> = {
@@ -82,20 +79,6 @@ const input = 'w-full rounded border-neutral-700 bg-neutral-900 text-sm text-whi
 const tool = 'rounded-md p-1.5 text-neutral-400 transition hover:bg-white/10 hover:text-white';
 
 type Picker = 'emoji' | 'gif' | 'sticker' | 'room' | 'bttv' | '7tv' | null;
-
-const SPLIT = new RegExp(`(${EMOTE_TOKEN}|:[a-z0-9_]{2,20}:)`);
-
-/** Replace :name: with the room's custom emoji image, and :bttv:ID: / :7tv:ID: with that emote (`emoteSize` is the height class of an emote; a quote uses a smaller one). */
-export function withEmojis(body: string, emojis: RoomEmojiData[], emoteSize = 'h-7'): ReactNode[] {
-    return body.split(SPLIT).map((part, i) => {
-        if (new RegExp(`^${EMOTE_TOKEN}$`).test(part)) {
-            const { source, id } = parseToken(part);
-            return <img key={i} src={emoteUrl(source, id)} alt="emote" title={source === 'bttv' ? 'BetterTTV emote' : '7TV emote'} loading="lazy" className={`mx-0.5 inline ${emoteSize} w-auto max-w-20 align-middle`} />;
-        }
-        const e = emojis.find((x) => `:${x.name}:` === part);
-        return e ? <img key={i} src={e.url} alt={part} title={part} className="mx-0.5 inline h-6 w-6 align-middle" /> : part;
-    });
-}
 
 /** The emoji grid in its categories: click one to hand it to `onPick`. Chat and whispers share it. */
 export function EmojiPicker({ onPick }: { onPick: (emoji: string) => void }) {
@@ -252,7 +235,9 @@ export default function ChatPanel({
     showBadges = true,
     highlightMentions = true,
     onPatchNotes,
+    onReactionUpdate,
 }: {
+    onReactionUpdate?: (data: { id: number; reactions: NonNullable<ChatMessageData['reactions']> }) => void;
     slug: string;
     welcome?: string | null; // the room's welcome message: it stays at the top while the messages scroll under it, and Clear does not take it away
     messages: ChatMessageData[];
@@ -287,6 +272,18 @@ export default function ChatPanel({
         return () => URL.revokeObjectURL(url);
     }, [attachment]);
     const [replyTo, setReplyTo] = useState<ChatMessageData | null>(null);
+    const [reactingTo, setReactingTo] = useState<number | null>(null);
+    const [reactionBusy, setReactionBusy] = useState(false);
+    const reactionLock = useRef(false);
+    const react = async (id: number, emoji: string) => {
+        if (reactionLock.current || readOnly) return;
+        reactionLock.current = true; setReactionBusy(true); setError('');
+        try {
+            const result = await sendJson<{ id: number; reactions: NonNullable<ChatMessageData['reactions']> }>('POST', route('rooms.messages.react', [slug, id]), { emoji });
+            onReactionUpdate?.(result); setReactingTo(null);
+        } catch (e) { setError((e as Error).message); }
+        finally { reactionLock.current = false; setReactionBusy(false); }
+    };
     const [picker, setPicker] = useState<Picker>(null);
     const [menu, setMenu] = useState<{ m: ChatMessageData; anchor: MenuAnchor; row: DOMRect } | null>(null); // the open message menu
     const [copied, setCopied] = useState(false);
@@ -353,6 +350,8 @@ export default function ChatPanel({
         if (!readOnly) talk.push({ label: 'Reply', icon: Reply, onSelect: () => reply(m) });
         if (!readOnly && !mine) talk.push({ label: 'Mention', icon: AtSign, onSelect: () => mentionUser(m.user) });
         if (!readOnly && !mine && onWhisper) talk.push({ label: 'Whisper', icon: MessageCircle, onSelect: () => onWhisper(m.user_id) });
+        if (!readOnly && !mine) talk.push({ label: 'Gift subscription', icon: Gift, onSelect: () => router.visit(`${route('settings.plus', { recipient: m.user_id })}#gifts`) });
+        if (!readOnly && m.id > 0) talk.push({ label: 'Add reaction', icon: Smile, onSelect: () => setReactingTo(m.id) });
         if (m.body) talk.push({ label: copied ? 'Copied!' : 'Copy text', icon: copied ? Check : Copy, keepOpen: true, onSelect: () => copy(m.body) });
         const remove: MenuItem[] = !readOnly && (mine || canDelete) ? [{ label: 'Delete message', icon: Trash2, danger: true, onSelect: () => send('DELETE', route('rooms.messages.delete', [slug, m.id])).catch(fail) }] : [];
 
@@ -503,10 +502,13 @@ export default function ChatPanel({
                                 {m.body && <p className="wrap-break-word text-neutral-200">{withEmojis(m.body, emojis)}</p>}
                                 {m.sticker && <p className="text-5xl leading-tight">{m.sticker}</p>}
                                 {m.image_url && <img src={m.image_url} data-media alt="" loading="lazy" className="mt-1 max-h-48 max-w-full rounded-lg" />}
+                                {!!m.reactions?.length && <div className="mt-2 flex flex-wrap gap-1" aria-label="Message reactions">{m.reactions.map((r) => <button key={r.emoji} disabled={readOnly || reactionBusy} aria-label={`${r.emoji}: ${r.users.length} reactions${r.users.includes(userId) ? ', including you. Click to remove.' : '. Click to react.'}`} aria-pressed={r.users.includes(userId)} onClick={() => void react(m.id, r.emoji)} className={`flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs disabled:cursor-default ${r.users.includes(userId) ? 'border-violet-400/60 bg-violet-500/20 text-violet-100' : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'}`}><span className="text-base">{r.emoji}</span><span>{r.users.length}</span></button>)}</div>}
+                                {reactingTo === m.id && <div className="mt-2 flex flex-wrap gap-1 rounded-xl border border-white/15 bg-neutral-900 p-2" role="group" aria-label="Choose a reaction">{['❤️', '😂', '🔥', '👏', '👍', '😮', '😢', '🎵'].map((emoji) => <button key={emoji} disabled={reactionBusy} onClick={() => void react(m.id, emoji)} aria-label={`React ${emoji}`} className="rounded-lg p-1.5 text-xl hover:bg-violet-500/20 disabled:opacity-50">{emoji}</button>)}<button onClick={() => setReactingTo(null)} aria-label="Close reactions" className="rounded-lg p-1.5 text-neutral-400 hover:text-white"><X size={16} /></button><p className="w-full text-[10px] text-neutral-400">One reaction per person. Tap your reaction again to remove it.</p></div>}
                             </div>
 
                             <div className={`absolute -top-3 right-1 z-10 flex items-center gap-0.5 rounded-lg border border-white/10 bg-neutral-900/95 p-0.5 shadow-lg shadow-black/40 backdrop-blur transition-opacity focus-within:pointer-events-auto focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 ${open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
                                 {!readOnly && <button onClick={() => reply(m)} title="Reply" aria-label="Reply" className={tool}><Reply size={14} /></button>}
+                                {!readOnly && m.id > 0 && <button onClick={() => setReactingTo(reactingTo === m.id ? null : m.id)} title="Add reaction" aria-label="Add reaction" className={tool}><Smile size={14} /></button>}
                                 {m.body && <button onClick={() => navigator.clipboard?.writeText(m.body)} title="Copy text" aria-label="Copy text" className={tool}><Copy size={14} /></button>}
                                 <button
                                     data-menu-trigger

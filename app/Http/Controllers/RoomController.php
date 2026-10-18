@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Role;
 use App\Events\ChatCleared;
+use App\Events\ChatReactionUpdated;
 use App\Events\MessageDeleted;
 use App\Events\MessageSent;
 use App\Events\PlaybackUpdated;
@@ -197,9 +198,35 @@ class RoomController extends Controller
             'description' => ['nullable', 'string', 'max:140', new NoOtherSites],
             'genre' => ['nullable', Rule::in(Room::GENRES)],
             'is_private' => ['boolean'],
+            'background' => ['sometimes', Rule::in(['midnight', 'sunset', 'neon', 'forest', 'club'])],
+            'welcome_message' => ['nullable', 'string', 'max:300', new NoOtherSites],
+            'waitlist_locked' => ['sometimes', 'boolean'],
+            'waitlist_cycle' => ['sometimes', 'boolean'],
+            'start_live' => ['sometimes', 'boolean'],
+            'stream_url' => [Rule::excludeIf(! $request->boolean('start_live')), 'required', 'string', 'max:300'],
+            'stream_title' => [Rule::excludeIf(! $request->boolean('start_live')), 'nullable', 'string', 'max:80', new NoOtherSites],
         ]);
 
-        $room = $request->user()->rooms()->create($data + ['slug' => Room::slugFor($data['name'])]);
+        $stream = null;
+        $title = trim((string) ($data['stream_title'] ?? ''));
+        if ($request->boolean('start_live')) {
+            $stream = LiveStream::parse($data['stream_url']);
+            if (! $stream) {
+                throw ValidationException::withMessages(['stream_url' => 'Enter a YouTube live video, Twitch channel or Kick channel link.']);
+            }
+            if ($why = WordGuard::check($title)) {
+                throw ValidationException::withMessages(['stream_title' => $why]);
+            }
+        }
+        $room = DB::transaction(function () use ($request, $data, $stream, $title) {
+            $room = $request->user()->rooms()->create(Arr::except($data, ['start_live', 'stream_url', 'stream_title']) + ['slug' => Room::slugFor($data['name'])]);
+            if ($stream) {
+                $room->goLive($request->user(), $stream, $title);
+                $room->log($request->user(), 'live', null, $room->live['title']);
+            }
+
+            return $room;
+        });
 
         return to_route('rooms.show', $room);
     }
@@ -228,7 +255,7 @@ class RoomController extends Controller
             ] + ($this->ownsCss($user, $room) ? ['css_source' => $room->custom_css, 'css_notes' => $css['notes']] : []), // the host sees what they wrote and what was left out
             'genres' => Room::GENRES,
             'host' => $room->user->only('id', 'name', 'avatar', 'cosmetics') + ['primary_role' => $room->user->primary_role],
-            'can' => array_fill_keys($can, true) + ['delete_room' => $room->canDelete($user), 'selfbots' => $user && ($user->id === $room->user_id || $user->is_staff)],
+            'can' => $user ? array_fill_keys($can, true) + ['delete_room' => $room->canDelete($user), 'selfbots' => $user->id === $room->user_id || $user->is_staff] : [],
             'roles' => $room->roles()->get(['id', 'name', 'color', 'rank', 'permissions', 'builtin']),
             'roleOrder' => array_map(fn (Role $role) => $role->value, Role::manual()),
             'roleGroupOf' => collect(Role::manual())->mapWithKeys(fn (Role $role) => [$role->value => $role->group()]),
@@ -248,7 +275,7 @@ class RoomController extends Controller
             'myVotes' => ['woot' => in_array('woot', $mine, true), 'meh' => in_array('meh', $mine, true), 'grab' => in_array('grab', $mine, true)],
             'stickers' => self::STICKERS,
             'emojis' => $room->emojis()->get()->map(fn ($e) => ['id' => $e->id, 'name' => $e->name, 'url' => $e->url()]),
-            'messages' => $room->messages()->with([ChatMessage::WITH_USER, 'replyTo.user'])->latest('id')->limit(50)->get()
+            'messages' => $room->messages()->with([ChatMessage::WITH_USER, 'replyTo.user', 'reactions'])->latest('id')->limit(50)->get()
                 ->reverse()->map->payload()->values(),
             'playback' => $room->playback(),
             'listening' => RoomPresence::counts()[$room->id] ?? 0,
@@ -513,6 +540,27 @@ class RoomController extends Controller
     }
 
     /** Remove one message: your own, or anyone's with the clear-chat permission. */
+    public function react(Request $request, Room $room, ChatMessage $message): JsonResponse
+    {
+        abort_unless($message->room_id === $room->id && $message->type === 'user', 404);
+        abort_if($room->isMuted($request->user()), 403, 'You are muted in this room.');
+        $data = $request->validate(['emoji' => ['required', Rule::in(ChatMessage::REACTIONS)]]);
+        $reactions = DB::transaction(function () use ($message, $request, $data) {
+            ChatMessage::whereKey($message->id)->lockForUpdate()->firstOrFail();
+            $query = DB::table('chat_reactions')->where('chat_message_id', $message->id)->where('user_id', $request->user()->id);
+            if ($query->value('emoji') === $data['emoji']) {
+                $query->delete();
+            } else {
+                DB::table('chat_reactions')->updateOrInsert(['chat_message_id' => $message->id, 'user_id' => $request->user()->id], ['emoji' => $data['emoji']]);
+            }
+
+            return $message->reactionSummary();
+        });
+        ChatReactionUpdated::dispatch($room->id, $message->id, $reactions);
+
+        return response()->json(['id' => $message->id, 'reactions' => $reactions]);
+    }
+
     public function deleteMessage(Request $request, Room $room, ChatMessage $message): Response
     {
         abort_unless($message->room_id === $room->id, 404);
@@ -796,23 +844,23 @@ class RoomController extends Controller
     {
         $data = $request->validate(['item_id' => ['required', 'integer'], 'ended' => ['sometimes', 'boolean']]);
         $ended = $data['ended'] ?? false;
-        $song = PlaylistItem::with('user:id,name')->find($data['item_id']);
 
-        // A finished song is reported by every listener's player, so it needs no permission.
-        // A manual skip needs the skip permission, or the song has to be yours.
-        // ponytail: "ended" is client-reported and cannot be verified; compare against the stored duration if it gets abused
-        if (! $ended && ! $room->can($request->user(), 'skip') && $song?->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $song = DB::transaction(function () use ($room, $data, $request, $ended): ?PlaylistItem {
+            $lockedRoom = Room::query()->lockForUpdate()->findOrFail($room->id);
+            $song = PlaylistItem::with('user:id,name')->where('room_id', $lockedRoom->id)->find($data['item_id']);
 
-        // while a live stream is on the big screen nobody hears the songs: no "ended" report counts
-        if ($ended && $room->liveNow()) {
-            return response()->noContent();
-        }
+            // A manual skip requires permission. A player report must also match the server's playback clock.
+            abort_if(! $ended && ! $lockedRoom->can($request->user(), 'skip') && $song?->user_id !== $request->user()->id, 403);
 
-        // Several clients report "ended" at once; only the first one for the current song counts.
-        if ($room->current_item_id === $data['item_id']) {
-            $room->advance();
+            if (! $song || $lockedRoom->current_item_id !== $song->id || ($ended && ! $lockedRoom->playbackHasEnded($song))) {
+                return null;
+            }
+
+            return $lockedRoom->advance(completed: $ended) ? $song : null;
+        });
+
+        // All listeners can report the same ending, but only the request that advanced it announces it.
+        if ($song) {
             $ended || $room->log($request->user(), 'skip', $song->user, $song->title);
             $ended && ChatMessage::system($room, 'ended', "“{$song->title}” by {$song->user->name} has ended", $song->user);
             $ended || ChatMessage::system($room, 'skip', "{$request->user()->name} skipped “{$song->title}” ({$song->user->name})", $request->user());

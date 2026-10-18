@@ -46,12 +46,12 @@ export default function Overview({ data, openTickets, totalUsers, gotoTab }: { d
             )}
 
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <StatTile icon={Activity} tone="emerald" label="Online now" value={k.online} hint={`${k.listening} listening in rooms`} />
+                <StatTile icon={Activity} tone="emerald" label="Online members" value={k.online} hint={`Active in the last 5 min ? ${k.listening == null ? 'listeners unavailable' : `${k.listening} unique listeners`}`} />
                 <StatTile icon={Clock} tone="sky" label="Active in 24 h" value={k.active_24h} />
                 <StatTile icon={UserPlus} tone="violet" label="New people, 7 days" value={k.new_7d} />
                 <StatTile icon={MessageSquare} tone="fuchsia" label="Messages, 24 h" value={k.messages_24h} />
                 <StatTile icon={Music} tone="amber" label="Songs played, 24 h" value={k.songs_24h} />
-                <StatTile icon={Users} tone="sky" label="People in total" value={totalUsers.toLocaleString()} />
+                <StatTile icon={Users} tone="sky" label="Registered members" value={totalUsers.toLocaleString()} />
                 <StatTile icon={Bot} tone="violet" label="Bots" value={k.bots} />
                 <StatTile icon={Gavel} tone="amber" label="Violations, 7 days" value={k.violations_7d} />
             </div>

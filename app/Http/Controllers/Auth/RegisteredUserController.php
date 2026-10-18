@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\AvatarController;
-use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\Referrals;
 use Closure;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -23,15 +23,21 @@ class RegisteredUserController extends Controller
     /**
      * Display the registration view.
      */
-    public function create(Request $request): Response
+    public function create(Request $request): Response|RedirectResponse
     {
+        $request->validate(['ref' => ['nullable', 'string', 'max:64']]);
+        if ($request->user()) {
+            return to_route($request->filled('ref') ? 'referral' : 'dashboard', $request->filled('ref') ? ['ref' => $request->query('ref')] : []);
+        }
         if ($request->filled('ref')) {
             $request->session()->put('ref', $request->query('ref'));
+            $request->session()->put('url.intended', route('referral', ['ref' => $request->query('ref')]));
         }
 
         $ref = $request->session()->get('ref');
 
         return Inertia::render('Auth/Register', [
+            'referralCode' => is_string($ref) ? $ref : '',
             // "Alex invited you": only the name and picture of the person behind the link (no link: nobody, not the first account without a code)
             'inviter' => $ref ? User::where('referral_code', $ref)->first()?->only('name', 'avatar') : null,
         ]);
@@ -54,6 +60,11 @@ class RegisteredUserController extends Controller
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'terms' => ['accepted'],
+            'referral_code' => ['nullable', 'string', 'max:64', function (string $attribute, mixed $value, Closure $fail) {
+                if (! User::where('referral_code', $value)->where('is_bot', false)->exists()) {
+                    $fail('This invite code was not found. Check it or leave the field empty.');
+                }
+            }],
         ], ['terms.accepted' => 'Please accept the terms and the community rules to join.']);
 
         $user = User::create([
@@ -65,12 +76,11 @@ class RegisteredUserController extends Controller
         ]);
         $user->forceFill(['awards' => ['beta']])->save(); // everybody who signs up while the site is in beta gets the Beta Tester badge
 
-        $ref = $request->session()->pull('ref');
+        $ref = $request->exists('referral_code') ? $request->input('referral_code') : $request->session()->get('ref');
+        $request->session()->forget('ref');
 
-        if ($ref && $referrer = User::where('referral_code', $ref)->first()) {
-            $user->forceFill(['referred_by' => $referrer->id])->save();
-            $referrer->addXp(CommunityController::REFERRAL_XP);
-            $referrer->referrals()->count() <= 20 && $referrer->award(User::REFERRAL_COINS, 'referral', $user->name); // the first 20 friends pay coins
+        if (is_string($ref) && User::where('referral_code', $ref)->where('is_bot', false)->exists()) {
+            Referrals::claim($user, $ref);
         }
 
         // the Registered event sends the "confirm your email" message; it cannot fail the sign-up, and the confirm page says what became of it

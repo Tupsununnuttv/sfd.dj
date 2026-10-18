@@ -61,7 +61,8 @@ class SelfDjBotController extends Controller
             $room = $this->room($me, $data['room']);
             $this->availableRoom($room);
             $playlist = $this->playlist($me, $data['playlist_id']);
-            $username = 'dj_'.Str::lower(Str::random(20));
+            // users.username is VARCHAR(20); the dj_ prefix is part of that limit.
+            $username = 'dj_'.Str::lower(Str::random(17));
             $bot = new User(['name' => $data['name'], 'username' => $username, 'email' => $username.'@bots.invalid', 'password' => Str::random(48)]);
             $bot->forceFill(['is_bot' => true, 'bot_owner_id' => $me->id, 'character' => 'char:robo', 'email_verified_at' => now()])->save();
             SelfDjBot::create(['user_id' => $me->id, 'bot_id' => $bot->id, 'room_id' => $room->id, 'playlist_id' => $playlist->id]);

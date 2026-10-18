@@ -18,7 +18,7 @@ const groups: { name: string; items: [string, string, LucideIcon][] }[] = [
 
 /** Settings: a menu on the left (a scrolling row on small screens) and the page on the right. */
 export default function SettingsLayout({ title, subtitle, children }: PropsWithChildren<{ title?: ReactNode; subtitle?: ReactNode }>) {
-    const { user } = usePage<PageProps>().props.auth;
+    const { auth: { user }, pendingSubscriptionGifts } = usePage<PageProps>().props;
     const link = (name: string, label: string, Icon: LucideIcon) => {
         const active = route().current(name);
 
@@ -29,6 +29,7 @@ export default function SettingsLayout({ title, subtitle, children }: PropsWithC
                 className={`flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm transition ${active ? 'bg-linear-to-r from-violet-600/30 to-fuchsia-600/5 font-semibold text-white shadow-[inset_3px_0_0_#a855f7]' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}`}
             >
                 <Icon size={17} className="shrink-0" /> {label}
+                {name === 'settings.plus' && pendingSubscriptionGifts > 0 && <span className="rounded-full bg-fuchsia-500/25 px-2 text-xs font-bold text-fuchsia-200">{pendingSubscriptionGifts}</span>}
             </Link>
         );
     };

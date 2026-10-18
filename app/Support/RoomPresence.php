@@ -10,6 +10,39 @@ use Pusher\ApiErrorException;
 
 class RoomPresence
 {
+    /** Unique human listeners across rooms. null means the presence service could not be checked. */
+    public static function listenerCount(): ?int
+    {
+        $snapshot = Cache::remember('site_listener_snapshot', 3, function () {
+            try {
+                $pusher = Broadcast::connection()->getPusher();
+                $channels = $pusher->get('/channels', ['filter_by_prefix' => 'presence-room.', 'info' => 'user_count'], true);
+                if (! isset($channels['channels'])) {
+                    return ['count' => null];
+                }
+                $ids = [];
+                foreach ($channels['channels'] as $name => $info) {
+                    if (! preg_match('/^presence-room\.\d+$/', $name) || (int) ($info['user_count'] ?? 0) === 0) {
+                        continue;
+                    }
+                    $members = $pusher->get('/channels/'.$name.'/users', [], true);
+                    if (! isset($members['users'])) {
+                        return ['count' => null];
+                    }
+                    foreach ($members['users'] as $member) {
+                        $ids[(int) $member['id']] = true;
+                    }
+                }
+
+                return ['count' => User::where('is_bot', false)->whereKey(array_keys($ids))->count()];
+            } catch (\Throwable) {
+                return ['count' => null];
+            }
+        });
+
+        return $snapshot['count'];
+    }
+
     /** Who is listening where right now: user id => the ids of the rooms they are in (one, unless they have two tabs in two rooms). Empty when Reverb is unreachable. */
     private static function locations(): array
     {

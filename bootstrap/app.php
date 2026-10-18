@@ -2,8 +2,8 @@
 
 use App\Http\Middleware\AllowSameOriginFrames;
 use App\Http\Middleware\BlockBannedIps;
-use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\EnsureCurrentSession;
+use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\MaintenanceMode;
 use App\Http\Middleware\TrackLastSeen;

@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Friendship;
 use App\Models\Room;
 use App\Models\Setting;
+use App\Models\SubscriptionGift;
 use App\Models\User;
 use App\Models\Whisper;
 use App\Models\WhisperGroup;
@@ -63,6 +64,9 @@ class HandleInertiaRequests extends Middleware
             'liveCount' => fn () => Room::visibleTo($request->user())->whereNotNull('live')->count(), // rooms with a live stream on, for the number in the menu
             'pendingFriends' => fn () => $request->user()
                 ? Friendship::where('friend_id', $request->user()->id)->where('status', 'pending')->count()
+                : 0,
+            'pendingSubscriptionGifts' => fn () => $request->user()
+                ? SubscriptionGift::where('recipient_id', $request->user()->id)->whereNotNull('paid_at')->whereNull('activated_at')->whereNull('revoked_at')->count()
                 : 0,
             'unreadWhispers' => fn () => ($me = $request->user()) ? Whisper::where('to_id', $me->id)->whereNull('read_at')->count() + (int) WhisperGroup::unreadCounts($me)->sum() : 0, // from people, and from groups
             // social links and the donation goal, both edited in Admin panel → Community

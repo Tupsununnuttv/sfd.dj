@@ -23,6 +23,7 @@ use App\Support\Stripe;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -41,29 +42,34 @@ class AdminController extends Controller
         $actor = $this->allow($request, 'admin.access');
         $q = trim((string) $request->query('q'));
         $role = Role::tryFrom((string) $request->query('role'))?->value;
-        $type = in_array($request->query('type'), ['bots', 'online'], true) ? $request->query('type') : null;
+        $type = in_array($request->query('type'), ['bots', 'online', 'members'], true) ? $request->query('type') : null;
         $sort = in_array($request->query('sort'), ['newest', 'oldest', 'xp', 'seen'], true) ? $request->query('sort') : 'newest';
 
         return Inertia::render('Admin', [
             'q' => $q,
             'filters' => ['role' => $role, 'type' => $type, 'sort' => $sort],
-            'stats' => [
-                'users' => User::count(),
+            'stats' => fn () => [
+                'users' => User::where('is_bot', false)->count(),
+                'accounts' => User::count(),
+                'bots' => User::where('is_bot', true)->count(),
+                'online' => User::where('is_bot', false)->where('last_seen_at', '>', now()->subMinutes(5))->count(),
+                'updated_at' => now()->toIso8601String(),
                 'rooms' => Room::count(),
                 'messages' => ChatMessage::count(),
                 'songs_played' => PlaylistItem::whereNotNull('played_at')->count(),
             ],
-            'overview' => $this->overview($actor),
-            'users' => User::query()
+            'overview' => fn () => $this->overview($actor),
+            'users' => fn () => User::query()
                 ->when($q, fn ($query) => $query->where(fn ($w) => $w->whereLike('name', "%{$q}%")->orWhereLike('username', "%{$q}%")->orWhereLike('email', "%{$q}%")))
                 ->when($role, fn ($query) => $query->whereJsonContains('roles', $role))
                 ->when($type === 'bots', fn ($query) => $query->where('is_bot', true))
-                ->when($type === 'online', fn ($query) => $query->where('last_seen_at', '>', now()->subMinutes(5)))
+                ->when($type === 'online', fn ($query) => $query->where('is_bot', false)->where('last_seen_at', '>', now()->subMinutes(5)))
+                ->when($type === 'members', fn ($query) => $query->where('is_bot', false))
                 ->when($sort === 'oldest', fn ($query) => $query->orderBy('id'))
                 ->when($sort === 'xp', fn ($query) => $query->orderByDesc('xp')->orderBy('id'))
                 ->when($sort === 'seen', fn ($query) => $query->orderByRaw('last_seen_at is null')->orderByDesc('last_seen_at'))
                 ->when($sort === 'newest', fn ($query) => $query->orderByDesc('id'))
-                ->simplePaginate(15)->withQueryString()
+                ->paginate(15)->withQueryString()
                 ->through(fn (User $u) => $u->only('id', 'name', 'username', 'email', 'avatar', 'roles', 'xp', 'level', 'primary_role', 'badges', 'is_bot') + [
                     'awards' => Awards::clean($u->awards),
                     'plan' => $u->activePlan(),
@@ -113,31 +119,45 @@ class AdminController extends Controller
 
             return $days->map(fn ($d) => ['day' => $d, 'n' => (int) ($rows[$d] ?? 0)])->all();
         };
-        $listening = array_sum(RoomPresence::counts());
+        $listening = RoomPresence::listenerCount();
 
         return [
             'kpis' => [
-                'online' => max($listening, User::where('last_seen_at', '>', now()->subMinutes(5))->count()),
+                'online' => User::where('is_bot', false)->where('last_seen_at', '>', now()->subMinutes(5))->count(),
                 'listening' => $listening,
-                'active_24h' => User::where('last_seen_at', '>', now()->subDay())->count(),
-                'new_7d' => User::where('created_at', '>=', now()->subDays(7))->count(),
+                'active_24h' => User::where('is_bot', false)->where('last_seen_at', '>', now()->subDay())->count(),
+                'new_7d' => User::where('is_bot', false)->where('created_at', '>=', now()->subDays(7))->count(),
                 'messages_24h' => ChatMessage::where('type', 'user')->where('created_at', '>=', now()->subDay())->count(),
                 'songs_24h' => PlaylistItem::where('played_at', '>=', now()->subDay())->count(),
                 'bots' => User::where('is_bot', true)->count(),
                 'violations_7d' => Violation::where('created_at', '>=', now()->subDays(7))->count(),
             ],
             'series' => [
-                'users' => $perDay('users'),
+                'users' => $perDay('users', 'created_at', fn ($q) => $q->where('is_bot', false)),
                 'messages' => $perDay('chat_messages', 'created_at', fn ($q) => $q->where('type', 'user')),
                 'songs' => $perDay('playlist_items', 'played_at'),
             ],
-            'recentUsers' => User::latest('id')->limit(6)->get()->map(fn (User $u) => $u->only('id', 'name', 'avatar', 'is_bot') + ['joined' => $u->created_at->toIso8601String()]),
+            'recentUsers' => User::where('is_bot', false)->latest('id')->limit(6)->get()->map(fn (User $u) => $u->only('id', 'name', 'avatar', 'is_bot') + ['joined' => $u->created_at->toIso8601String()]),
             'recentViolations' => Violation::with(['user:id,name', 'issuer:id,name'])->latest('id')->limit(5)->get()
                 ->map(fn ($v) => ['id' => $v->id, 'user' => $v->user?->name, 'by' => $v->issuer?->name, 'reason' => $v->reason, 'at' => $v->created_at->toIso8601String()]),
             'recentModeration' => RoomLog::with(['actor:id,name', 'target:id,name', 'room:id,name,slug'])->whereIn('action', ['kick', 'ban', 'unban', 'mute', 'unmute', 'clear_chat', 'delete_message'])->latest('id')->limit(8)->get()
                 ->map(fn ($l) => ['id' => $l->id, 'action' => $l->action, 'actor' => $l->actor?->name, 'target' => $l->target?->name, 'room' => $l->room?->only('name', 'slug'), 'at' => $l->created_at->toIso8601String()]),
-            'health' => $this->health($this->isOwner($actor)),
+            'health' => $this->overviewHealth($actor),
         ];
+    }
+
+    /** Normal visits refresh health; polling counters does not call external providers every five seconds. */
+    private function overviewHealth(User $actor): array
+    {
+        $key = 'admin_health:'.($this->isOwner($actor) ? 'owner' : 'staff');
+        if (request()->header('X-Inertia-Partial-Component') !== 'Admin') {
+            $health = $this->health($this->isOwner($actor));
+            Cache::put($key, $health, 60);
+
+            return $health;
+        }
+
+        return Cache::remember($key, 60, fn () => $this->health($this->isOwner($actor)));
     }
 
     /**

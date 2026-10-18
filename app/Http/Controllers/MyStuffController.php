@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\PlaylistItem;
+use App\Models\Room;
+use App\Models\User;
+use App\Support\Plans;
 use App\Support\UserAchievements;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -42,6 +45,18 @@ class MyStuffController extends Controller
                 'photo' => filled($me->avatar),
             ],
             'achievements' => $summary['achievements'],
+            'xpGuide' => [
+                'song' => Room::SONG_XP,
+                'woot' => Room::WOOT_XP,
+                'minimum_play_seconds' => Room::MIN_REWARD_PLAY_SECONDS,
+                'chat' => 2,
+                'chat_cooldown_seconds' => 10,
+                'grab' => 3,
+                'referral' => CommunityController::REFERRAL_XP,
+                'multiplier' => Plans::TIERS[$me->activePlan()]['xp'] ?? 1,
+                'plan' => Plans::TIERS[$me->activePlan()]['name'] ?? null,
+                'max_level' => User::MAX_LEVEL,
+            ],
         ]);
     }
 }

@@ -38,6 +38,10 @@ export default function Selfbots({ bots, rooms, playlists, selectedRoom, limit, 
     const picked = choices.find((p) => String(p.id) === form.data.playlist_id);
     const atLimit = !editing && ownedCount >= limit;
     const unavailable = form.processing || busy !== null;
+    const failures = {
+        onHttpException: () => { setError('The server could not finish this request. Your form has been kept. Refresh the bot list before trying again.'); return false; },
+        onNetworkError: () => { setError('Connection lost. Your form has been kept. Check your connection and refresh the bot list before trying again.'); return false; },
+    };
 
     const reset = () => {
         setEditing(null);
@@ -56,13 +60,14 @@ export default function Selfbots({ bots, rooms, playlists, selectedRoom, limit, 
         e.preventDefault();
         if (unavailable) return;
         setNotice(''); setError('');
-        const options = { preserveScroll: true, onSuccess: () => { setNotice(editing ? 'Bot updated.' : 'Your self DJ bot is ready.'); reset(); } };
+        const options = { ...failures, preserveScroll: true, onSuccess: () => { setNotice(editing ? 'Bot updated.' : 'Your self DJ bot is ready.'); reset(); } };
         if (editing) form.put(route('selfbots.update', editing.id), options);
         else form.post(route('selfbots.store'), options);
     };
     const toggle = (bot: Selfbot) => {
         setBusy(bot.id); setError(''); setNotice('');
         router.patch(route('selfbots.toggle', bot.id), { enabled: !bot.enabled }, {
+            ...failures,
             preserveScroll: true,
             onSuccess: () => { setNotice(`${bot.name} ${bot.enabled ? 'paused' : 'enabled'}.`); if (editing?.id === bot.id) form.setData('enabled', !bot.enabled); },
             onError: (errors) => setError(Object.values(errors)[0] ?? 'Could not change the bot. Try again.'),
@@ -73,6 +78,7 @@ export default function Selfbots({ bots, rooms, playlists, selectedRoom, limit, 
         if (!confirm(`Delete "${bot.name}" from ${bot.room.name}? The bot will stop playing. Your room and playlist will be kept.`)) return;
         setBusy(bot.id); setError(''); setNotice('');
         router.delete(route('selfbots.destroy', bot.id), {
+            ...failures,
             preserveScroll: true,
             onSuccess: () => { setNotice(`${bot.name} deleted.`); if (editing?.id === bot.id) reset(); },
             onError: (errors) => setError(Object.values(errors)[0] ?? 'Could not delete the bot. Try again.'),
@@ -81,7 +87,7 @@ export default function Selfbots({ bots, rooms, playlists, selectedRoom, limit, 
     };
 
     return <AppLayout title={<span className="flex items-center gap-3"><span className="rounded-xl border border-violet-400/20 bg-violet-500/10 p-2 text-violet-300"><Bot size={24} /></span>Self DJ Bots</span>} subtitle="Your rooms. Your playlists. Music that keeps going." actions={
-        <button className={smallButton} disabled={unavailable} onClick={() => { setBusy('refresh'); router.reload({ only: ['bots', 'rooms', 'playlists', 'ownedCount'], onFinish: () => setBusy(null) }); }}><RefreshCw size={14} className={busy === 'refresh' ? 'animate-spin' : ''} /> Refresh</button>
+        <button className={smallButton} disabled={unavailable} onClick={() => { setBusy('refresh'); router.reload({ ...failures, only: ['bots', 'rooms', 'playlists', 'ownedCount'], onSuccess: () => setError(''), onFinish: () => setBusy(null) }); }}><RefreshCw size={14} className={busy === 'refresh' ? 'animate-spin' : ''} /> Refresh</button>
     }>
         <Head title="Self DJ Bots" />
         <section className="relative overflow-hidden rounded-3xl border border-violet-400/20 bg-linear-to-br from-violet-500/12 via-neutral-900 to-neutral-900 p-5 sm:p-7">

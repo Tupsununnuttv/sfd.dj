@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Donation;
+use App\Models\SubscriptionGift;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -18,6 +19,11 @@ final class Stripe
     public static function on(): bool
     {
         return filled(config('services.stripe.secret'));
+    }
+
+    public static function giftsOn(): bool
+    {
+        return self::on() && filled(config('services.stripe.webhook_secret'));
     }
 
     /** @return array{status: 'ok'|'warn', message: string} */
@@ -95,6 +101,29 @@ final class Stripe
             'metadata' => ['kind' => 'donation', 'donation_id' => $donation->id],
             'success_url' => $back.(str_contains($back, '?') ? '&' : '?').'donated=1',
             'cancel_url' => $back,
+        ]);
+
+        return ['id' => $session['id'], 'url' => $session['url']];
+    }
+
+    /** A single prepaid month; neither member gets a recurring payment agreement. */
+    public static function gift(SubscriptionGift $gift, User $sender): array
+    {
+        $tier = Plans::TIERS[$gift->plan];
+        $session = self::post('checkout/sessions', [
+            'mode' => 'payment',
+            'line_items' => [[
+                'quantity' => 1,
+                'price_data' => [
+                    'currency' => 'eur', 'unit_amount' => $gift->amount,
+                    'product_data' => ['name' => "SFD-DJ.EU {$tier['name']} gift - 1 month", 'description' => 'For @'.$gift->recipient->username.'. The recipient chooses when to activate. No automatic renewal.'],
+                ],
+            ]],
+            'client_reference_id' => $sender->id,
+            'customer_email' => $sender->email,
+            'metadata' => ['kind' => 'subscription_gift', 'gift_id' => $gift->id],
+            'success_url' => route('settings.plus', ['gift_sent' => 1]),
+            'cancel_url' => route('settings.plus', ['recipient' => $gift->recipient_id]),
         ]);
 
         return ['id' => $session['id'], 'url' => $session['url']];

@@ -39,6 +39,7 @@ class StaffApplicationTest extends TestCase
 
         Http::assertSent(fn (HttpRequest $request) => $request->url() === 'https://discord.com/api/v10/channels/staff-channel-id/messages'
             && $request->hasHeader('Authorization', 'Bot bot-token')
+            && $request['embeds'][0]['fields'][0]['value'] === ($user->username ?: $user->name)."\nhttps://sfd-dj.eu/"
             && $request['embeds'][0]['fields'][1]['value'] === 'DJ Kate (`discord-user-id)'
             && str_contains($request['embeds'][0]['description'], '[#staff-requirements](https://discord.com/channels/827767815452753950/827776116851736628)')
             && $request['components'][0]['components'][0]['label'] === 'Approve');
@@ -66,7 +67,7 @@ class StaffApplicationTest extends TestCase
 
         // the staff see who it is from the website account, and the buttons carry "none" instead of a Discord ID
         Http::assertSent(fn (HttpRequest $request) => $request->url() === 'https://discord.com/api/v10/channels/staff-channel-id/messages'
-            && str_contains($request['embeds'][0]['fields'][0]['value'], route('users.show', $user))
+            && $request['embeds'][0]['fields'][0]['value'] === ($user->username ?: $user->name)."\nhttps://sfd-dj.eu/"
             && $request['embeds'][0]['fields'][1]['value'] === 'Not connected'
             && str_ends_with($request['components'][0]['components'][0]['custom_id'], ':none')
             && str_ends_with($request['components'][0]['components'][1]['custom_id'], ':none'));

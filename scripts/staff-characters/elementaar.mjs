@@ -1,4 +1,4 @@
-// Elementaarne ("the elemental"): a red pixel-art figure in a cap with the Cancer sign on it, aviator goggles, a gas mask with three filters and a zip hoodie, lit by a red aura.
+// Elementary ("the elemental"): a red pixel-art figure in a cap with the Cancer sign on it, aviator goggles, a gas mask with three filters and a zip hoodie, lit by a red aura.
 // It is drawn on a 54 x 80 grid of 3-unit pixels by the painting code below (shapes, the lit edge, speckle, a black outline), so the picture stays crisp at any size and
 // the animation moves whole pixels in steps. Standing, it breathes, looks about and the lenses glint. Dancing, it hops, throws its arms about and kicks. At the decks
 // (seen from behind) it pumps one fist and scratches with the other arm. Everybody can wear it from level 12.
@@ -369,7 +369,7 @@ export function elementaar(state) {
     }
 
     return picture({
-        label: 'Elementaarne',
+        label: 'Elementary',
         state,
         defs: DEFS,
         body: `<g class="aura"><ellipse cx="80" cy="54" rx="74" ry="66" fill="url(#aura)"/><ellipse cx="80" cy="152" rx="90" ry="82" fill="url(#aura)"/><ellipse cx="80" cy="198" rx="64" ry="46" fill="url(#aura)"/></g>${shadow()}<ellipse class="floor" cx="80" cy="236" rx="60" ry="10" fill="url(#floor)"/>${GRID(figure)}`,

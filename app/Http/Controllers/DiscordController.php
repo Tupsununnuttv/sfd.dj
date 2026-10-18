@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\AccountSecurity;
 use App\Support\DiscordRoleSync;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
@@ -88,7 +89,7 @@ class DiscordController extends Controller
         $request->session()->regenerate();
 
         if ($user->two_factor_enabled) {
-            \App\Support\AccountSecurity::challenge($request, $user, false);
+            AccountSecurity::challenge($request, $user, false);
 
             return to_route('two-factor.challenge');
         }

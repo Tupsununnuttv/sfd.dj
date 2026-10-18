@@ -16,19 +16,22 @@ use App\Http\Controllers\MediaController;
 use App\Http\Controllers\MyStuffController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicStatsController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\RoomEmojiController;
 use App\Http\Controllers\RoomModerationController;
 use App\Http\Controllers\RoomRoleController;
-use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SelfDjBotController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\SpotifyController;
 use App\Http\Controllers\StaffApplicationController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\SubscriptionGiftController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\UserProfileController;
+use App\Http\Controllers\WhisperCallController;
 use App\Http\Controllers\WhisperController;
 use App\Http\Controllers\WhisperGroupController;
 use App\Http\Controllers\YouTubeController;
@@ -59,9 +62,10 @@ Route::get('/version', fn () => response()->json(['version' => Inertia::getVersi
 
 // is this username free? (the register and profile forms ask while you type)
 Route::get('/api/username-available', UsernameController::class)->middleware('throttle:40,1')->name('username.available');
+Route::get('/api/site-stats', PublicStatsController::class)->middleware('throttle:120,1,site-stats')->name('site.stats');
 
 Route::get('/two-factor-challenge', [TwoFactorController::class, 'challenge'])->name('two-factor.challenge');
-Route::post('/two-factor-challenge', [TwoFactorController::class, 'verify'])->middleware('throttle:6,1');
+Route::post('/two-factor-challenge', [TwoFactorController::class, 'verify'])->middleware('throttle:6,1,two-factor-verify');
 
 // Logged in but maybe not verified yet: the profile stays reachable so a mistyped email can be fixed.
 Route::middleware('auth')->group(function () {
@@ -141,6 +145,10 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::delete('/auth/youtube', [YouTubeController::class, 'disconnect'])->name('youtube.disconnect');
 
     Route::get('/whispers', [WhisperController::class, 'index'])->name('whispers');
+    Route::get('/api/whisper-calls/config', [WhisperCallController::class, 'configuration'])->middleware('throttle:30,1,call-config')->name('calls.config');
+    Route::get('/api/whisper-calls', [WhisperCallController::class, 'index'])->middleware('throttle:90,1,call-poll')->name('calls.index');
+    Route::post('/api/whisper-calls', [WhisperCallController::class, 'store'])->middleware('throttle:5,1,call-start')->name('calls.store');
+    Route::patch('/api/whisper-calls/{call}', [WhisperCallController::class, 'update'])->middleware('throttle:90,1,call-signal')->name('calls.update');
     Route::get('/api/whispers', [WhisperController::class, 'conversations'])->name('api.whispers');
     Route::get('/api/whispers/{user}', [WhisperController::class, 'thread'])->name('api.whispers.thread');
     Route::post('/api/whispers/{user}/read', [WhisperController::class, 'read'])->name('api.whispers.read');
@@ -165,6 +173,7 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
     Route::post('/events/{event}/attend', [EventController::class, 'attend'])->name('events.attend');
     Route::get('/referral', [CommunityController::class, 'referral'])->name('referral');
+    Route::post('/referral/claim', [CommunityController::class, 'claimReferral'])->middleware('throttle:10,1,referral-claim')->name('referral.claim');
     Route::get('/shop', [AvatarController::class, 'show'])->name('shop');
     Route::post('/shop/equip', [AvatarController::class, 'equip'])->name('shop.equip');
     Route::post('/shop/cosmetic', [AvatarController::class, 'cosmetic'])->name('shop.cosmetic');
@@ -216,6 +225,7 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::post('/rooms/{room}/background', [RoomController::class, 'uploadBackground'])->middleware('throttle:10,1')->name('rooms.background.upload');
     Route::delete('/rooms/{room}/background', [RoomController::class, 'removeBackground'])->name('rooms.background.remove');
     Route::delete('/rooms/{room}/messages/{message}', [RoomController::class, 'deleteMessage'])->name('rooms.messages.delete');
+    Route::post('/rooms/{room}/messages/{message}/reaction', [RoomController::class, 'react'])->middleware('throttle:30,1,chat-reactions')->name('rooms.messages.react');
     Route::post('/rooms/{room}/emojis', [RoomEmojiController::class, 'store'])->name('rooms.emojis.store');
     Route::delete('/rooms/{room}/emojis/{emoji}', [RoomEmojiController::class, 'destroy'])->name('rooms.emojis.destroy');
     Route::post('/rooms/{room}/queue-playlist', [RoomController::class, 'queuePlaylist'])->name('rooms.queue.playlist');
@@ -253,6 +263,9 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::get('/settings/connections', [SettingsController::class, 'connections'])->name('settings.connections');
     Route::get('/settings/appearance', fn () => Inertia::render('Settings/Appearance'))->name('settings.appearance');
     Route::get('/settings/plus', [SubscriptionController::class, 'show'])->name('settings.plus');
+    Route::get('/settings/plus/gifts/recipients', [SubscriptionGiftController::class, 'recipients'])->middleware('throttle:30,1,gifts-recipients')->name('settings.plus.gifts.recipients');
+    Route::post('/settings/plus/gifts', [SubscriptionGiftController::class, 'checkout'])->middleware('throttle:5,1,gifts-checkout')->name('settings.plus.gifts.checkout');
+    Route::post('/settings/plus/gifts/{gift}/activate', [SubscriptionGiftController::class, 'activate'])->whereNumber('gift')->middleware('throttle:10,1,gifts-activate')->name('settings.plus.gifts.activate');
     Route::post('/settings/plus/checkout', [SubscriptionController::class, 'checkout'])->middleware('throttle:10,1')->name('settings.plus.checkout');
     Route::post('/settings/plus/portal', [SubscriptionController::class, 'portal'])->middleware('throttle:10,1')->name('settings.plus.portal');
     Route::get('/settings/audio', fn () => Inertia::render('Settings/Audio'))->name('settings.audio');
@@ -269,9 +282,9 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::get('/settings/violations', [SettingsController::class, 'violations'])->name('settings.violations');
     Route::patch('/settings/preferences', [SettingsController::class, 'updatePreferences'])->name('settings.preferences');
 
-    Route::post('/two-factor', [TwoFactorController::class, 'enable'])->middleware('throttle:6,1')->name('two-factor.enable');
-    Route::post('/two-factor/confirm', [TwoFactorController::class, 'confirm'])->middleware('throttle:6,1')->name('two-factor.confirm');
-    Route::delete('/two-factor', [TwoFactorController::class, 'destroy'])->middleware('throttle:6,1')->name('two-factor.destroy');
+    Route::post('/two-factor', [TwoFactorController::class, 'enable'])->middleware('throttle:6,1,two-factor-enable')->name('two-factor.enable');
+    Route::post('/two-factor/confirm', [TwoFactorController::class, 'confirm'])->middleware('throttle:6,1,two-factor-confirm')->name('two-factor.confirm');
+    Route::delete('/two-factor', [TwoFactorController::class, 'destroy'])->middleware('throttle:6,1,two-factor-destroy')->name('two-factor.destroy');
 });
 
 require __DIR__.'/auth.php';

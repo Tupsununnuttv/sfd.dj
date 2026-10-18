@@ -10,7 +10,7 @@ import { AwardBadge, Cosmetics } from '@/lib/cosmetics';
 import { STATUS, statusOf } from '@/lib/status';
 import { PageProps, RoleInfo } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Headphones, Radio } from 'lucide-react';
+import { Gift, Headphones, Radio } from 'lucide-react';
 import { useEffect } from 'react';
 
 type Props = { profile: Profile & { avatar: string | null; cosmetics: Cosmetics | null; primary_role: RoleInfo; badges: RoleInfo[]; level: number; activity: { online: boolean; listening: { name: string; slug: string } | null } | null } };
@@ -63,6 +63,7 @@ export default function UserProfile({ profile: p }: Props) {
                         <Link href={route('profile.edit')} className="rounded-md bg-neutral-800 px-4 py-2 hover:bg-neutral-700">Edit profile</Link>
                     ) : (
                         <>
+                            <Link href={`${route('settings.plus', { recipient: p.id })}#gifts`} className="flex items-center gap-2 rounded-md bg-fuchsia-500/15 px-4 py-2 text-fuchsia-200 hover:bg-fuchsia-500/25"><Gift size={16} /> Gift subscription</Link>
                             <Link href={`${route('whispers')}?with=${p.id}`} className="rounded-md bg-neutral-800 px-4 py-2 hover:bg-neutral-700">💬 Whisper</Link>
                             {p.friendship === 'none' || p.friendship === 'received' ? (
                                 <button onClick={() => router.post(route('friends.store'), { user_id: p.id }, { preserveScroll: true })} className="rounded-md bg-violet-600 px-4 py-2 font-semibold hover:bg-violet-500">

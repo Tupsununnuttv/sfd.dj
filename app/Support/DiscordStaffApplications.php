@@ -36,7 +36,8 @@ class DiscordStaffApplications
                 'description' => $description,
                 'color' => 5793266,
                 'fields' => [
-                    ['name' => 'SFD-DJ.EU account', 'value' => ($user->username ?: $user->name)."\n".route('users.show', $user), 'inline' => true],
+                    // Discord messages always link to the public site, including submissions from local development.
+                    ['name' => 'SFD-DJ.EU account', 'value' => ($user->username ?: $user->name)."\nhttps://sfd-dj.eu/", 'inline' => true],
                     ['name' => 'Discord account', 'value' => $discordAccount, 'inline' => true],
                     ['name' => $questions['motivation'], 'value' => $answers['motivation']],
                     ['name' => $questions['experience'], 'value' => $answers['experience']],

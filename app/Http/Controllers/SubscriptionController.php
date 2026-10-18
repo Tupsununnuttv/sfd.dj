@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Donation;
+use App\Models\SubscriptionGift;
+use App\Models\User;
 use App\Support\Plans;
 use App\Support\Stripe;
 use Illuminate\Http\Request;
@@ -18,20 +20,29 @@ class SubscriptionController extends Controller
     public function show(Request $request): InertiaResponse
     {
         $me = $request->user();
+        $active = $me->activePlan();
+        $gifted = $active && $active !== $me->directPlan();
+        $giftUntil = $gifted ? $me->activeSubscriptionGifts->where('plan', $active)->sortByDesc('expires_at')->first()?->expires_at : null;
 
         return Inertia::render('Settings/Plus', [
             'plans' => Plans::catalog(),
             'free' => Plans::FREE,
-            'mine' => $me->activePlan() ? [
-                'key' => $me->activePlan(),
-                'name' => Plans::TIERS[$me->activePlan()]['name'],
-                'until' => $me->plan_until?->toIso8601String(),
-                'interval' => $me->plan_interval,
-                'renews' => (bool) $me->plan_renews,
+            'mine' => $active ? [
+                'key' => $active,
+                'name' => Plans::TIERS[$active]['name'],
+                'until' => ($gifted ? $giftUntil : $me->plan_until)?->toIso8601String(),
+                'interval' => $gifted ? null : $me->plan_interval,
+                'renews' => ! $gifted && (bool) $me->plan_renews,
+                'gifted' => $gifted,
             ] : null,
             'manageable' => filled($me->stripe_customer_id) && Stripe::on(), // paid through Stripe: Stripe's page changes or cancels it
             'payments' => Stripe::on(),
             'paid' => $request->boolean('paid'), // back from Stripe Checkout
+            'giftPayments' => Stripe::giftsOn(),
+            'giftSent' => $request->boolean('gift_sent'),
+            'giftRecipient' => User::where('id', $request->integer('recipient'))->where('id', '!=', $me->id)->where('is_bot', false)->first()?->only('id', 'name', 'username'),
+            'receivedGifts' => SubscriptionGift::where('recipient_id', $me->id)->whereNotNull('paid_at')->with(['sender', 'recipient'])->latest()->limit(50)->get()->map->summary(),
+            'sentGifts' => SubscriptionGift::where('sender_id', $me->id)->with(['sender', 'recipient'])->latest()->limit(30)->get()->map->summary(),
         ]);
     }
 
@@ -67,7 +78,13 @@ class SubscriptionController extends Controller
         match ($event['type'] ?? '') {
             'customer.subscription.created', 'customer.subscription.updated' => Stripe::apply($object),
             'customer.subscription.deleted' => Stripe::apply($object, deleted: true),
-            'checkout.session.completed', 'checkout.session.async_payment_succeeded' => ($object['metadata']['kind'] ?? '') === 'donation' ? Donation::settle($object) : null,
+            'checkout.session.completed', 'checkout.session.async_payment_succeeded' => match ($object['metadata']['kind'] ?? '') {
+                'donation' => Donation::settle($object),
+                'subscription_gift' => SubscriptionGift::settle($object),
+                default => null,
+            },
+            'charge.refunded' => SubscriptionGift::revoke($object),
+            'charge.dispute.created' => SubscriptionGift::revoke($object, dispute: true),
             default => null,
         };
 

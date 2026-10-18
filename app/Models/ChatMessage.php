@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Events\MessageSent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class ChatMessage extends Model
@@ -13,6 +14,19 @@ class ChatMessage extends Model
     public const WITH_USER = 'user:id,name,avatar,roles,awards,xp,cosmetics,is_bot,plan,plan_until';
 
     protected $fillable = ['room_id', 'user_id', 'body', 'type', 'kind', 'image', 'sticker', 'reply_to_id'];
+
+    public const REACTIONS = ['❤️', '😂', '🔥', '👏', '👍', '😮', '😢', '🎵'];
+
+    public function reactionSummary(): array
+    {
+        return ($this->relationLoaded('reactions') ? $this->reactions : $this->reactions()->get())
+            ->groupBy('emoji')->map(fn ($rows, $emoji) => ['emoji' => $emoji, 'users' => $rows->pluck('user_id')->map(fn ($id) => (int) $id)->values()->all()])->values()->all();
+    }
+
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(ChatReaction::class)->orderBy('id');
+    }
 
     public function user(): BelongsTo
     {
@@ -39,6 +53,7 @@ class ChatMessage extends Model
 
         return [
             'id' => $this->id,
+            'reactions' => $this->type === 'user' ? $this->reactionSummary() : [],
             'created_at' => $this->created_at->toIso8601String(),
             'type' => $this->type,
             'kind' => $this->kind,

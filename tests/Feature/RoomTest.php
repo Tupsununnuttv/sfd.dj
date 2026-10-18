@@ -16,6 +16,64 @@ class RoomTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_a_room_can_start_with_each_supported_livestream_provider(): void
+    {
+        $owner = User::factory()->create();
+        foreach (['youtube' => 'https://www.youtube.com/watch?v=abcdefghijk', 'twitch' => 'https://www.twitch.tv/musicroom', 'kick' => 'https://kick.com/musicroom'] as $kind => $url) {
+            $this->actingAs($owner)->post('/rooms', [
+                'name' => 'Live '.$kind, 'start_live' => true,
+                'stream_url' => $url, 'stream_title' => 'Opening session',
+            ])->assertSessionHasNoErrors()->assertRedirect('/rooms/live-'.$kind);
+            $room = $owner->rooms()->where('slug', 'live-'.$kind)->firstOrFail();
+            $this->assertSame($kind, $room->liveNow()['kind']);
+            $this->assertSame('Opening session', $room->liveNow()['title']);
+            $this->assertSame($owner->id, $room->liveNow()['user_id']);
+        }
+    }
+
+    public function test_invalid_live_setup_creates_nothing_and_queue_mode_ignores_old_stream_inputs(): void
+    {
+        $owner = User::factory()->create();
+        foreach (['', 'https://example.com/stream'] as $url) {
+            $this->actingAs($owner)->post('/rooms', ['name' => 'Bad stream', 'start_live' => true, 'stream_url' => $url])
+                ->assertSessionHasErrors('stream_url');
+            $this->assertSame(0, $owner->rooms()->count());
+        }
+        $this->actingAs($owner)->post('/rooms', ['name' => 'Music room', 'start_live' => false, 'stream_url' => 'not a stream'])
+            ->assertSessionHasNoErrors()->assertRedirect('/rooms/music-room');
+        $this->assertNull($owner->rooms()->firstOrFail()->live);
+    }
+
+    public function test_room_creation_saves_initial_settings_without_accepting_privileged_fields(): void
+    {
+        $owner = User::factory()->create();
+        $this->actingAs($owner)->post('/rooms', [
+            'name' => 'Hosted music', 'background' => 'forest',
+            'welcome_message' => 'Welcome to our room!',
+            'waitlist_locked' => true, 'waitlist_cycle' => true,
+            'is_featured' => true, 'user_id' => 99999,
+        ])->assertRedirect('/rooms/hosted-music');
+
+        $room = $owner->rooms()->where('slug', 'hosted-music')->firstOrFail();
+        $this->assertSame('forest', $room->background);
+        $this->assertSame('Welcome to our room!', $room->welcome_message);
+        $this->assertTrue($room->waitlist_locked);
+        $this->assertTrue($room->waitlist_cycle);
+        $this->assertFalse($room->is_featured);
+        $this->assertCount(4, $room->roles);
+    }
+
+    public function test_invalid_initial_settings_cannot_create_a_room(): void
+    {
+        $owner = User::factory()->create();
+        $this->actingAs($owner)->post('/rooms', [
+            'name' => 'Invalid setup', 'background' => 'custom',
+            'welcome_message' => str_repeat('x', 301),
+            'waitlist_locked' => 'invalid', 'waitlist_cycle' => 'invalid',
+        ])->assertSessionHasErrors(['background', 'welcome_message', 'waitlist_locked', 'waitlist_cycle']);
+        $this->assertSame(0, $owner->rooms()->count());
+    }
+
     public function test_created_rooms_use_clean_unique_slugs_and_old_urls_redirect(): void
     {
         $owner = User::factory()->create();

@@ -7,7 +7,7 @@ import AppLayout from '@/Layouts/AppLayout';
 import { ago } from '@/lib/time';
 import { PageProps } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { CheckCircle2, Circle, Gift, Music, ThumbsUp, Users, Zap } from 'lucide-react';
+import { BookOpen, CheckCircle2, Circle, Gift, MessageCircle, Music, ShieldCheck, ThumbsUp, Users, Zap } from 'lucide-react';
 import { useState } from 'react';
 
 interface Achievement {
@@ -28,11 +28,12 @@ interface Props {
     worn: Record<string, string | null>;
     account: { joined: string; username: string; email_verified: boolean; two_factor: boolean; discord: string | null; photo: boolean };
     achievements: Achievement[];
+    xpGuide: { song: number; woot: number; minimum_play_seconds: number; chat: number; chat_cooldown_seconds: number; grab: number; referral: number; multiplier: number; plan: string | null; max_level: number };
 }
 
-type Tab = 'overview' | 'achievements' | 'rooms' | 'playlists' | 'songs';
+type Tab = 'overview' | 'xp' | 'achievements' | 'rooms' | 'playlists' | 'songs';
 
-export default function MyStuff({ stats, rooms, playlists, recent, worn, account, achievements }: Props) {
+export default function MyStuff({ stats, rooms, playlists, recent, worn, account, achievements, xpGuide }: Props) {
     const { user } = usePage<PageProps>().props.auth;
     const [tab, setTab] = useState<Tab>('overview');
 
@@ -69,6 +70,7 @@ export default function MyStuff({ stats, rooms, playlists, recent, worn, account
                         <div className="mt-4 max-w-md">
                             <div className="mb-1.5 flex items-baseline justify-between text-xs text-neutral-300"><span className="font-semibold">Level {lv}</span><span>{stats.xp.toLocaleString()} XP · {toNextText(stats.xp, lv)}</span></div>
                             <ProgressBar value={levelPercent(stats.xp, lv)} />
+                            <button onClick={() => setTab('xp')} className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 hover:text-violet-200"><BookOpen size={13} /> How to earn XP</button>
                         </div>
                     </div>
                     <div className="min-w-48 rounded-2xl bg-black/25 p-4 text-sm">
@@ -93,12 +95,59 @@ export default function MyStuff({ stats, rooms, playlists, recent, worn, account
                 onChange={setTab}
                 tabs={[
                     { key: 'overview', label: 'Overview' },
+                    { key: 'xp', label: 'How to earn XP', icon: Zap },
                     { key: 'achievements', label: 'Achievements', count: done.length },
                     { key: 'rooms', label: 'Rooms', count: rooms.length },
                     { key: 'playlists', label: 'Playlists', count: playlists.length },
                     { key: 'songs', label: 'Recent songs', count: recent.length },
                 ]}
             />
+
+            {tab === 'xp' && (
+                <div className="space-y-6">
+                    <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-amber-300/15 bg-linear-to-br from-amber-400/10 to-violet-500/10 p-5 sm:p-6">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-widest text-amber-300">Your next level starts here</p>
+                            <h2 className="mt-2 text-xl font-bold">Play music. Share discoveries. Join the conversation.</h2>
+                            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-400">These are the base XP rewards. Your active subscription multiplies each award, then rounds it to a whole XP.</p>
+                        </div>
+                        <div className="rounded-xl border border-white/10 bg-black/20 px-5 py-3">
+                            <p className="text-2xl font-black text-amber-200">{xpGuide.multiplier.toFixed(2)}× XP</p>
+                            <p className="mt-1 text-xs text-neutral-400">{xpGuide.plan ? `${xpGuide.plan} bonus active` : 'Standard rewards'}</p>
+                        </div>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        {[
+                            { icon: Music, title: 'Finish a DJ set track', reward: `+${xpGuide.song} XP`, text: `Your queued song must finish naturally, have a known length of at least ${xpGuide.minimum_play_seconds} seconds, and play for at least ${xpGuide.minimum_play_seconds} seconds. The server checks its playback time.` },
+                            { icon: ThumbsUp, title: 'Receive woots', reward: `+${xpGuide.woot} XP / woot`, text: 'Each woot still on your song adds to its completion reward. The same completion rules apply; skipped songs earn no woot bonus.' },
+                            { icon: Gift, title: 'Someone grabs your song', reward: `+${xpGuide.grab} XP`, text: 'Earn XP when another listener saves your playing song to their playlist. Each listener counts once for that queued song; grabbing it again gives no extra XP.' },
+                            { icon: MessageCircle, title: 'Chat in a room', reward: `+${xpGuide.chat} XP`, text: `Leave at least ${xpGuide.chat_cooldown_seconds} seconds between your room messages to earn another award there. Messages sent sooner earn no XP. Whispers do not award XP.` },
+                            { icon: Users, title: 'Invite a new member', reward: `+${xpGuide.referral} XP`, text: 'Share your referral link. You receive the reward when a new member signs up through it, once for that new account.' },
+                        ].map(({ icon: Icon, title, reward, text }) => (
+                            <Card key={title} className="p-5">
+                                <div className="mb-3 flex items-center justify-between gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-400/10 text-violet-300"><Icon size={20} /></span><span className="rounded-full bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{reward}</span></div>
+                                <h3 className="font-bold">{title}</h3>
+                                <p className="mt-2 text-sm leading-relaxed text-neutral-400">{text}</p>
+                            </Card>
+                        ))}
+                        <Card className="border-sky-400/15 p-5">
+                            <ShieldCheck size={24} className="mb-4 text-sky-300" />
+                            <h3 className="font-bold">Progress that counts</h3>
+                            <p className="mt-2 text-sm leading-relaxed text-neutral-400">Skipping, removing songs and replaying an end request award no playback XP or coins. Short clips and tracks with an unknown length earn no completion rewards. Simply staying online or voting on somebody else&apos;s song gives no XP.</p>
+                        </Card>
+                    </div>
+
+                    <Card className="p-5 sm:p-6">
+                        <SectionTitle title="Levels & rewards" />
+                        <div className="grid gap-5 text-sm text-neutral-400 sm:grid-cols-3">
+                            <p><span className="mb-1 block font-semibold text-white">Up to level {xpGuide.max_level}</span>Level thresholds follow 20 × (level − 1)² total XP. Level 2 starts at 20 XP, level 5 at 320 XP and level 10 at 1,620 XP.</p>
+                            <p><span className="mb-1 block font-semibold text-white">Coins on each level</span>Each new level gives 10 × that level in SFD Coins. Reaching level 5 earns 50 coins; reaching level 10 earns 100.</p>
+                            <p><span className="mb-1 block font-semibold text-white">Achievements track milestones</span>Achievements show what you have accomplished. Unlocking one does not add a separate XP award.</p>
+                        </div>
+                    </Card>
+                </div>
+            )}
 
             {tab === 'overview' && (
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

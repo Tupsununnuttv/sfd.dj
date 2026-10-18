@@ -92,6 +92,7 @@ class PlatformTest extends TestCase
         $first = $room->refresh()->current_item_id;
 
         $this->actingAs($stranger)->post("/rooms/{$room->slug}/skip", ['item_id' => $first])->assertForbidden();
+        $this->travel(30)->seconds(); // unknown-length songs cannot be ended immediately by a listener
         $this->actingAs($stranger)->post("/rooms/{$room->slug}/skip", ['item_id' => $first, 'ended' => true])->assertNoContent();
         $this->assertNotSame($first, $room->refresh()->current_item_id);
 

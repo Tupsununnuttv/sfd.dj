@@ -1,3 +1,5 @@
+import SiteCounters from '@/Components/SiteCounters';
+import { SiteStats, useLiveStats } from '@/lib/useLiveStats';
 import Avatar from '@/Components/Avatar';
 import Crowd from '@/Components/Crowd';
 import RoleBadge from '@/Components/RoleBadge';
@@ -6,7 +8,6 @@ import SiteLayout from '@/Layouts/SiteLayout';
 import { releases } from '@/lib/patchNotes';
 import { features, Partner, partners } from '@/lib/siteContent';
 import { countdown, until, useNow } from '@/lib/time';
-import { useCountUp } from '@/lib/useCountUp';
 import { PageProps, RoleInfo } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowRight, Calendar, Check, ChevronDown, Code2, Heart, PlugZap, Plus, Shirt, Sparkles, Trophy } from 'lucide-react';
@@ -30,7 +31,7 @@ interface Props {
     event: { id: number; title: string; description: string | null; starts_at: string; going: number; room: { name: string; slug: string } | null } | null;
     topDjs: { id: number; name: string; avatar: string | null; primary_role: RoleInfo; plays: number }[];
     genres: Record<string, number>;
-    stats: { members: number; rooms: number; songs_played: number; listening: number };
+    stats: SiteStats & { songs_played: number };
 }
 
 const btn = 'rounded-lg px-6 py-3 text-sm font-semibold transition';
@@ -103,17 +104,6 @@ function Preview({ playing }: { playing: HomeRoom | undefined }) {
     );
 }
 
-function Counter({ value, label }: { value: number; label: string }) {
-    const [ref, shown] = useCountUp(value);
-
-    return (
-        <div className="bg-neutral-950 p-5 text-center sm:p-6">
-            <p ref={ref as never} className="text-3xl font-black tabular-nums">{shown.toLocaleString()}</p>
-            <p className="mt-1 text-xs text-neutral-500">{label}</p>
-        </div>
-    );
-}
-
 /** The Avatar shop on the home page: some of the characters dancing, and the way to dress up. */
 function Showcase({ guest }: { guest: boolean }) {
     return (
@@ -151,7 +141,9 @@ function EventCard({ event }: { event: NonNullable<Props['event']> }) {
     );
 }
 
-export default function Welcome({ rooms, event, topDjs, genres, stats }: Props) {
+export default function Welcome({ rooms, event, topDjs, genres, stats: initialStats }: Props) {
+    const { stats: freshStats, stale } = useLiveStats(initialStats);
+    const stats = freshStats ?? initialStats;
     const { auth, community } = usePage<PageProps>().props;
     const guest = auth.guest;
     const goal = community.donation;
@@ -166,7 +158,7 @@ export default function Welcome({ rooms, event, topDjs, genres, stats }: Props) 
             <section className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-6 pb-16 pt-16 lg:grid-cols-[1.05fr_1fr] lg:pt-24">
                 <div>
                     <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-neutral-300">
-                        <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" /> {stats.listening} {stats.listening === 1 ? 'person is' : 'people are'} listening right now
+                        <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" /> {stats.listening === null ? 'Live listener count temporarily unavailable' : `${stats.listening} ${stats.listening === 1 ? 'person is' : 'people are'} listening right now`}
                     </p>
                     <h1 className="mt-6 text-5xl font-black leading-[1.02] tracking-tight sm:text-7xl">
                         Your music room,
@@ -188,10 +180,7 @@ export default function Welcome({ rooms, event, topDjs, genres, stats }: Props) 
             {/* numbers */}
             <section className="mx-auto max-w-4xl px-6">
                 <div className="grid grid-cols-2 gap-px overflow-hidden rounded-3xl border border-white/10 bg-white/10 sm:grid-cols-4">
-                    <Counter value={stats.members} label="Members" />
-                    <Counter value={stats.rooms} label="Public rooms" />
-                    <Counter value={stats.songs_played} label="Songs played" />
-                    <Counter value={stats.listening} label="Listening now" />
+                    <div className="col-span-full"><SiteCounters stats={stats} stale={stale} /></div>
                 </div>
             </section>
 

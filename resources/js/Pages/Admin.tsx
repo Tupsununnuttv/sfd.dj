@@ -10,9 +10,9 @@ import SupportInbox from '@/Components/SupportInbox';
 import { Tabs } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { PageProps } from '@/types';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Ban, Disc3, KeyRound, LayoutDashboard, LifeBuoy, Mail, Megaphone, UserRound, Users, Wrench } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type Tab = 'Overview' | 'Users' | 'Accounts' | 'Rooms' | 'Support' | 'Permissions' | 'Broadcast' | 'Email' | 'IP bans' | 'Maintenance';
 
@@ -36,7 +36,7 @@ export default function Admin(props: AdminProps) {
 
     const tabs = ([
         { key: 'Overview', label: 'Overview', icon: LayoutDashboard },
-        { key: 'Users', label: 'Users', icon: Users, count: props.stats.users },
+        { key: 'Users', label: 'Users', icon: Users, count: props.stats.accounts },
         { key: 'Accounts', label: 'Accounts', icon: UserRound },
         { key: 'Rooms', label: 'Rooms', icon: Disc3, count: props.stats.rooms },
         { key: 'Support', label: 'Support', icon: LifeBuoy, alert: props.openTickets || undefined },
@@ -51,10 +51,34 @@ export default function Admin(props: AdminProps) {
     const fromHash = (): Tab => { const h = decodeURIComponent(window.location.hash.slice(1)) as Tab; return tabs.some((t) => t.key === h) ? h : 'Overview'; };
     const [tab, setTabState] = useState<Tab>(fromHash);
     const setTab = (t: Tab) => { setTabState(t); history.replaceState(null, '', `#${encodeURIComponent(t)}`); };
+    const [refreshing, setRefreshing] = useState(false);
+    const [refreshError, setRefreshError] = useState(false);
+    useEffect(() => {
+        let pending = false;
+        const refresh = () => {
+            if (document.hidden || pending) return;
+            pending = true; setRefreshing(true);
+            const editing = document.activeElement?.matches('input, select, textarea, [contenteditable="true"]');
+            router.reload({ only: ['stats', 'overview', 'openTickets', ...((tab === 'Users' || tab === 'Accounts') && !editing ? ['users'] : [])],
+                onSuccess: () => setRefreshError(false),
+                onHttpException: () => { setRefreshError(true); return false; },
+                onNetworkError: () => { setRefreshError(true); return false; },
+                onFinish: () => { pending = false; setRefreshing(false); },
+            });
+        };
+        const timer = window.setInterval(refresh, 5000);
+        document.addEventListener('visibilitychange', refresh);
+        return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', refresh); };
+    }, [tab]);
+
 
     return (
         <AppLayout title="Admin panel" subtitle={`Signed in as ${user.name}. You see only the parts your role may use.`}>
             <Head title="Admin panel" />
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/3 px-5 py-4">
+                <div className="flex flex-wrap gap-5 text-sm"><span><b className="tabular-nums">{props.stats.users.toLocaleString()}</b> members</span><span><b className="tabular-nums">{props.stats.bots.toLocaleString()}</b> bots</span><span><b className="tabular-nums text-emerald-300">{props.stats.online.toLocaleString()}</b> active in 5 min</span><span className="text-neutral-500">{props.stats.accounts.toLocaleString()} total accounts</span></div>
+                <span className={`text-xs ${refreshError ? 'text-amber-300' : 'text-neutral-500'}`}>{refreshError ? 'Update interrupted ? retrying' : refreshing ? 'Updating?' : `Updated ${new Date(props.stats.updated_at).toLocaleTimeString()} ? every 5s`}</span>
+            </div>
 
             <Tabs<Tab> tabs={tabs.map((t) => ({ ...t }))} active={tab} onChange={setTab} />
 

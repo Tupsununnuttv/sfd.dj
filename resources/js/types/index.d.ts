@@ -61,10 +61,11 @@ export type PageProps<
     // somebody who has not confirmed their email yet: must they, can the site send the message, and what became of the last one; null for everybody else
     verification: { required: boolean; mail: boolean; status: string | null } | null;
     pendingFriends: number;
+    pendingSubscriptionGifts: number;
     unreadWhispers: number;
     liveCount: number; // rooms with a live stream on (the number in the menu)
     community: Community;
-    siteStats: { members: number; rooms: number; songs: number; listening: number } | null;
+    siteStats: import('@/lib/useLiveStats').SiteStats | null;
     recoveryCodes?: string[] | null;
 };
 

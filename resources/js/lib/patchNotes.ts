@@ -3,6 +3,73 @@ export type Kind = 'new' | 'improved' | 'fixed';
 
 export const releases: { version: string; title: string; notes: [Kind, string][] }[] = [
     {
+        version: '1.71',
+        title: 'Legendary characters: Veyra and Kaida',
+        notes: [
+            ['new', 'Veyra joins the Avatar Shop at level 28 with a phoenix mask, glowing heart, feather fan, trailing tail and floating embers.'],
+            ['improved', 'Veyra has separate standing, dancing and DJ performances. The dance uses 60 articulated poses over 2.4 seconds, with planted feet and delayed feather movement. Reduced-motion settings show a still pose.'],
+            ['new', 'Kaida, a nine-tailed celestial kitsune, joins the Avatar Shop at level 32 with an aurora silk costume, foxfire details and nine animated tails.'],
+            ['improved', 'Kaida has 60 articulated poses across standing, dancing and DJ performances. The dance moves at a relaxed 2.8-second loop, with planted steps and individually staggered tails that follow each turn.'],
+        ],
+    },
+    {
+        version: '1.70',
+        title: 'Solstice joins the Legendary collection',
+        notes: [
+            ['new', 'Solstice, a Legendary astral DJ, is available in the Avatar Shop from level 25: an obsidian-and-gold crowned mask, luminous chest core, orbiting halo and a violet star mantle.'],
+            ['improved', 'Solstice has separate 72-pose standing, dancing and rear-facing DJ animations. Articulated knees and elbows, planted support feet, counter-moving shoulders and a delayed mantle sway give the performance a more natural rhythm. Reduced-motion preferences keep the character in a still pose.'],
+        ],
+    },
+    {
+        version: '1.69',
+        title: 'Aether takes the decks',
+        notes: [
+            ['new', 'Meet Aether: a cyber DJ with a pearl-white jacket, graphite armour, luminous visor and an iridescent scarf. Available to everyone in the Avatar Shop from level 18.'],
+            ['improved', 'Aether has three distinct 48-pose animations: relaxed breathing while standing, a dance with weight shifts and articulated knees and elbows, and a rear-facing DJ performance. The upper body counters the hip movement, the scarf follows with a delay, and the supporting foot stays planted. Reduced-motion settings show a still pose.'],
+        ],
+    },
+    {
+        version: '1.68',
+        title: 'Clearer room members, chat reactions and quick gifts',
+        notes: [
+            ['improved', 'The Users tab in rooms has cleaner member cards, a name search and clearer role, level, friend and current-DJ information. Open the three-dot button for the full profile, badges and moderation actions instead of fitting every control into the member row.'],
+            ['new', 'React to room messages with an emoji from the smile button or message menu. Reaction counts update live and remain after a refresh. Each member can choose one reaction per message, change it or tap it again to remove it. Muted members cannot react, and reactions do not earn XP.'],
+            ['new', 'Gift subscription is now available in the chat message menu and the user’s quick-profile card, as well as on their full profile. It opens the gift form with the recipient selected.'],
+        ],
+    },
+    {
+        version: '1.67',
+        title: 'Voice and video calls in Whispers',
+        notes: [
+            ['new', 'Call another member from a direct Whisper conversation using the phone or camera button. Incoming calls appear while the site is open, with Accept and Decline controls. Microphone and camera access starts only after you choose to call or accept.'],
+            ['new', 'The call panel includes microphone mute, camera on/off, a local video preview, connection status, call duration and End call. Calls stay open while navigating between pages. Group calls are not included.'],
+            ['improved', 'Calls respect Whisper privacy settings, prevent overlapping calls for the same account and expire when unanswered or abandoned. Media is not recorded by the site, and connection descriptions are cleared when the call ends. HTTPS and device permission are required; connectivity across restrictive networks depends on the configured relay server.'],
+        ],
+    },
+    {
+        version: '1.66',
+        title: 'A new Dashboard, better rooms, invite rewards and Lumen',
+        notes: [
+            ['improved', 'A redesigned Dashboard with a featured active room, clearer room discovery, quick access to creating a room, livestream filtering and a Clear filters button. Room lists and activity refresh every 5 seconds while the page is visible, with a connection notice if updates fail.'],
+            ['new', 'Create a Room now includes Open decks, Listening lounge and Hosted session presets, five background choices with a preview, an optional welcome message, queue locking and song cycling. Start with a DJ queue or a YouTube, Twitch or Kick livestream, with a link and optional title. Invalid stream links are checked before a room is created.'],
+            ['fixed', 'The room creator now has readable light text, clearer fields and buttons, and the dialog stays above its dark backdrop. Failed submissions keep your entered details so you can try again.'],
+            ['improved', 'Room moderation has a refreshed layout, searchable bans, mutes, kicks and activity, action confirmations, clearer feedback and automatic updates. AutoMod changes stay in the form while you edit. Room owners and site staff can permanently delete rooms from Room settings.'],
+            ['new', 'Self DJ Bots replace Auto Host in Room settings. Create a named bot, choose a room and your playlist, then enable, pause or remove it. Bots keep music playing when no real DJs are queued; real DJs take over after the current track.'],
+            ['fixed', 'Fixed the known Selfbots 500 error caused by generated usernames exceeding the database limit, and improved error handling when opening Selfbots inside a room.'],
+            ['improved', 'Community counters on the Dashboard, home, login, register and Admin pages now use consistent data and refresh every 5 seconds. Registered-member counts exclude bots, online means active in the last 5 minutes, and listeners are counted once across rooms. An unavailable listener service is shown as unavailable instead of zero. Admin user filters also show matching totals.'],
+            ['new', 'Send your own pictures in room chat: choose a PNG, JPG, WEBP or GIF, or paste an image, preview it and add a caption before sending.'],
+            ['fixed', 'Older Whisper messages can be loaded in pages, and stored voice recordings can be replayed and seeked. Recordings remain private to the conversation and respect group membership.'],
+            ['new', 'Gift a one-month subscription from another member’s profile or Settings → Subscriptions. Gifts are single payments without renewal; the recipient activates them in Your gifts. A gift waits while another subscription is active and does not replace recurring billing.'],
+            ['improved', 'Stronger account and web security: password changes and resets revoke previous access, sensitive account changes require password checks, and two-factor challenges expire and reject reused codes. Authentication rate limits, private-page headers and streaming-link checks have also been strengthened.'],
+            ['new', 'Import via streaming in playlists brings together YouTube, Spotify and SoundCloud links. Spotify tracks are matched to YouTube; public playlist imports may be limited to the first 100 songs. SoundCloud imports support individual tracks.'],
+            ['fixed', 'Repeated manual skips and removals no longer earn playback XP or song coins. Natural song completions are checked against the server clock and require a known duration with at least 30 seconds played. My Stuff → How to earn XP explains rewards and limits.'],
+            ['improved', 'The referral page is now Your invite circle, with clearer sharing, reward information, earned referral coins and an Accept an invite form. Existing members can use another member’s invite if they have not used one before. Each account can accept only one inviter; self-referrals, repeated claims and switching inviters are blocked. Each accepted referral awards 100 XP, with 50 coins for each of the first 20 referrals.'],
+            ['new', 'Registration now includes Your friend’s invite code. Invite links fill it in automatically, and you can enter, change or clear it yourself. Invalid codes show an error before the account is created.'],
+            ['new', 'Meet Lumen, a lunar moth DJ with cyan wings, glowing antennae, headphones and a violet jacket. Available in the Avatar Shop from level 9, with separate standing, dancing and rear-facing DJ animations and reduced-motion support.'],
+            ['improved', 'Skelly has moved to the Owner shelf and can only be equipped by an Owner. Previous non-owner purchases are refunded and equipped copies are replaced with a starter character. The character name Elementaarne is now Elementary.'],
+        ],
+    },
+    {
         version: '1.65',
         title: 'Live streams',
         notes: [

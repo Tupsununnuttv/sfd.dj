@@ -4,13 +4,14 @@
 //   - Panda Bear and Adam & Mochi, a bearded DJ in a black robe with his panda (Brand Ambassador and above; Skelly, the retrowave skeleton developer, is too but was drawn elsewhere and is not made here)
 //   - the Zoo S02 fox
 //   - Rift, the raven mage, Skully, a skeleton DJ, and Fox, a street fox in a bomber jacket (the Owner only)
-//   - for everybody, by level: Wilmer, a friend in a varsity jacket (4), Milky the milk carton (6), Pip, a penguin DJ in a beanie (7), Elementaarne, a red pixel-art figure in a gas mask (12), Spooky the jack-o'-lantern scarecrow (14), Kiko & Mochi, a girl and her dancing Shiba (16), Boomer, a turtle with a boombox shell (20), Ember Dragon (30), Frost Dragon (35)
+//   - for everybody, by level: Wilmer, a friend in a varsity jacket (4), Milky the milk carton (6), Pip, a penguin DJ in a beanie (7), Elementary, a red pixel-art figure in a gas mask (12), Spooky the jack-o'-lantern scarecrow (14), Kiko & Mochi, a girl and her dancing Shiba (16), Boomer, a turtle with a boombox shell (20), Ember Dragon (30), Frost Dragon (35)
 // The others are for the roles named in AvatarController::ROLE_ONLY. The six simple characters everybody can wear are drawn by make-characters.mjs.
 // Run it with `node scripts/make-staff-characters.mjs`, or name the ones to redraw: `node scripts/make-staff-characters.mjs ice fedora`.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { adamMochi } from './staff-characters/adam.mjs';
+import { aether } from './staff-characters/aether.mjs';
 import { astronaut } from './staff-characters/astronaut.mjs';
 import { boomer } from './staff-characters/boomer.mjs';
 import { dj } from './staff-characters/djs.mjs';
@@ -19,12 +20,16 @@ import { elementaar } from './staff-characters/elementaar.mjs';
 import { fedora } from './staff-characters/fedora.mjs';
 import { fox } from './staff-characters/fox.mjs';
 import { kiko } from './staff-characters/kiko.mjs';
+import { kaida } from './staff-characters/kaida.mjs';
 import { STATES } from './staff-characters/kit.mjs';
 import { milky } from './staff-characters/milky.mjs';
+import { lumen } from './staff-characters/lumen.mjs';
 import { panda } from './staff-characters/panda.mjs';
 import { pip } from './staff-characters/pip.mjs';
 import { rift } from './staff-characters/rift.mjs';
 import { skully } from './staff-characters/skully.mjs';
+import { solstice } from './staff-characters/solstice.mjs';
+import { veyra } from './staff-characters/veyra.mjs';
 import { spooky } from './staff-characters/spooky.mjs';
 import { streetFox } from './staff-characters/streetfox.mjs';
 import { wilmer } from './staff-characters/wilmer.mjs';
@@ -32,6 +37,10 @@ import { wilmer } from './staff-characters/wilmer.mjs';
 const out = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'Avatars');
 
 const characters = {
+    aether,
+    solstice,
+    veyra,
+    kaida,
     ice: (state) => astronaut('ice', false, state),
     icemini: (state) => astronaut('ice', true, state),
     azure: (state) => astronaut('azure', false, state),
@@ -53,6 +62,7 @@ const characters = {
     emberdragon: (state) => dragon('ember', state),
     frostdragon: (state) => dragon('frost', state),
     milky,
+    lumen,
     kikomochi: kiko,
     wilmer,
     fox: streetFox,

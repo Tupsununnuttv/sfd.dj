@@ -1,3 +1,5 @@
+import SiteCounters from '@/Components/SiteCounters';
+import { useLiveStats } from '@/lib/useLiveStats';
 import ApplicationLogo, { LogoMark } from '@/Components/ApplicationLogo';
 import Crowd from '@/Components/Crowd';
 import SupportWidget from '@/Components/SupportWidget';
@@ -49,7 +51,7 @@ function Switcher({ current }: { current: 'login' | 'register' }) {
  * in a card on the right. `switcher` puts the Log in / Create account tabs on top of the card; `aside` (saved accounts) goes under it.
  */
 export default function Guest({ children, aside, title, subtitle, switcher }: PropsWithChildren<{ aside?: ReactNode; title?: ReactNode; subtitle?: ReactNode; switcher?: 'login' | 'register' }>) {
-    const stats = usePage<PageProps>().props.siteStats;
+    const liveStats = useLiveStats(usePage<PageProps>().props.siteStats);
 
     return (
         <div className="grid min-h-screen bg-neutral-950 text-neutral-100 lg:grid-cols-[1.05fr_1fr]">
@@ -96,18 +98,13 @@ export default function Guest({ children, aside, title, subtitle, switcher }: Pr
                     ))}
                 </ul>
 
-                {stats && (
-                    <dl className="relative flex gap-8 border-t border-white/10 pt-5">
-                        {([['Members', stats.members], ['Rooms', stats.rooms], ['Songs played', stats.songs]] as const).map(([label, value]) => (
-                            <div key={label}><dt className="text-xs text-neutral-500">{label}</dt><dd className="text-2xl font-black tabular-nums">{value.toLocaleString()}</dd></div>
-                        ))}
-                        <div><dt className="text-xs text-neutral-500">Listening now</dt><dd className="flex items-center gap-2 text-2xl font-black tabular-nums text-green-400"><span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />{stats.listening}</dd></div>
-                    </dl>
-                )}
+                <div className="relative"><SiteCounters {...liveStats} /></div>
+
             </aside>
 
             {/* the form */}
             <main className="flex flex-col px-5 py-6 bg-[radial-gradient(40rem_24rem_at_50%_-4rem,rgba(139,92,246,0.16),transparent)] sm:px-10 sm:py-8 xl:pr-28">
+                <div className="mb-5 lg:hidden"><SiteCounters {...liveStats} /></div>
                 <div className="flex items-center justify-between lg:justify-end">
                     <Link href="/" className="lg:hidden"><ApplicationLogo className="text-2xl" /></Link>
                     <Link href="/" className="text-sm text-neutral-400 hover:text-white">← Back to the home page</Link>

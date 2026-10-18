@@ -42,7 +42,7 @@ class AvatarController extends Controller
         'char:ice' => 'brand_ambassador', 'char:icemini' => 'brand_ambassador', 'char:azure' => 'brand_ambassador', 'char:azuremini' => 'brand_ambassador',
         'char:sun' => 'brand_ambassador', 'char:sunmini' => 'brand_ambassador', 'char:nebula' => 'brand_ambassador', 'char:nebulamini' => 'brand_ambassador',
         'char:fedora' => 'brand_ambassador', 'char:blaze' => 'brand_ambassador', 'char:echo' => 'brand_ambassador', 'char:blazeref' => 'brand_ambassador', 'char:echoref' => 'brand_ambassador',
-        'char:pandabear' => 'brand_ambassador', 'char:adammochi' => 'brand_ambassador', 'char:skelly' => 'brand_ambassador',
+        'char:pandabear' => 'brand_ambassador', 'char:adammochi' => 'brand_ambassador', 'char:skelly' => 'owner',
         'char:zoos02' => 'owner', 'char:rift' => 'owner', 'char:skully' => 'owner', 'char:fox' => 'owner',
     ];
 
@@ -86,7 +86,7 @@ class AvatarController extends Controller
 
     /** The level that unlocks an item. Everything not listed here is free from level 1. */
     public const UNLOCK = [
-        'avatar' => ['char:neko' => 2, 'char:bun' => 3, 'char:wilmer' => 4, 'char:panda' => 5, 'char:milky' => 6, 'char:pip' => 7, 'char:wolfie' => 8, 'char:robo' => 10, 'char:elementaar' => 12, 'char:spooky' => 14, 'char:kikomochi' => 16, 'char:boomer' => 20, 'char:emberdragon' => 30, 'char:frostdragon' => 35],
+        'avatar' => ['char:neko' => 2, 'char:bun' => 3, 'char:wilmer' => 4, 'char:panda' => 5, 'char:milky' => 6, 'char:pip' => 7, 'char:wolfie' => 8, 'char:robo' => 10, 'char:elementaar' => 12, 'char:lumen' => 9, 'char:aether' => 18, 'char:solstice' => 25, 'char:veyra' => 28, 'char:kaida' => 32, 'char:spooky' => 14, 'char:kikomochi' => 16, 'char:boomer' => 20, 'char:emberdragon' => 30, 'char:frostdragon' => 35],
         'badge' => ['digger' => 2, 'bassline' => 3, 'streak' => 4, 'nightowl' => 6, 'voltage' => 8, 'goldenear' => 10, 'diamond' => 13, 'spotlight' => 16, 'platinum' => 20, 'laureate' => 24, 'royal' => 28, 'cosmic' => 34, 'dragonseal' => 42, 'legend' => 55],
         'accessory' => ['cap' => 2, 'beanie' => 3, 'catears' => 4, 'foxears' => 5, 'flowers' => 7, 'halo' => 9, 'visor' => 10, 'laurel' => 12, 'horns' => 15, 'tophat' => 18, 'crown' => 22, 'wings' => 26, 'dragon' => 32, 'phoenix' => 45],
         'frame' => ['gold' => 2, 'fireflies' => 3, 'neon' => 4, 'comic' => 5, 'carbon' => 6, 'emerald' => 8, 'web' => 9, 'vinyl' => 11, 'candles' => 12, 'equalizer' => 14, 'skulls' => 16, 'thorns' => 18, 'lanterns' => 20, 'frost' => 22, 'crystals' => 25, 'hellfire' => 28, 'portal' => 32, 'aurora' => 38, 'prism' => 50],

@@ -13,7 +13,7 @@ import { STATUS, statusOf } from '@/lib/status';
 import { RoleInfo } from '@/types';
 import { router } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
-import { AtSign, Bookmark, Clock, ExternalLink, Footprints, Gavel, MessageCircle, Music, Shield, ThumbsUp, UserCheck, UserPlus, Users, Volume2, VolumeX } from 'lucide-react';
+import { AtSign, Bookmark, Clock, ExternalLink, Footprints, Gavel, Gift, MessageCircle, Music, Shield, ThumbsUp, UserCheck, UserPlus, Users, Volume2, VolumeX } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 /** Who the card is about; chat messages and the room's user list both have these fields. */
@@ -217,6 +217,7 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
                     <button onClick={() => { room.onProfile(); onClose(); }} className="flex w-full items-center justify-center gap-2 rounded-xl bg-white/10 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-white/15">
                         <ExternalLink size={14} /> View full profile
                     </button>
+                    {!guest && !me && <button onClick={() => { onClose(); router.visit(`${route('settings.plus', { recipient: user.id })}#gifts`); }} className="flex w-full items-center justify-center gap-2 rounded-xl border border-fuchsia-400/25 bg-fuchsia-500/10 py-2 text-sm font-semibold text-fuchsia-200 hover:bg-fuchsia-500/20"><Gift size={15} /> Gift subscription</button>}
                 </div>
 
                 {!guest && !me && user.id !== room.hostId && room.can.manage_roles && (

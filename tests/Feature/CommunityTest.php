@@ -47,7 +47,7 @@ class CommunityTest extends TestCase
         $user = User::factory()->create();
         $g = new Google2FA;
 
-        $this->actingAs($user)->post('/two-factor');
+        $this->actingAs($user)->post('/two-factor', ['password' => 'password']);
         $secret = $user->refresh()->two_factor_secret;
         $this->post('/two-factor/confirm', ['code' => '000000'])->assertSessionHasErrors('code');
         $this->post('/two-factor/confirm', ['code' => $g->getCurrentOtp($secret)])->assertSessionHas('recovery_codes');

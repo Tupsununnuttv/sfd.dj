@@ -30,11 +30,10 @@ function Sessions({ sessions }: { sessions: { supported: boolean; list: Session[
         form.delete(route('settings.sessions.revoke-others'), { preserveScroll: true, onSuccess: () => { form.reset(); setAsking(false); } });
     };
 
-    if (!sessions.supported) return <p className="text-sm text-neutral-500">This site keeps its sessions somewhere that cannot be listed, so there is nothing to show here.</p>;
-
     return (
         <div className="space-y-4">
-            <ul className="divide-y divide-white/5 rounded-xl border border-white/10 bg-black/20">
+            {!sessions.supported && <p className="text-sm text-neutral-500">Individual devices cannot be listed with this session storage. You can still securely log out all other devices.</p>}
+            {sessions.supported && <ul className="divide-y divide-white/5 rounded-xl border border-white/10 bg-black/20">
                 {sessions.list.map((s) => (
                     <li key={s.id} className="flex items-center gap-3 p-4">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 text-neutral-300">{s.mobile ? <Smartphone size={18} /> : <Laptop size={18} />}</span>
@@ -45,9 +44,9 @@ function Sessions({ sessions }: { sessions: { supported: boolean; list: Session[
                         {!s.current && <button onClick={() => router.delete(route('settings.sessions.revoke', s.id), { preserveScroll: true })} title="Log this device out" className="rounded-lg p-2 text-neutral-400 hover:bg-red-500/20 hover:text-red-300"><LogOut size={16} /></button>}
                     </li>
                 ))}
-            </ul>
+            </ul>}
 
-            {others.length > 0 && !asking && <button onClick={() => setAsking(true)} className={ghostBtn}>Log out all other devices</button>}
+            {(others.length > 0 || !sessions.supported) && !asking && <button onClick={() => setAsking(true)} className={ghostBtn}>Log out all other devices</button>}
             {asking && (
                 <form onSubmit={logoutOthers} className="max-w-sm space-y-3">
                     <Field label="Type your password to confirm" htmlFor="sess-pass" error={form.errors.password}>
@@ -59,7 +58,7 @@ function Sessions({ sessions }: { sessions: { supported: boolean; list: Session[
                     </div>
                 </form>
             )}
-            {others.length === 0 && <p className="text-sm text-neutral-500">You are logged in only here. Nothing to clean up.</p>}
+            {sessions.supported && others.length === 0 && <p className="text-sm text-neutral-500">You are logged in only here. Nothing to clean up.</p>}
         </div>
     );
 }
@@ -70,7 +69,7 @@ export default function Account({ twoFactor, sessions }: { twoFactor: TwoFactorS
     const checks: [boolean, string, string][] = [
         [user.email_verified_at !== null, 'Email verified', 'So you can get back in if you forget your password.'],
         [twoFactor.enabled, 'Two-factor login', 'A code from your phone, on top of the password.'],
-        [sessions.list.filter((s) => !s.current).length === 0, 'No other devices logged in', 'Or log out the ones you do not recognise.'],
+        [sessions.supported && sessions.list.filter((s) => !s.current).length === 0, sessions.supported ? 'No other devices logged in' : 'Review your other devices', sessions.supported ? 'Or log out the ones you do not recognise.' : 'Device listing is unavailable. Log out all other devices if you are unsure.'],
     ];
     const done = checks.filter(([ok]) => ok).length;
 

@@ -43,6 +43,13 @@ class Room extends Model
     /** A live stream nobody has ended is over after this many hours. */
     public const LIVE_HOURS = 24;
 
+    /** Very short clips and manual skips do not earn playback rewards. */
+    public const MIN_REWARD_PLAY_SECONDS = 30;
+
+    public const SONG_XP = 10;
+
+    public const WOOT_XP = 1;
+
     /** The badges staff can give a room, in the order they are shown. A room can have any of them at once. */
     public const BADGES = ['official', 'verified', 'partnered'];
 
@@ -303,25 +310,57 @@ class Room extends Model
     /**
      * Drop the current song and start the next one (or stop).
      * `$requeue` is false when the DJ is leaving the line or was taken out of it: with cycling they must not go to the back of it.
+     * Only a verified natural completion may earn rewards. Stale calls never advance the next song.
      */
-    public function advance(bool $requeue = true): void
+    public function advance(bool $requeue = true, bool $completed = false): bool
     {
-        $present = $this->presentUserIds(); // asked once: who is still here, for cycling and for the next DJ
+        $expectedItem = $this->current_item_id;
+        $advanced = DB::transaction(function () use ($requeue, $completed, $expectedItem): bool {
+            $room = static::query()->lockForUpdate()->findOrFail($this->getKey());
+            if ($room->current_item_id !== $expectedItem) {
+                return false;
+            }
 
-        // ponytail: skipping a song also pays its owner; track skips separately if XP gets farmed
-        if ($played = PlaylistItem::with('user')->find($this->current_item_id)) {
-            $played->update(['played_at' => now()]);
-            // a song that came from somebody's active playlist goes to the bottom of it, so their next turn plays the next song
-            $played->playlist_song_id && PlaylistSong::find($played->playlist_song_id)?->sendToBottom();
-            // cycling puts the DJ at the back of the line, but only a DJ who is still in the room: somebody who left does not go round for ever
-            $requeue && $this->waitlist_cycle && ($present === null || in_array($played->user_id, $present, true)) && $this->requeue($played);
-            $woots = Vote::where('playlist_item_id', $played->id)->where('type', 'woot')->count();
-            $played->user->addXp(10 + $woots); // +1 XP per woot
-            // and 5 SFD Coins, and one more for every two woots, but only for a song that was really heard: one that is skipped at once pays nothing
-            $heard = $this->current_started_at ? $this->current_started_at->diffInSeconds(now()) : 0;
-            $heard >= min(30, $played->duration ?: 30) && $played->user->award(5 + intdiv($woots, 2), 'song', $played->title);
+            $present = $room->presentUserIds();
+            $played = PlaylistItem::with('user')->where('room_id', $room->id)->whereNull('played_at')->find($expectedItem);
+
+            if ($played) {
+                $reward = $completed && $room->playbackHasEnded($played)
+                    && $played->duration >= self::MIN_REWARD_PLAY_SECONDS
+                    && $room->current_started_at->diffInSeconds(now()) >= self::MIN_REWARD_PLAY_SECONDS;
+
+                $played->update(['played_at' => now()]);
+                // Move the played song to the bottom of its playlist; only present DJs cycle back into the queue.
+                $played->playlist_song_id && PlaylistSong::find($played->playlist_song_id)?->sendToBottom();
+                $requeue && $room->waitlist_cycle && ($present === null || in_array($played->user_id, $present, true)) && $room->requeue($played);
+
+                if ($reward) {
+                    $woots = Vote::where('playlist_item_id', $played->id)->where('type', 'woot')->count();
+                    $played->user->addXp(self::SONG_XP + $woots * self::WOOT_XP);
+                    $played->user->award(5 + intdiv($woots, 2), 'song', $played->title);
+                }
+            }
+
+            $room->start($room->nextReady($present) ?? $room->autoHostItem());
+
+            return true;
+        });
+        $this->refresh();
+
+        return $advanced;
+    }
+
+    /** Check the server clock, not just an untrusted player "ended" report. */
+    public function playbackHasEnded(PlaylistItem $item): bool
+    {
+        if (! $this->current_started_at || $this->liveNow()) {
+            return false;
         }
-        $this->start($this->nextReady($present) ?? $this->autoHostItem());
+
+        // A little tolerance accommodates player timing; unknown-length tracks may end after 30s but earn no rewards.
+        $minimum = $item->duration > 0 ? max(1, $item->duration - 3) : self::MIN_REWARD_PLAY_SECONDS;
+
+        return $this->current_started_at->diffInSeconds(now()) >= $minimum;
     }
 
     /**
@@ -495,7 +534,7 @@ class Room extends Model
                 return; // length unknown: only a player can say it ended
             }
 
-            $this->advance();
+            $this->advance(completed: true);
         }
     }
 

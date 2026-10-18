@@ -32,7 +32,7 @@ import { PageProps, RoleInfo } from '@/types';
 import { roomUserWeight, sortRoomUsersByWeight } from '@/lib/roomUserSort';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { echo } from '@laravel/echo-react';
-import { Disc3, ExternalLink, Footprints, Gavel, MessageCircle, ShieldCheck, UserCheck, VolumeX, X } from 'lucide-react';
+import { Disc3, Ellipsis, Search, ExternalLink, Footprints, Gavel, MessageCircle, ShieldCheck, UserCheck, VolumeX, X } from 'lucide-react';
 import { FormEvent, lazy, ReactNode, Suspense, useEffect, useRef, useState } from 'react';
 
 const GrabDialog = lazy(() => import('@/Components/GrabDialog'));
@@ -215,6 +215,7 @@ export default function Room({
     const prefs = withDefaults(user.preferences);
 
     const [messages, setMessages] = useState(initialMessages);
+    const [peopleSearch, setPeopleSearch] = useState('');
     const [notifications, setNotifications] = useState<{ id: number; kind: string; body: string }[]>([]);
     const [playback, setPlayback] = useState(() => stamp(initialPlayback));
     const [mine, setMine] = useState<MyVotes>(myVotes);
@@ -438,6 +439,7 @@ export default function Room({
             echo<'reverb'>()
                 .channel(name)
                 .listen('.message', receiveMessage)
+                .listen('.chat-reaction', (data: { id: number; reactions: ChatMessageData['reactions'] }) => setMessages((items) => items.map((m) => m.id === data.id ? { ...m, reactions: data.reactions } : m)))
                 .listen('.message-deleted', (d: { id: number }) => setMessages((p) => p.filter((m) => m.id !== d.id)))
                 .listen('.playback', (p: Playback) => setPlayback(stamp(p)))
                 .listen('.room-bot-presence', applyBotPresence)
@@ -485,6 +487,7 @@ export default function Room({
                 }
             })
             .listen('.message', receiveMessage)
+                .listen('.chat-reaction', (data: { id: number; reactions: ChatMessageData['reactions'] }) => setMessages((items) => items.map((m) => m.id === data.id ? { ...m, reactions: data.reactions } : m)))
             .listen('.message-deleted', (d: { id: number }) => setMessages((p) => p.filter((m) => m.id !== d.id)))
             .listen('.playback', (p: Playback) => setPlayback(stamp(p)))
             .listen('.room-bot-presence', applyBotPresence)
@@ -982,6 +985,7 @@ export default function Room({
                             slug={room.slug}
                             welcome={room.welcome_message ? `Welcome to ${room.name}: ${room.welcome_message}` : null}
                             messages={shownMessages}
+                            onReactionUpdate={(data) => setMessages((items) => items.map((m) => m.id === data.id ? { ...m, reactions: data.reactions } : m))}
                             userId={user.id}
                             canDelete={can.moderate_chat}
                             emojis={emojis}
@@ -1053,8 +1057,10 @@ export default function Room({
                                 <p className="text-neutral-400">{users.length} {users.length === 1 ? 'person is' : 'people are'} here right now, including you.</p>
                             </div>
                             {notice && <p className="mb-2 rounded bg-neutral-800 px-2 py-1 text-xs text-neutral-300">{notice}</p>}
+                            <div className="relative mb-3"><Search size={15} className="pointer-events-none absolute left-3 top-3 text-neutral-400" /><input value={peopleSearch} onChange={(e) => setPeopleSearch(e.target.value)} aria-label="Search people in this room" placeholder="Find someone…" className="w-full rounded-xl border-white/10 bg-neutral-900 py-2 pl-9 text-sm text-white placeholder-neutral-500 focus:border-violet-400 focus:ring-violet-400" /></div>
+                            {peopleSearch && !users.some((u) => u.name.toLowerCase().includes(peopleSearch.trim().toLowerCase())) && <p className="py-6 text-center text-xs text-neutral-400">No members match your search.</p>}
                             {/* everybody under the room role they hold: the host, then the roles in their order, then everyone else */}
-                            {roleGroups.map(({ role, people }) => (
+                            {roleGroups.map(({ role, people }) => ({ role, people: people.filter((u) => u.name.toLowerCase().includes(peopleSearch.trim().toLowerCase())) })).filter((g) => g.people.length > 0).map(({ role, people }) => (
                                 <section key={role.key} className="mb-3" data-role-group={role.label}>
                                     <div className="mb-1.5 flex items-center justify-between gap-2">
                                         <span className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-bold uppercase leading-none tracking-wider" style={{ color: role.color, borderColor: `${role.color}59`, backgroundColor: `${role.color}1a` }}>
@@ -1065,51 +1071,20 @@ export default function Room({
                                     <ul className="space-y-1.5">
                                         {people.map((u) => {
                                             const rr = roomRoleOf(u.id);
-                                            const targetable = u.id !== user.id && u.id !== host.id;
-                                            const iconBtn = 'rounded p-0.5 text-neutral-500';
+                                            
+                                            
 
                                             return (
-                                                <li key={u.id} className="sfd-user flex items-center gap-2.5 rounded-lg border border-white/10 bg-white/3 px-2 py-1.5">
-                                                    <button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} title="Quick profile" className="relative shrink-0"><Avatar name={u.name} avatar={u.avatar} cosmetics={u.cosmetics} /><StatusDot status={u.status} className="absolute -bottom-0.5 -right-0.5" /></button>
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="flex items-center gap-1.5">
-                                                            {rr && <RoleIcon role={rr} />}
-                                                            <button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} title="Quick profile" className="min-w-0 max-w-full flex-1 truncate leading-5 font-semibold hover:underline" style={{ color: u.role.color }}>{u.name}</button>
-                                                            {u.id === host.id && <span title="Room host" className="shrink-0 rounded bg-amber-400/10 px-1 py-0.5 text-[10px] font-semibold text-amber-300">Host</span>}
-                                                                    {friendIds.includes(u.id) && <span title="Already your friend" className="inline-flex shrink-0 items-center gap-0.5 rounded bg-emerald-500/10 px-1 py-0.5 text-[10px] font-semibold text-emerald-300"><UserCheck size={11} />Friend</span>}
-                                                            <Flag flag={u.flag} className="h-3" />
-                                                            {u.id === user.id && <span className="shrink-0 text-xs text-neutral-500">(you)</span>}
-                                                            {u.level !== undefined && <span className="ml-auto shrink-0 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-bold leading-none text-neutral-300">Level {u.level}</span>}
-                                                        </p>
-                                                        <div className="mt-1 flex flex-wrap items-center gap-1">
-                                                            <Badges badges={u.badges} />
-                                                            <RoleBadge role={u.role} />
-                                                            {current?.user_id === u.id && <span className="inline-flex items-center gap-1 rounded border border-violet-400/40 bg-violet-500/15 px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-violet-200"><Disc3 size={10} aria-hidden /> Current DJ</span>}
-                                                            <span className="ml-auto flex items-center gap-1">
-                                                                {can.manage_roles && u.id !== host.id && (
-                                                                    <select
-                                                                        value={members[u.id] ?? ''}
-                                                                        onChange={(e) => assign(u.id, e.target.value)}
-                                                                        className="w-20 rounded border-neutral-700 bg-neutral-900 py-0 pl-1.5 text-[11px] text-neutral-300"
-                                                                        aria-label={`Room role for ${u.name}`}
-                                                                    >
-                                                                        <option value="">No role</option>
-                                                                        {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                                                                    </select>
-                                                                )}
-                                                                {can.moderate_users && targetable && (
-                                                                    <>
-                                                                        <button onClick={() => moderate('kick', u)} title="Kick" className={`${iconBtn} hover:text-amber-400`}><Footprints size={14} /></button>
-                                                                        <button onClick={() => mute(u)} title="Mute" className={`${iconBtn} hover:text-sky-400`}><VolumeX size={14} /></button>
-                                                                        <button onClick={() => moderate('ban', u)} title="Ban" className={`${iconBtn} hover:text-red-400`}><Gavel size={14} /></button>
-                                                                    </>
-                                                                )}
-                                                                {u.id !== user.id && (
-                                                                    <button onClick={() => { setWhisperTo(u.id); setPanel('whispers'); }} title="Whisper" className={`${iconBtn} hover:text-violet-300`}><MessageCircle size={14} /></button>
-                                                                )}
-                                                            </span>
+                                                <li key={u.id} className={`sfd-user rounded-xl border p-3 ${current?.user_id === u.id ? 'border-violet-400/30 bg-violet-500/10' : 'border-white/8 bg-white/3'}`}>
+                                                    <div className="flex items-center gap-3">
+                                                        <button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} aria-label={`View ${u.name}'s profile`} className="relative shrink-0"><Avatar name={u.name} avatar={u.avatar} cosmetics={u.cosmetics} className="h-10 w-10" /><StatusDot status={u.status} className="absolute -bottom-0.5 -right-0.5" /></button>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-1.5"><button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} className="min-w-0 truncate text-left text-sm font-semibold text-neutral-100 hover:text-violet-200">{u.name}</button>{u.id === user.id && <span className="shrink-0 text-[10px] text-neutral-400">you</span>}<Flag flag={u.flag} className="h-3 shrink-0" /></div>
+                                                            <p className="mt-1 truncate text-[11px] text-neutral-400">{u.id === host.id ? 'Room host' : rr?.label ?? u.role.label}{u.level !== undefined && ` · Level ${u.level}`}</p>
                                                         </div>
+                                                        <button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} aria-label={`Actions for ${u.name}`} title="Profile and actions" className="shrink-0 rounded-lg p-2 text-neutral-400 hover:bg-white/10 hover:text-white"><Ellipsis size={18} /></button>
                                                     </div>
+                                                    {(current?.user_id === u.id || friendIds.includes(u.id)) && <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-white/5 pt-2 text-[10px]">{current?.user_id === u.id && <span className="inline-flex items-center gap-1 font-semibold text-violet-200"><Disc3 size={12} /> Playing now</span>}{friendIds.includes(u.id) && <span className="inline-flex items-center gap-1 text-emerald-300"><UserCheck size={12} /> Friend</span>}</div>}
                                                 </li>
                                             );
                                         })}
@@ -1252,7 +1227,7 @@ export default function Room({
             )}
 
             {panel === 'moderation' && (
-                <Panel title="Room moderation" onClose={() => setPanel(null)}>
+                <Panel wide title="Room moderation" onClose={() => setPanel(null)}>
                     <Suspense fallback={loadingPanel}>
                         <ModerationPanel
                             slug={room.slug}

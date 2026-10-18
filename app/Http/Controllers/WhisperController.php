@@ -144,26 +144,41 @@ class WhisperController extends Controller
             }
             $start = $match[1] === '' ? max(0, $size - (int) $match[2]) : (int) $match[1];
             $end = $match[1] === '' || $match[2] === '' ? $size - 1 : min($size - 1, (int) $match[2]);
-            if ($start > $end || $start >= $size) return response('', 416, $headers + ['Content-Range' => "bytes */{$size}"]);
+            if ($start > $end || $start >= $size) {
+                return response('', 416, $headers + ['Content-Range' => "bytes */{$size}"]);
+            }
             $headers['Content-Range'] = "bytes {$start}-{$end}/{$size}";
             $status = 206;
         }
         $headers['Content-Length'] = (string) max(0, $end - $start + 1);
+
         return response()->stream(function () use ($disk, $whisper, $start, $end) {
             $stream = $disk->readStream($whisper->audioPath());
-            if (! is_resource($stream)) return;
+            if (! is_resource($stream)) {
+                return;
+            }
             try {
                 // Some cloud streams cannot seek; discard only the bounded prefix requested.
                 $skip = $start;
-                while ($skip > 0 && ! feof($stream)) $skip -= strlen(fread($stream, min(8192, $skip)));
+                while ($skip > 0 && ! feof($stream)) {
+                    $chunk = fread($stream, min(8192, $skip));
+                    if ($chunk === false || $chunk === '') {
+                        return;
+                    }
+                    $skip -= strlen($chunk);
+                }
                 $remaining = $end - $start + 1;
                 while ($remaining > 0 && ! feof($stream)) {
                     $chunk = fread($stream, min(8192, $remaining));
-                    if ($chunk === false || $chunk === '') break;
+                    if ($chunk === false || $chunk === '') {
+                        break;
+                    }
                     echo $chunk;
                     $remaining -= strlen($chunk);
                 }
-            } finally { fclose($stream); }
+            } finally {
+                fclose($stream);
+            }
         }, $status, $headers);
     }
 

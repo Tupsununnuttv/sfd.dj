@@ -1,3 +1,6 @@
+import CreateRoom from '@/Components/CreateRoom';
+import SiteCounters from '@/Components/SiteCounters';
+import { useLiveStats } from '@/lib/useLiveStats';
 import type { LucideIcon } from 'lucide-react';
 import { levelPercent, toNextText } from '@/lib/level';
 import Avatar from '@/Components/Avatar';
@@ -9,9 +12,9 @@ import { Card, chip, Equalizer, OnlineDot, ProgressBar, SectionTitle, StatTile }
 import { releases } from '@/lib/patchNotes';
 import AppLayout from '@/Layouts/AppLayout';
 import { PageProps } from '@/types';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { CalendarDays, CheckCircle2, Circle, Gift, Heart, ListMusic, Music, Plus, Radio, Search, ShoppingBag, Shuffle, ThumbsUp, Trophy, Users, X } from 'lucide-react';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface Activity {
     at: string;
@@ -66,70 +69,48 @@ const when = (iso: string) => {
 type Tab = 'all' | 'featured' | 'mine';
 type Sort = 'listeners' | 'newest' | 'name';
 
-function CreateRoom({ genres, onClose }: { genres: string[]; onClose: () => void }) {
-    const { data, setData, post, processing, errors } = useForm({ name: '', description: '', genre: '', is_private: false });
-    const submit = (e: FormEvent) => {
-        e.preventDefault();
-        post(route('rooms.store'), { onSuccess: onClose });
-    };
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
-            <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="w-full max-w-lg space-y-4 rounded-2xl border border-white/10 bg-neutral-900 p-6 shadow-2xl">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold">Create a room</h2>
-                    <button type="button" onClick={onClose} className="text-neutral-500 hover:text-white" aria-label="Close"><X size={18} /></button>
-                </div>
-                <div>
-                    <input autoFocus value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Room name" maxLength={50} className={input} />
-                    {errors.name && <p className="mt-1 text-sm text-red-400">{errors.name}</p>}
-                </div>
-                <div>
-                    <select value={data.genre} onChange={(e) => setData('genre', e.target.value)} className={input}>
-                        <option value="">Genre (optional)</option>
-                        {genres.map((g) => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                    {errors.genre && <p className="mt-1 text-sm text-red-400">{errors.genre}</p>}
-                </div>
-                <input value={data.description} onChange={(e) => setData('description', e.target.value)} placeholder="Description (optional)" maxLength={140} className={input} />
-                <label className="flex items-center gap-2 text-sm text-neutral-300">
-                    <input type="checkbox" checked={data.is_private} onChange={(e) => setData('is_private', e.target.checked)} className="rounded border-neutral-600 bg-neutral-800 text-violet-500 focus:ring-violet-500" />
-                    🔒 Private room <span className="text-xs text-neutral-500">(only you and SFD-DJ.EU staff can enter)</span>
-                </label>
-                <button disabled={processing} className="w-full rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 py-2.5 text-sm font-semibold text-white disabled:opacity-50">Create room</button>
-            </form>
-        </div>
-    );
-}
-
 export default function Dashboard({ rooms, mine, featured, genres, counts, nowPlaying, activity, stats, daily, friendIds, goals, continue: resume, friendsOnline, recommended, events, topDjs, mySongs }: Props) {
     const { auth: { user, guest }, community, pendingFriends, unreadWhispers } = usePage<PageProps>().props;
     const [creating, setCreating] = useState(false);
+    const liveStats = useLiveStats(usePage<PageProps>().props.siteStats);
     const [tab, setTab] = useState<Tab>('all');
     const [q, setQ] = useState('');
     const [genre, setGenre] = useState(() => new URLSearchParams(window.location.search).get('genre') ?? '');
     const [sort, setSort] = useState<Sort>('listeners');
     const [liveOnly, setLiveOnly] = useState(false);
+    const [streamsOnly, setStreamsOnly] = useState(false);
+    const [refreshFailed, setRefreshFailed] = useState(false);
     const [feed, setFeed] = useState<'all' | 'friends'>('all');
 
     // Live numbers: refetch just the changing parts every 5s while the tab is visible.
     useEffect(() => {
-        const timer = setInterval(() => {
-            if (!document.hidden) router.reload({ only: ['counts', 'nowPlaying', 'activity', 'friendsOnline'] });
-        }, 5000);
-        return () => clearInterval(timer);
+        let refreshing = false;
+        const refresh = () => {
+            if (document.hidden || refreshing) return;
+            refreshing = true;
+            router.reload({ only: ['rooms', 'mine', 'featured', 'counts', 'nowPlaying', 'activity', 'friendsOnline'],
+                onSuccess: () => setRefreshFailed(false),
+                onHttpException: () => { setRefreshFailed(true); return false; },
+                onNetworkError: () => { setRefreshFailed(true); return false; },
+                onFinish: () => { refreshing = false; },
+            });
+        };
+        const timer = setInterval(refresh, 5000);
+        document.addEventListener('visibilitychange', refresh);
+        return () => { clearInterval(timer); document.removeEventListener('visibilitychange', refresh); };
     }, []);
 
-    const online = Object.values(counts).reduce((a, b) => a + b, 0);
+    const online = liveStats.stats?.listening ?? null;
     const live = useMemo(() => rooms.filter((r) => (counts[r.id] ?? 0) > 0 || nowPlaying[r.id] || r.live).sort((a, b) => Number(!!b.live) - Number(!!a.live) || (counts[b.id] ?? 0) - (counts[a.id] ?? 0)).slice(0, 4), [rooms, counts, nowPlaying]); // rooms with a live stream first
 
     const source = tab === 'featured' ? featured : tab === 'mine' ? mine : rooms;
     const shown = useMemo(() => {
         const needle = q.trim().toLowerCase();
         return source
-            .filter((r) => (!genre || r.genre === genre) && (!needle || `${r.name} ${r.description ?? ''} ${r.genre ?? ''} ${r.user?.name ?? ''}`.toLowerCase().includes(needle)) && (!liveOnly || (counts[r.id] ?? 0) > 0 || nowPlaying[r.id]))
+            .filter((r) => !streamsOnly || !!r.live)
+            .filter((r) => (!genre || r.genre === genre) && (!needle || `${r.name} ${r.description ?? ''} ${r.genre ?? ''} ${r.user?.name ?? ''}`.toLowerCase().includes(needle)) && (!liveOnly || (counts[r.id] ?? 0) > 0 || nowPlaying[r.id] || r.live))
             .sort((a, b) => sort === 'name' ? a.name.localeCompare(b.name) : sort === 'newest' ? b.id - a.id : (counts[b.id] ?? 0) - (counts[a.id] ?? 0) || b.id - a.id);
-    }, [source, q, genre, sort, liveOnly, counts, nowPlaying]);
+    }, [source, q, genre, sort, liveOnly, streamsOnly, counts, nowPlaying]);
 
     const usedGenres = useMemo(() => [...new Set(rooms.map((r) => r.genre).filter(Boolean))] as string[], [rooms]);
     const feedItems = feed === 'friends' ? activity.filter((a) => friendIds.includes(a.user.id) || a.user.id === user.id) : activity;
@@ -151,54 +132,31 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
     ];
 
     return (
-        <AppLayout title="Dashboard">
+        <AppLayout title="Discover" subtitle="Good music starts with good company." actions={<a href="#discover-rooms" className="rounded-xl border border-white/15 px-4 py-2 text-sm text-neutral-300 hover:bg-white/5">Browse rooms</a>}>
             <Head title="Dashboard" />
 
-            {/* hero */}
-            <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-fuchsia-600/25 via-violet-600/15 to-sky-600/10 p-6 sm:p-8">
-                <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-fuchsia-500/20 blur-3xl" />
-                {guest ? (
-                    <div className="relative flex flex-wrap items-center justify-between gap-5">
-                        <div className="max-w-xl">
-                            <h2 className="text-3xl font-black tracking-tight">Welcome to SFD-DJ.EU 🎧</h2>
-                            <p className="mt-2 text-neutral-300">You are browsing as a guest: watch rooms and read the chat. Log in to chat, vote, build playlists and DJ.</p>
-                            <p className="mt-3 flex items-center gap-2 text-sm text-green-400"><Equalizer /> {online} listening right now</p>
-                        </div>
-                        <div className="flex gap-2">
-                            {rooms.length > 1 && <button onClick={surprise} className="flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2.5 text-sm font-semibold hover:bg-white/20"><Shuffle size={16} /> Surprise me</button>}
-                            <Link href={route('login')} className="rounded-lg bg-white/10 px-5 py-2.5 text-sm font-semibold hover:bg-white/20">Log in</Link>
-                            <Link href={route('register')} className="rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold hover:opacity-90">Register free</Link>
+            <section className="relative isolate overflow-hidden rounded-3xl border border-violet-300/20 bg-neutral-900 p-6 shadow-2xl shadow-violet-950/20 sm:p-8">
+                <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,rgba(139,92,246,0.35),transparent_65%)]" />
+                <div className="grid items-center gap-8 md:grid-cols-[1.3fr_1fr]">
+                    <div>
+                        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300"><Radio size={13} /> Your music. Your people.</span>
+                        <h2 className="mt-5 text-4xl font-black leading-tight tracking-tight sm:text-5xl">Find your next<br /><span className="bg-linear-to-r from-violet-300 via-fuchsia-300 to-sky-300 bg-clip-text text-transparent">favourite room.</span></h2>
+                        <p className="mt-4 max-w-md text-sm leading-relaxed text-neutral-300">{guest ? 'Discover live music, meet the community and find a sound that feels like home.' : `${greeting()}, ${user.name}. Take the decks, tune into a stream or bring your friends together.`}</p>
+                        <div className="mt-6 flex flex-wrap gap-3">
+                            <a href="#discover-rooms" className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-neutral-950 hover:bg-violet-100"><Search size={16} /> Explore rooms</a>
+                            {guest ? <Link href={route('register')} className="rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold hover:bg-white/10">Join the community</Link> : <button onClick={() => setCreating(true)} className="flex items-center gap-2 rounded-xl border border-violet-300/30 bg-violet-500/20 px-5 py-3 text-sm font-semibold text-violet-100 hover:bg-violet-500/30"><Plus size={17} /> Create a room</button>}
+                            {rooms.length > 0 && <button onClick={surprise} className="flex items-center gap-2 px-2 py-3 text-sm text-neutral-300 hover:text-white"><Shuffle size={15} /> Surprise me</button>}
                         </div>
                     </div>
-                ) : (
-                    <div className="relative flex flex-wrap items-center justify-between gap-6">
-                        <div className="flex min-w-0 items-center gap-4">
-                            <Avatar name={user.name} avatar={user.avatar} cosmetics={user.cosmetics} className="h-16 w-16 text-2xl" />
-                            <div className="min-w-0">
-                                <p className="text-sm text-neutral-400">{greeting()},</p>
-                                <h2 className="flex flex-wrap items-center gap-2 text-2xl font-black tracking-tight sm:text-3xl">{user.name} <RoleBadge role={user.primary_role} /></h2>
-                                <p className="mt-1 flex items-center gap-2 text-sm text-green-400"><Equalizer /> {online} {online === 1 ? 'person is' : 'people are'} listening right now</p>
-                            </div>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            {daily?.claimable && <button onClick={() => router.post(route('shop.daily'), {}, { preserveScroll: true })} data-daily className="flex items-center gap-2 rounded-lg bg-linear-to-r from-amber-400 to-amber-500 px-5 py-2.5 text-sm font-bold text-amber-950 shadow-lg shadow-amber-500/20 hover:from-amber-300 hover:to-amber-400"><CoinIcon className="h-4 w-4" /> Claim {daily.amount} daily coins</button>}
-                            <button onClick={() => setCreating(true)} className="flex items-center gap-2 rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-5 py-2.5 text-sm font-semibold hover:opacity-90"><Plus size={16} /> Create room</button>
-                            {live[0] && <Link href={route('rooms.show', live[0].slug)} data-room-name={live[0].name} className="flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2.5 text-sm font-semibold hover:bg-white/20"><Radio size={16} /> Jump into {live[0].name}</Link>}
-                            {rooms.length > 1 && <button onClick={surprise} className="flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2.5 text-sm font-semibold hover:bg-white/20"><Shuffle size={16} /> Surprise me</button>}
-                        </div>
-                        {stats && (
-                            <div className="relative w-full">
-                                <div className="mb-1.5 flex items-baseline justify-between text-xs text-neutral-300">
-                                    <span className="font-semibold">Level {stats.level}</span>
-                                    <span>{stats.xp.toLocaleString()} XP · {toNextText(stats.xp, stats.level)}</span>
-                                </div>
-                                <ProgressBar value={progress} />
-                            </div>
-                        )}
+                    <div className="rounded-2xl border border-white/15 bg-black/30 p-5 backdrop-blur-sm">
+                        <div className="mb-4 flex items-center justify-between gap-3"><span className="text-xs font-bold uppercase tracking-widest text-violet-200">On air now</span><Equalizer /></div>
+                        {live[0] ? <><h3 className="truncate text-xl font-bold">{live[0].name}</h3><p className="mt-2 line-clamp-2 text-sm text-neutral-300">{live[0].live?.title ?? nowPlaying[live[0].id]?.title ?? live[0].description ?? 'Join the conversation and share your music.'}</p><div className="mt-5 flex items-center justify-between gap-3"><span className="text-xs text-emerald-300">{counts[live[0].id] ?? 0} listening in this room</span><Link href={route('rooms.show', live[0].slug)} data-room-name={live[0].name} className="rounded-xl bg-violet-500 px-4 py-2 text-sm font-bold text-white hover:bg-violet-400">Tune in</Link></div></> : <><h3 className="text-xl font-bold">Be the first on the decks</h3><p className="mt-2 text-sm leading-relaxed text-neutral-400">A great session starts with one song. Open a room and set the mood.</p></>}
+                        {!guest && stats && <div className="mt-5 border-t border-white/10 pt-4"><div className="mb-2 flex justify-between text-xs text-neutral-300"><span>Level {stats.level}</span><span>{toNextText(stats.xp, stats.level)}</span></div><ProgressBar value={progress} /></div>}
+                        {!guest && daily?.claimable && <button onClick={() => router.post(route('shop.daily'), {}, { preserveScroll: true })} data-daily className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2.5 text-sm font-semibold text-amber-200 hover:bg-amber-400/20"><CoinIcon className="h-4 w-4" /> Claim {daily.amount} daily coins</button>}
                     </div>
-                )}
+                </div>
             </section>
-
+            <SiteCounters {...liveStats} />
             {/* things that need you */}
             {!guest && (pendingFriends > 0 || unreadWhispers > 0) && (
                 <div className="flex flex-wrap gap-3">
@@ -226,7 +184,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                     </>
                 ) : (
                     <>
-                        <StatTile icon={Radio} tone="emerald" label="Listening now" value={online} />
+                        <StatTile icon={Radio} tone="emerald" label="Listening now" value={online ?? '?'} />
                         <StatTile icon={Music} tone="violet" label="Rooms" value={rooms.length} />
                         <StatTile icon={Trophy} tone="amber" label="Top DJ plays" value={topDjs[0]?.plays ?? 0} />
                         <StatTile icon={CalendarDays} tone="sky" label="Upcoming events" value={events.length} />
@@ -236,6 +194,55 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
 
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                 <div className="space-y-8 lg:col-span-2">
+                    {/* room browser */}
+                    <section id="discover-rooms" className="scroll-mt-6 rounded-3xl border border-white/10 bg-neutral-900/60 p-4 sm:p-6">
+                        <SectionTitle
+                            title="Find your sound"
+                            hint="Explore the community, or make a space of your own."
+                            action={!guest && <button onClick={() => setCreating(true)} className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20"><Plus size={14} /> New room</button>}
+                        />
+                        <div className="space-y-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                                {([['all', `All (${rooms.length})`], ['featured', `⭐ Featured (${featured.length})`], ...(!guest ? [['mine', `Mine (${mine.length})`]] : [])] as [Tab, string][]).map(([k, label]) => (
+                                    <button key={k} onClick={() => setTab(k)} className={chip(tab === k)}>{label}</button>
+                                ))}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <div className="relative min-w-48 flex-1">
+                                    <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+                                    <input value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search rooms, genres or hosts" placeholder="Search rooms, genres, hosts" className={`${input} pl-9`} />
+                                </div>
+                                <select aria-label="Sort rooms" value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={input.replace('w-full', 'w-auto')}>
+                                    <option value="listeners">Most listeners</option>
+                                    <option value="newest">Newest</option>
+                                    <option value="name">A to Z</option>
+                                </select>
+                                <label className="flex items-center gap-2 text-xs text-neutral-300"><input type="checkbox" checked={liveOnly} onChange={(e) => setLiveOnly(e.target.checked)} className="rounded border-neutral-600 bg-neutral-800 text-violet-500 focus:ring-violet-500" /> Live only</label>
+                                <label className="flex items-center gap-2 text-xs text-neutral-300"><input type="checkbox" checked={streamsOnly} onChange={(e) => setStreamsOnly(e.target.checked)} className="rounded border-neutral-600 bg-neutral-800 text-violet-500 focus:ring-violet-500" /> Livestreams</label>
+                            </div>
+                            {usedGenres.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                    <button onClick={() => setGenre('')} className={chip(genre === '')}>Any genre</button>
+                                    {usedGenres.map((g) => <button key={g} onClick={() => setGenre(genre === g ? '' : g)} className={chip(genre === g)}>{g}</button>)}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-400"><span role="status">{shown.length} {shown.length === 1 ? 'room' : 'rooms'} found</span><span className={refreshFailed ? 'text-amber-300' : 'text-emerald-300'}>{refreshFailed ? 'Connection interrupted · retrying' : 'Refreshes every 5 seconds'}</span>{(q || genre || liveOnly || streamsOnly) && <button onClick={() => { setQ(''); setGenre(''); setLiveOnly(false); setStreamsOnly(false); }} className="rounded-lg bg-white/10 px-3 py-1.5 text-white hover:bg-white/20">Clear filters</button>}</div>
+                        {shown.length === 0 ? (
+                            <Card className="mt-4 p-8 text-center">
+                                <p className="text-3xl">🎶</p>
+                                <p className="mt-2 font-semibold">{rooms.length === 0 ? 'No rooms yet' : tab === 'mine' ? 'You have not created a room yet' : 'No rooms match'}</p>
+                                <p className="mt-1 text-sm text-neutral-400">{rooms.length === 0 || tab === 'mine' ? 'Make the first one and invite your friends.' : 'Try a different search or clear the filters.'}</p>
+                                {!guest && (rooms.length === 0 || tab === 'mine') && <button onClick={() => setCreating(true)} className="mt-4 rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-5 py-2 text-sm font-semibold">Create a room</button>}
+                            </Card>
+                        ) : (
+                            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                                {shown.map((r) => <RoomCard key={r.id} room={r} listening={counts[r.id] ?? 0} playing={nowPlaying[r.id]} />)}
+                            </div>
+                        )}
+                    </section>
+
                     {/* live now */}
                     {live.length > 0 && (
                         <section>
@@ -262,51 +269,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                         </section>
                     )}
 
-                    {/* room browser */}
-                    <section>
-                        <SectionTitle
-                            title="Rooms"
-                            action={!guest && <button onClick={() => setCreating(true)} className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20"><Plus size={14} /> New room</button>}
-                        />
-                        <div className="space-y-3">
-                            <div className="flex flex-wrap items-center gap-2">
-                                {([['all', `All (${rooms.length})`], ['featured', `⭐ Featured (${featured.length})`], ...(!guest ? [['mine', `Mine (${mine.length})`]] : [])] as [Tab, string][]).map(([k, label]) => (
-                                    <button key={k} onClick={() => setTab(k)} className={chip(tab === k)}>{label}</button>
-                                ))}
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <div className="relative min-w-48 flex-1">
-                                    <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                    <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search rooms, genres, hosts" className={`${input} pl-9`} />
-                                </div>
-                                <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={input.replace('w-full', 'w-auto')}>
-                                    <option value="listeners">Most listeners</option>
-                                    <option value="newest">Newest</option>
-                                    <option value="name">A to Z</option>
-                                </select>
-                                <label className="flex items-center gap-2 text-xs text-neutral-300"><input type="checkbox" checked={liveOnly} onChange={(e) => setLiveOnly(e.target.checked)} className="rounded border-neutral-600 bg-neutral-800 text-violet-500 focus:ring-violet-500" /> Live only</label>
-                            </div>
-                            {usedGenres.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5">
-                                    <button onClick={() => setGenre('')} className={chip(genre === '')}>Any genre</button>
-                                    {usedGenres.map((g) => <button key={g} onClick={() => setGenre(genre === g ? '' : g)} className={chip(genre === g)}>{g}</button>)}
-                                </div>
-                            )}
-                        </div>
 
-                        {shown.length === 0 ? (
-                            <Card className="mt-4 p-8 text-center">
-                                <p className="text-3xl">🎶</p>
-                                <p className="mt-2 font-semibold">{rooms.length === 0 ? 'No rooms yet' : tab === 'mine' ? 'You have not created a room yet' : 'No rooms match'}</p>
-                                <p className="mt-1 text-sm text-neutral-400">{rooms.length === 0 || tab === 'mine' ? 'Make the first one and invite your friends.' : 'Try a different search or clear the filters.'}</p>
-                                {!guest && (rooms.length === 0 || tab === 'mine') && <button onClick={() => setCreating(true)} className="mt-4 rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 px-5 py-2 text-sm font-semibold">Create a room</button>}
-                            </Card>
-                        ) : (
-                            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                                {shown.map((r) => <RoomCard key={r.id} room={r} listening={counts[r.id] ?? 0} playing={nowPlaying[r.id]} />)}
-                            </div>
-                        )}
-                    </section>
                 </div>
 
                 <aside className="space-y-6">

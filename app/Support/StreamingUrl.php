@@ -23,6 +23,7 @@ class StreamingUrl
         if (! $parts || ($parts['scheme'] ?? '') !== 'https' || ! $provider || isset($parts['user']) || isset($parts['pass']) || isset($parts['port']) || preg_match('/[\x00-\x20\\\\]/', $url)) {
             throw ValidationException::withMessages(['url' => 'Use an HTTPS link from YouTube, Spotify or SoundCloud, without a custom port or login details.']);
         }
+
         return $provider;
     }
 
@@ -31,11 +32,17 @@ class StreamingUrl
     {
         $provider = self::provider($url);
         for ($hop = 0; $hop < 4; $hop++) {
-            if (self::provider($url) !== $provider) break;
+            if (self::provider($url) !== $provider) {
+                break;
+            }
             $response = Http::withoutRedirecting()->timeout(6)->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; SFD-DJ.EU)'])->get($url);
-            if (! $response->redirect()) return $response;
+            if (! $response->redirect()) {
+                return $response;
+            }
             $location = $response->header('Location');
-            if (! $location) break;
+            if (! $location) {
+                break;
+            }
             $url = (string) UriResolver::resolve(new Uri($url), new Uri($location));
         }
         throw ValidationException::withMessages(['url' => 'This streaming link redirects to an unsupported address. Use the full track or playlist link.']);

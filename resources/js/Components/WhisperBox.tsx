@@ -1,10 +1,12 @@
 import Avatar from '@/Components/Avatar';
-import { EmojiPicker, EmotePicker, withEmojis } from '@/Components/ChatPanel';
+import { EmojiPicker, EmotePicker } from '@/Components/ChatPanel';
+import { withEmojis } from '@/lib/chatEmojis';
 import { fieldClass } from '@/Components/ui';
 import VoiceBubble, { voiceTime } from '@/Components/VoiceBubble';
 import VoiceRecorderBar from '@/Components/VoiceRecorderBar';
 import { GroupAvatar, GroupInfo, NewGroup } from '@/Components/WhisperGroupPanel';
 import { refreshCounts } from '@/lib/counts';
+import { startWhisperCall } from '@/lib/calls';
 import { EmoteInfo, useGlobalEmotes, withEmoteTokens } from '@/lib/emotes';
 import { getJson, post, sendJson, uploadJson } from '@/lib/post';
 import { ago } from '@/lib/time';
@@ -12,7 +14,7 @@ import { canRecordVoice, Recording } from '@/lib/voiceRecorder';
 import { PageProps } from '@/types';
 import { router, usePage } from '@inertiajs/react';
 import { echo } from '@laravel/echo-react';
-import { ArrowLeft, MessageCirclePlus, Mic, Reply, Search, Send, Smile, UserRound, UsersRound } from 'lucide-react';
+import { ArrowLeft, MessageCirclePlus, Mic, Phone, Video, Reply, Search, Send, Smile, UserRound, UsersRound } from 'lucide-react';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface Person {
@@ -374,6 +376,8 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
                                         <p className="truncate font-semibold">{other.name}</p>
                                         <p className="truncate text-xs text-neutral-500">@{other.username}</p>
                                     </div>
+                                    <button onClick={() => startWhisperCall(other, false)} aria-label={`Voice call ${other.name}`} title="Voice call" className="rounded-lg bg-violet-500/15 p-2 text-violet-200 hover:bg-violet-500/30"><Phone size={17} /></button>
+                                    <button onClick={() => startWhisperCall(other, true)} aria-label={`Video call ${other.name}`} title="Video call" className="rounded-lg bg-violet-500/15 p-2 text-violet-200 hover:bg-violet-500/30"><Video size={17} /></button>
                                     <button onClick={() => (openProfile ? openProfile(other.id, other.name) : router.visit(route('users.show', other.id)))} className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20"><UserRound size={14} /> Profile</button>
                                 </>
                             ) : group ? (
