@@ -2,6 +2,7 @@ import SocialIcon from '@/Components/SocialIcon';
 import { SettingsSection } from '@/Components/ui';
 import SettingsLayout from '@/Layouts/SettingsLayout';
 import { embedded } from '@/lib/embed';
+import { browserChannel } from '@/lib/browserChannel';
 import { Head, router } from '@inertiajs/react';
 import { Music2 } from 'lucide-react';
 import { MouseEvent, ReactNode, useEffect, useState } from 'react';
@@ -19,7 +20,8 @@ function ConnectLink({ service, className, children }: { service: Service; class
     const open = (e: MouseEvent) => {
         if (!embedded) return;
         e.preventDefault();
-        window.open(`${route('settings.connections')}?connect=${service}`, POPUP, 'popup,width=540,height=720');
+        const popup = window.open(`${route('settings.connections')}?connect=${service}`, POPUP, 'popup,width=540,height=720');
+        if (!popup) window.top!.location.href = route(START[service]);
     };
 
     return <a href={route(START[service])} onClick={open} className={className}>{children}</a>;
@@ -29,7 +31,7 @@ type Notices = { discord: string | null; spotify: string | null; spotifyOk: bool
 
 /**
  * The small sign-in window runs through this page twice: first (?connect=spotify) it goes on to the other site; back from it, it hands what the site
- * said to the overlay in the room (a BroadcastChannel, which still works after the other site cut the window off from its opener) and closes.
+ * said to the overlay in the room through a browser channel, with storage and same-origin window fallbacks, and closes.
  * The overlay reloads to show the new connection, with that message. Returns the message the overlay got, if any.
  */
 function useSignInWindow(mine: Notices): Notices | null {
@@ -37,15 +39,18 @@ function useSignInWindow(mine: Notices): Notices | null {
 
     useEffect(() => {
         const service = new URLSearchParams(window.location.search).get('connect');
-        if (service && service in START) {
-            sessionStorage.setItem(POPUP, '1');
+        if (service && Object.hasOwn(START, service)) {
+            try { sessionStorage.setItem(POPUP, '1'); } catch { /* popup name is the fallback */ }
+            window.name = POPUP;
             window.location.replace(route(START[service as Service]));
             return;
         }
 
-        if (sessionStorage.getItem(POPUP)) {
-            sessionStorage.removeItem(POPUP);
-            const channel = new BroadcastChannel(POPUP);
+        let popup = window.name === POPUP;
+        try { popup ||= !!sessionStorage.getItem(POPUP); sessionStorage.removeItem(POPUP); } catch { /* storage disabled */ }
+        if (popup) {
+            window.name = '';
+            const channel = browserChannel<Notices>(POPUP, () => {});
             channel.postMessage(mine);
             channel.close();
             window.close();
@@ -53,11 +58,11 @@ function useSignInWindow(mine: Notices): Notices | null {
         }
 
         if (!embedded) return;
-        const channel = new BroadcastChannel(POPUP);
-        channel.onmessage = (e: MessageEvent<Notices>) => {
-            setHanded(e.data);
+        const channel = browserChannel<Notices>(POPUP, (data) => {
+            if (!data || !['discord', 'spotify', 'youtube'].every((key) => data[key as keyof Notices] === null || typeof data[key as keyof Notices] === 'string') || typeof data.spotifyOk !== 'boolean') return;
+            setHanded(data);
             router.reload();
-        };
+        });
 
         return () => channel.close();
     }, []); // eslint-disable-line react-hooks/exhaustive-deps

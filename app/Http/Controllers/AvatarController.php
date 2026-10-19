@@ -343,6 +343,7 @@ class AvatarController extends Controller
     public function outfit(Request $request): RedirectResponse
     {
         $data = $request->validate([
+            'use_character_as_avatar' => ['sometimes', 'boolean'],
             'avatar' => ['sometimes', 'required', Rule::in(self::avatarKeys())], // a character: never none
             'badge' => ['sometimes', 'nullable', Rule::in(array_keys(self::BADGES))],
             'accessory' => ['sometimes', 'nullable', Rule::in(array_keys(self::ACCESSORIES))],
@@ -350,6 +351,10 @@ class AvatarController extends Controller
             'effect' => ['sometimes', 'nullable', Rule::in(array_keys(self::EFFECTS))],
         ]);
         $user = $request->user();
+
+        if ($request->boolean('use_character_as_avatar') && ! isset($data['avatar'])) {
+            throw ValidationException::withMessages(['avatar' => 'Choose a character to use as your profile picture.']);
+        }
 
         foreach (self::SLOTS as $slot) {
             if (array_key_exists($slot, $data)) {
@@ -367,8 +372,16 @@ class AvatarController extends Controller
                 $data[$slot] === null ? $worn = array_diff_key($worn, [$slot => 1]) : $worn[$slot] = $data[$slot];
             }
         }
+        $oldPhoto = null;
+        if ($request->boolean('use_character_as_avatar')) {
+            $oldPhoto = str_starts_with((string) $user->avatar, 'img:') ? substr($user->avatar, 4) : null;
+            $user->avatar = $data['avatar'];
+        }
         $user->cosmetics = $worn ?: null;
         $user->save();
+        if ($oldPhoto !== null) {
+            MediaController::disk()->delete('avatars/'.$oldPhoto);
+        }
         $user->announce();
 
         return back();

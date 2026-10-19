@@ -25,6 +25,7 @@ import { backgroundClass } from '@/lib/backgrounds';
 import type { LiveInfo } from '@/lib/live';
 import { getJson, post, send, sendJson } from '@/lib/post';
 import { refreshCounts } from '@/lib/counts';
+import { invalidateProfile } from '@/lib/profileCache';
 import { withDefaults } from '@/lib/prefs';
 import { saveCompactPreference, useCompactPreferences } from '@/lib/compactPreferences';
 import RoomPlayer from '@/lib/roomPlayer';
@@ -224,6 +225,14 @@ export default function Room({
     const [playback, setPlayback] = useState(() => stamp(initialPlayback));
     const [mine, setMine] = useState<MyVotes>(myVotes);
     const [users, setUsers] = useState<Member[]>(botMembers);
+    // Saves in a same-origin shop overlay refresh auth even if the live socket is unavailable.
+    useEffect(() => {
+        if (guest) return;
+        setUsers((currentUsers) => currentUsers.map((member) => member.id === user.id ? {
+            ...member, name: user.name, avatar: user.avatar, character: user.character, cosmetics: user.cosmetics,
+            role: user.primary_role, badges: user.badges, level: user.level, flag: user.flag,
+        } : member));
+    }, [guest, user.id, user.name, user.avatar, user.character, user.cosmetics, user.primary_role, user.badges, user.level, user.flag]);
     const [friendIds, setFriendIds] = useState(initialFriendIds);
     const [typers, setTypers] = useState<Record<number, string>>({});
     const [tab, setTab] = useState<Tab>(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'room' : 'chat');
@@ -500,6 +509,7 @@ export default function Room({
             .listen('.room-updated', reloadRoom)
             .listen('.vote-cast', sayVote)
             .listen('.user-updated', (m: Member) => {
+                invalidateProfile(m.id);
                 setUsers((p) => p.map((u) => (u.id === m.id ? { ...u, ...m } : u)));
                 if (m.id === user.id) router.reload({ only: ['auth'] }); // my own menu, coins and name
             })
@@ -827,6 +837,9 @@ export default function Room({
     // whoever is in the room right now is drawn as they are now: a new frame or a new flag shows in the chat lines they wrote before, too
     const here = new Map(users.map((u) => [u.id, u]));
     const shownMessages = messages.filter((m) => !isTransientActivity(m)).map((m) => {
+        if (m.type !== 'system' && !guest && m.user_id === user.id) {
+            return { ...m, avatar: user.avatar, cosmetics: user.cosmetics, badges: user.badges, level: user.level, role: user.primary_role };
+        }
         const u = m.type === 'system' ? undefined : here.get(m.user_id);
 
         return u ? { ...m, avatar: u.avatar, cosmetics: u.cosmetics, badges: u.badges ?? m.badges, level: u.level ?? m.level, role: u.role ?? m.role } : m;
@@ -1114,7 +1127,7 @@ export default function Room({
             {card && (
                 <Suspense fallback={null}>
                     <UserCard
-                        user={card.user}
+                        user={users.find((member) => member.id === card.user.id) ?? card.user}
                         anchor={card.anchor}
                         viewerId={user.id}
                         guest={guest}

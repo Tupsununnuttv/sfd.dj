@@ -38,7 +38,7 @@ export default function VoiceRecorderBar({ onSend, onCancel, onProblem }: { onSe
             onTick: (s) => alive && setSeconds(s),
             onLevel: (level) => alive && setLevels((previous) => [...previous.slice(1), level]),
             onLimit: () => alive && void send(),
-        }).then(() => alive && setLive(true)).catch((error) => { keep.current.onProblem(micProblem(error)); keep.current.onCancel(); });
+        }).then(() => alive && setLive(true)).catch((error) => { if (alive) { keep.current.onProblem(micProblem(error)); keep.current.onCancel(); } });
 
         return () => { alive = false; mine.cancel(); };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once: the recording lasts as long as the strip does

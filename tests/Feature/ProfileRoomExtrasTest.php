@@ -459,6 +459,23 @@ class ProfileRoomExtrasTest extends TestCase
         $this->assertContains('Only the first 300 rules are used.', $long['notes']);
     }
 
+    public function test_legacy_chat_selectors_use_the_real_message_hook(): void
+    {
+        foreach (['chat-message', 'message-bubble'] as $alias) {
+            foreach (['', ':hover'] as $pseudo) {
+                $result = RoomCss::clean(".sfd-chat .{$alias}{$pseudo}{color:red}");
+                $this->assertSame([], $result['notes']);
+                $this->assertSame(".sfd-room .sfd-chat .sfd-message{$pseudo}{color:red}", $result['css']);
+            }
+        }
+
+        foreach (['.sfd-chat .chat-message-extra', '.sfd-chat .message-bubble[data-x]', '.chat-message:has(a)'] as $selector) {
+            $result = RoomCss::clean($selector.'{color:red}');
+            $this->assertSame('', $result['css']);
+            $this->assertNotEmpty($result['notes']);
+        }
+    }
+
     public function test_the_css_hooks_are_the_same_on_the_server_and_in_the_editor_and_are_all_on_the_page(): void
     {
         preg_match_all("/^    \['([a-z]+)', '/m", $this->source('resources/js/lib/cssHooks.ts'), $listed);

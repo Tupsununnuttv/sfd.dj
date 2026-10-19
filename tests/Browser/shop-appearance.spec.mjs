@@ -1,0 +1,57 @@
+import { test, expect as baseExpect } from '@playwright/test';
+const expect = baseExpect.configure({ timeout: 30000 });
+
+test('buy, equip and save updates the surrounding room and profile without a live socket', async ({ page, context }, testInfo) => {
+    test.skip(process.env.BROWSER_SHOP_TEST !== '1', 'Requires the dedicated seeded shop test server.');
+    const base = process.env.BROWSER_APP_URL;
+    if (!base || !['localhost', '127.0.0.1'].includes(new URL(base).hostname)) throw new Error('Shop fixtures are local only.');
+    test.setTimeout(120000);
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await context.addInitScript(() => {
+        window.BroadcastChannel = class { constructor() { throw new DOMException('Blocked', 'SecurityError'); } };
+        Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('Blocked', 'SecurityError'); } });
+    });
+    await context.routeWebSocket(/.*/, (socket) => socket.close());
+    await page.goto(`${base}/login`);
+    await page.getByLabel('Email or username').fill(`${testInfo.project.name}@browser-test.invalid`);
+    await page.getByLabel('Password', { exact: true }).fill('Browser-Test-Only-9284!');
+    await page.getByRole('button', { name: 'Log in', exact: true }).click();
+    await expect(page).not.toHaveURL(/\/login$/);
+    await page.goto(`${base}/rooms/browser-shop-${testInfo.project.name}`);
+    const oldMessage = page.locator('.sfd-message').filter({ hasText: 'Browser avatar persistence check' }).first();
+    await expect(oldMessage).toBeVisible();
+    const sidebar = page.locator('[data-profile-card]');
+    await expect(sidebar.getByText('Level 29', { exact: true })).toBeVisible();
+    await expect(sidebar.getByText('Promoter', { exact: true })).toBeVisible();
+    await expect(sidebar.locator('img').first()).toHaveAttribute('src', /\/media\/avatar\//);
+    await page.getByRole('link', { name: /Avatar shop/ }).click();
+    const shop = page.frameLocator('iframe[title="Avatar shop"]');
+    const card = shop.locator('[data-item="char:bamboopanda"]');
+    await card.locator('button').first().click();
+    await expect(shop.getByRole('checkbox', { name: /Use this character as my profile picture/ })).toBeChecked();
+    await card.locator('[data-buy]').click();
+    await expect(card.getByText('Yours', { exact: true })).toBeVisible();
+    await shop.getByRole('button', { name: 'Save look', exact: true }).click();
+    await expect(shop.getByText('Saved. Your character and profile picture are now up to date.', { exact: true })).toBeVisible();
+    await expect(sidebar.locator('img').first()).toHaveAttribute('src', /\/characters\/standing\/bamboopanda/);
+    await expect(oldMessage.locator('img').first()).toHaveAttribute('src', /\/characters\/standing\/bamboopanda/);
+    await expect.poll(() => sidebar.locator('img').first().evaluate((image) => image.complete && image.naturalWidth > 0)).toBe(true);
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await page.reload();
+    await expect(sidebar.locator('img').first()).toHaveAttribute('src', /\/characters\/standing\/bamboopanda/);
+    await page.locator('a[title*="Open your profile"]').click();
+    const profile = page.frameLocator('iframe[title="Profile"]');
+    await expect(profile.locator('img[src*="/characters/standing/bamboopanda"]').first()).toBeVisible();
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    const dimensions = await sidebar.evaluate((element) => {
+        const name = element.querySelector('.truncate');
+        const role = [...element.querySelectorAll('span')].find((span) => span.textContent === 'Promoter');
+        return { width: element.scrollWidth, box: element.clientWidth, nameWidth: name?.clientWidth ?? 0, roleFits: !!role && role.getBoundingClientRect().right <= element.getBoundingClientRect().right + 1 };
+    });
+    expect(dimensions.width).toBeLessThanOrEqual(dimensions.box + 1);
+    expect(dimensions.nameWidth).toBeGreaterThan(30);
+    expect(dimensions.roleFits).toBe(true);
+    await sidebar.screenshot({ path: testInfo.outputPath('profile-card.png') });
+    expect(errors).toEqual([]);
+});

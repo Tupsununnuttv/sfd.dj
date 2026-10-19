@@ -21,7 +21,7 @@ export default function PeekCard({ user, anchor }: { user: CardUser; anchor: DOM
     return (
         <div aria-hidden className="pointer-events-none fixed z-55 animate-menu overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/95 shadow-2xl shadow-black/60 backdrop-blur-md" style={{ left, top, width }}>
             <div className="flex items-center gap-3 bg-linear-to-br from-violet-600/30 via-fuchsia-600/15 to-transparent p-3">
-                <Avatar name={user.name} avatar={user.avatar} cosmetics={user.cosmetics} className="h-12 w-12 text-2xl" />
+                <Avatar name={profile?.name ?? user.name} avatar={profile?.avatar !== undefined ? profile.avatar : user.avatar} cosmetics={profile?.cosmetics !== undefined ? profile.cosmetics : user.cosmetics} className="h-12 w-12 text-2xl" />
                 <div className="min-w-0">
                     <p className="flex items-center gap-1.5 truncate text-sm font-bold" style={{ color: user.role.color }}>
                         {!!user.badges?.length && <Badges badges={user.badges} />}

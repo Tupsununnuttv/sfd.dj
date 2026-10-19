@@ -1,3 +1,4 @@
+import { copyText } from '@/lib/clipboard';
 import { Card, ghostBtn, SectionTitle } from '@/Components/ui';
 import { router } from '@inertiajs/react';
 import { Check, CheckCircle2, Copy, MailWarning, Send } from 'lucide-react';
@@ -16,7 +17,7 @@ MAIL_FROM_NAME="SFD-DJ.EU"`;
 export default function EmailTab({ email, gotoTab }: { email: NonNullable<AdminProps['email']>; gotoTab: (tab: 'Users') => void }) {
     const [copied, setCopied] = useState(false);
     const [busy, setBusy] = useState(false);
-    const copy = () => { navigator.clipboard?.writeText(ENV); setCopied(true); setTimeout(() => setCopied(false), 1600); };
+    const copy = () => { void copyText(ENV).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); }).catch(() => {}); };
     const test = () => router.post(route('admin.email.test'), {}, { preserveScroll: true, onStart: () => setBusy(true), onFinish: () => setBusy(false) });
     const choose = (verification: 'required' | 'optional') => router.put(route('admin.email'), { verification }, { preserveScroll: true });
 

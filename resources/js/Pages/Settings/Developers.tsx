@@ -1,3 +1,4 @@
+import { copyText } from '@/lib/clipboard';
 import SettingsLayout from '@/Layouts/SettingsLayout';
 import { Head, router, usePage } from '@inertiajs/react';
 import { Check, Copy } from 'lucide-react';
@@ -25,7 +26,7 @@ const primary = 'rounded-md bg-linear-to-r from-fuchsia-500 to-violet-500 px-4 p
 
 function Address({ label, url, here }: { label: string; url: string; here: boolean }) {
     const [copied, setCopied] = useState(false);
-    const copy = () => navigator.clipboard?.writeText(url).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1500); });
+    const copy = () => { void copyText(url).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1500); }).catch(() => {}); };
 
     return (
         <li className="flex items-center gap-3 py-2">

@@ -1,3 +1,4 @@
+import { copyText } from '@/lib/clipboard';
 import Avatar from '@/Components/Avatar';
 import RoleBadge from '@/Components/RoleBadge';
 import RoomBadge from '@/Components/RoomBadge';
@@ -43,9 +44,10 @@ export default function RoomInfoPanel({ room, host, online, team, now, queue, st
 }) {
     const [copied, setCopied] = useState(false);
     const copy = () => {
-        navigator.clipboard?.writeText(route('rooms.show', room.slug));
-        setCopied(true);
-        window.setTimeout(() => setCopied(false), 1500);
+        void copyText(route('rooms.show', room.slug)).then(() => {
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1500);
+        }).catch(() => {});
     };
 
     const since = new Date(room.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });

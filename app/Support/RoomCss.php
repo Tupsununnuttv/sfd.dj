@@ -268,6 +268,10 @@ final class RoomCss
     {
         $selector = preg_replace('/\s+/', ' ', strtolower($selector));
 
+        // Older room themes call the chat row by these names. Translate to the
+        // real hook before validation so the same scope and safety rules apply.
+        $selector = preg_replace('/\.(?:chat-message|message-bubble)(?![a-z0-9_-])/', '.sfd-message', $selector);
+
         if ($selector === '' || preg_match('/[\[\]#"\'`;{}@]/', $selector)) {
             return null; // ids, attribute selectors and strings are not allowed
         }

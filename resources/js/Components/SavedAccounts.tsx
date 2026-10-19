@@ -1,3 +1,4 @@
+import { copyText } from '@/lib/clipboard';
 import Avatar from '@/Components/Avatar';
 import { card } from '@/Components/ui';
 import { canSaveAccounts, forgetAccount, loadAccounts, SavedAccount } from '@/lib/savedAccounts';
@@ -19,10 +20,10 @@ export default function SavedAccounts({ onUse }: { onUse: (a: SavedAccount) => v
     }, []);
 
     const copy = (a: SavedAccount) => {
-        navigator.clipboard?.writeText(a.password).then(() => {
+        void copyText(a.password).then(() => {
             setCopied(a.email);
             setTimeout(() => setCopied(null), 1500);
-        });
+        }).catch(() => {});
     };
 
     return (

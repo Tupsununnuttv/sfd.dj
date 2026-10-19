@@ -31,6 +31,8 @@ export interface CardUser {
 
 export interface Profile {
     id: number;
+    avatar?: string | null;
+    cosmetics?: Cosmetics | null;
     name: string;
     username: string | null;
     level?: number;
@@ -163,7 +165,7 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
                 {/* who */}
                 <div className="h-16 bg-linear-to-br from-violet-600/50 via-fuchsia-600/30 to-sky-500/20" />
                 <div className="-mt-9 flex items-end gap-3 px-4">
-                    <div className="rounded-full bg-neutral-900 p-1"><Avatar name={user.name} avatar={user.avatar} cosmetics={user.cosmetics} className="h-16 w-16 text-3xl" /></div>
+                    <div className="rounded-full bg-neutral-900 p-1"><Avatar name={profile?.name ?? user.name} avatar={profile?.avatar !== undefined ? profile.avatar : user.avatar} cosmetics={profile?.cosmetics !== undefined ? profile.cosmetics : user.cosmetics} className="h-16 w-16 text-3xl" /></div>
                     <div className="min-w-0 pb-1">
                         <p className="truncate text-base font-bold leading-tight" style={{ color: user.role.color }}>{user.name}</p>
                         {(profile?.username || profile?.pronouns) && <p className="truncate text-xs text-neutral-400">{profile.username && `@${profile.username}`}{profile.username && profile.pronouns && ' · '}{profile.pronouns}</p>}

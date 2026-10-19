@@ -1,3 +1,4 @@
+import { copyText } from '@/lib/clipboard';
 import ContextMenu, { MenuAnchor, MenuItem } from '@/Components/ContextMenu';
 import VideoPreview from '@/Components/playlists/VideoPreview';
 import { mmss, originLabel, Song, watchUrl } from '@/lib/playlists';
@@ -76,7 +77,7 @@ export default function TrackList({ songs, availability, filter, isActive, roomS
                 { label: soundcloud ? 'Listen' : 'Watch video', icon: Play, onSelect: () => setWatching(song) },
                 ...(page ? [
                     { label: soundcloud ? 'Open on SoundCloud' : 'Open on YouTube', icon: ExternalLink, onSelect: () => window.open(page, '_blank', 'noopener,noreferrer') },
-                    { label: 'Copy link', icon: Link2, onSelect: () => navigator.clipboard?.writeText(page).then(() => onNotice('Link copied.'), () => onNotice('Could not copy the link.')) },
+                    { label: 'Copy link', icon: Link2, onSelect: () => copyText(page).then(() => onNotice('Link copied.'), () => onNotice('Could not copy the link.')) },
                 ] : []),
             ],
             [{ label: 'Remove from playlist', icon: Trash2, danger: true, onSelect: () => onRemove(song) }],

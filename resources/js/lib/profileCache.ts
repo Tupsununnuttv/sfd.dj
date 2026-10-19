@@ -5,6 +5,12 @@ import { useEffect, useState } from 'react';
 /** Quick-profile data, kept for a few seconds so the hover preview and the click card share one request and a name you just looked at opens instantly. */
 type Entry = { at: number; data?: Profile; request: Promise<Profile> };
 const cache = new Map<number, Entry>();
+const INVALIDATED = 'sfd:profile-invalidated';
+
+export function invalidateProfile(id: number) {
+    cache.delete(id);
+    window.dispatchEvent(new CustomEvent(INVALIDATED, { detail: id }));
+}
 
 /** The profile from memory when it is younger than `maxAge` ms, otherwise from the server. */
 export function loadProfile(id: number, maxAge = 20000): Promise<Profile> {
@@ -35,6 +41,12 @@ export function useProfile(id: number) {
     const [profile, setProfile] = useState<Profile | null>(() => cache.get(id)?.data ?? null);
     const [failed, setFailed] = useState(false);
     const [attempt, setAttempt] = useState(0);
+
+    useEffect(() => {
+        const changed = (event: Event) => { if ((event as CustomEvent<number>).detail === id) setAttempt((value) => value + 1); };
+        window.addEventListener(INVALIDATED, changed);
+        return () => window.removeEventListener(INVALIDATED, changed);
+    }, [id]);
 
     useEffect(() => {
         let live = true;

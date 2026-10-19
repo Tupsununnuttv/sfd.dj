@@ -95,24 +95,26 @@ function ProfileCard() {
     const body = (
         <>
             {/* wide menu: picture, name, level and the XP bar */}
-            <div className={`${expanded ? 'flex' : 'hidden lg:flex'} items-center gap-3`}>
+            <div data-profile-card className={`${expanded ? 'block' : 'hidden lg:block'}`}>
+                <div className="flex min-w-0 items-center gap-3">
                 <span className="relative shrink-0">
                     <Avatar name={user.name} avatar={user.avatar} cosmetics={user.cosmetics} className="h-11 w-11 text-xl" />
                     <StatusDot status={user.status} className="absolute -bottom-0.5 -right-0.5 h-3! w-3!" />
                 </span>
                 <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
-                        <span className="truncate text-sm font-bold leading-tight text-white">{user.name}</span>
-                        <Flag flag={user.flag} className="h-3" />
-                        <span className="shrink-0"><RoleBadge role={user.primary_role} /></span>
+                        <span className="min-w-0 flex-1 truncate text-sm font-bold leading-tight text-white">{user.name}</span>
+                        <span className="shrink-0"><Flag flag={user.flag} className="h-3" /></span>
                     </span>
-                    <span className="mt-0.5 flex items-baseline justify-between gap-2 text-[11px]">
-                        <span className="font-semibold text-neutral-200">Level {user.level}</span>
-                        <span className="tabular-nums text-neutral-400">{xpText(user.xp, user.level)}</span>
-                    </span>
-                    <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-white/10">
-                        <span className="block h-full rounded-full bg-linear-to-r from-fuchsia-500 to-violet-500 transition-all duration-700" style={{ width: `${pct}%` }} />
-                    </span>
+                    <span className="mt-1 block"><RoleBadge role={user.primary_role} /></span>
+                </span>
+                </div>
+                <span className="mt-2 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-[11px]">
+                    <span className="whitespace-nowrap font-semibold text-neutral-200">Level {user.level}</span>
+                    <span className="whitespace-nowrap tabular-nums text-neutral-400">{xpText(user.xp, user.level)}</span>
+                </span>
+                <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-white/10">
+                    <span className="block h-full rounded-full bg-linear-to-r from-fuchsia-500 to-violet-500 transition-all duration-700" style={{ width: `${pct}%` }} />
                 </span>
             </div>
 

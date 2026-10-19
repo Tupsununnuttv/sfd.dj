@@ -1,3 +1,4 @@
+import { copyText } from '@/lib/clipboard';
 import { Cosmetics } from '@/lib/cosmetics';
 import Avatar from '@/Components/Avatar';
 import Badges from '@/Components/Badges';
@@ -340,9 +341,10 @@ export default function ChatPanel({
         inputBox.current?.focus();
     };
     const copy = (body: string) => {
-        navigator.clipboard?.writeText(body);
-        setCopied(true);
-        window.setTimeout(() => setMenu(null), 700);
+        void copyText(body).then(() => {
+            setCopied(true);
+            window.setTimeout(() => setMenu(null), 700);
+        }).catch(() => setError('Could not copy the message. Select the text and copy it manually.'));
     };
     const authorOf = (m: ChatMessageData): CardUser => ({ id: m.user_id, name: m.user, avatar: m.avatar, cosmetics: m.cosmetics, role: m.role, badges: m.badges, level: m.level });
 
@@ -514,7 +516,7 @@ export default function ChatPanel({
                             <div className={`absolute -top-3 right-1 z-10 flex items-center gap-0.5 rounded-lg border border-white/10 bg-neutral-900/95 p-0.5 shadow-lg shadow-black/40 backdrop-blur transition-opacity focus-within:pointer-events-auto focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 ${open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
                                 {!readOnly && <button onClick={() => reply(m)} title="Reply" aria-label="Reply" className={tool}><Reply size={14} /></button>}
                                 {!readOnly && m.id > 0 && <button onClick={() => setReactingTo(reactingTo === m.id ? null : m.id)} title="Add reaction" aria-label="Add reaction" className={tool}><Smile size={14} /></button>}
-                                {m.body && <button onClick={() => navigator.clipboard?.writeText(m.body)} title="Copy text" aria-label="Copy text" className={tool}><Copy size={14} /></button>}
+                                {m.body && <button onClick={() => copy(m.body)} title="Copy text" aria-label="Copy text" className={tool}><Copy size={14} /></button>}
                                 <button
                                     data-menu-trigger
                                     onClick={(e) => {

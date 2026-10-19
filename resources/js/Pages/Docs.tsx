@@ -1,3 +1,4 @@
+import { copyText } from '@/lib/clipboard';
 import { Card, EmptyState, fieldClass } from '@/Components/ui';
 import { CSS_HOOKS } from '@/lib/cssHooks';
 import AppLayout from '@/Layouts/AppLayout';
@@ -30,10 +31,11 @@ const Note = ({ tone = 'tip', children }: { tone?: 'tip' | 'warn'; children: Rea
 /** Code with a copy button. */
 function Code({ children }: { children: string }) {
     const [copied, setCopied] = useState(false);
-    const copy = async () => {
-        await navigator.clipboard?.writeText(children).catch(() => {});
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1800);
+    const copy = () => {
+        void copyText(children).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1800);
+        }).catch(() => {});
     };
 
     return (

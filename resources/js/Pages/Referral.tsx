@@ -1,4 +1,5 @@
 import Avatar from '@/Components/Avatar';
+import { copyText } from '@/lib/clipboard';
 import RoleBadge from '@/Components/RoleBadge';
 import { Card, EmptyState, ghostBtn, ProgressBar, SectionTitle, StatTile } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
@@ -40,8 +41,7 @@ export default function Referral({ link, code, reward, referrals, topInviters, r
     const copy = async (what: 'link' | 'code') => {
         setCopyError('');
         try {
-            if (!navigator.clipboard) throw new Error('Clipboard unavailable');
-            await navigator.clipboard.writeText(what === 'link' ? link : code);
+            await copyText(what === 'link' ? link : code);
             setCopied(what);
             setTimeout(() => setCopied(null), 2000);
         } catch { setCopyError('Could not copy automatically. Select the link above and copy it manually.'); }

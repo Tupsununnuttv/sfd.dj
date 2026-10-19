@@ -1,5 +1,6 @@
 import Avatar from '@/Components/Avatar';
 import { PageProps } from '@/types';
+import { appearanceSaved } from '@/lib/appearanceChanges';
 import { router, usePage } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
@@ -52,6 +53,7 @@ export default function AvatarUpload() {
                 forceFormData: true,
                 preserveScroll: true,
                 onError: (e) => setError(e.photo ?? 'Upload failed.'),
+                onSuccess: () => appearanceSaved(user.id),
                 onFinish: () => setBusy(false),
             });
         } catch (e) {
@@ -71,7 +73,7 @@ export default function AvatarUpload() {
                             {busy ? 'Uploading…' : hasPhoto ? 'Change photo' : 'Upload photo'}
                         </button>
                         {hasPhoto && (
-                            <button onClick={() => router.delete(route('profile.photo.remove'), { preserveScroll: true })} className="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-neutral-200 hover:bg-white/20">
+                            <button disabled={busy} onClick={() => router.delete(route('profile.photo.remove'), { preserveScroll: true, onStart: () => setBusy(true), onFinish: () => setBusy(false), onSuccess: () => appearanceSaved(user.id), onError: () => setError('Could not remove your photo. Please try again.') })} className="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-neutral-200 hover:bg-white/20">
                                 Remove
                             </button>
                         )}

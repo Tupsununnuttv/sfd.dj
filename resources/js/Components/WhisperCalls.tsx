@@ -1,4 +1,4 @@
-import { callMedia, gatheredDescription, remoteCallDescription } from '@/lib/calls';
+import { callMedia, gatheredDescription, receiveCallTracks, remoteCallDescription } from '@/lib/calls';
 import { getJson, send, sendJson } from '@/lib/post';
 import { router } from '@inertiajs/react';
 import { Mic, MicOff, Phone, PhoneOff, Video, VideoOff, X } from 'lucide-react';
@@ -16,7 +16,7 @@ function Media({ stream, muted = false, video = true }: { stream: MediaStream | 
     useEffect(() => {
         if (ref.current) { ref.current.srcObject = stream; if (stream) void ref.current.play().catch(() => setBlocked(true)); }
     }, [stream]);
-    return <div className="relative"><video ref={ref} autoPlay playsInline muted={muted} className={video ? 'max-h-64 w-full rounded-xl bg-black object-contain' : 'hidden'} />{blocked && <button onClick={() => void ref.current?.play().then(() => setBlocked(false))} className="rounded-xl bg-white/10 p-3 text-sm text-white">Tap to hear the call</button>}</div>;
+    return <div className="relative"><video ref={ref} autoPlay playsInline muted={muted} className={video ? 'max-h-64 w-full rounded-xl bg-black object-contain' : 'hidden'} />{blocked && <button onClick={() => void ref.current?.play().then(() => setBlocked(false)).catch(() => setBlocked(true))} className="rounded-xl bg-white/10 p-3 text-sm text-white">Tap to hear the call</button>}</div>;
 }
 
 /** Mounted once above page navigation. Only this tab owns its media and heartbeat. */
@@ -70,7 +70,8 @@ export default function WhisperCalls({ initialUser }: { initialUser: number | nu
             connection.addTransceiver('video', { direction: 'recvonly' });
             setCameraOff(true);
         }
-        connection.ontrack = (event) => setRemote(new MediaStream(event.streams[0]?.getTracks() ?? [event.track]));
+        const receiving = new MediaStream();
+        connection.ontrack = (event) => { receiveCallTracks(receiving, event); setRemote(new MediaStream(receiving.getTracks())); };
         connection.onconnectionstatechange = () => {
             if (pc.current !== connection) return;
             if (connection.connectionState === 'connected') {
@@ -203,7 +204,8 @@ export default function WhisperCalls({ initialUser }: { initialUser: number | nu
     const incoming = call?.caller_id !== me && call?.status === 'ringing' && !local;
     useEffect(() => {
         if (!incoming) return;
-        const context = new AudioContext();
+        let context: AudioContext;
+        try { context = new AudioContext(); } catch { return; } // The visual invitation still works if browser audio is blocked.
         const ring = () => {
             if (context.state !== 'running') return;
             for (const offset of [0, .3]) {

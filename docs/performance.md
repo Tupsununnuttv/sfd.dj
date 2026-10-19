@@ -11,6 +11,8 @@
 
 Live data continues to be requested from the server; no stale statistics cache was introduced. Existing visibility and overlap guards on dashboard/admin polling remain in place.
 
+Global `Vite::prefetch` has also been removed. It followed the application's dynamic imports and downloaded other page chunks and scene modules in the background, undermining on-demand loading. Required imports still load normally when a page or panel opens.
+
 ## Validation
 
 `npm run build` passes. Feature tests verify that a sidebar-only dashboard request does not query rooms, events or playlists, that admin user refreshes skip other tabs, and that a 15-row admin user page batches gift queries and violation counts. The related dashboard, site and permission tests also pass.

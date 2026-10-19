@@ -354,6 +354,64 @@ class ShopUpgradeTest extends TestCase
         Storage::disk('local')->assertExists('avatars/aaaaaaaaaaaaaaaaaaaaaaaa.gif');
     }
 
+    public function test_a_bought_character_can_be_saved_as_the_profile_picture_everywhere(): void
+    {
+        $user = $this->atLevel(5, 2000);
+        $this->actingAs($user)->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:panda']]])->assertSessionHasNoErrors();
+        $this->post('/shop/outfit', ['avatar' => 'char:panda', 'use_character_as_avatar' => true])->assertSessionHasNoErrors();
+
+        $this->assertSame('char:panda', $user->refresh()->avatar);
+        $this->assertSame('char:panda', $user->character);
+        $this->get('/api/users/'.$user->id)->assertOk()->assertJsonPath('avatar', 'char:panda');
+        $this->get('/users/'.$user->id)->assertInertia(fn (Assert $page) => $page
+            ->where('profile.avatar', 'char:panda')->where('auth.user.avatar', 'char:panda')->where('auth.user.character', 'char:panda'));
+    }
+
+    public function test_the_already_selected_character_can_replace_a_profile_photo(): void
+    {
+        Storage::fake('local');
+        $user = $this->atLevel(5);
+        $this->own($user, [['avatar', 'char:panda']]);
+        Storage::disk('local')->put('avatars/aaaaaaaaaaaaaaaaaaaaaaaa.gif', 'x');
+        $user->forceFill(['character' => 'char:panda', 'avatar' => 'img:aaaaaaaaaaaaaaaaaaaaaaaa.gif'])->save();
+
+        $this->actingAs($user)->post('/shop/outfit', ['avatar' => 'char:panda', 'use_character_as_avatar' => true])->assertSessionHasNoErrors();
+
+        $this->assertSame('char:panda', $user->refresh()->avatar);
+        $this->assertSame('char:panda', $user->character);
+        Storage::disk('local')->assertMissing('avatars/aaaaaaaaaaaaaaaaaaaaaaaa.gif');
+    }
+
+    public function test_the_profile_picture_choice_cannot_bypass_ownership_or_remove_a_photo_on_failure(): void
+    {
+        Storage::fake('local');
+        $user = $this->atLevel(5);
+        Storage::disk('local')->put('avatars/aaaaaaaaaaaaaaaaaaaaaaaa.gif', 'x');
+        $user->forceFill(['avatar' => 'img:aaaaaaaaaaaaaaaaaaaaaaaa.gif'])->save();
+
+        $this->actingAs($user)->post('/shop/outfit', ['avatar' => 'char:panda', 'use_character_as_avatar' => true])->assertSessionHasErrors('avatar');
+        $this->post('/shop/outfit', ['use_character_as_avatar' => true])->assertSessionHasErrors('avatar');
+        $this->post('/shop/outfit', ['avatar' => 'char:foxy', 'use_character_as_avatar' => 'invalid'])->assertSessionHasErrors('use_character_as_avatar');
+
+        $this->assertSame('img:aaaaaaaaaaaaaaaaaaaaaaaa.gif', $user->refresh()->avatar);
+        Storage::disk('local')->assertExists('avatars/aaaaaaaaaaaaaaaaaaaaaaaa.gif');
+    }
+
+    public function test_unticking_the_profile_picture_choice_keeps_the_uploaded_photo(): void
+    {
+        Storage::fake('local');
+        $user = $this->atLevel(5);
+        $this->own($user, [['avatar', 'char:panda']]);
+        Storage::disk('local')->put('avatars/aaaaaaaaaaaaaaaaaaaaaaaa.gif', 'x');
+        $user->forceFill(['avatar' => 'img:aaaaaaaaaaaaaaaaaaaaaaaa.gif'])->save();
+
+        $this->actingAs($user)->post('/shop/outfit', ['avatar' => 'char:panda', 'use_character_as_avatar' => false])->assertSessionHasNoErrors();
+
+        $this->assertSame('img:aaaaaaaaaaaaaaaaaaaaaaaa.gif', $user->refresh()->avatar);
+        $this->assertSame('char:panda', $user->character);
+        Storage::disk('local')->assertExists('avatars/aaaaaaaaaaaaaaaaaaaaaaaa.gif');
+    }
+
     public function test_an_animated_gif_can_be_the_profile_photo_but_not_a_huge_one(): void
     {
         Storage::fake('local');

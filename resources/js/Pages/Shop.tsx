@@ -9,6 +9,7 @@ import { characterOf, characterUrl } from '@/lib/characters';
 import { Cosmetics, ShopBadge } from '@/lib/cosmetics';
 import { levelPercent, toNextText } from '@/lib/level';
 import { ago } from '@/lib/time';
+import { appearanceSaved } from '@/lib/appearanceChanges';
 import { PageProps, RoleInfo } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
@@ -52,6 +53,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
 
     const saved: Look = { avatar: user.character ?? user.avatar, badge: user.cosmetics?.badge ?? null, accessory: user.cosmetics?.accessory ?? null, frame: user.cosmetics?.frame ?? null, effect: user.cosmetics?.effect ?? null };
     const [draft, setDraft] = useState<Look>(saved); // what is being tried on; only Save makes it real
+    const [useForProfile, setUseForProfile] = useState(!isPhoto(user.avatar));
     const [tab, setTab] = useState<Slot>('avatar');
     const [show, setShow] = useState<'all' | 'owned' | 'sale' | 'locked'>('all');
     const [pops, setPops] = useState(0);
@@ -65,6 +67,8 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
     const kindOf = (it: Item) => (it.owned ? 'owned' : it.level <= level ? 'sale' : 'locked');
 
     const changed = slots.filter(({ slot }) => draft[slot] !== saved[slot]);
+    const profileChanged = useForProfile && !!characterOf(draft.avatar) && user.avatar !== draft.avatar;
+    const changeCount = changed.length + (profileChanged && !changed.some(({ slot }) => slot === 'avatar') ? 1 : 0);
     const blocked = slots.flatMap(({ slot }) => {
         const it = find(slot, draft[slot]);
         return it && !canWear(slot, it) ? [{ slot, it }] : [];
@@ -80,12 +84,14 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
     const nextItems = above.filter((it) => it.level === nextLevel);
 
     const pick = (slot: Slot, key: string | null) => {
+        if (slot === 'avatar') setUseForProfile(true);
         setDraft((d) => ({ ...d, [slot]: key }));
         setPops((n) => n + 1);
         setMessage(null);
     };
     const reset = () => {
         setDraft(saved);
+        setUseForProfile(!isPhoto(user.avatar));
         setMessage(null);
     };
     const surprise = () => {
@@ -99,13 +105,22 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
         setMessage(null);
     };
     const save = () => {
-        const data: Record<string, string | null> = {};
+        if (busy || !changeCount || blocked.length) return;
+        const data: Record<string, string | boolean | null> = {};
         changed.forEach(({ slot }) => (data[slot] = draft[slot]));
+        if (profileChanged) data.avatar = draft.avatar;
+        if (data.avatar) data.use_character_as_avatar = useForProfile;
         router.post(route('shop.outfit'), data, {
             preserveScroll: true,
             onStart: () => setBusy(true),
             onFinish: () => setBusy(false),
-            onSuccess: () => setMessage({ ok: true, text: 'Saved. Your new look shows in chat, on the stage and in the user list.' }),
+            onSuccess: (page) => {
+                const next = (page.props as unknown as PageProps).auth.user;
+                setDraft({ avatar: next.character ?? next.avatar, badge: next.cosmetics?.badge ?? null, accessory: next.cosmetics?.accessory ?? null, frame: next.cosmetics?.frame ?? null, effect: next.cosmetics?.effect ?? null });
+                setUseForProfile(!isPhoto(next.avatar));
+                appearanceSaved(next.id);
+                setMessage({ ok: true, text: 'Saved. Your character and profile picture are now up to date.' });
+            },
             onError: (errors) => setMessage({ ok: false, text: Object.values(errors)[0] ?? 'Could not save your look.' }),
         });
     };
@@ -115,7 +130,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
             preserveScroll: true,
             onStart: () => setBusy(true),
             onFinish: () => setBusy(false),
-            onSuccess: () => setMessage({ ok: true, text: `Bought ${things.map(({ it }) => it.label).join(', ')} for ${price.toLocaleString()} SFD Coins. Put it on and save your look.` }),
+            onSuccess: () => { appearanceSaved(user.id); setMessage({ ok: true, text: `Bought ${things.map(({ it }) => it.label).join(', ')} for ${price.toLocaleString()} SFD Coins. Put it on and save your look.` }); },
             onError: (errors) => setMessage({ ok: false, text: Object.values(errors)[0] ?? 'Could not buy that.' }),
         });
     };
@@ -124,7 +139,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
             preserveScroll: true,
             onStart: () => setBusy(true),
             onFinish: () => setBusy(false),
-            onSuccess: () => setMessage({ ok: true, text: `+${daily.amount} SFD Coins. Come back tomorrow for more.` }),
+            onSuccess: () => { appearanceSaved(user.id); setMessage({ ok: true, text: `+${daily.amount} SFD Coins. Come back tomorrow for more.` }); },
             onError: (errors) => setMessage({ ok: false, text: Object.values(errors)[0] ?? 'Could not take the daily reward.' }),
         });
 
@@ -175,6 +190,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
             <div key={it.key} data-item={it.key} className={`group/card relative flex min-w-0 flex-col rounded-2xl border text-center transition hover:-translate-y-0.5 ${r.card} ${on ? 'ring-2 ring-violet-400' : ''}`}>
                 <button
                     onClick={() => pick(tab, it.key)}
+                    disabled={busy}
                     aria-pressed={on}
                     title={open ? undefined : lockedByLevel ? `Needs level ${it.level}. Click to try it on.` : 'Click to try it on, then buy it to keep it.'}
                     className="flex min-w-0 flex-1 flex-col items-center gap-2 rounded-t-2xl p-3 pt-4"
@@ -227,9 +243,9 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
 
     const actions = (
         <>
-            <button onClick={save} disabled={!changed.length || blocked.length > 0 || busy} className={`${primaryBtn} flex flex-1 items-center justify-center gap-2`}><Save size={15} /> {busy ? 'Working…' : 'Save look'}</button>
-            <button onClick={reset} disabled={!changed.length} title="Undo my changes" aria-label="Undo my changes" className={ghostBtn}><RotateCcw size={15} /></button>
-            <button onClick={surprise} title="Surprise me" aria-label="Surprise me" className={ghostBtn}><Shuffle size={15} /></button>
+            <button onClick={save} disabled={!changeCount || blocked.length > 0 || busy} className={`${primaryBtn} flex flex-1 items-center justify-center gap-2`}><Save size={15} /> {busy ? 'Working…' : 'Save look'}</button>
+            <button onClick={reset} disabled={!changeCount || busy} title="Undo my changes" aria-label="Undo my changes" className={ghostBtn}><RotateCcw size={15} /></button>
+            <button onClick={surprise} disabled={busy} title="Surprise me" aria-label="Surprise me" className={ghostBtn}><Shuffle size={15} /></button>
         </>
     );
 
@@ -252,7 +268,7 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
                             </div>
                             <div className="mt-3 h-2 w-20 rounded-[50%] bg-black/50 blur-md" />
                             <p className="mt-1.5 max-w-full truncate text-lg font-black tracking-tight">{user.name}</p>
-                            <p className="text-xs text-neutral-400">{changed.length ? `${changed.length} ${changed.length === 1 ? 'change' : 'changes'} not saved yet` : 'This is your saved look'}</p>
+                            <p className="text-xs text-neutral-400">{changeCount ? `${changeCount} ${changeCount === 1 ? 'change' : 'changes'} not saved yet` : 'This is your saved look'}</p>
                             {characterOf(draft.avatar) && (
                                 <div className="relative mt-3 w-full">
                                     <div className="grid grid-cols-3 gap-2">
@@ -269,6 +285,10 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
                         </div>
 
                         <div className="space-y-4 px-4 pb-4">
+                            {isPhoto(user.avatar) && <label className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/4 p-3 text-xs text-neutral-300">
+                                <input type="checkbox" className="mt-0.5 accent-violet-500" disabled={busy} checked={useForProfile} onChange={(event) => setUseForProfile(event.target.checked)} />
+                                <span><span className="block font-semibold text-white">Use this character as my profile picture</span><span className="mt-1 block text-neutral-400">When saved, this replaces your uploaded photo in your profile, chat and sidebar. Untick to keep the photo.</span></span>
+                            </label>}
                             <div className="space-y-2">
                                 <div className="flex gap-2">{actions}</div>
                                 {blocked.length > 0 && (
@@ -287,7 +307,6 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
                                         {buyable.length < blocked.length && <p className="text-neutral-400">{blocked.filter(({ it }) => it.level > level).map(({ it }) => `${it.label} needs level ${it.level}`).join('; ')}.</p>}
                                     </div>
                                 )}
-                                {isPhoto(saved.avatar) && draft.avatar !== saved.avatar && <p className="text-xs text-neutral-400">A new avatar replaces your uploaded photo.</p>}
                                 {message && <p className={`text-xs ${message.ok ? 'text-emerald-300' : 'text-red-300'}`} role="status">{message.text}</p>}
                             </div>
                             <div>
@@ -441,11 +460,11 @@ export default function Shop({ catalog, coins, daily, earn, history }: { catalog
                         })
                     )}
 
-                    {changed.length > 0 && (
+                    {changeCount > 0 && (
                         <div className="sticky bottom-3 z-20 flex items-center gap-2 rounded-2xl border border-violet-400/30 bg-neutral-900/95 p-2.5 shadow-xl shadow-black/40 backdrop-blur lg:hidden">
                             <Avatar name={user.name} avatar={draft.avatar} cosmetics={worn} className="h-9 w-9 text-xl" />
                             <p className="min-w-0 flex-1 text-sm">
-                                <span className="block font-semibold">{changed.length} not saved</span>
+                                <span className="block font-semibold">{changeCount} not saved</span>
                                 {blocked.length > 0 && <span className="block truncate text-xs text-amber-300">Buy {blocked.map(({ it }) => it.label).join(', ')} first</span>}
                             </p>
                             <button onClick={reset} aria-label="Undo my changes" className={ghostBtn}><RotateCcw size={15} /></button>

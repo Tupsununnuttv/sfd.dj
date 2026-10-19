@@ -501,6 +501,7 @@ input[type='range'].vol { -webkit-appearance: none; appearance: none; height: 6p
 input[type='range'].vol::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; height: 14px; width: 14px; border-radius: 9999px; border: 0; background: #fff; box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.4), 0 0 10px rgba(168, 85, 247, 0.8); }
 input[type='range'].vol::-moz-range-thumb { height: 14px; width: 14px; border-radius: 9999px; border: 0; background: #fff; box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.4), 0 0 10px rgba(168, 85, 247, 0.8); }
 input[type='range'].vol:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.7); }
+input[type='range'].vol:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.7); }
 
 /* Menus and cards (the message menu, the quick profile, the hover preview) pop in quickly. */
 @keyframes menu-in {

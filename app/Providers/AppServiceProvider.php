@@ -6,7 +6,6 @@ use App\Models\Room;
 use App\Support\ForgivingBroadcaster;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -24,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Vite::prefetch(concurrency: 3);
+        // Keep page chunks and room scenes on demand: global prefetch fetches the whole app after login.
 
         // a live-update server (Reverb here, Pusher on the live site) that is down must not turn a saved chat line or vote into an error page
         foreach (['reverb', 'pusher'] as $driver) {

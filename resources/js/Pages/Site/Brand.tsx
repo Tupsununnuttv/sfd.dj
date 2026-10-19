@@ -1,3 +1,4 @@
+import { copyText } from '@/lib/clipboard';
 import ApplicationLogo, { LogoMark } from '@/Components/ApplicationLogo';
 import SiteLayout, { PageHeader } from '@/Layouts/SiteLayout';
 import { Head } from '@inertiajs/react';
@@ -27,9 +28,10 @@ const donts = ['Do not stretch, squash, rotate or recolour it.', 'Do not put the
 export default function Brand() {
     const [copied, setCopied] = useState<string | null>(null);
     const copy = (hex: string) => {
-        navigator.clipboard?.writeText(hex).catch(() => {});
-        setCopied(hex);
-        setTimeout(() => setCopied(null), 1500);
+        void copyText(hex).then(() => {
+            setCopied(hex);
+            setTimeout(() => setCopied(null), 1500);
+        }).catch(() => {});
     };
 
     return (

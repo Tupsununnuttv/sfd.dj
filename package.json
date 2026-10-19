@@ -6,6 +6,9 @@
     },
     "type": "module",
     "scripts": {
+        "test:frontend": "node --test tests/Frontend/*.test.mjs",
+        "test:browsers": "playwright test",
+        "test:browsers:install": "playwright install chromium firefox",
         "avatars:previews": "node scripts/character-posters.mjs",
         "backgrounds:previews": "node scripts/background-thumbnails.mjs",
         "build": "node scripts/character-posters.mjs && node scripts/background-thumbnails.mjs && tsc && vite build",
@@ -17,6 +20,7 @@
     "devDependencies": {
         "@headlessui/react": "^2.2.10",
         "@inertiajs/react": "^3.9.1",
+        "@playwright/test": "^1.64.1",
         "@resvg/resvg-js": "^2.6.2",
         "@tailwindcss/forms": "^0.5.11",
         "@tailwindcss/vite": "^4.3.3",

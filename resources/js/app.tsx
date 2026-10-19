@@ -4,6 +4,7 @@ import RoomLoading from '@/Components/RoomLoading';
 import WhisperCalls from '@/Components/WhisperCalls';
 import CompactPreferenceNotice from '@/Components/CompactPreferenceNotice';
 import { syncCompactPreferences } from '@/lib/compactPreferences';
+import { listenForAppearanceChanges } from '@/lib/appearanceChanges';
 import { embedded } from '@/lib/embed';
 import { applyMotion } from '@/lib/motion';
 import { PageProps } from '@/types';
@@ -61,6 +62,17 @@ createInertiaApp({
         const root = createRoot(el);
 
         const auth = (props.initialPage.props as unknown as PageProps).auth;
+        let appearanceUser = auth?.guest ? null : auth?.user?.id;
+        router.on('navigate', (event) => {
+            const next = (event.detail.page.props as unknown as PageProps).auth;
+            appearanceUser = next?.guest ? null : next?.user?.id;
+        });
+        let appearanceTimer = 0;
+        listenForAppearanceChanges((id) => {
+            if (id !== appearanceUser) return;
+            window.clearTimeout(appearanceTimer);
+            appearanceTimer = window.setTimeout(() => router.reload({ only: ['auth', 'profile', 'host', 'catalog', 'coins', 'daily', 'history'] }), 80);
+        });
         root.render(<><App {...props} /><RoomLoading /><CompactPreferenceNotice />{!embedded && <WhisperCalls initialUser={auth?.guest ? null : auth?.user?.id ?? null} />}</>);
     },
     progress: {

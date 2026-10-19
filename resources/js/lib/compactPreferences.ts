@@ -1,12 +1,13 @@
 import type { Preferences } from '@/types';
 import { compactEvent, compactState, type CompactEvent, type CompactKey, type CompactValues } from './compactState';
 import { sendJson } from './post';
+import { browserChannel, browserId } from './browserChannel';
 import { useSyncExternalStore } from 'react';
 
 let userId: number | null = null;
 let state = compactState({ compact: false, compact_chat: false, compact_layout: false });
 const listeners = new Set<() => void>();
-let channel: BroadcastChannel | null = null;
+let channel: ReturnType<typeof browserChannel<{ userId: number; event: CompactEvent }>> | null = null;
 let bridgeStarted = false;
 let queue: Promise<void> = Promise.resolve();
 const keys: CompactKey[] = ['compact', 'compact_chat', 'compact_layout'];
@@ -66,13 +67,12 @@ export function syncCompactPreferences(id: number | null, preferences: Preferenc
         }
         state = next;
     }
-    if (!channel && typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
-        channel = new BroadcastChannel('sfd:compact-preferences');
-        channel.onmessage = ({ data }) => {
+    if (!channel && typeof window !== 'undefined') {
+        channel = browserChannel('compact-preferences', (data: { userId: number; event: CompactEvent }) => {
             const e = data?.event;
             if (data?.userId !== userId || !validEvent(e)) return;
             receive(e);
-        };
+        });
     }
     if (!bridgeStarted && typeof window !== 'undefined') {
         bridgeStarted = true;
@@ -101,7 +101,7 @@ export function dismissCompactError() {
 export function saveCompactPreference(key: CompactKey, value: boolean) {
     if (!userId) return;
     const owner = userId;
-    const token = crypto.randomUUID();
+    const token = browserId();
     publish({ key, value, token, phase: 'preview' }, owner);
     const event: CompactEvent = { key, value, token, phase: 'preview' };
     if (typeof window !== 'undefined' && window.parent !== window && channel) {

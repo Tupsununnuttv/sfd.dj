@@ -2,6 +2,12 @@ export function startWhisperCall(user: { id: number; name: string }, video: bool
     (window.top ?? window).postMessage({ type: 'sfd-whisper-call', user, video }, window.location.origin);
 }
 
+/** Some peers deliver streamless tracks; retain both audio and video as each arrives. */
+export function receiveCallTracks(stream: MediaStream, event: RTCTrackEvent): void {
+    const tracks = event.streams.length ? event.streams.flatMap((item) => item.getTracks()) : [event.track];
+    for (const track of tracks) if (!stream.getTrackById(track.id)) stream.addTrack(track);
+}
+
 /** Video is optional; a missing, busy or denied camera must not prevent an audio call. */
 export async function callMedia(devices: Pick<MediaDevices, 'getUserMedia'>, video: boolean): Promise<MediaStream> {
     const audio = { echoCancellation: true, noiseSuppression: true };
