@@ -54,8 +54,8 @@ function useOverlayClick(url: string, title: string) {
         : undefined;
 }
 
-const item = 'sfd-nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition [@media(max-height:900px)]:py-1 [@media(max-height:780px)]:py-0.5';
-const divider = 'my-3 border-t border-white/10 [@media(max-height:900px)]:my-1';
+const item = 'sfd-menuitem sfd-nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition [@media(max-height:900px)]:py-1 [@media(max-height:780px)]:py-0.5';
+const divider = 'sfd-menudivider my-3 border-t border-white/10 [@media(max-height:900px)]:my-1';
 const idle = 'text-neutral-400 hover:bg-white/5 hover:text-white';
 
 function NavItem({ label, routeName, icon: Icon, params }: NavLink) {
@@ -89,7 +89,7 @@ function ProfileCard() {
     const url = route('profile.edit');
     const onOverlay = useOverlayClick(url, 'Profile');
     const pct = levelPercent(user.xp, user.level);
-    const className = `group relative mb-1 block rounded-xl p-1 transition lg:border lg:bg-linear-to-br lg:from-white/[0.07] lg:to-white/2 lg:p-2.5 lg:hover:from-violet-500/15 lg:hover:to-fuchsia-500/5 ${route().current('profile.edit') ? 'lg:border-violet-400/50' : 'lg:border-white/10 lg:hover:border-violet-400/40'}`;
+    const className = `sfd-menuprofile group relative mb-1 block rounded-xl p-1 transition lg:border lg:bg-linear-to-br lg:from-white/[0.07] lg:to-white/2 lg:p-2.5 lg:hover:from-violet-500/15 lg:hover:to-fuchsia-500/5 ${route().current('profile.edit') ? 'lg:border-violet-400/50' : 'lg:border-white/10 lg:hover:border-violet-400/40'}`;
     const title = `${user.name}: level ${user.level}, ${xpText(user.xp, user.level)}. Open your profile.`;
 
     const body = (
@@ -157,7 +157,7 @@ function StatusMenu() {
     };
 
     return (
-        <div ref={box} className="relative mb-3 [@media(max-height:900px)]:mb-1">
+        <div ref={box} className="sfd-menustatus relative mb-3 [@media(max-height:900px)]:mb-1">
             <button onClick={() => setOpen(!open)} aria-haspopup="menu" aria-expanded={open} title={`Status: ${STATUS[status].label}. Click to change it.`} data-status-button className="flex w-full items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs text-neutral-400 transition hover:bg-white/5 hover:text-white lg:justify-start lg:px-3">
                 <StatusDot status={status} ring="ring-transparent" className="ring-0!" />
                 <span className={`${expanded ? 'inline' : 'hidden lg:inline'} flex-1 text-left font-medium`}>{STATUS[status].label}</span>
@@ -220,7 +220,7 @@ export default function Sidebar({
         <ExpandedSidebar.Provider value={expanded}>
         <>
             {expanded && <button onClick={() => setExpanded(false)} aria-label="Close navigation" className="fixed inset-0 z-40 bg-black/50 lg:hidden" />}
-            <aside className={`relative flex shrink-0 flex-col border-r border-white/10 bg-neutral-950 p-2 ${expanded ? 'fixed inset-y-0 left-0 z-50 h-dvh w-56 shadow-2xl lg:static lg:z-auto lg:h-auto lg:shadow-none' : 'w-14 lg:w-56'}`}>
+            <aside className={`sfd-menu relative flex shrink-0 flex-col border-r border-white/10 bg-neutral-950 p-2 ${expanded ? 'fixed inset-y-0 left-0 z-50 h-dvh w-56 shadow-2xl lg:static lg:z-auto lg:h-auto lg:shadow-none' : 'w-14 lg:w-56'}`}>
             <div className="mb-3 flex h-10 shrink-0 items-center justify-between [@media(max-height:900px)]:mb-2 [@media(max-height:730px)]:h-8 lg:justify-start lg:px-3">
                 <Link href="/" onClick={() => setExpanded(false)} className="flex min-w-0 items-center justify-center lg:justify-start">
                     <ApplicationLogo className={expanded ? 'text-xl' : 'text-base'} textClassName={expanded ? 'inline' : 'hidden lg:inline'} />
@@ -287,7 +287,7 @@ export default function Sidebar({
                 )}
             </nav>
 
-            <div onClick={() => expanded && setExpanded(false)} className="sfd-sidebar-footer shrink-0 space-y-1 border-t border-white/10 pt-2 [@media(max-height:900px)]:space-y-0 [@media(max-height:900px)]:pt-1">
+            <div onClick={() => expanded && setExpanded(false)} className="sfd-menufooter sfd-sidebar-footer shrink-0 space-y-1 border-t border-white/10 pt-2 [@media(max-height:900px)]:space-y-0 [@media(max-height:900px)]:pt-1">
                 {guest ? (
                     <>
                         <Link href={route('login')} title="Log in" className={`${item} text-neutral-300 hover:bg-neutral-900`}>

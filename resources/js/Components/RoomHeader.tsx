@@ -128,8 +128,8 @@ export default function RoomHeader({ room, host, listening, dj, title, live, pla
                     </nav>
                 )}
                 {/* the volume */}
-                <div className="flex shrink-0 items-center gap-2" data-volume>
-                    <button onClick={onMute} aria-label={muted ? 'Unmute' : 'Mute'} title={muted ? 'Unmute' : 'Mute'} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition hover:bg-white/10 hover:text-white ${shown === 0 ? 'text-red-300' : 'text-neutral-300'}`}>
+                <div className="sfd-volume flex shrink-0 items-center gap-2" data-volume>
+                    <button onClick={onMute} aria-label={muted ? 'Unmute' : 'Mute'} title={muted ? 'Unmute' : 'Mute'} className={`sfd-volumebutton flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition hover:bg-white/10 hover:text-white ${shown === 0 ? 'text-red-300' : 'text-neutral-300'}`}>
                         <Speaker size={18} />
                     </button>
                     <input
@@ -139,10 +139,10 @@ export default function RoomHeader({ room, host, listening, dj, title, live, pla
                         value={shown}
                         onChange={(e) => onVolume(+e.target.value)}
                         aria-label="Volume"
-                        className="vol hidden w-16 cursor-pointer sm:block xl:w-20 2xl:w-24"
-                        style={{ background: `linear-gradient(to right, #a855f7 ${shown}%, rgba(255,255,255,0.14) ${shown}%)` }}
+                        className="sfd-volumeslider vol hidden w-16 cursor-pointer sm:block xl:w-20 2xl:w-24"
+                        style={{ background: `linear-gradient(to right, var(--volume-fill, #a855f7) ${shown}%, var(--volume-track, rgba(255,255,255,0.14)) ${shown}%)` }}
                     />
-                    <span className="hidden w-9 text-xs font-semibold tabular-nums text-neutral-400 2xl:inline">{shown}%</span>
+                    <span className="sfd-volumevalue hidden w-9 text-xs font-semibold tabular-nums text-neutral-400 2xl:inline">{shown}%</span>
                 </div>
             </div>
         </header>

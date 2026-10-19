@@ -269,7 +269,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
     const count = songs.length || current?.songs_count || 0;
 
     return (
-        <div className={`relative flex min-h-0 flex-col overflow-hidden bg-neutral-950 text-sm text-neutral-100 ${className}`}>
+        <div className={`sfd-playlists relative flex min-h-0 flex-col overflow-hidden bg-neutral-950 text-sm text-neutral-100 ${className}`}>
             {onClose && (
                 <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
                     <div className="flex items-center gap-3">
@@ -282,7 +282,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
 
             <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,12rem)_minmax(0,1fr)] gap-4 p-4 md:grid-cols-[15rem_minmax(0,1fr)] md:grid-rows-1 xl:grid-cols-[19rem_minmax(0,1fr)]">
                 {/* my playlists */}
-                <aside className="flex min-h-0 flex-col rounded-2xl border border-white/10 bg-white/3 p-3">
+                <aside className="sfd-playlistlist flex min-h-0 flex-col rounded-2xl border border-white/10 bg-white/3 p-3">
                     <div className="mb-3 flex items-center justify-between px-1">
                         <h3 className="font-bold">My Playlists</h3>
                         <span className="rounded-lg bg-white/10 px-2 py-0.5 text-xs font-bold tabular-nums text-neutral-300">{lists.length}</span>
@@ -325,7 +325,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                                 <button
                                     onClick={() => setSelected(l.id)}
                                     aria-current={selected === l.id}
-                                    className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${selected === l.id ? 'bg-linear-to-r from-violet-500/25 via-violet-500/10 to-transparent ring-1 ring-violet-400/30' : 'hover:bg-white/5'}`}
+                                    className={`sfd-playlist relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${selected === l.id ? 'bg-linear-to-r from-violet-500/25 via-violet-500/10 to-transparent ring-1 ring-violet-400/30' : 'hover:bg-white/5'}`}
                                 >
                                     {selected === l.id && <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-violet-400" />}
                                     <span className={`min-w-0 flex-1 truncate ${selected === l.id ? 'font-bold text-white' : 'font-semibold text-neutral-300'}`}>{l.name}</span>
@@ -345,7 +345,7 @@ export default function PlaylistManager({ roomSlug, onClose, onChanged, classNam
                 </aside>
 
                 {/* the one I picked */}
-                <section className="flex min-h-0 min-w-0 flex-col rounded-2xl border border-white/10 bg-white/3 p-4 sm:p-5">
+                <section className="sfd-playlistcontent flex min-h-0 min-w-0 flex-col rounded-2xl border border-white/10 bg-white/3 p-4 sm:p-5">
                     {current ? (
                         <>
                             <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between xl:gap-4">

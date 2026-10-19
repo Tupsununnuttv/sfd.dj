@@ -63,7 +63,7 @@ export default function VoteBar({
                             onClick={() => onVote(type)}
                             aria-pressed={mine[type]}
                             aria-label={`${label}: ${votes[type]}`}
-                            className={`flex w-full flex-col overflow-hidden rounded-lg text-center shadow-lg shadow-black/50 transition duration-150 enabled:hover:-translate-y-0.5 enabled:hover:brightness-110 enabled:active:translate-y-0 disabled:cursor-not-allowed ${mine[type] ? 'ring-2 ring-white/80' : 'ring-1 ring-white/10'}`}
+                            className={`${type === 'woot' ? 'sfd-woot ' : type === 'grab' ? 'sfd-grab ' : 'sfd-meh '}flex w-full flex-col overflow-hidden rounded-lg text-center shadow-lg shadow-black/50 transition duration-150 enabled:hover:-translate-y-0.5 enabled:hover:brightness-110 enabled:active:translate-y-0 disabled:cursor-not-allowed ${mine[type] ? 'ring-2 ring-white/80' : 'ring-1 ring-white/10'}`}
                         >
                             <span className={`flex h-8 items-center justify-center gap-1.5 bg-[#131014] text-[12px] font-bold uppercase tracking-wider ${mine[type] ? lit : 'text-neutral-200'}`}>
                                 <Icon size={15} strokeWidth={2.2} fill={mine[type] ? 'currentColor' : 'none'} />

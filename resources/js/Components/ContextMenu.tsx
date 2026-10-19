@@ -23,7 +23,7 @@ export interface MenuAnchor {
  * elsewhere, on scrolling or resizing, and the arrow keys move between the items. Anything marked `data-menu-trigger` (the button
  * that opened it) is left alone, so clicking it again can close the menu.
  */
-export default function ContextMenu({ anchor, header, groups, titles = [], label, onClose }: { anchor: MenuAnchor; header?: ReactNode; groups: MenuItem[][]; titles?: (string | undefined)[]; label: string; onClose: () => void }) {
+export default function ContextMenu({ anchor, header, groups, titles = [], label, onClose, roomScoped = false }: { roomScoped?: boolean; anchor: MenuAnchor; header?: ReactNode; groups: MenuItem[][]; titles?: (string | undefined)[]; label: string; onClose: () => void }) {
     const box = useRef<HTMLDivElement>(null);
     const close = useRef(onClose);
     close.current = onClose;
@@ -85,13 +85,14 @@ export default function ContextMenu({ anchor, header, groups, titles = [], label
     if (typeof document === 'undefined') return null;
 
     return createPortal(
+        <div className={roomScoped ? 'sfd-room text-white' : undefined}>
         <div
             ref={box}
             role="menu"
             aria-label={label}
             onContextMenu={(e) => e.preventDefault()}
             style={pos}
-            className="fixed z-70 max-h-[calc(100vh-1rem)] w-60 animate-menu overflow-y-auto rounded-2xl border border-white/10 bg-neutral-900/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-md"
+            className="sfd-popupmenu fixed z-70 max-h-[calc(100vh-1rem)] w-60 animate-menu overflow-y-auto rounded-2xl border border-white/10 bg-neutral-900/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-md"
         >
             {header && <div className="px-2 pb-1.5 pt-1">{header}</div>}
             {groups.map((group, g) => (
@@ -105,7 +106,7 @@ export default function ContextMenu({ anchor, header, groups, titles = [], label
                                 item.onSelect();
                                 if (!item.keepOpen) close.current();
                             }}
-                            className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium outline-none transition-colors ${item.danger ? 'text-red-300 hover:bg-red-500/15 focus:bg-red-500/15' : 'text-neutral-200 hover:bg-white/10 focus:bg-white/10'}`}
+                            className={`sfd-popupitem flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium outline-none transition-colors ${item.danger ? 'text-red-300 hover:bg-red-500/15 focus:bg-red-500/15' : 'text-neutral-200 hover:bg-white/10 focus:bg-white/10'}`}
                         >
                             <item.icon size={15} className={item.danger ? 'text-red-300' : 'text-neutral-400'} />
                             {item.label}
@@ -113,6 +114,7 @@ export default function ContextMenu({ anchor, header, groups, titles = [], label
                     ))}
                 </div>
             ))}
+        </div>
         </div>,
         document.body,
     );

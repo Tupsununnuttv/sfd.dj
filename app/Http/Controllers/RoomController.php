@@ -185,7 +185,10 @@ class RoomController extends Controller
         $room = $request->query('room');
         $mine = $request->boolean('mine');
 
+        $themeRoom = $room ? Room::visibleTo($request->user())->atAddress($room)->first() : null;
+
         return Inertia::render('History', [
+            'room_css' => RoomCss::clean($themeRoom?->custom_css)['css'],
             'songs' => PlaylistItem::whereNotNull('played_at')
                 ->whereHas('room', fn ($r) => $r->visibleTo($request->user()))
                 ->when($room, fn ($q) => $q->whereHas('room', fn ($r) => $r->atAddress($room)))

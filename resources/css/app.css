@@ -498,8 +498,8 @@ html {
 
 /* The volume slider in the footbar of a room: a slim track (filled in inline, up to the volume) and a round knob that glows. */
 input[type='range'].vol { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 9999px; outline: none; }
-input[type='range'].vol::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; height: 14px; width: 14px; border-radius: 9999px; border: 0; background: #fff; box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.4), 0 0 10px rgba(168, 85, 247, 0.8); }
-input[type='range'].vol::-moz-range-thumb { height: 14px; width: 14px; border-radius: 9999px; border: 0; background: #fff; box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.4), 0 0 10px rgba(168, 85, 247, 0.8); }
+input[type='range'].vol::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; height: 14px; width: 14px; border-radius: 9999px; border: 0; background: var(--volume-thumb, #fff); box-shadow: 0 0 0 3px var(--volume-glow, rgba(168, 85, 247, 0.4)), 0 0 10px var(--volume-glow, rgba(168, 85, 247, 0.8)); }
+input[type='range'].vol::-moz-range-thumb { height: 14px; width: 14px; border-radius: 9999px; border: 0; background: var(--volume-thumb, #fff); box-shadow: 0 0 0 3px var(--volume-glow, rgba(168, 85, 247, 0.4)), 0 0 10px var(--volume-glow, rgba(168, 85, 247, 0.8)); }
 input[type='range'].vol:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.7); }
 input[type='range'].vol:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.7); }
 

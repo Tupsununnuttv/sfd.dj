@@ -459,6 +459,58 @@ class ProfileRoomExtrasTest extends TestCase
         $this->assertContains('Only the first 300 rules are used.', $long['notes']);
     }
 
+    public function test_vote_theme_selectors_map_to_buttons_without_allowing_other_attributes(): void
+    {
+        foreach (['woot', 'grab', 'meh'] as $vote) {
+            foreach ([".{$vote}", "[class*=\"{$vote}\"]", "[class*='{$vote}']"] as $target) {
+                $result = RoomCss::clean(".sfd-votes {$target}:hover{color:red}");
+                $this->assertSame([], $result['notes']);
+                $this->assertSame(".sfd-room .sfd-votes .sfd-{$vote}:hover{color:red}", $result['css']);
+            }
+        }
+        foreach (['.sfd-votes [class*="woot-extra"]', '.sfd-votes [data-vote="woot"]', '.sfd-votes [class*="woot"][value^="a"]'] as $selector) {
+            $this->assertSame('', RoomCss::clean($selector.'{color:red}')['css']);
+        }
+        $result = RoomCss::clean('.sfd-playlists .sfd-playlist:hover{color:red}.sfd-playlistcontent .sfd-tracks .sfd-track{color:blue}');
+        $this->assertSame([], $result['notes']);
+        $this->assertStringContainsString('.sfd-room .sfd-playlists .sfd-playlist:hover', $result['css']);
+        $this->assertStringContainsString('.sfd-room .sfd-playlistcontent .sfd-tracks .sfd-track', $result['css']);
+    }
+
+    public function test_history_uses_only_the_selected_visible_rooms_cleaned_css(): void
+    {
+        $host = User::factory()->create();
+        $room = $host->rooms()->create(['name' => 'History theme', 'slug' => 'history-theme', 'custom_css' => '.sfd-history{color:red} aside{display:none}', 'is_private' => false]);
+        $this->actingAs($host)->get('/history?room='.$room->slug)->assertInertia(fn (Assert $p) => $p
+            ->component('History')->where('room_css', '.sfd-room .sfd-history{color:red}'));
+        $this->get('/history')->assertInertia(fn (Assert $p) => $p->where('room_css', ''));
+    }
+
+    public function test_room_links_selection_video_and_history_selectors_are_supported(): void
+    {
+        foreach (['.sfd-room ::selection', '.sfd-room a', '.sfd-room a:hover', '.sfd-stage video', '.sfd-history', '.sfd-historylist', '.sfd-historyitem:hover'] as $selector) {
+            $result = RoomCss::clean($selector.'{color:red}');
+            $this->assertSame([], $result['notes'], $selector);
+            $this->assertStringContainsString($selector.'{color:red}', $result['css']);
+        }
+        foreach (['.sfd-room aside', '.sfd-room a[data-secret]'] as $selector) {
+            $this->assertSame('', RoomCss::clean($selector.'{color:red}')['css']);
+        }
+    }
+
+    public function test_volume_slider_theme_supports_both_browser_thumb_and_track_selectors(): void
+    {
+        foreach (['-webkit-slider-thumb', '-webkit-slider-runnable-track', '-moz-range-thumb', '-moz-range-track', '-moz-range-progress'] as $pseudo) {
+            $selector = '.sfd-volumeslider::'.$pseudo;
+            $result = RoomCss::clean($selector.'{background:cyan}');
+            $this->assertSame([], $result['notes']);
+            $this->assertSame('.sfd-room '.$selector.'{background:cyan}', $result['css']);
+        }
+        $result = RoomCss::clean('.sfd-volume{--volume-fill:#22d3ee;--volume-track:#164e63;--volume-thumb:white;--volume-glow:cyan}');
+        $this->assertSame([], $result['notes']);
+        $this->assertStringContainsString('--volume-fill:#22d3ee', $result['css']);
+    }
+
     public function test_legacy_chat_selectors_use_the_real_message_hook(): void
     {
         foreach (['chat-message', 'message-bubble'] as $alias) {
@@ -482,7 +534,7 @@ class ProfileRoomExtrasTest extends TestCase
         $this->assertEqualsCanonicalizing(array_keys(RoomCss::HOOKS), $listed[1], 'the list in lib/cssHooks.ts must be the one in App\Support\RoomCss');
 
         // every class is really on an element of the room page
-        $pages = collect(['Pages/Room.tsx', 'Components/RoomHeader.tsx', 'Components/RoomScene.tsx', 'Components/RoomFootbar.tsx', 'Components/ChatPanel.tsx', 'Components/VoteBar.tsx', 'Components/WaitlistCard.tsx', 'Components/Avatar.tsx'])
+        $pages = collect(['Components/Sidebar.tsx', 'Components/ContextMenu.tsx', 'Pages/History.tsx', 'Pages/Room.tsx', 'Components/RoomHeader.tsx', 'Components/RoomScene.tsx', 'Components/RoomFootbar.tsx', 'Components/ChatPanel.tsx', 'Components/PlaylistManager.tsx', 'Components/playlists/TrackList.tsx', 'Components/VoteBar.tsx', 'Components/WaitlistCard.tsx', 'Components/Avatar.tsx'])
             ->map(fn ($f) => $this->source("resources/js/{$f}"))->implode("\n");
         foreach (array_keys(RoomCss::HOOKS) as $hook) {
             $this->assertStringContainsString("sfd-{$hook} ", $pages, "nothing on the page has .sfd-{$hook}");

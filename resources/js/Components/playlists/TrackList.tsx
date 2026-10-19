@@ -88,7 +88,7 @@ export default function TrackList({ songs, availability, filter, isActive, roomS
     const numbers = Array.from({ length: pages }, (_, i) => i + 1).filter((n) => n === 1 || n === pages || Math.abs(n - at) <= 1);
 
     return (
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="sfd-tracks flex min-h-0 flex-1 flex-col">
             {rows.length > 0 && (
                 <div className="flex shrink-0 justify-end pb-2">
                     <button onClick={() => onCheckAvailability(rows)} disabled={busy || checkingAvailability} className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-semibold text-neutral-300 transition hover:bg-white/5 hover:text-white disabled:opacity-50">
@@ -118,7 +118,7 @@ export default function TrackList({ songs, availability, filter, isActive, roomS
                                         setOver({ id: s.id, after: e.clientY > r.top + r.height / 2 });
                                     }}
                                     onDragEnd={() => { setDrag(null); setOver(null); }}
-                                    className={`group relative flex items-center gap-3 rounded-xl px-2 py-1.5 transition before:pointer-events-none before:absolute before:inset-x-2 before:-top-px before:h-0.5 before:rounded-full before:bg-violet-400 before:opacity-0 before:shadow-[0_0_8px_#a78bfa] after:pointer-events-none after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full after:bg-violet-400 after:opacity-0 after:shadow-[0_0_8px_#a78bfa] hover:bg-white/5 ${drag === s.id ? 'opacity-40' : ''} ${line} ${next ? 'bg-violet-500/[0.07]' : ''}`}
+                                    className={`sfd-track group relative flex items-center gap-3 rounded-xl px-2 py-1.5 transition before:pointer-events-none before:absolute before:inset-x-2 before:-top-px before:h-0.5 before:rounded-full before:bg-violet-400 before:opacity-0 before:shadow-[0_0_8px_#a78bfa] after:pointer-events-none after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full after:bg-violet-400 after:opacity-0 after:shadow-[0_0_8px_#a78bfa] hover:bg-white/5 ${drag === s.id ? 'opacity-40' : ''} ${line} ${next ? 'bg-violet-500/[0.07]' : ''}`}
                                 >
                                     <span title={canDrag ? 'Drag to move' : q ? 'Clear the search to drag tracks' : undefined} className={`flex w-5 shrink-0 items-center justify-center ${canDrag ? 'cursor-grab text-neutral-600 group-hover:text-neutral-300 active:cursor-grabbing' : 'text-neutral-800'}`}>
                                         <GripVertical size={16} />

@@ -13,12 +13,13 @@ interface Played {
 }
 
 interface Props {
+    room_css: string;
     songs: Played[];
     rooms: { name: string; slug: string }[];
     filters: { room: string | null; mine: boolean };
 }
 
-export default function History({ songs, rooms, filters }: Props) {
+export default function History({ songs, rooms, filters, room_css }: Props) {
     const { guest } = usePage<PageProps>().props.auth;
     const apply = (next: Partial<Props['filters']>) => {
         const f = { ...filters, ...next };
@@ -28,6 +29,9 @@ export default function History({ songs, rooms, filters }: Props) {
     return (
         <AppLayout title="History">
             <Head title="History" />
+            {room_css && <style data-room-css>{room_css}</style>}
+            <div className="sfd-room space-y-6">
+            <section className="sfd-history space-y-6">
             <p className="-mt-3 text-sm text-neutral-400">Every song that has been played, newest first. Latest 100.</p>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -48,9 +52,9 @@ export default function History({ songs, rooms, filters }: Props) {
             {songs.length === 0 ? (
                 <p className="text-neutral-500">Nothing has been played yet.</p>
             ) : (
-                <ul className="divide-y divide-neutral-800 rounded-2xl border border-white/10 bg-white/4">
+                <ul className="sfd-historylist divide-y divide-neutral-800 rounded-2xl border border-white/10 bg-white/4">
                     {songs.map((s) => (
-                        <li key={s.id} className="flex items-center gap-4 p-3">
+                        <li key={s.id} className="sfd-historyitem flex items-center gap-4 p-3">
                             {s.thumbnail && <img src={s.thumbnail} alt="" className="h-12 w-20 shrink-0 rounded object-cover" />}
                             <div className="min-w-0 flex-1">
                                 <p className="truncate text-sm font-medium">{s.title}</p>
@@ -65,6 +69,8 @@ export default function History({ songs, rooms, filters }: Props) {
                     ))}
                 </ul>
             )}
+            </section>
+            </div>
         </AppLayout>
     );
 }

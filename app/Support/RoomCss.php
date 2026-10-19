@@ -29,6 +29,30 @@ final class RoomCss
         'users' => 'The list of people in the room',
         'user' => 'One person in that list',
         'waitlist' => 'The waitlist',
+        'woot' => 'The Woot button',
+        'grab' => 'The Grab button',
+        'meh' => 'The Meh button',
+        'playlists' => 'The whole playlists panel',
+        'playlistlist' => 'The list of playlists',
+        'playlist' => 'One playlist in the list',
+        'playlistcontent' => 'The selected playlist and its controls',
+        'tracks' => 'The playlist tracks',
+        'track' => 'One playlist track',
+        'history' => 'The history content and filters',
+        'historylist' => 'The list of played songs',
+        'historyitem' => 'One played song',
+        'menu' => 'The left navigation menu',
+        'menuitem' => 'A navigation link or button',
+        'menuprofile' => 'Your profile card in the menu',
+        'menustatus' => 'Your status and its choices',
+        'menudivider' => 'A menu separator',
+        'menufooter' => 'The bottom of the navigation menu',
+        'popupmenu' => 'The floating More menu',
+        'popupitem' => 'An item in the floating More menu',
+        'volume' => 'The whole volume control (colours: --volume-fill, --volume-track, --volume-thumb, --volume-glow)',
+        'volumebutton' => 'The mute and unmute button',
+        'volumeslider' => 'The volume slider (thumb and track pseudo-elements are supported)',
+        'volumevalue' => 'The volume percentage',
         'votes' => 'The Woot, Meh and Grab buttons',
         'join' => 'The Join Waitlist button',
         'avatar' => 'Anybody\'s picture',
@@ -39,11 +63,11 @@ final class RoomCss
     private const MAX_RULES = 300;
 
     /** Tags that may stand under a hook, for example `.sfd-chat a`. */
-    private const TAGS = ['a', 'b', 'i', 'u', 'em', 'strong', 'small', 'span', 'div', 'p', 'img', 'svg', 'path', 'button', 'input', 'textarea', 'label', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'footer', 'main', 'nav', 'section', 'aside', 'iframe', 'canvas', 'time'];
+    private const TAGS = ['a', 'b', 'i', 'u', 'em', 'strong', 'small', 'span', 'div', 'p', 'img', 'svg', 'path', 'button', 'input', 'textarea', 'label', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'footer', 'main', 'nav', 'section', 'aside', 'iframe', 'video', 'canvas', 'time', 'select', 'option'];
 
     private const PSEUDO_CLASSES = ['hover', 'focus', 'focus-within', 'focus-visible', 'active', 'first-child', 'last-child', 'only-child', 'first-of-type', 'last-of-type', 'nth-child', 'nth-last-child', 'nth-of-type', 'empty', 'not', 'checked', 'disabled', 'enabled', 'link', 'visited'];
 
-    private const PSEUDO_ELEMENTS = ['before', 'after', 'first-line', 'first-letter', 'selection', 'placeholder', 'marker', '-webkit-scrollbar', '-webkit-scrollbar-thumb', '-webkit-scrollbar-track', '-webkit-scrollbar-corner'];
+    private const PSEUDO_ELEMENTS = ['-webkit-slider-thumb', '-webkit-slider-runnable-track', '-moz-range-thumb', '-moz-range-track', '-moz-range-progress', 'before', 'after', 'first-line', 'first-letter', 'selection', 'placeholder', 'marker', '-webkit-scrollbar', '-webkit-scrollbar-thumb', '-webkit-scrollbar-track', '-webkit-scrollbar-corner'];
 
     /** Properties that are never kept. */
     private const BLOCKED_PROPERTIES = ['behavior', '-moz-binding', '-ms-behavior', 'binding'];
@@ -272,6 +296,10 @@ final class RoomCss
         // real hook before validation so the same scope and safety rules apply.
         $selector = preg_replace('/\.(?:chat-message|message-bubble)(?![a-z0-9_-])/', '.sfd-message', $selector);
 
+        // Support old vote themes without allowing arbitrary attribute selectors.
+        $selector = preg_replace('/\[class\s*\*=\s*([\x22\x27])(woot|grab|meh)\1\s*\]/', '.sfd-$2', $selector);
+        $selector = preg_replace('/\.(woot|grab|meh)(?![a-z0-9_-])/', '.sfd-$1', $selector);
+
         if ($selector === '' || preg_match('/[\[\]#"\'`;{}@]/', $selector)) {
             return null; // ids, attribute selectors and strings are not allowed
         }
@@ -339,8 +367,10 @@ final class RoomCss
         foreach ($rest as $i => $compound) {
             $info = $this->compound($compound);
 
+            $rootContent = $bare && preg_match('/^(?:a(?::(?:hover|focus|focus-visible|active|visited|link))*|::selection)$/', $compound);
+
             // the first thing under the page has to be one of the room's classes: a bare tag (`aside`) would reach the menu. `body *` (everything) is fine.
-            if ($info === null || ($i === 0 && ! $info['hook'] && ! ($bare && $info['universal'] && count($rest) === 1))) {
+            if ($info === null || ($i === 0 && ! $info['hook'] && ! $rootContent && ! ($bare && $info['universal'] && count($rest) === 1))) {
                 return null;
             }
 

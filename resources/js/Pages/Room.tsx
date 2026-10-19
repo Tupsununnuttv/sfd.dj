@@ -1193,9 +1193,11 @@ export default function Room({
             )}
 
             {panel === 'playlists' && (
+                <div className="sfd-room text-white">
                 <Panel title="Playlists" onClose={() => setPanel(null)} full bare>
                     <Suspense fallback={loadingPanel}><PlaylistManager onClose={() => setPanel(null)} onChanged={() => setDeckKey((k) => k + 1)} className="min-h-0 flex-1" /></Suspense>
                 </Panel>
+                </div>
             )}
 
             {panel === 'info' && (

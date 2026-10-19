@@ -477,6 +477,11 @@ function RulesEditor({ slug, name, saved }: { slug: string; name: string; saved:
 }
 
 const CSS_EXAMPLES: [string, string][] = [
+    ['Volume colours', '.sfd-volume {\n  --volume-fill: #22d3ee;\n  --volume-track: #164e63;\n  --volume-thumb: #a5f3fc;\n  --volume-glow: #0891b2;\n}\n.sfd-volumebutton { border-color: #22d3ee; color: #67e8f9; }\n.sfd-volumevalue { color: #67e8f9; }\n.sfd-volumeslider { height: 8px; }'],
+    ['Menu colours', '.sfd-menu, .sfd-popupmenu { background: #160d24; }\n.sfd-menuitem:hover, .sfd-popupitem:hover { background: #392050; color: #ddd6fe; }\n.sfd-menudivider { border-color: #69408a; }'],
+    ['History colours', '.sfd-history { color: #ddd6fe; }\n.sfd-historylist { background: #160d24; }\n.sfd-historyitem:hover { background: rgba(167, 139, 250, 0.2); }'],
+    ['Playlist colours', '.sfd-playlists { background: #160d24; }\n.sfd-playlist:hover, .sfd-track:hover { background: rgba(167, 139, 250, 0.2); }'],
+    ['Vote hover', '.sfd-votes .sfd-woot:hover { filter: brightness(1.3); }'],
     ['Neon chat', '.sfd-chat {\n  background: rgba(14, 0, 40, 0.9);\n}\n.sfd-message:hover {\n  background: rgba(217, 70, 239, 0.14);\n}'],
     ['Glass bars', '.sfd-navbar, .sfd-footbar {\n  background: rgba(255, 255, 255, 0.07);\n  backdrop-filter: blur(14px);\n}'],
     ['Glowing pictures', '.sfd-avatar {\n  filter: drop-shadow(0 0 6px rgba(255, 0, 200, 0.65));\n}'],

@@ -294,7 +294,7 @@ export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSk
                 </button>
             </div>
 
-            {more && <ContextMenu anchor={more} label="More" groups={moreItems} titles={[undefined, 'Community', 'Help']} onClose={() => setMore(null)} />}
+            {more && <ContextMenu roomScoped anchor={more} label="More" groups={moreItems} titles={[undefined, 'Community', 'Help']} onClose={() => setMore(null)} />}
         </footer>
     );
 }
