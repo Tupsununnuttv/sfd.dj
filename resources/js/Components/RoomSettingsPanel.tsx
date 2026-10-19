@@ -1,19 +1,22 @@
 import Avatar from '@/Components/Avatar';
-import LiveControls from '@/Components/LiveControls';
-import RoomEmojiManager from '@/Components/RoomEmojiManager';
-import RoomRolesEditor, { RoomRoleInfo } from '@/Components/RoomRolesEditor';
+import BackgroundPreview from '@/Components/BackgroundPreview';
+import type { RoomRoleInfo } from '@/Components/RoomRolesEditor';
 import Toggle from '@/Components/Toggle';
 import { RoomEmojiData } from '@/Components/ChatPanel';
-import RulesModal, { RoomRule } from '@/Components/RulesModal';
-import SceneBackdrop from '@/Components/scene/Backdrop';
+import type { RoomRule } from '@/Components/RulesModal';
 import { backgrounds } from '@/lib/backgrounds';
 import { CSS_HOOKS } from '@/lib/cssHooks';
 import type { LiveInfo } from '@/lib/live';
-import { paletteOf } from '@/lib/scenes';
 import { getJson, send } from '@/lib/post';
 import { router } from '@inertiajs/react';
 import { ArrowDown, ArrowUp, Bot, Check, Code2, ExternalLink, Eye, ListMusic, LucideIcon, Plus, RadioTower, ScrollText, Settings2, ShieldCheck, Smile, Trash2 } from 'lucide-react';
-import { FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
+import { FormEvent, ReactNode, lazy, memo, Suspense, useEffect, useRef, useState } from 'react';
+
+const LiveControls = lazy(() => import('@/Components/LiveControls'));
+const RoomEmojiManager = lazy(() => import('@/Components/RoomEmojiManager'));
+const RoomRolesEditor = lazy(() => import('@/Components/RoomRolesEditor'));
+const RulesModal = lazy(() => import('@/Components/RulesModal'));
+const GeneralPanel = memo(General);
 
 /** A special time of the year (App\Support\Season): while it is on, every room shows one of its backgrounds. */
 export interface SeasonInfo {
@@ -119,7 +122,8 @@ export default function RoomSettingsPanel({ room, genres, backgrounds: pickable,
                     <p className="text-sm text-neutral-400">{current.text}</p>
                 </header>
 
-                {current.key === 'General' && <General room={room} genres={genres} backgrounds={pickable} seasons={seasons} canLock={canLock} />}
+                <Suspense fallback={<p role="status" className="animate-pulse py-6 text-sm text-neutral-400">Loading settings…</p>}>
+                {current.key === 'General' && <GeneralPanel room={room} genres={genres} backgrounds={pickable} seasons={seasons} canLock={canLock} />}
                 {current.key === 'Delete room' && <DeleteRoom slug={room.slug} name={room.name} />}
                 {current.key === 'Rules' && <RulesEditor slug={room.slug} name={room.name} saved={room.rule_list ?? []} />}
                 {current.key === 'Music & Waitlist' && <MusicWaitlist slug={room.slug} locked={locked} cycle={cycle} />}
@@ -140,6 +144,7 @@ export default function RoomSettingsPanel({ room, genres, backgrounds: pickable,
                 )}
                 {current.key === 'Emojis' && <Card title="Room emojis" text="Everybody in the room can use these in the chat."><RoomEmojiManager slug={room.slug} emojis={emojis} /></Card>}
                 {current.key === 'Room CSS' && <CssEditor slug={room.slug} saved={room.css_source ?? ''} notes={room.css_notes ?? []} />}
+                </Suspense>
             </section>
         </div>
     );
@@ -229,9 +234,9 @@ function General({ room, genres, backgrounds: pickable, seasons, canLock }: Pick
             className={`relative h-16 w-28 overflow-hidden rounded-lg border-2 transition ${s.background === key ? 'border-violet-400 ring-2 ring-violet-400/30' : 'border-neutral-700 hover:border-neutral-500'}`}
         >
             {key === 'custom' ? (
-                room.custom_background_url ? <img src={room.custom_background_url} alt="" className="absolute inset-0 h-full w-full object-cover" /> : <span className="absolute inset-0 flex items-center justify-center bg-neutral-900 px-1 text-center text-[10px] text-neutral-500">no picture yet</span>
+                room.custom_background_url ? <img src={room.custom_background_url} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" /> : <span className="absolute inset-0 flex items-center justify-center bg-neutral-900 px-1 text-center text-[10px] text-neutral-500">no picture yet</span>
             ) : (
-                <SceneBackdrop palette={paletteOf(key)} withBooth className="absolute inset-0 h-full w-full" />
+                <BackgroundPreview name={key} />
             )}
             {star && <span className="absolute right-1 top-1 rounded bg-black/60 px-1 text-[10px] font-bold leading-4 text-amber-300">★ Host</span>}
             {season?.backgrounds.includes(key) && <span className="absolute left-1 top-1 rounded bg-emerald-500/90 px-1 text-[10px] font-bold leading-4 text-black">On now</span>}
@@ -274,7 +279,7 @@ function General({ room, genres, backgrounds: pickable, seasons, canLock }: Pick
                 <div className="relative mb-3 h-40 overflow-hidden rounded-xl border border-white/10 bg-black" data-background-preview>
                     {s.background === 'custom'
                         ? room.custom_background_url && <img src={room.custom_background_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                        : <SceneBackdrop palette={paletteOf(s.background)} withBooth className="absolute inset-0 h-full w-full" />}
+                        : <BackgroundPreview key={s.background} name={s.background} large />}
                     <span className="absolute bottom-2 left-2 rounded-md bg-black/65 px-2 py-0.5 text-xs font-semibold text-white">{chosenName}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">{[['', { label: 'Default' }] as const, ...plain].map(([key, b]) => tile(key, b.label))}</div>
@@ -353,8 +358,11 @@ function GiveRoles({ slug, roles, memberList }: { slug: string; roles: RoomRoleI
 
     useEffect(() => {
         if (q.trim().length < 2) return setFound([]);
-        const t = setTimeout(() => getJson<typeof found>(`${route('rooms.find-users', slug)}?q=${encodeURIComponent(q.trim())}`).then(setFound).catch(() => setFound([])), 250);
-        return () => clearTimeout(t);
+        const controller = new AbortController();
+        const t = setTimeout(() => getJson<typeof found>(`${route('rooms.find-users', slug)}?q=${encodeURIComponent(q.trim())}`, { signal: controller.signal })
+            .then((users) => { if (!controller.signal.aborted) setFound(users); })
+            .catch(() => { if (!controller.signal.aborted) setFound([]); }), 250);
+        return () => { clearTimeout(t); controller.abort(); };
     }, [q, slug]);
 
     const assign = (userId: number, role: string | null, name: string) =>

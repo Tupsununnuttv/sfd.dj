@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\ChatMessage;
 use App\Models\PlaylistItem;
+use App\Models\User;
 use App\Models\Whisper;
+use App\Support\AccountSecurity;
 use App\Support\DiscordRoleSync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -122,7 +124,7 @@ class SettingsController extends Controller
     {
         $request->validate(['password' => ['required', 'current_password']]);
         DB::table(config('session.table', 'sessions'))->where('user_id', $request->user()->id)->where('id', '!=', $request->session()->getId())->delete();
-        \App\Support\AccountSecurity::revoke($request->user(), $request, false);
+        AccountSecurity::revoke($request->user(), $request, false);
 
         return back();
     }
@@ -160,14 +162,16 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function updatePreferences(Request $request): RedirectResponse
+    public function updatePreferences(Request $request): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
             'appearance.chat_size' => ['sometimes', Rule::in(['small', 'normal', 'large'])],
             'appearance.show_avatars' => ['sometimes', 'boolean'],
             'appearance.always_animate' => ['sometimes', 'boolean'],
             'appearance.compact' => ['sometimes', 'boolean'],
+            'appearance.compact_chat' => ['sometimes', 'boolean'],
             'room.autowoot' => ['sometimes', 'boolean'],
+            'room.compact_layout' => ['sometimes', 'boolean'],
             'audio.default_volume' => ['sometimes', 'integer', 'between:0,100'],
             'audio.mute_on_join' => ['sometimes', 'boolean'],
             'notifications.friend_requests' => ['sometimes', 'boolean'],
@@ -182,9 +186,13 @@ class SettingsController extends Controller
             'privacy.show_online' => ['sometimes', 'boolean'],
         ]);
 
-        $user = $request->user();
-        $user->forceFill(['preferences' => array_replace_recursive($user->preferences ?? [], $data)])->save();
+        $preferences = DB::transaction(function () use ($request, $data) {
+            $user = User::whereKey($request->user()->id)->lockForUpdate()->firstOrFail();
+            $user->forceFill(['preferences' => array_replace_recursive($user->preferences ?? [], $data)])->save();
 
-        return back();
+            return $user->preferences;
+        });
+
+        return $request->expectsJson() ? response()->json(['preferences' => $preferences]) : back();
     }
 }

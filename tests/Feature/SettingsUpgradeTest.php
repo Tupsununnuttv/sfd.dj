@@ -18,6 +18,44 @@ class SettingsUpgradeTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_compact_preferences_can_save_as_json_without_reloading_a_page(): void
+    {
+        $user = User::factory()->create(['preferences' => ['room' => ['autowoot' => true]]]);
+        $this->actingAs($user)->patchJson('/settings/preferences', ['appearance' => ['compact_chat' => true]])
+            ->assertOk()->assertJsonPath('preferences.appearance.compact_chat', true)->assertJsonPath('preferences.room.autowoot', true);
+        $this->patchJson('/settings/preferences', ['room' => ['compact_layout' => true]])
+            ->assertOk()->assertJsonPath('preferences.appearance.compact_chat', true)->assertJsonPath('preferences.room.compact_layout', true);
+        $this->patchJson('/settings/preferences', ['appearance' => ['compact' => true]])
+            ->assertOk()->assertJsonPath('preferences.appearance.compact', true)->assertJsonPath('preferences.room.compact_layout', true);
+        $this->patchJson('/settings/preferences', ['appearance' => ['compact' => 'invalid']])->assertUnprocessable();
+        $this->assertTrue($user->fresh()->pref('appearance.compact'));
+    }
+
+    public function test_compact_chat_is_saved_independently_of_text_size_and_room_layout(): void
+    {
+        $user = User::factory()->create(['preferences' => ['appearance' => ['chat_size' => 'large', 'show_badges' => true], 'room' => ['compact_layout' => false]]]);
+        $this->actingAs($user)->patch('/settings/preferences', ['appearance' => ['compact_chat' => true]])->assertSessionHasNoErrors();
+        $this->assertTrue($user->refresh()->pref('appearance.compact_chat'));
+        $this->assertSame('large', $user->pref('appearance.chat_size'));
+        $this->assertTrue($user->pref('appearance.show_badges'));
+        $this->assertFalse($user->pref('room.compact_layout'));
+        $this->get('/settings/appearance')->assertOk()->assertInertia(fn (Assert $page) => $page->where('auth.user.preferences.appearance.compact_chat', true));
+        $this->patch('/settings/preferences', ['appearance' => ['compact_chat' => false]])->assertSessionHasNoErrors();
+        $this->assertFalse($user->refresh()->pref('appearance.compact_chat'));
+    }
+
+    public function test_compact_room_layout_is_a_persistent_independent_personal_setting(): void
+    {
+        $user = User::factory()->create(['preferences' => ['room' => ['autowoot' => true], 'appearance' => ['compact' => false]]]);
+        $this->actingAs($user)->patch('/settings/preferences', ['room' => ['compact_layout' => true]])->assertSessionHasNoErrors();
+        $this->assertTrue($user->refresh()->pref('room.compact_layout'));
+        $this->assertTrue($user->pref('room.autowoot'));
+        $this->assertFalse($user->pref('appearance.compact'));
+        $this->get('/settings/appearance')->assertOk()->assertInertia(fn (Assert $page) => $page->where('auth.user.preferences.room.compact_layout', true));
+        $this->patch('/settings/preferences', ['room' => ['compact_layout' => false]])->assertSessionHasNoErrors();
+        $this->assertFalse($user->refresh()->pref('room.compact_layout'));
+    }
+
     private function user(array $attrs = []): User
     {
         return User::factory()->create($attrs)->refresh();

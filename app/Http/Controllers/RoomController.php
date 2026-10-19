@@ -17,6 +17,7 @@ use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use App\Models\PlaylistSong;
 use App\Models\Room;
+use App\Models\RoomBackgroundAsset;
 use App\Models\RoomBan;
 use App\Models\RoomBotPresence;
 use App\Models\RoomMember;
@@ -51,10 +52,10 @@ use Inertia\Response as InertiaResponse;
 class RoomController extends Controller
 {
     /** Keys of the room backdrops; the page maps each one to its gradient. */
-    public const BACKGROUNDS = ['midnight', 'sunset', 'neon', 'forest', 'club', 'halloween', 'halloween2', 'christmas', 'christmas2', 'winter', 'spring', 'easter', 'summer', 'midsummer', 'synthwave', 'retrowave', 'synthwave2', 'retrowave2', 'definity', 'anime', 'latam', 'lightshow', 'cats', 'goldmine', 'skull', 'skulls', 'ultra', 'foxy', 'dragon', 'tastycat', 'tasty', 'monstercat', 'custom'];
+    public const BACKGROUNDS = ['midnight', 'sunset', 'neon', 'forest', 'club', 'halloween', 'halloween2', 'christmas', 'christmas2', 'winter', 'spring', 'easter', 'summer', 'midsummer', 'synthwave', 'retrowave', 'synthwave2', 'retrowave2', 'definity', 'anime', 'latam', 'lightshow', 'cats', 'goldmine', 'celestial', 'skull', 'skulls', 'ultra', 'foxy', 'dragon', 'tastycat', 'tasty', 'monstercat', 'custom'];
 
     /** The custom (seasonal) backdrops: only the host of a room sees them in Room settings and can pick them. Everybody who comes into the room sees the one that is on. */
-    public const HOST_BACKGROUNDS = ['halloween', 'halloween2', 'christmas', 'christmas2', 'winter', 'spring', 'easter', 'summer', 'midsummer', 'synthwave', 'retrowave', 'synthwave2', 'retrowave2', 'definity', 'anime', 'latam', 'lightshow', 'cats', 'goldmine', 'skull', 'skulls', 'ultra', 'foxy', 'dragon', 'tastycat', 'tasty', 'monstercat', 'custom'];
+    public const HOST_BACKGROUNDS = ['halloween', 'halloween2', 'christmas', 'christmas2', 'winter', 'spring', 'easter', 'summer', 'midsummer', 'synthwave', 'retrowave', 'synthwave2', 'retrowave2', 'definity', 'anime', 'latam', 'lightshow', 'cats', 'goldmine', 'celestial', 'skull', 'skulls', 'ultra', 'foxy', 'dragon', 'tastycat', 'tasty', 'monstercat', 'custom'];
 
     /** Big-emoji "stickers" for chat. */
     public const STICKERS = ['🎉', '🔥', '💃', '🕺', '🤘', '😎', '🥳', '😂', '😍', '🤯', '👏', '🙌', '💯', '❤️', '💜', '🎧', '🎸', '🥁', '🎤', '🎶', '🚀', '👑', '😴', '🙈'];
@@ -400,8 +401,13 @@ class RoomController extends Controller
         $request->validate(['image' => ['required', 'file', 'image', 'mimes:png,jpg,jpeg,webp', 'max:4096', 'dimensions:min_width=800,min_height=450']]);
 
         $old = $room->custom_background;
-        $room->pickBackground('custom'); // in a season too: the host's own picture switches the season off here
-        $room->update(['custom_background' => MediaController::store($request->file('image'), 'room-backgrounds')]);
+        $image = $request->file('image');
+        $name = MediaController::store($image, 'room-backgrounds');
+        DB::transaction(function () use ($room, $image, $name) {
+            RoomBackgroundAsset::keep($room, $name, $image->getMimeType(), $image->get());
+            $room->pickBackground('custom'); // an explicit choice also opts out of the current season
+            $room->update(['custom_background' => $name]);
+        });
         $old && MediaController::disk()->delete("room-backgrounds/{$old}");
         $room->log($request->user(), 'settings', null, 'Own background picture uploaded');
         RoomUpdated::dispatch($room->id);
@@ -413,8 +419,12 @@ class RoomController extends Controller
     {
         abort_unless($room->can($request->user(), 'edit_settings'), 403);
 
-        $room->custom_background && MediaController::disk()->delete("room-backgrounds/{$room->custom_background}");
-        $room->update(['custom_background' => null, 'background' => $room->background === 'custom' ? null : $room->background]);
+        $old = $room->custom_background;
+        DB::transaction(function () use ($room) {
+            RoomBackgroundAsset::where('room_id', $room->id)->delete();
+            $room->update(['custom_background' => null, 'background' => $room->background === 'custom' ? null : $room->background]);
+        });
+        $old && MediaController::disk()->delete("room-backgrounds/{$old}");
         RoomUpdated::dispatch($room->id);
 
         return back();

@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\Room;
+use App\Models\RoomBackgroundAsset;
 use App\Models\RoomMember;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -15,6 +17,53 @@ use Tests\TestCase;
 class BackgroundUploadTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_the_background_survives_missing_deployment_storage_and_disk_changes(): void
+    {
+        $disk = $this->fakeUploads();
+        $host = User::factory()->create();
+        $room = $this->room($host);
+        $image = $this->png(1600, 900);
+        $bytes = $image->get();
+        $this->actingAs($host)->post("/rooms/{$room->slug}/background", ['image' => $image])->assertSessionHasNoErrors();
+        $name = $room->refresh()->custom_background;
+        $this->assertDatabaseHas('room_background_assets', ['room_id' => $room->id, 'name' => $name]);
+        Storage::disk($disk)->delete("room-backgrounds/{$name}");
+        $this->fakeUploads(); // The next release can use a fresh filesystem without losing the image.
+        $response = $this->get(route('media.room', $name))->assertOk()->assertContent($bytes)->assertHeader('Content-Type', 'image/png');
+        $this->get(route('media.room', $name), ['If-None-Match' => $response->headers->get('ETag')])->assertStatus(304);
+        $this->delete("/rooms/{$room->slug}/background")->assertRedirect();
+        $this->assertDatabaseMissing('room_background_assets', ['room_id' => $room->id]);
+        $this->get(route('media.room', $name))->assertNotFound();
+    }
+
+    public function test_existing_background_files_can_be_archived_without_reuploading(): void
+    {
+        $disk = $this->fakeUploads();
+        $host = User::factory()->create();
+        $room = $this->room($host);
+        $name = str_repeat('a', 24).'.png';
+        $bytes = $this->png(800, 450)->get();
+        $room->update(['background' => 'custom', 'custom_background' => $name]);
+        Storage::disk($disk)->put("room-backgrounds/{$name}", $bytes);
+        $this->artisan('room-backgrounds:archive')->assertSuccessful();
+        $this->artisan('room-backgrounds:archive')->assertSuccessful();
+        $this->assertSame(1, RoomBackgroundAsset::count());
+        Storage::disk($disk)->delete("room-backgrounds/{$name}");
+        $this->get(route('media.room', $name))->assertOk()->assertContent($bytes);
+    }
+
+    public function test_seasons_do_not_replace_a_personal_picture_unless_explicitly_selected(): void
+    {
+        $host = User::factory()->create();
+        $room = $this->room($host);
+        $room->update(['background' => 'custom', 'custom_background' => str_repeat('b', 24).'.png']);
+        $this->travelTo(Carbon::parse('2026-12-24 12:00:00'));
+        $this->assertSame('custom', $room->shownBackground());
+        $room->pickBackground('christmas');
+        $room->save();
+        $this->assertSame('christmas', $room->shownBackground());
+    }
 
     /** A real PNG of that size, made by hand (the tests have no GD to draw one). */
     private function png(int $w, int $h, string $name = 'wall.png'): UploadedFile

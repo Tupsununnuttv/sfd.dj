@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -32 200 276" width="200" height="276" role="img" aria-label="Panda dancing">
+<style>
+  .all,.headgrp,.armL,.armR,.legL,.legR { transform-box:view-box; }
+  .all { transform-origin:80px 238px; animation:groove 1.25s cubic-bezier(.45,0,.55,1) infinite; }
+  .headgrp { transform-origin:80px 118px; animation:headbob 1.25s ease-in-out infinite; }
+  .armL { transform-origin:50px 138px; animation:pumpL 1.25s ease-in-out infinite; }
+  .armR { transform-origin:110px 138px; animation:pumpR 1.25s ease-in-out infinite; }
+  .legL { transform-origin:66px 192px; animation:stepL 1.25s ease-in-out infinite; }
+  .legR { transform-origin:94px 192px; animation:stepR 1.25s ease-in-out infinite; }
+  @keyframes groove {0%,100%{transform:translate(0,0) rotate(0) scale(1,1)}20%{transform:translate(-6px,-5px) rotate(-5deg) scale(1.02,.98)}45%{transform:translate(5px,0) rotate(4deg) scale(.99,1.02)}70%{transform:translate(7px,-5px) rotate(6deg) scale(1.02,.98)}}
+  @keyframes headbob {0%,100%{transform:rotate(0)}20%{transform:rotate(-8deg)}45%{transform:rotate(5deg)}70%{transform:rotate(8deg)}}
+  @keyframes pumpL {0%,100%{transform:rotate(-20deg)}18%{transform:rotate(-145deg)}42%{transform:rotate(-25deg)}68%{transform:rotate(-65deg)}85%{transform:rotate(-15deg)}}
+  @keyframes pumpR {0%,100%{transform:rotate(25deg)}18%{transform:rotate(35deg)}42%{transform:rotate(155deg)}68%{transform:rotate(28deg)}85%{transform:rotate(135deg)}}
+  @keyframes stepL {0%,100%{transform:translate(0,0) rotate(0)}20%{transform:translate(-6px,-2px) rotate(-13deg)}45%{transform:translate(5px,1px) rotate(8deg)}70%{transform:translate(4px,-2px) rotate(13deg)}}
+  @keyframes stepR {0%,100%{transform:translate(0,0) rotate(0)}20%{transform:translate(-3px,-2px) rotate(8deg)}45%{transform:translate(6px,-3px) rotate(-13deg)}70%{transform:translate(7px,1px) rotate(-8deg)}}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<ellipse cx="80" cy="236" rx="44" ry="6" fill="#000" opacity=".2"/>
+<g stroke="#1c1033" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+<g class="all">
+  <g class="legL"><path d="M66 192V220" stroke="#171821" stroke-width="21"/><path d="M58 230Q66 218 78 228Q80 238 66 238Q54 238 58 230Z" fill="#f8fafc"/><path d="M60 228Q66 224 74 227" fill="none" stroke="#22d3ee" stroke-width="3"/></g>
+  <g class="legR"><path d="M94 192V220" stroke="#171821" stroke-width="21"/><path d="M102 230Q94 218 82 228Q80 238 94 238Q106 238 102 230Z" fill="#f8fafc"/><path d="M100 228Q94 224 86 227" fill="none" stroke="#22d3ee" stroke-width="3"/></g>
+  <path d="M46 138C50 120 110 120 114 138L122 196Q80 208 38 196Z" fill="#171821"/><path d="M55 145Q80 153 105 145L111 192Q80 201 49 192Z" fill="#f8fafc" stroke="none"/><path d="M58 132Q80 115 102 132L108 143Q80 152 52 143Z" fill="#602a9a" stroke="#1c1033" stroke-width="2"/>
+  <path d="M77 149Q88 144 99 149L97 166Q88 173 79 166Z" fill="#ddd6fe" stroke="#7c3aed" stroke-width="1.5"/><path d="M84 154Q89 151 94 154L93 160Q89 164 85 160Z" fill="#111827" stroke="none"/><circle cx="81" cy="152" r="2.3" fill="#111827" stroke="none"/><circle cx="85" cy="149" r="2.3" fill="#111827" stroke="none"/><circle cx="91" cy="149" r="2.3" fill="#111827" stroke="none"/><circle cx="96" cy="152" r="2.3" fill="#111827" stroke="none"/>
+  <path d="M67 177Q80 181 93 177L92 187Q80 192 68 187Z" fill="#c4b5fd" stroke="#7c3aed" stroke-width="1.6"/>
+  <path d="M80 169V190" fill="none" stroke="#22d3ee" stroke-width="2"/><circle cx="80" cy="170" r="1.8" fill="#fbbf24" stroke="none"/>
+  <g class="armL"><path d="M50 138V176" stroke="#171821" stroke-width="18"/><rect x="40.5" y="168" width="19" height="9" rx="4" fill="#22d3ee"/><circle cx="50" cy="184" r="9.5" fill="#111827"/></g>
+  <g class="armR"><path d="M110 138V176" stroke="#171821" stroke-width="18"/><rect x="100.5" y="168" width="19" height="9" rx="4" fill="#22d3ee"/><circle cx="110" cy="184" r="9.5" fill="#111827"/></g>
+  <g class="headgrp">
+    <circle cx="48" cy="45" r="14" fill="#111827"/><circle cx="112" cy="45" r="14" fill="#111827"/><circle cx="80" cy="76" r="44" fill="#f8fafc"/>
+    <ellipse cx="61" cy="82" rx="11" ry="15" fill="#111827" transform="rotate(20 61 82)"/><ellipse cx="99" cy="82" rx="11" ry="15" fill="#111827" transform="rotate(-20 99 82)"/>
+    <ellipse cx="63" cy="82" rx="4" ry="6" fill="#22d3ee" stroke="none"/><ellipse cx="97" cy="82" rx="4" ry="6" fill="#22d3ee" stroke="none"/><circle cx="64" cy="80" r="1.8" fill="#fff" stroke="none"/><circle cx="98" cy="80" r="1.8" fill="#fff" stroke="none"/>
+    <ellipse cx="80" cy="99" rx="5" ry="3.8" fill="#111827" stroke="none"/><path d="M73 104Q80 111 87 104" fill="none" stroke="#1c1033" stroke-width="2.8"/>
+    <ellipse cx="48" cy="100" rx="7" ry="4.5" fill="#fda4af" opacity=".55" stroke="none"/><ellipse cx="112" cy="100" rx="7" ry="4.5" fill="#fda4af" opacity=".55" stroke="none"/>
+    <path d="M40 63C45 31 115 31 120 63" fill="none" stroke="#1c1033" stroke-width="8"/><path d="M40 63C45 31 115 31 120 63" fill="none" stroke="#22d3ee" stroke-width="4"/><rect x="31" y="60" width="16" height="27" rx="7" fill="#22d3ee"/><rect x="113" y="60" width="16" height="27" rx="7" fill="#22d3ee"/>
+  </g>
+</g>
+</g>
+</svg>

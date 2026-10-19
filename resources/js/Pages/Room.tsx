@@ -26,6 +26,7 @@ import type { LiveInfo } from '@/lib/live';
 import { getJson, post, send, sendJson } from '@/lib/post';
 import { refreshCounts } from '@/lib/counts';
 import { withDefaults } from '@/lib/prefs';
+import { saveCompactPreference, useCompactPreferences } from '@/lib/compactPreferences';
 import RoomPlayer from '@/lib/roomPlayer';
 import { isSoundCloud } from '@/lib/soundcloud';
 import { PageProps, RoleInfo } from '@/types';
@@ -213,6 +214,9 @@ export default function Room({
 }>) {
     const { auth: { user, guest }, community } = usePage<PageProps>().props;
     const prefs = withDefaults(user.preferences);
+    const { values: compact } = useCompactPreferences();
+    prefs.appearance.compact_chat = compact.compact_chat;
+    prefs.room.compact_layout = compact.compact_layout;
 
     const [messages, setMessages] = useState(initialMessages);
     const [peopleSearch, setPeopleSearch] = useState('');
@@ -839,7 +843,7 @@ export default function Room({
         <>
             <Head title={room.name} />
             {room.css && <style data-room-css>{room.css}</style>}
-            <div className="sfd-room isolate flex h-dvh overflow-hidden bg-black text-white">
+            <div className="sfd-room isolate flex h-dvh overflow-hidden bg-black text-white" data-room-layout={prefs.room.compact_layout ? 'compact' : 'normal'}>
                 <Sidebar
                     room={{
                         slug: room.slug,
@@ -994,6 +998,8 @@ export default function Room({
                             onType={whisperTyping}
                             roomRoleOf={roomRoleOf}
                             chatSize={prefs.appearance.chat_size}
+                            compactChat={prefs.appearance.compact_chat}
+                            onCompactChat={guest ? undefined : (on) => saveCompactPreference('compact_chat', on)}
                             showAvatars={prefs.appearance.show_avatars}
                             readOnly={guest}
                             myName={user.name}

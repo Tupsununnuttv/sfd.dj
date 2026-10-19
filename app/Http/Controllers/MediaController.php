@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\RoomBackgroundAsset;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,8 +27,20 @@ class MediaController extends Controller
         return $this->serve('chat', $file);
     }
 
-    public function roomBackground(string $file): Response
+    public function roomBackground(Request $request, string $file): Response
     {
+        // A redeployment may replace local storage. The database copy survives with the room.
+        $asset = RoomBackgroundAsset::where('name', $file)->first(['room_id', 'mime', 'checksum']);
+        if ($asset) {
+            $response = response('', 200, ['Content-Type' => $asset->mime, 'Cache-Control' => 'public, max-age=86400', 'X-Content-Type-Options' => 'nosniff']);
+            $response->setEtag($asset->checksum);
+            if (! $response->isNotModified($request)) {
+                $response->setContent(base64_decode((string) RoomBackgroundAsset::whereKey($asset->room_id)->value('content'), true));
+            }
+
+            return $response;
+        }
+
         return $this->serve('room-backgrounds', $file);
     }
 

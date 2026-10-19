@@ -12,7 +12,7 @@ import { CardUser } from '@/Components/UserCard';
 import { getJson, post, send, sendJson, upload } from '@/lib/post';
 import { RoleInfo } from '@/types';
 import { Link, router } from '@inertiajs/react';
-import { AtSign, Check, Copy, Ellipsis, Gift, ImagePlus, MessageCircle, Reply, Send, Smile, Trash2, UserRound, X } from 'lucide-react';
+import { AtSign, Check, Copy, Ellipsis, Gift, ImagePlus, MessageCircle, Minimize2, Reply, Send, Smile, Trash2, UserRound, X } from 'lucide-react';
 import { FormEvent, MouseEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export interface ChatMessageData {
@@ -225,6 +225,8 @@ export default function ChatPanel({
     onType,
     roomRoleOf,
     chatSize,
+    compactChat = false,
+    onCompactChat,
     showAvatars,
     readOnly = false,
     myName,
@@ -249,6 +251,8 @@ export default function ChatPanel({
     onType: () => void;
     roomRoleOf: (userId: number) => RoleInfo | null;
     chatSize: 'small' | 'normal' | 'large';
+    compactChat?: boolean;
+    onCompactChat?: (compact: boolean) => void;
     showAvatars: boolean;
     readOnly?: boolean; // guests can read but not write
     myName: string;
@@ -426,11 +430,12 @@ export default function ChatPanel({
     const toolbar: [Picker, string, string][] = [['emoji', '😀', 'Emojis'], ['gif', 'GIF', 'GIFs'], ['sticker', '🏷️', 'Stickers'], ['room', '⭐', 'Room emojis'], ['bttv', 'BTTV', 'BetterTTV emotes'], ['7tv', '7TV', '7TV emotes']];
 
     return (
-        <div className="sfd-chat flex min-h-0 flex-1 flex-col">
+        <div className="sfd-chat flex min-h-0 flex-1 flex-col" data-chat-density={compactChat ? 'compact' : 'normal'}>
             <p className="mx-3 mt-3 flex shrink-0 items-center gap-2 rounded-lg bg-white/5 px-2.5 py-1.5 text-xs text-neutral-200" data-version>
                 <span aria-hidden>👋</span>
                 <span className="min-w-0 flex-1">Welcome to <span className="font-bold text-white">SFD-DJ.EU</span>, Version {VERSION}</span>
                 {onPatchNotes && <button onClick={onPatchNotes} className="shrink-0 font-semibold text-violet-300 hover:underline">What's new</button>}
+                {onCompactChat && <button type="button" aria-label="Compact chat" aria-pressed={compactChat} title={compactChat ? 'Turn compact chat off' : 'Turn compact chat on'} onClick={() => onCompactChat(!compactChat)} className={`shrink-0 rounded p-1 transition hover:bg-white/10 ${compactChat ? 'bg-violet-500/20 text-violet-300' : 'text-neutral-400'}`}><Minimize2 size={14} /></button>}
             </p>
             {welcome && (
                 <p className={`mx-3 mt-3 flex max-h-28 shrink-0 gap-2 overflow-y-auto wrap-break-word rounded bg-violet-500/10 p-2 italic text-violet-200 ${chatText[chatSize]}`}>
@@ -445,7 +450,7 @@ export default function ChatPanel({
                     followMessages.current = container.scrollHeight - container.scrollTop - container.clientHeight < 48;
                     if (peek) hidePeek();
                 }}
-                className={`flex-1 space-y-3 overflow-y-auto overflow-x-hidden p-3 ${chatText[chatSize]}`}
+                className={`flex-1 overflow-y-auto overflow-x-hidden ${compactChat ? 'space-y-1.5 p-2' : 'space-y-3 p-3'} ${chatText[chatSize]}`}
             >
                 {messages.map((m) => {
                     if (m.type === 'system') {

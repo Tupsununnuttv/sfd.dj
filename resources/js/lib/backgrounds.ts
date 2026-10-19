@@ -29,6 +29,7 @@ export const backgrounds: Record<string, { label: string; className: string; hos
     lightshow: { label: 'Lightshow', className: 'bg-linear-to-b from-black via-violet-950 to-fuchsia-950', host: true },
     cats: { label: 'Cat café', className: 'bg-linear-to-b from-fuchsia-950 via-orange-700 to-amber-900', host: true },
     goldmine: { label: 'Gold Mine', className: 'bg-linear-to-b from-stone-950 via-amber-800 to-yellow-500', host: true },
+    celestial: { label: 'Celestial Terrace', className: 'bg-linear-to-b from-slate-950 via-indigo-950 to-teal-950', host: true },
     skull: { label: 'Skull', className: 'bg-linear-to-b from-black via-red-950 to-red-700', host: true },
     skulls: { label: 'Skulls', className: 'bg-linear-to-b from-stone-950 via-stone-700 to-emerald-900', host: true },
     ultra: { label: 'Ultra Music Festival', className: 'bg-linear-to-b from-indigo-950 via-fuchsia-800 to-cyan-500', host: true },

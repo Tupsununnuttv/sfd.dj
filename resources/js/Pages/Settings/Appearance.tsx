@@ -4,6 +4,7 @@ import Toggle from '@/Components/Toggle';
 import { Card, Segmented, SettingsSection } from '@/Components/ui';
 import SettingsLayout from '@/Layouts/SettingsLayout';
 import { savePrefs, withDefaults } from '@/lib/prefs';
+import { saveCompactPreference, useCompactPreferences } from '@/lib/compactPreferences';
 import { PageProps } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 
@@ -11,7 +12,11 @@ const text = { small: 'text-xs', normal: 'text-sm', large: 'text-base' };
 
 export default function Appearance() {
     const { user } = usePage<PageProps>().props.auth;
-    const { appearance } = withDefaults(user.preferences);
+    const { appearance, room } = withDefaults(user.preferences);
+    const { values: compact } = useCompactPreferences();
+    appearance.compact = compact.compact;
+    appearance.compact_chat = compact.compact_chat;
+    room.compact_layout = compact.compact_layout;
 
     // the same lines as in a room, in your size, with or without pictures and badges
     const lines: [string, string, string, number, string][] = [
@@ -26,9 +31,9 @@ export default function Appearance() {
 
             <SettingsSection title="Preview">
                 <Card className="bg-black/30 p-4">
-                    <div className={`space-y-3 ${text[appearance.chat_size]}`}>
+                    <div className={`sfd-chat ${appearance.compact_chat ? 'space-y-1.5' : 'space-y-3'} ${text[appearance.chat_size]}`} data-chat-density={appearance.compact_chat ? 'compact' : 'normal'}>
                         {lines.map(([name, color, msg, level, who]) => (
-                            <div key={name + msg} className="flex gap-2.5">
+                            <div key={name + msg} className="sfd-message flex gap-2.5">
                                 {appearance.show_avatars && <Avatar name={name} avatar={who === 'me' ? user.avatar : null} cosmetics={who === 'me' ? user.cosmetics : null} />}
                                 <div className="min-w-0">
                                     <p className="flex flex-wrap items-center gap-1.5 text-xs font-semibold" style={{ color }}>
@@ -51,7 +56,9 @@ export default function Appearance() {
             </SettingsSection>
 
             <Card className="divide-y divide-white/5 px-6">
-                <Toggle label="Compact" hint="Tighter spacing everywhere: more chat lines, people and songs fit on the screen, with smaller pictures and slimmer bars in the rooms." checked={appearance.compact} onChange={(v) => savePrefs({ appearance: { compact: v } })} />
+                <Toggle label="Compact chat" hint="Smaller chat avatars and tighter message spacing. Keeps your text size, badges and room layout unchanged." checked={appearance.compact_chat} onChange={(v) => saveCompactPreference('compact_chat', v)} />
+                <Toggle label="Compact room layout" hint="Smaller room bars and tighter chat, member and waitlist spacing. Gives the stage more space and affects only your view." checked={room.compact_layout} onChange={(v) => saveCompactPreference('compact_layout', v)} />
+                <Toggle label="Compact" hint="Tighter spacing everywhere: more chat lines, people and songs fit on the screen, with smaller pictures and slimmer bars in the rooms." checked={appearance.compact} onChange={(v) => saveCompactPreference('compact', v)} />
                 <Toggle label="Show avatars in chat" hint="Turn off for a denser chat." checked={appearance.show_avatars} onChange={(v) => savePrefs({ appearance: { show_avatars: v } })} />
                 <Toggle label="Show badges and levels in chat" hint="The little role icons and Lv numbers in front of names." checked={appearance.show_badges} onChange={(v) => savePrefs({ appearance: { show_badges: v } })} />
                 <Toggle label="Show who joins, leaves and votes in chat" hint="The lines like “Kati wooted this song” and “Mike left the room”. Turn off in a very busy room." checked={appearance.show_activity} onChange={(v) => savePrefs({ appearance: { show_activity: v } })} />

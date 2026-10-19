@@ -412,6 +412,28 @@ class CharacterTest extends TestCase
         $this->assertCount(3, array_unique($pictures));
     }
 
+    public function test_imported_bamboo_panda_and_vesper_pip_have_all_three_states_and_can_be_equipped(): void
+    {
+        foreach (['bamboopanda' => ['Bamboo Panda', 5], 'vesperpip' => ['Vesper & Pip', 22]] as $name => [$label, $level]) {
+            $buyer = $this->atLevel($level);
+            $buyer->forceFill(['coins' => 10000])->save();
+            $catalog = collect($this->actingAs($buyer)->get('/shop')->inertiaProps('catalog.avatar'))->keyBy('key');
+            $this->assertSame([$label, $level], [$catalog['char:'.$name]['label'], $catalog['char:'.$name]['level']]);
+            $this->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => 'char:'.$name]]])->assertSessionHasNoErrors();
+            $this->post('/shop/equip', ['avatar' => 'char:'.$name])->assertSessionHasNoErrors();
+            $this->assertSame('char:'.$name, $buyer->refresh()->character);
+            $states = [];
+            foreach (['standing', 'dancing', 'djing'] as $state) {
+                $file = $this->get('/characters/'.$state.'/'.$name)->assertOk()->baseResponse->getFile()->getPathname();
+                $svg = file_get_contents($file);
+                $this->assertStringContainsString('viewBox="-20 -32 200 276"', $svg);
+                $this->assertStringContainsString('prefers-reduced-motion', $svg);
+                $states[] = hash('sha256', $svg);
+            }
+            $this->assertCount(3, array_unique($states));
+        }
+    }
+
     public function test_veyra_is_legendary_and_unlocks_at_level_twenty_eight(): void
     {
         $early = $this->atLevel(27);

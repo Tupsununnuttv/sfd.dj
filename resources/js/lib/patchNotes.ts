@@ -1,10 +1,20 @@
-/** Every release, newest first. The Patch notes page and the dashboard both read this list. */
+/** Every release, newest first. Only the Patch notes page loads the full archive. */
 import { latestRelease, type Kind } from './latestRelease';
 export type { Kind } from './latestRelease';
 export { VERSION } from './latestRelease';
 
 export const releases: { version: string; title: string; notes: [Kind, string][] }[] = [
     latestRelease,
+    {
+        version: '1.71',
+        title: 'Legendary characters: Veyra and Kaida',
+        notes: [
+            ['new', 'Veyra joins the Avatar Shop at level 28 with a phoenix mask, glowing heart, feather fan, trailing tail and floating embers.'],
+            ['improved', 'Veyra has separate standing, dancing and DJ performances. The dance uses 60 articulated poses over 2.4 seconds, with planted feet and delayed feather movement. Reduced-motion settings show a still pose.'],
+            ['new', 'Kaida, a nine-tailed celestial kitsune, joins the Avatar Shop at level 32 with an aurora silk costume, foxfire details and nine animated tails.'],
+            ['improved', 'Kaida has 60 articulated poses across standing, dancing and DJ performances. The dance moves at a relaxed 2.8-second loop, with planted steps and individually staggered tails that follow each turn.'],
+        ],
+    },
     {
         version: '1.70',
         title: 'Solstice joins the Legendary collection',

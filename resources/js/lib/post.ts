@@ -25,8 +25,8 @@ export async function send(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: str
 export const post = (url: string, data?: object) => send('POST', url, data);
 
 /** GET JSON from a Laravel route; throws the server's message on failure. */
-export async function getJson<T>(url: string): Promise<T> {
-    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+export async function getJson<T>(url: string, options: { signal?: AbortSignal } = {}): Promise<T> {
+    const res = await fetch(url, { headers: { Accept: 'application/json' }, signal: options.signal });
     const json = await res.json().catch(() => ({}));
 
     if (!res.ok) throw new Error(json.message ?? 'Request failed');

@@ -26,7 +26,7 @@ export interface ScenePalette {
     accent: string; // neon signs, the light strip on the booth
     accent2: string; // the second light colour
     glow: string; // the haze behind the screen
-    theme?: 'halloween' | 'halloween2' | 'christmas' | 'christmas2' | 'winter' | 'spring' | 'easter' | 'summer' | 'midsummer' | 'synthwave' | 'retrowave' | 'synthwave2' | 'retrowave2' | 'definity' | 'anime' | 'latam' | 'lightshow' | 'cats' | 'goldmine' | 'skull' | 'skulls' | 'ultra' | 'foxy' | 'dragon' | 'tastycat' | 'tasty' | 'monstercat' | 'custom'; // a scenery of its own (Components/scene/Halloween.tsx, Christmas.tsx, Winter.tsx, Spring.tsx, Summer.tsx, Synthwave.tsx, Retrowave.tsx); none is the club
+    theme?: 'halloween' | 'halloween2' | 'christmas' | 'christmas2' | 'winter' | 'spring' | 'easter' | 'summer' | 'midsummer' | 'synthwave' | 'retrowave' | 'synthwave2' | 'retrowave2' | 'definity' | 'anime' | 'latam' | 'lightshow' | 'cats' | 'goldmine' | 'celestial' | 'skull' | 'skulls' | 'ultra' | 'foxy' | 'dragon' | 'tastycat' | 'tasty' | 'monstercat' | 'custom'; // a scenery of its own (Components/scene/Halloween.tsx, Christmas.tsx, Winter.tsx, Spring.tsx, Summer.tsx, Synthwave.tsx, Retrowave.tsx); none is the club
 }
 
 export const palettes: Record<string, ScenePalette> = {
@@ -55,6 +55,7 @@ export const palettes: Record<string, ScenePalette> = {
     lightshow: { wallTop: '#03030a', wallBottom: '#12082a', floorTop: '#0d0a24', floorBottom: '#03030a', accent: '#ff2fd0', accent2: '#22d3ee', glow: '#a78bfa', theme: 'lightshow' },
     cats: { wallTop: '#5b3a5a', wallBottom: '#e6a06a', floorTop: '#7a4a2a', floorBottom: '#3a1f10', accent: '#fb923c', accent2: '#f472b6', glow: '#fcd34d', theme: 'cats' },
     goldmine: { wallTop: '#150b06', wallBottom: '#6a4526', floorTop: '#5a3a1e', floorBottom: '#1c1008', accent: '#fbbf24', accent2: '#f97316', glow: '#ffb454', theme: 'goldmine' },
+    celestial: { wallTop: '#030615', wallBottom: '#19204a', floorTop: '#202b42', floorBottom: '#050914', accent: '#7fe7df', accent2: '#b7a5ed', glow: '#67cbd9', theme: 'celestial' },
     skull: { wallTop: '#05000b', wallBottom: '#4a0a1c', floorTop: '#1a0608', floorBottom: '#050102', accent: '#ef4444', accent2: '#f97316', glow: '#ff3a2a', theme: 'skull' },
     skulls: { wallTop: '#0b0806', wallBottom: '#3a2a1a', floorTop: '#2a2018', floorBottom: '#0a0705', accent: '#f59e0b', accent2: '#4ade80', glow: '#7cffa0', theme: 'skulls' },
     ultra: { wallTop: '#01020c', wallBottom: '#3a1a8a', floorTop: '#0c0b2e', floorBottom: '#03030c', accent: '#22d3ee', accent2: '#e879f9', glow: '#818cf8', theme: 'ultra' },

@@ -49,7 +49,7 @@ class CustomBackgroundTest extends TestCase
 
     public function test_the_custom_backgrounds_are_marked_on_the_server_and_in_the_page(): void
     {
-        $this->assertSame(['halloween', 'halloween2', 'christmas', 'christmas2', 'winter', 'spring', 'easter', 'summer', 'midsummer', 'synthwave', 'retrowave', 'synthwave2', 'retrowave2', 'definity', 'anime', 'latam', 'lightshow', 'cats', 'goldmine', 'skull', 'skulls', 'ultra', 'foxy', 'dragon', 'tastycat', 'tasty', 'monstercat', 'custom'], RoomController::HOST_BACKGROUNDS);
+        $this->assertSame(['halloween', 'halloween2', 'christmas', 'christmas2', 'winter', 'spring', 'easter', 'summer', 'midsummer', 'synthwave', 'retrowave', 'synthwave2', 'retrowave2', 'definity', 'anime', 'latam', 'lightshow', 'cats', 'goldmine', 'celestial', 'skull', 'skulls', 'ultra', 'foxy', 'dragon', 'tastycat', 'tasty', 'monstercat', 'custom'], RoomController::HOST_BACKGROUNDS);
         $this->assertSame([], array_diff(RoomController::HOST_BACKGROUNDS, RoomController::BACKGROUNDS));
 
         // lib/backgrounds.ts marks exactly the same ones with host: true

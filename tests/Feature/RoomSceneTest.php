@@ -116,7 +116,7 @@ class RoomSceneTest extends TestCase
         // the host can put the new ones on
         $host = User::factory()->create();
         $room = $host->rooms()->create(['name' => 'Seasons', 'slug' => 'seasons']);
-        foreach (['halloween2', 'easter', 'midsummer'] as $key) {
+        foreach (['halloween2', 'easter', 'midsummer', 'celestial'] as $key) {
             $this->actingAs($host)->patch('/rooms/seasons', ['name' => 'Seasons', 'background' => $key])->assertSessionHasNoErrors();
             $this->assertSame($key, $room->refresh()->background);
         }

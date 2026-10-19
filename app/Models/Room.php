@@ -142,6 +142,7 @@ class Room extends Model
 
         return match (true) {
             ! $season => $this->background,
+            $this->background === 'custom' && $this->custom_background && $this->season !== $season['id'] => 'custom',
             $this->season === $season['id'] => $this->season_background ?? $this->background,
             in_array($this->background, $season['backgrounds'], true) => $this->background,
             default => $season['backgrounds'][0],

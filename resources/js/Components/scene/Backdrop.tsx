@@ -46,6 +46,7 @@ const SCENES: Record<NonNullable<ScenePalette['theme']>, LazyExoticComponent<Com
     lightshow: lazy(() => import('@/Components/scene/Lightshow')),
     cats: lazy(() => import('@/Components/scene/Cats')),
     goldmine: lazy(() => import('@/Components/scene/GoldMine')),
+    celestial: lazy(() => import('@/Components/scene/Celestial')),
     skull: lazy(() => import('@/Components/scene/Skull')),
     skulls: lazy(() => import('@/Components/scene/Skulls')),
     ultra: lazy(() => import('@/Components/scene/Ultra')),

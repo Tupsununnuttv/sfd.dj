@@ -7,7 +7,8 @@
     "type": "module",
     "scripts": {
         "avatars:previews": "node scripts/character-posters.mjs",
-        "build": "node scripts/character-posters.mjs && tsc && vite build",
+        "backgrounds:previews": "node scripts/background-thumbnails.mjs",
+        "build": "node scripts/character-posters.mjs && node scripts/background-thumbnails.mjs && tsc && vite build",
         "dev": "concurrently --names web,bot \"vite\" \"npm:bot:dev\"",
         "bot:install": "npm --prefix bot install",
         "bot:dev": "npm --prefix bot run dev",
@@ -16,6 +17,7 @@
     "devDependencies": {
         "@headlessui/react": "^2.2.10",
         "@inertiajs/react": "^3.9.1",
+        "@resvg/resvg-js": "^2.6.2",
         "@tailwindcss/forms": "^0.5.11",
         "@tailwindcss/vite": "^4.3.3",
         "@types/node": "^26.6.5",
