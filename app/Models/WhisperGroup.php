@@ -86,7 +86,7 @@ class WhisperGroup extends Model
     /** What each of their groups has written that they have not read: [group id => how many]. Their own whispers do not count. */
     public static function unreadCounts(User $user): Collection
     {
-        return Whisper::query()
+        return Whisper::visibleTo($user->id)
             ->join('whisper_group_user as m', fn ($join) => $join->on('m.group_id', '=', 'whispers.group_id')->where('m.user_id', $user->id))
             ->where('whispers.from_id', '!=', $user->id)
             ->whereColumn('whispers.id', '>', 'm.read_id')

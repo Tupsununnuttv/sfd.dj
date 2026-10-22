@@ -1,4 +1,5 @@
 import { copyText } from '@/lib/clipboard';
+import { useUserRestrictions } from '@/lib/userRestrictions';
 import { Cosmetics } from '@/lib/cosmetics';
 import Avatar from '@/Components/Avatar';
 import Badges from '@/Components/Badges';
@@ -13,7 +14,7 @@ import { CardUser } from '@/Components/UserCard';
 import { getJson, post, send, sendJson, upload } from '@/lib/post';
 import { RoleInfo } from '@/types';
 import { Link, router } from '@inertiajs/react';
-import { AtSign, Check, Copy, Ellipsis, Gift, ImagePlus, MessageCircle, Minimize2, Reply, Send, Smile, Trash2, UserRound, X } from 'lucide-react';
+import { AtSign, Check, Copy, Ellipsis, Gift, Image as ImageIcon, ImagePlus, MessageCircle, Minimize2, Reply, Send, Smile, Star, Ticket, Trash2, UserRound, X } from 'lucide-react';
 import { FormEvent, MouseEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export interface ChatMessageData {
@@ -32,7 +33,7 @@ export interface ChatMessageData {
     level?: number;
     sticker?: string | null;
     image_url?: string | null;
-    reply?: { id: number; user: string | null; body: string | null } | null;
+    reply?: { id: number; user_id?: number | null; user: string | null; body: string | null } | null;
 }
 
 const EMOJIS: Record<string, string[]> = {
@@ -277,6 +278,8 @@ export default function ChatPanel({
         return () => URL.revokeObjectURL(url);
     }, [attachment]);
     const [replyTo, setReplyTo] = useState<ChatMessageData | null>(null);
+    const { hiddenAuthors } = useUserRestrictions();
+    useEffect(() => { setReplyTo((message) => message && hiddenAuthors.has(message.user_id) ? null : message); }, [hiddenAuthors]);
     const [reactingTo, setReactingTo] = useState<number | null>(null);
     const [reactionBusy, setReactionBusy] = useState(false);
     const reactionLock = useRef(false);
@@ -550,9 +553,9 @@ export default function ChatPanel({
                     </div>
                 </div>
             ) : (
-            <div className="relative shrink-0 border-t border-neutral-800 p-3">
+            <div className="sfd-chatcomposer relative m-2 mt-1 shrink-0 rounded-[14px] border border-[#382c46] bg-[#070609] p-3">
                 {picker && (
-                    <div className="absolute bottom-full left-2 right-2 mb-1 max-h-80 overflow-y-auto rounded-xl border border-neutral-700 bg-neutral-900 p-3 shadow-xl">
+                    <div className="absolute bottom-full left-0 right-0 z-20 mb-2 max-h-80 overflow-y-auto rounded-xl border border-neutral-700 bg-neutral-900 p-3 shadow-xl">
                         {picker === 'emoji' && <EmojiPicker onPick={(e) => setText((t) => t + e)} />}
                         {picker === 'gif' && <GifPicker onPick={sendGif} />}
                         {(picker === 'bttv' || picker === '7tv') && (
@@ -594,16 +597,17 @@ export default function ChatPanel({
                 {error && <p className="mb-2 text-xs text-red-400">{error}</p>}
                 {notice && !error && <p className="mb-2 text-xs text-violet-300">💬 {notice}</p>}
 
-                <div className="mb-2 flex flex-wrap items-center gap-1 text-sm">
-                    {toolbar.map(([key, label, title]) => (
-                        <button key={key} onClick={() => setPicker(picker === key ? null : key)} title={title} className={`rounded px-2 py-1 ${picker === key ? 'bg-violet-600/30 text-violet-200' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'} ${key === 'gif' || key === 'bttv' || key === '7tv' ? 'text-xs font-bold' : ''}`}>
-                            {label}
-                        </button>
-                    ))}
-                    {canDelete && (
-                        <button onClick={() => confirm('Clear the chat for everyone? Every message goes, and it does not come back when the page is refreshed.') && send('DELETE', route('rooms.clear', slug)).catch(fail)} title="Clear chat" className="ml-auto rounded px-2 py-1 text-xs text-neutral-400 hover:bg-neutral-800 hover:text-red-300">🧹 Clear</button>
-                    )}
-                    <button disabled={uploading} onClick={() => fileInput.current?.click()} title="Attach a picture (PNG, JPG, WEBP or GIF, up to 3 MB)" className="flex shrink-0 items-center gap-1 rounded px-2 py-1 text-neutral-400 hover:bg-neutral-800 hover:text-white disabled:opacity-50"><ImagePlus size={16} /> <span className="text-xs">Picture</span></button>
+                <div className="sfd-chattoolbar mb-2 flex items-center gap-0.5 pt-1 text-sm" role="group" aria-label="Chat tools">
+                    {toolbar.map(([key, label, title]) => {
+                        const Icon = key === 'emoji' ? Smile : key === 'gif' ? ImageIcon : key === 'sticker' ? Ticket : key === 'room' ? Star : null;
+                        return <button type="button" key={key} onClick={() => setPicker(picker === key ? null : key)} title={title} aria-label={title} aria-expanded={picker === key} aria-pressed={picker === key} className={Icon ? `flex h-8 w-8 shrink-0 items-center justify-center rounded-md border transition focus-visible:outline-2 focus-visible:outline-violet-400 ${picker === key ? 'border-violet-400/60 bg-violet-500/20 text-violet-200' : 'border-[#302638] bg-[#151219] text-[#c5b3e6] hover:border-violet-400/50 hover:bg-violet-500/10 hover:text-white'}` : `rounded px-0.5 py-1 text-[10px] font-semibold transition focus-visible:outline-2 focus-visible:outline-violet-400 ${picker === key ? 'bg-violet-500/20 text-violet-200' : 'text-neutral-300 hover:text-violet-200'}`}>
+                            {Icon ? <Icon size={14} strokeWidth={1.7} /> : label}
+                        </button>;
+                    })}
+                    <div className="ml-auto flex shrink-0 items-center gap-1">
+                        {canDelete && <button type="button" onClick={() => confirm('Clear the chat for everyone? Every message goes, and it does not come back when the page is refreshed.') && send('DELETE', route('rooms.clear', slug)).catch(fail)} title="Clear chat" aria-label="Clear chat" className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-500 transition hover:bg-red-500/10 hover:text-red-300"><Trash2 size={14} /></button>}
+                        <button type="button" disabled={uploading} onClick={() => fileInput.current?.click()} title="Attach a picture (PNG, JPG, WEBP or GIF, up to 3 MB)" aria-label="Attach a picture" className="flex h-8 w-8 items-center justify-center rounded-md text-[#b79bdc] transition hover:bg-violet-500/10 hover:text-white disabled:opacity-50"><ImagePlus size={15} /></button>
+                    </div>
                     <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(e) => { pickImage(e.target.files?.[0]); e.target.value = ''; }} />
                 </div>
 
@@ -612,7 +616,7 @@ export default function ChatPanel({
                     <span className="min-w-0 flex-1 truncate text-xs text-neutral-300">{uploading ? 'Sending picture…' : attachment.name}</span>
                     <button type="button" disabled={uploading} onClick={() => setAttachment(null)} aria-label="Remove attached picture"><X size={16} /></button>
                 </div>}
-                <form onSubmit={submit} className="flex gap-2">
+                <form onSubmit={submit} className="flex items-stretch gap-2">
                     <input
                         ref={inputBox}
                         value={text}
@@ -624,10 +628,11 @@ export default function ChatPanel({
                         onChange={(e) => { setText(e.target.value); if (e.target.value) onType(); }}
                         maxLength={300}
                         placeholder="Message… (/w name to whisper)"
-                        className={`${input} min-w-0 flex-1`}
+                        aria-label="Message"
+                        className="sfd-chatinput h-[42px] min-w-0 flex-1 rounded-lg border border-[#49365f] bg-[#111014] px-3 text-xs text-neutral-100 placeholder:text-[#8a789f] focus:border-violet-400 focus:ring-1 focus:ring-violet-400/30 disabled:opacity-50"
                     />
                     {/* the mouse way to send (Enter works too); mouse-down is not let take the focus from the box, so you can go on typing */}
-                    <button type="submit" disabled={uploading || (!text.trim() && !attachment)} onMouseDown={(e) => e.preventDefault()} aria-label="Send message" title="Send (Enter)" className="flex shrink-0 items-center justify-center rounded border border-violet-500/40 bg-violet-600/20 px-3 text-violet-300 transition hover:bg-violet-600 hover:text-white disabled:pointer-events-none disabled:border-neutral-700 disabled:bg-neutral-900 disabled:text-neutral-600"><Send size={16} /></button>
+                    <button type="submit" disabled={uploading || (!text.trim() && !attachment)} onMouseDown={(e) => e.preventDefault()} aria-label="Send message" title="Send (Enter)" className="sfd-chatsend flex h-[42px] w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-violet-600 to-purple-500 text-white shadow-sm shadow-violet-950/30 transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 disabled:cursor-not-allowed disabled:opacity-50"><Send size={16} /></button>
                 </form>
             </div>
             )}

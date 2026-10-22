@@ -1,0 +1,10 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { createInertiaApp } from '@inertiajs/react';
+import Sidebar from '../../resources/js/Components/Sidebar';
+import '../../resources/css/app.css';
+const params = new URLSearchParams(location.search);
+const routeMock = (name?: string, values?: any) => name ? name === 'characters.show' ? `/Avatars/Standing/${values.name}.svg` : '/preview/' + name : { current: () => false };
+window.route = routeMock as any;
+const user = { id: 1, name: params.get('long') ? 'Very long display name example' : 'SFD_DJ', username: 'sfd_dj', avatar: 'char:foxy', status: 'busy', cosmetics: null, xp: params.has('max') ? 196020 : 15860, level: params.has('max') ? 100 : 29, flag: { code: 'ee', name: 'Estonia' }, primary_role: { key: 'owner', label: 'Owner', color: '#fb4668' }, preferences: {}, is_staff: true };
+createInertiaApp({page: { component: 'Preview', url: location.href, version: null, props: { auth: {user, guest: false, coins: 0}, pendingFriends: 0, unreadWhispers: 0, liveCount: 0 } } as any, resolve: () => () => <div className="flex h-screen"><Sidebar /></div>, setup({el,App,props}) {createRoot(el!).render(<App {...props} />);} });

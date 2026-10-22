@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\WhisperConversationCleared;
 use App\Events\WhisperDeleted;
 use App\Events\WhisperSent;
 use App\Models\User;
@@ -20,6 +21,29 @@ use Symfony\Component\HttpFoundation\Response as MediaResponse;
 /** Whispers: private messages between two people, or inside a group (see WhisperGroupController). The page and the in-room panel both use the JSON routes. */
 class WhisperController extends Controller
 {
+    /** Hide a direct message only for its participant; the other person's copy stays. */
+    public function hide(Request $request, Whisper $whisper): HttpResponse
+    {
+        $me = $request->user()->id;
+        abort_unless(! $whisper->group_id && in_array($me, [$whisper->from_id, $whisper->to_id], true), 404);
+        $whisper->hideFor($me);
+        WhisperDeleted::dispatch($whisper->id, [$me]);
+
+        return response()->noContent();
+    }
+
+    /** Remove existing direct history from this person's view. New messages still arrive. */
+    public function clearConversation(Request $request, User $user): JsonResponse
+    {
+        $me = $request->user()->id;
+        $through = (int) Whisper::between($me, $user->id)->max('id');
+        DB::table('hidden_whispers')->insertOrIgnoreUsing(['user_id', 'whisper_id'],
+            Whisper::between($me, $user->id)->where('id', '<=', $through)->selectRaw('? as user_id, id as whisper_id', [$me]));
+        WhisperConversationCleared::dispatch($me, $user->id, $through);
+
+        return response()->json(['through_id' => $through]);
+    }
+
     /** Authors can remove their text or voice message for every participant. */
     public function destroy(Request $request, Whisper $whisper): HttpResponse
     {
@@ -51,10 +75,10 @@ class WhisperController extends Controller
     {
         $me = $request->user()->id;
 
-        $latest = Whisper::with('replyTo')->whereNull('group_id')->where(fn ($q) => $q->where('from_id', $me)->orWhere('to_id', $me))->latest('id')->limit(500)->get()
+        $latest = Whisper::with('replyTo')->visibleTo($me)->whereNull('group_id')->where(fn ($q) => $q->where('from_id', $me)->orWhere('to_id', $me))->latest('id')->limit(500)->get()
             ->groupBy(fn (Whisper $w) => $w->from_id === $me ? $w->to_id : $w->from_id)->take(50);
         $people = User::whereIn('id', $latest->keys())->get(['id', 'name', 'username', 'avatar'])->keyBy('id');
-        $unread = Whisper::where('to_id', $me)->whereNull('read_at')->selectRaw('from_id, count(*) as n')->groupBy('from_id')->pluck('n', 'from_id');
+        $unread = Whisper::visibleTo($me)->where('to_id', $me)->whereNull('read_at')->selectRaw('from_id, count(*) as n')->groupBy('from_id')->pluck('n', 'from_id');
 
         return response()->json($latest->map(fn ($whispers, $other) => [
             'user' => $people[$other]->only('id', 'name', 'username', 'avatar'),
@@ -203,6 +227,10 @@ class WhisperController extends Controller
 
     private function mayHear(User $user, Whisper $whisper): bool
     {
+        if (! Whisper::visibleTo($user->id)->whereKey($whisper->id)->exists()) {
+            return false;
+        }
+
         return $whisper->group_id
             ? $user->whisperGroups()->whereKey($whisper->group_id)->wherePivot('since_id', '<', $whisper->id)->exists()
             : in_array($user->id, [$whisper->from_id, $whisper->to_id], true);
@@ -220,13 +248,13 @@ class WhisperController extends Controller
             $group = $me->whisperGroups()->whereKey($data['group_id'])->first();
             abort_unless($group, 404);
 
-            return [['group_id' => $group->id], $group->readable(), ['group' => $group->only('id', 'name')]];
+            return [['group_id' => $group->id], $group->readable()->visibleTo($me->id), ['group' => $group->only('id', 'name')]];
         }
 
         $to = $this->recipient($data);
         $this->mayWhisper($me, $to);
 
-        return [['to_id' => $to->id], Whisper::between($me->id, $to->id), ['user' => $to->only('id', 'name', 'username', 'avatar')]];
+        return [['to_id' => $to->id], Whisper::between($me->id, $to->id)->visibleTo($me->id), ['user' => $to->only('id', 'name', 'username', 'avatar')]];
     }
 
     /** A reply must answer a whisper of this very conversation, or it would quote somebody else's; anything else is sent as a plain whisper (as in room chat). */

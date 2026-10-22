@@ -6,7 +6,7 @@ import { RadioTower } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 
 /**
- * Go live in a room, or look after the stream that is on: paste the link of a YouTube, Twitch or Kick stream, give it a title, and the room's big screen shows it
+ * Go live in a room, or look after the stream that is on: paste the link of a YouTube, Twitch, Kick or TikTok LIVE stream, give it a title, and the room's big screen shows it
  * (the DJs wait). The room and the Live streams page hear of it by themselves, so there is nothing to refresh here.
  */
 export default function LiveControls({ slug, live }: { slug: string; live: LiveInfo | null }) {
@@ -43,7 +43,7 @@ export default function LiveControls({ slug, live }: { slug: string; live: LiveI
                 <div>
                     <label htmlFor="live-url" className="mb-1.5 block text-sm font-medium text-neutral-300">{live ? 'Switch to another stream' : 'Link of your live stream'}</label>
                     <input id="live-url" value={url} onChange={(e) => setUrl(e.target.value)} maxLength={300} placeholder="https://www.twitch.tv/yourname" autoComplete="off" className={fieldClass} />
-                    <p className="mt-1.5 text-xs text-neutral-500">YouTube: the address of the live video (youtube.com/watch?v=… or youtube.com/live/…). Twitch: twitch.tv/yourname. Kick: kick.com/yourname.</p>
+                    <p className="mt-1.5 text-xs text-neutral-500">YouTube: the address of the live video (youtube.com/watch?v=… or youtube.com/live/…). Twitch: twitch.tv/yourname. Kick: kick.com/yourname. TikTok: tiktok.com/@yourname/live (opens on TikTok).</p>
                 </div>
                 <div>
                     <label htmlFor="live-title" className="mb-1.5 block text-sm font-medium text-neutral-300">Title <span className="font-normal text-neutral-500">(optional)</span></label>
@@ -54,8 +54,8 @@ export default function LiveControls({ slug, live }: { slug: string; live: LiveI
             </form>
 
             <ol className="list-decimal space-y-1 pl-5 text-xs leading-relaxed text-neutral-400">
-                <li>Start your stream where you always do: from OBS or your phone to YouTube, Twitch or Kick. Only music? A still picture as the video is fine.</li>
-                <li>Paste its link here and press Go live. Everybody in the room sees it on the big screen, and the chat goes on beside it.</li>
+                <li>Start your stream where you always do: from OBS or your phone to YouTube, Twitch, Kick or TikTok LIVE. Only music? A still picture as the video is fine.</li>
+                <li>Paste its link here and press Go live. YouTube, Twitch and Kick play on the room screen. TikTok LIVE shows a link to watch on TikTok in a new tab. The room chat stays available.</li>
                 <li>The songs of the DJs wait while the stream is on. End it here (or the host can) and they go on where they stopped.</li>
             </ol>
         </div>

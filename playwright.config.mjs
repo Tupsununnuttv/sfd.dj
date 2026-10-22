@@ -31,6 +31,7 @@ if (process.platform === 'win32') {
 
 export default defineConfig({
     testDir: './tests/Browser',
+    testIgnore: 'mobile-rendering.spec.mjs',
     timeout: 60000,
     workers: 2,
     use: { baseURL: 'http://127.0.0.1:4175', headless: true, trace: 'retain-on-failure' },

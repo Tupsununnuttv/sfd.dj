@@ -566,3 +566,43 @@ input[type='range'].vol:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px 
 @media (max-width: 47.999rem) {
     .sfd-room[data-room-layout='compact'] .sfd-panel.fixed { bottom: 54px; height: 44px; }
 }
+
+/* Fullscreen escapes the scaled room canvas; controls keep their normal size. */
+.sfd-playbackscreen:fullscreen { position: fixed; inset: 0 !important; width: 100vw !important; height: 100vh !important; border: 0; border-radius: 0; box-shadow: none; --s: 1; }
+
+/*
+ * Touch renderers: do not repeatedly sample animated SVGs through blurred UI layers.
+ * The capability check also covers landscape and "desktop site" on phones/tablets.
+ * These specific overrides take precedence over the room's custom glass/glow CSS;
+ * colours, borders and layouts remain themeable. Do not promote every avatar with
+ * will-change/translateZ: that would allocate even more compositor surfaces.
+ */
+:root body .sfd-room[data-rendering='touch'],
+:root body .sfd-room[data-rendering='touch'] * {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+:root body .sfd-room[data-rendering='touch'],
+:root body .sfd-room[data-rendering='touch'] .sfd-main,
+:root body .sfd-room[data-rendering='touch'] .sfd-navbar,
+:root body .sfd-room[data-rendering='touch'] .sfd-footbar,
+:root body .sfd-room[data-rendering='touch'] .sfd-panel,
+:root body .sfd-room[data-rendering='touch'] .sfd-tabs,
+:root body .sfd-room[data-rendering='touch'] .sfd-chat,
+:root body .sfd-room[data-rendering='touch'] .sfd-message,
+:root body .sfd-room[data-rendering='touch'] .sfd-stage,
+:root body .sfd-room[data-rendering='touch'] .sfd-booth,
+:root body .sfd-room[data-rendering='touch'] .sfd-avatar,
+:root body .sfd-room[data-rendering='touch'] .sfd-avatar svg,
+:root body .sfd-room[data-rendering='touch'] .sfd-avatar svg * {
+    filter: none !important;
+}
+:root body .sfd-room[data-rendering='touch'] .sfd-avatar,
+:root body .sfd-room[data-rendering='touch'] .sfd-avatar svg,
+:root body .sfd-room[data-rendering='touch'] .sfd-avatar svg * {
+    animation: none !important;
+}
+:root body .sfd-room[data-rendering='touch'] .sfd-stage {
+    contain: paint;
+    isolation: isolate;
+}

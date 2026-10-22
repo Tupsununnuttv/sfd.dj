@@ -7,6 +7,7 @@ use App\Models\Room;
 use App\Models\Setting;
 use App\Models\SubscriptionGift;
 use App\Models\User;
+use App\Models\UserRestriction;
 use App\Models\Whisper;
 use App\Models\WhisperGroup;
 use App\Support\MailStatus;
@@ -68,7 +69,8 @@ class HandleInertiaRequests extends Middleware
             'pendingSubscriptionGifts' => fn () => $request->user()
                 ? SubscriptionGift::where('recipient_id', $request->user()->id)->whereNotNull('paid_at')->whereNull('activated_at')->whereNull('revoked_at')->count()
                 : 0,
-            'unreadWhispers' => fn () => ($me = $request->user()) ? Whisper::where('to_id', $me->id)->whereNull('read_at')->count() + (int) WhisperGroup::unreadCounts($me)->sum() : 0, // from people, and from groups
+            'unreadWhispers' => fn () => ($me = $request->user()) ? Whisper::visibleTo($me->id)->where('to_id', $me->id)->whereNull('read_at')->count() + (int) WhisperGroup::unreadCounts($me)->sum() : 0, // from people, and from groups
+            'userRestrictions' => fn () => $request->user() ? UserRestriction::state($request->user()->id) : ['blocked' => [], 'ignored' => []],
             // social links and the donation goal, both edited in Admin panel → Community
             'community' => fn () => Setting::community(),
             // the numbers shown on the log in and register pages (nobody logged in needs more)

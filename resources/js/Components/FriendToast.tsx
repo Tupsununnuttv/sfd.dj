@@ -1,12 +1,14 @@
 import Avatar from '@/Components/Avatar';
+import { useUserRestrictions } from '@/lib/userRestrictions';
 import { refreshCounts } from '@/lib/counts';
 import { PageProps } from '@/types';
 import { router, usePage } from '@inertiajs/react';
 import { echo } from '@laravel/echo-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface Request {
     id: number; // friendship id
+    user_id: number;
     name: string;
     avatar: string | null;
 }
@@ -14,21 +16,25 @@ interface Request {
 /** Pops up when someone sends you a friend request, with Accept / Decline right there. */
 export default function FriendToast() {
     const { auth } = usePage<PageProps>().props;
+    const { hiddenAuthors } = useUserRestrictions();
+    const hiddenAuthorsRef = useRef(hiddenAuthors);
+    hiddenAuthorsRef.current = hiddenAuthors;
     const [requests, setRequests] = useState<Request[]>([]);
     const enabled = auth.user.preferences?.notifications?.friend_requests !== false && auth.user.status !== 'busy'; // busy means do not disturb
 
     useEffect(() => {
         if (auth.guest) return;
         const name = `App.Models.User.${auth.user.id}`;
-        echo<'reverb'>()
-            .private(name)
-            .listen('.friend-requested', (r: Request) => {
+        const ch = echo<'reverb'>().private(name);
+        const onRequest = (r: Request) => {
                 router.reload({ only: ['pendingFriends'] });
+                if (hiddenAuthorsRef.current.has(r.user_id)) return;
                 if (enabled) setRequests((cur) => [...cur.filter((x) => x.id !== r.id), r]);
-            });
+        };
+        ch.listen('.friend-requested', onRequest);
 
         return () => {
-            echo().leave(name);
+            ch.stopListening('.friend-requested', onRequest);
         };
     }, [auth.user.id, auth.guest, enabled]);
 
@@ -43,7 +49,7 @@ export default function FriendToast() {
 
     return (
         <div className="fixed bottom-4 right-4 z-60 w-72 space-y-2">
-            {requests.map((r) => (
+            {requests.filter((r) => !hiddenAuthors.has(r.user_id)).map((r) => (
                 <div key={r.id} className="rounded-xl border border-neutral-700 bg-neutral-900 p-3 text-white shadow-xl">
                     <div className="flex items-center gap-3">
                         <Avatar name={r.name} avatar={r.avatar} />

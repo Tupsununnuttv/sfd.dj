@@ -1,6 +1,8 @@
 import { AnimatedAvatar, animatedAvatars } from '@/lib/animatedAvatars';
 import { characterOf, characterUrl, DEFAULT_CHARACTER } from '@/lib/characters';
 import { AccessoryLayers, Cosmetics, EffectLayer, FrameLayer } from '@/lib/cosmetics';
+import characterPosters from '@/lib/characterPosters.json';
+import { useTouchRendering } from '@/lib/touchRendering';
 import { useState } from 'react';
 
 const colors = ['bg-fuchsia-600', 'bg-violet-600', 'bg-sky-600', 'bg-emerald-600', 'bg-amber-600', 'bg-rose-600'];
@@ -20,11 +22,14 @@ export default function Avatar({
     cosmetics?: Cosmetics | null;
     className?: string;
 }) {
+    const touchRendering = useTouchRendering();
     const color = colors[[...name].reduce((n, c) => n + c.charCodeAt(0), 0) % colors.length];
     const photo = avatar?.startsWith('img:') ? route('media.avatar', avatar.slice(4)) : null;
     const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
     const animated = avatar?.startsWith('anim:') && animatedAvatars[avatar.slice(5)] ? avatar.slice(5) : null;
     const character = characterOf(avatar) ?? (!avatar || photo ? DEFAULT_CHARACTER : null);
+    const poster = character ? (characterPosters as Record<string, string>)[character] : null;
+    const picture = character ? (touchRendering && poster ? poster : characterUrl(character, 'standing')) : null;
     const accessory = cosmetics?.accessory ?? '';
     const frame = cosmetics?.frame ?? '';
     const effect = cosmetics?.effect ?? '';
@@ -36,7 +41,7 @@ export default function Avatar({
             <span
                 className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold text-white ${avatar ? 'bg-neutral-800' : color} ${className}`}
             >
-                {photo && failedPhoto !== photo ? <img src={photo} alt="" loading="lazy" decoding="async" onError={() => setFailedPhoto(photo)} className="h-full w-full object-cover" /> : character ? <img src={characterUrl(character, 'standing')} alt="" loading="lazy" decoding="async" draggable={false} className="h-full w-full max-w-none origin-[50%_54%] translate-y-[-4%] scale-[1.3] object-cover object-top" /> : animated ? <AnimatedAvatar name={animated} /> : avatar ?? name.charAt(0).toUpperCase()}
+                {photo && failedPhoto !== photo ? <img src={photo} alt="" loading="lazy" decoding="async" onError={() => setFailedPhoto(photo)} className="h-full w-full object-cover" /> : picture ? <img src={picture} alt="" loading="lazy" decoding="async" draggable={false} className="h-full w-full max-w-none origin-[50%_54%] translate-y-[-4%] scale-[1.3] object-cover object-top" /> : animated ? <AnimatedAvatar name={animated} /> : avatar ?? name.charAt(0).toUpperCase()}
             </span>
             {accessory && <AccessoryLayers name={accessory} />}
         </span>

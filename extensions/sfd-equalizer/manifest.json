@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "SFD DJ Equalizer",
+  "version": "1.0.0",
+  "description": "Local bass, mids and treble for SFD DJ. No screen sharing or recording.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "activeTab",
+    "tabCapture",
+    "offscreen",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Start / stop SFD DJ equalizer"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "https://sfd-dj.eu/*",
+        "https://*.sfd-dj.eu/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}

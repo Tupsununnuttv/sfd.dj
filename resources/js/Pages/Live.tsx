@@ -24,7 +24,7 @@ export default function LiveStreams({ streams }: { streams: Stream[] }) {
     }, []);
 
     return (
-        <AppLayout title="Live streams" subtitle="Rooms with a live stream on the big screen right now. Click one to watch it and chat with everybody there.">
+        <AppLayout title="Live streams" subtitle="Join a room to watch and chat. TikTok LIVE opens on TikTok in a new tab.">
             <Head title="Live streams" />
 
             {streams.length === 0 ? (
@@ -48,7 +48,7 @@ export default function LiveStreams({ streams }: { streams: Stream[] }) {
                                 <div className="absolute inset-0 bg-linear-to-t from-neutral-950 via-transparent to-transparent" />
                                 <span className="absolute left-3 top-3 flex items-center gap-1.5 rounded bg-red-600 px-2 py-0.5 text-[11px] font-black uppercase tracking-wider text-white shadow-lg"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> Live</span>
                                 <span className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-green-400 backdrop-blur"><Users size={12} /> {listening}</span>
-                                <span className="absolute bottom-3 left-3 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-neutral-200 backdrop-blur">{LIVE_SITES[live.kind]}</span>
+                                <span className="absolute bottom-3 left-3 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-neutral-200 backdrop-blur">{LIVE_SITES[live.kind]}{live.kind === 'tiktok' && ' · opens on TikTok'}</span>
                             </div>
                             <div className="flex flex-1 flex-col p-4">
                                 <h3 className="truncate font-bold" title={live.title}>{live.title}</h3>

@@ -1,3 +1,4 @@
+import PlaybackFrame, { type PlaybackWindowSource } from '@/Components/PlaybackFrame';
 import Avatar from '@/Components/Avatar';
 import SceneBackdrop from '@/Components/scene/Backdrop';
 import { BoothFront, DjBody } from '@/Components/scene/DjBooth';
@@ -6,6 +7,8 @@ import { CHARACTER_RATIO, characterOf, characterUrl, DEFAULT_CHARACTER } from '@
 import { Cosmetics } from '@/lib/cosmetics';
 import { crowdSlots, paletteOf, SCENE } from '@/lib/scenes';
 import { RoleInfo } from '@/types';
+import characterPosters from '@/lib/characterPosters.json';
+import { useTouchRendering } from '@/lib/touchRendering';
 import { CSSProperties, ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 export interface Dancer {
@@ -27,7 +30,7 @@ const DANCES = ['dance-bounce', 'dance-sway', 'dance-hop', 'dance-wiggle'];
  * then they dance. A character (avatar "char:<name>") is a whole person with a picture for each of Standing, Dancing and DJing.
  * Text and buttons are kept readable when the canvas is scaled down: `--s` is the canvas scale and `--f` how much of it they follow.
  */
-export default function RoomScene({ background, image = null, users, dj, dancing, playing, myId, screen, votes, waitlist, seat, onUser }: {
+export default function RoomScene({ background, image = null, users, dj, dancing, playing, myId, screen, playbackSource, votes, waitlist, seat, onUser }: {
     background: string | null;
     image?: string | null; // the host's own picture, when the background is "custom"
     users: Dancer[];
@@ -36,11 +39,14 @@ export default function RoomScene({ background, image = null, users, dj, dancing
     playing: boolean;
     myId: number;
     screen: ReactNode;
+    playbackSource?: PlaybackWindowSource | null;
     votes: ReactNode;
     waitlist: ReactNode; // the Join / Leave Waitlist card, to the left of the booth
     seat: ReactNode; // the button on the front of the booth while nobody is playing
     onUser: (user: Dancer, anchor: DOMRect) => void;
 }) {
+    const touchRendering = useTouchRendering();
+    const animateScenery = playing && !touchRendering;
     const palette = paletteOf(background);
     const wrap = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(0.6);
@@ -75,8 +81,9 @@ export default function RoomScene({ background, image = null, users, dj, dancing
     // The pictures for dancing and for the stage load before anybody needs them, so a press on Woot changes the pose at once.
     const names = [...new Set([...users, ...(dj ? [dj] : [])].map(personOf))].sort().join(',');
     useEffect(() => {
+        if (touchRendering) return; // Do not decode every unused animated pose on a phone.
         for (const name of names ? names.split(',') : []) for (const state of ['dancing', 'djing'] as const) new Image().src = characterUrl(name, state);
-    }, [names]);
+    }, [names, touchRendering]);
 
     // Everybody keeps their spot while others come and go: a newcomer takes the free spot nearest the booth.
     const spots = useRef(new Map<number, string>());
@@ -120,12 +127,12 @@ export default function RoomScene({ background, image = null, users, dj, dancing
             style={{ background: `linear-gradient(to bottom, ${palette.wallTop} 0, ${palette.wallBottom} ${SCENE.floor * scale}px, ${palette.floorTop} ${SCENE.floor * scale}px, ${palette.floorBottom} ${height * scale}px, ${palette.floorBottom})` }}
         >
             <div
-                className={`absolute left-1/2 top-0 ${playing ? 'sc-live' : ''}`}
+                className={`absolute left-1/2 top-0 ${animateScenery ? 'sc-live' : ''}`}
                 style={{ width: SCENE.w, height, transform: `translateX(-50%) scale(${scale})`, transformOrigin: 'top center', '--s': scale, '--f': f } as CSSProperties}
             >
-                <SceneBackdrop palette={palette} image={image} live={playing} height={height} className="absolute inset-0 h-full w-full" />
+                <SceneBackdrop palette={palette} image={image} live={animateScenery} height={height} className="absolute inset-0 h-full w-full" />
 
-                <div className="absolute z-5 overflow-hidden rounded-md bg-neutral-950" style={{ left: tv.x, top: tv.y, width: tv.w, height: tv.h }}>{screen}</div>
+                <PlaybackFrame normal={{ left: tv.x, top: tv.y, width: tv.w, height: tv.h }} wide={{ left: SCENE.w / 2 - Math.min(width / scale - 32, 1400) / 2, top: 16, width: Math.min(width / scale - 32, 1400), height: Math.min((width / scale - 32) * 9 / 16, 787.5) }} source={playbackSource}>{screen}</PlaybackFrame>
 
                 {/* the crowd: nearer the front, drawn later. Everybody stands until they press Woot or Grab. */}
                 {placed.map(({ u, x, y }) => {
@@ -143,7 +150,7 @@ export default function RoomScene({ background, image = null, users, dj, dancing
                             {person ? (
                                 // a whole person, the feet on this spot
                                 <img
-                                    src={characterUrl(person, moving ? 'dancing' : 'standing')}
+                                    src={touchRendering && !moving && (characterPosters as Record<string, string>)[person] ? (characterPosters as Record<string, string>)[person] : characterUrl(person, moving ? 'dancing' : 'standing')}
                                     alt=""
                                     draggable={false}
                                     className="absolute left-1/2 max-w-none -translate-x-1/2 object-contain object-bottom"
@@ -169,15 +176,17 @@ export default function RoomScene({ background, image = null, users, dj, dancing
                         </button>
                     );
                 })}
-                {(palette.theme === 'christmas' || palette.theme === 'winter') && <Snow />}
-                {(palette.theme === 'spring' || palette.theme === 'anime') && <Snow petals />}
-                {palette.theme === 'foxy' && <Snow variant="leaves" />}
-                {palette.theme === 'dragon' && <Snow variant="embers" />}
-                {palette.theme === 'tastycat' && <Snow variant="sprinkles" />}
-                {palette.theme === 'christmas2' && <Snow variant="glitter" />}
-                {palette.theme === 'halloween2' && <Snow variant="wisps" />}
-                {palette.theme === 'easter' && <Snow variant="pastel" />}
-                {palette.theme === 'midsummer' && <Snow variant="fireflies" />}
+                {!touchRendering && <>
+                    {(palette.theme === 'christmas' || palette.theme === 'winter') && <Snow />}
+                    {(palette.theme === 'spring' || palette.theme === 'anime') && <Snow petals />}
+                    {palette.theme === 'foxy' && <Snow variant="leaves" />}
+                    {palette.theme === 'dragon' && <Snow variant="embers" />}
+                    {palette.theme === 'tastycat' && <Snow variant="sprinkles" />}
+                    {palette.theme === 'christmas2' && <Snow variant="glitter" />}
+                    {palette.theme === 'halloween2' && <Snow variant="wisps" />}
+                    {palette.theme === 'easter' && <Snow variant="pastel" />}
+                    {palette.theme === 'midsummer' && <Snow variant="fireflies" />}
+                </>}
                 {extra > 0 && (
                     <div className="absolute z-480 flex items-center justify-center rounded-full bg-black/60 text-sm font-bold text-neutral-100 ring-1 ring-white/20" style={{ left: 1480, top: 560, width: 56, height: 56 }}>
                         <span style={{ transform: `scale(${f})` }}>+{extra}</span>
@@ -185,7 +194,7 @@ export default function RoomScene({ background, image = null, users, dj, dancing
                 )}
 
                 {/* the booth is at the bottom, against the footbar; the DJ stands in front of the decks with their back to us (looking at the screen), the crowd stands above */}
-                <BoothFront p={palette} className={`absolute z-12 ${playing ? 'sc-live' : ''}`} style={{ left: booth.x, top: booth.y + off }} />
+                <BoothFront p={palette} className={`absolute z-12 ${animateScenery ? 'sc-live' : ''}`} style={{ left: booth.x, top: booth.y + off }} />
                 {!dj && (
                     <div className="absolute z-13" style={{ left: booth.x + booth.w / 2 - 70, top: booth.y + off + 72, width: 140, transform: `scale(${f})`, transformOrigin: 'top center' }}>{seat}</div>
                 )}

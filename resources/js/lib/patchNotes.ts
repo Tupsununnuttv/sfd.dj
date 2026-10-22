@@ -6,6 +6,41 @@ export { VERSION } from './latestRelease';
 export const releases: { version: string; title: string; notes: [Kind, string][] }[] = [
     latestRelease,
     {
+        version: '1.74',
+        title: 'Block, Ignore, better Whispers and more room styling',
+        notes: [
+            ['new', 'Block and Ignore are available on user profiles and room user cards. Ignore hides that person\'s room chat and Whisper messages from your view. Block also prevents direct Whispers, voice messages, calls, friend requests and group invitations between the two accounts.'],
+            ['new', 'Manage blocked and ignored users in Settings > Privacy. Both choices are private and reversible. Unblocking while Ignore is still enabled keeps the messages hidden. Other people keep their normal view of the room and shared groups.'],
+            ['improved', 'Hidden authors are filtered from message history, reply previews, typing indicators, room activity popups and Whisper notifications. Their messages do not increase your unread Whisper count. Blocking ends an existing call and cancels pending friend requests between the accounts.'],
+            ['new', 'Remove a private Whisper conversation from your own list with the trash button beside the person or in the conversation header. After confirmation, its existing history is hidden only for you. A new message brings the conversation back without restoring the removed history.'],
+            ['improved', 'Whisper message controls distinguish Delete message for everyone on your own messages from Hide message for me on received messages. Hiding a text or voice message preserves the other person\'s copy and recording. Your choices persist after a refresh.'],
+            ['improved', 'Connections has a service-icon row for adding accounts and separate cards for connected accounts, with the account name, service details and a disconnect button. The layout also works on smaller screens.'],
+            ['new', 'Twitch and TikTok account linking join Discord, Spotify and YouTube in Settings > Connections. Linking becomes available once the provider apps are configured for the site. Connections use official authorization pages, encrypted tokens and disconnect controls.'],
+            ['new', 'Rooms accept TikTok LIVE links in Go live and when creating a room. Viewers use Watch on TikTok to open the broadcast in a new tab; TikTok LIVE does not play inside the room. Twitch streams continue to use their in-room player.'],
+            ['improved', 'Equalizer has moved from the room header to Settings > Audio and is marked Coming Soon. Its room-header button is no longer shown.'],
+            ['new', 'Room CSS can style individual Chat, Waitlist and Users tabs, the mobile Room tab, selected and unselected states, hover colours and the active underline. The CSS editor includes a ready-made tab example.'],
+            ['new', 'More waitlist CSS hooks cover your position, Cycling and locked labels, the empty-list message, queued DJs, song titles, queue numbers, playing state and removal buttons. Try the Waitlist panel example in the room CSS editor.'],
+            ['new', 'Users-panel CSS hooks cover the community summary, search input and placeholder, role badges and counts, user cards, names, avatars, flags, status indicators, level text and action buttons. Try the Users panel example; role colours can be overridden with !important.'],
+            ['improved', 'Whisper headers give names more space on mobile by placing call and profile controls on a separate row. Blocking, ignoring and their reversal synchronize across supported tabs and room overlays.'],
+        ],
+    },
+    {
+        version: '1.73',
+        title: 'Your look, everywhere: profile fixes and browser improvements',
+        notes: [
+            ['fixed', 'Saving a selected shop character can now update your profile picture too. Selecting a character enables the profile-picture option; untick it to keep your uploaded photo while changing your room character.'],
+            ['fixed', 'Purchases and saved looks refresh the surrounding room sidebar when the shop is open in an overlay, even without a working live connection. Your own older chat messages also use your current avatar and cosmetics.'],
+            ['improved', 'Sidebar profile cards now separate your name, flag, role, level and XP. Names have more space, and XP numbers stay together instead of breaking into awkward fragments.'],
+            ['fixed', 'Quick-profile cards and hover previews use the current avatar returned by the server. Saving a look or receiving a live member update clears the old profile cache so a previous message does not keep showing an outdated picture.'],
+            ['fixed', 'The profile-picture option also works when you choose the character you already wear. Ownership and level checks still apply, and a failed validation leaves your uploaded photo intact.'],
+            ['improved', 'The shop refreshes its saved preview from the server after saving. Character selection and the main undo and shuffle controls pause during requests to prevent conflicting changes.'],
+            ['improved', 'Removed global background prefetching of unrelated page chunks and room scenes. Pages and panels keep loading their required files when opened.'],
+            ['improved', 'More resilient browser behavior in Chrome, Edge, Firefox and Opera GX: clipboard fallbacks, compact-setting synchronization when browser channels are blocked, safer microphone cleanup and calls that retain separately delivered audio and video tracks.'],
+            ['fixed', 'A blocked ringtone audio context no longer breaks the visual call invitation, and retrying browser-blocked call playback handles rejection safely.'],
+            ['improved', 'Added repeatable browser checks for buying, equipping and saving a character, refreshing the room, opening the profile and updating cached quick-profile pictures. Shop checks use an isolated test database and also cover blocked live sockets and browser storage.'],
+        ],
+    },
+    {
         version: '1.72',
         title: 'Instant compact controls, better Whispers and new shop arrivals',
         notes: [

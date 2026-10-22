@@ -6,6 +6,7 @@ import VoiceBubble, { voiceTime } from '@/Components/VoiceBubble';
 import VoiceRecorderBar from '@/Components/VoiceRecorderBar';
 import { GroupAvatar, GroupInfo, NewGroup } from '@/Components/WhisperGroupPanel';
 import { refreshCounts } from '@/lib/counts';
+import { useUserRestrictions } from '@/lib/userRestrictions';
 import { startWhisperCall } from '@/lib/calls';
 import { EmoteInfo, useGlobalEmotes, withEmoteTokens } from '@/lib/emotes';
 import { getJson, post, send as request, sendJson, uploadJson } from '@/lib/post';
@@ -14,7 +15,7 @@ import { canRecordVoice, Recording } from '@/lib/voiceRecorder';
 import { PageProps } from '@/types';
 import { router, usePage } from '@inertiajs/react';
 import { echo } from '@laravel/echo-react';
-import { ArrowLeft, MessageCirclePlus, Mic, Phone, Video, Reply, Search, Send, Smile, Trash2, UserRound, UsersRound } from 'lucide-react';
+import { ArrowLeft, EyeOff, MessageCirclePlus, Mic, Phone, Video, Reply, Search, Send, Smile, Trash2, UserRound, UsersRound } from 'lucide-react';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface Person {
@@ -83,6 +84,9 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
     className?: string;
 }) {
     const me = usePage<PageProps>().props.auth.user.id;
+    const { blocked, hiddenAuthors } = useUserRestrictions();
+    const restrictionsRef = useRef(hiddenAuthors);
+    restrictionsRef.current = hiddenAuthors;
     const [list, setList] = useState<Conversation[]>([]);
     const [groups, setGroups] = useState<GroupConversation[]>([]);
     const [other, setOther] = useState<Person | null>(null);
@@ -101,6 +105,9 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
     const [unreadOnly, setUnreadOnly] = useState(false);
     const [error, setError] = useState('');
     const [deleting, setDeleting] = useState<number | null>(null);
+    const [clearing, setClearing] = useState<number | null>(null);
+    const hiddenIds = useRef(new Set<number>());
+    const clearedThrough = useRef(new Map<number, number>());
     const [recording, setRecording] = useState(false); // the strip that records a voice message is open
     const [replyTo, setReplyTo] = useState<Line | null>(null); // the whisper the next one answers
     const [picker, setPicker] = useState<'emoji' | 'bttv' | '7tv' | null>(null); // the emoji and emote panel above the text box
@@ -111,6 +118,13 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
     const unseen = useRef<Target | null>(null); // somebody wrote while this tab was in the background: read when it comes back
     const markRead = useCallback((t: Target) => { post('group' in t ? route('api.whisper-groups.read', t.group) : route('api.whispers.read', t.user)).then(refreshCounts).catch(() => {}); }, []);
     const targetOf = (w: Pick<Line, 'group_id' | 'from_id' | 'to_id'>): Target => (w.group_id ? { group: w.group_id } : { user: (w.from_id === me ? w.to_id : w.from_id) as number });
+    const cleanLines = useCallback((messages: Line[]) => {
+        const cutoff = (message: Line) => message.group_id ? 0 : clearedThrough.current.get(message.from_id === me ? message.to_id! : message.from_id) ?? 0;
+        return messages.filter((message) => !hiddenIds.current.has(message.id) && !hiddenAuthors.has(message.from_id) && message.id > cutoff(message)).map((message) => {
+            const reply = message.reply;
+            return reply && (hiddenIds.current.has(reply.id) || hiddenAuthors.has(reply.from_id) || reply.id <= cutoff(message)) ? { ...message, reply: null } : message;
+        });
+    }, [me, hiddenAuthors]);
     const end = useRef<HTMLDivElement>(null);
     const box = useRef<HTMLTextAreaElement>(null);
 
@@ -121,32 +135,65 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
             setGroup((now) => (now ? all.find((g) => g.group.id === now.id)?.group ?? null : now));
         }).catch(() => {});
     }, []);
+    const applyCleared = useCallback((userId: number, throughId: number) => {
+        const previous = clearedThrough.current.get(userId);
+        if (previous !== undefined && throughId <= previous) { loadList(); refreshCounts(); return; }
+        clearedThrough.current.set(userId, throughId);
+        setList((now) => now.filter((c) => c.user.id !== userId || c.last.id > throughId));
+        if (openKey.current === keyOf({ user: userId })) {
+            openKey.current = null; unseen.current = null;
+            setOther(null); setLines([]); setReplyTo(null); setText(''); setHasMore(false); setRecording(false);
+            const url = new URL(window.location.href);
+            if (url.searchParams.get('with') === String(userId)) {
+                url.searchParams.delete('with');
+                window.history.replaceState(window.history.state, '', url);
+            }
+        }
+        loadList(); refreshCounts();
+    }, [loadList]);
+    const clearConversation = async (person: Person) => {
+        if (clearing !== null || !confirm(`Remove your conversation with ${person.name}? Its current messages will be hidden only for you. The other person keeps their copy. New messages will bring the conversation back.`)) return;
+        setClearing(person.id); setError('');
+        try {
+            const result = await sendJson<{ through_id: number }>('DELETE', route('api.whispers.clear', person.id));
+            applyCleared(person.id, result.through_id);
+        } catch (e) { setError(e instanceof Error ? e.message : 'Could not remove the conversation.'); }
+        finally { setClearing(null); }
+    };
     const open = useCallback((id: number) => {
         getJson<{ user: Person; messages: Line[]; has_more: boolean }>(route('api.whispers.thread', id))
-            .then((t) => { restoredScroll.current = null; setHasMore(t.has_more); setOther(t.user); setGroup(null); setComposing(false); setMakingGroup(false); setLines(t.messages); setError(''); loadList(); refreshCounts(); }) // opening it marks theirs as read
+            .then((t) => { restoredScroll.current = null; setHasMore(t.has_more); setOther(t.user); setGroup(null); setComposing(false); setMakingGroup(false); setLines(cleanLines(t.messages)); setError(''); loadList(); refreshCounts(); }) // opening it marks theirs as read
             .catch((e: Error) => setError(e.message));
-    }, [loadList]);
+    }, [loadList, cleanLines]);
     const openGroup = useCallback((id: number) => {
         getJson<{ group: Group; messages: Line[]; has_more: boolean }>(route('api.whisper-groups.show', id))
-            .then((t) => { restoredScroll.current = null; setHasMore(t.has_more); setGroup(t.group); setOther(null); setComposing(false); setMakingGroup(false); setShowGroup(false); setLines(t.messages); setError(''); loadList(); refreshCounts(); })
+            .then((t) => { restoredScroll.current = null; setHasMore(t.has_more); setGroup(t.group); setOther(null); setComposing(false); setMakingGroup(false); setShowGroup(false); setLines(cleanLines(t.messages)); setError(''); loadList(); refreshCounts(); })
             .catch((e: Error) => setError(e.message));
-    }, [loadList]);
+    }, [loadList, cleanLines]);
 
     useEffect(() => {
         loadList();
-        if (start) open(start);
+        if (openKey.current?.startsWith('u')) open(Number(openKey.current.slice(1)));
+        else if (openKey.current?.startsWith('g')) openGroup(Number(openKey.current.slice(1)));
+        else if (start) open(start);
         else if (startGroup) openGroup(startGroup);
 
         const ch = echo<'reverb'>().private(`App.Models.User.${me}`);
+        const reloadOpenThread = (target: Target) => {
+            // Read viewer-specific reply previews so hidden messages do not reappear in quotes.
+            const url = 'group' in target ? route('api.whisper-groups.show', target.group) : route('api.whispers.thread', target.user);
+            getJson<{ messages: Line[] }>(url).then((result) => {
+                if (keyOf(target) !== openKey.current) return;
+                setLines((now) => cleanLines([...now.filter((m) => !result.messages.some((fresh) => fresh.id === m.id)), ...result.messages]).sort((a, b) => a.id - b.id));
+                refreshCounts();
+            }).catch(() => {});
+        };
         const onWhisper = (w: Incoming) => {
-            const mine = w.from_id === me;
+            if (restrictionsRef.current.has(w.from_id)) return;
             const target = targetOf(w);
             if (keyOf(target) === openKey.current) {
-                setLines((p) => (p.some((x) => x.id === w.id) ? p : [...p, { ...w, mine }]));
-                if (!mine) {
-                    if (document.visibilityState === 'visible') markRead(target); // it is on screen: read
-                    else unseen.current = target;
-                }
+                if (document.visibilityState === 'visible') reloadOpenThread(target);
+                else unseen.current = target; // Do not mark background messages as read.
             }
             loadList();
         };
@@ -159,22 +206,25 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
             refreshCounts();
         };
         const onDeleted = (w: { id: number }) => {
+            hiddenIds.current.add(w.id);
             setLines((now) => now.filter((m) => m.id !== w.id).map((m) => m.reply?.id === w.id ? { ...m, reply: null } : m));
             setReplyTo((now) => now?.id === w.id ? null : now);
             loadList(); refreshCounts();
         };
+        const onCleared = (event: { user_id: number; through_id: number }) => applyCleared(event.user_id, event.through_id);
+        ch.listen('.whisper-conversation-cleared', onCleared);
         ch.listen('.whisper', onWhisper);
         ch.listen('.whisper-group', onGroup);
         ch.listen('.whisper-deleted', onDeleted);
         const back = () => {
             if (document.visibilityState !== 'visible') return;
-            if (unseen.current && keyOf(unseen.current) === openKey.current) markRead(unseen.current);
+            if (unseen.current && keyOf(unseen.current) === openKey.current) { reloadOpenThread(unseen.current); markRead(unseen.current); }
             unseen.current = null;
         };
         document.addEventListener('visibilitychange', back);
 
-        return () => { ch.stopListening('.whisper', onWhisper); ch.stopListening('.whisper-group', onGroup); ch.stopListening('.whisper-deleted', onDeleted); document.removeEventListener('visibilitychange', back); };
-    }, [me, start, startGroup, open, openGroup, loadList, markRead]); // eslint-disable-line react-hooks/exhaustive-deps -- targetOf only reads `me`
+        return () => { ch.stopListening('.whisper-conversation-cleared', onCleared); ch.stopListening('.whisper', onWhisper); ch.stopListening('.whisper-group', onGroup); ch.stopListening('.whisper-deleted', onDeleted); document.removeEventListener('visibilitychange', back); };
+    }, [me, start, startGroup, open, openGroup, loadList, markRead, cleanLines, applyCleared]); // eslint-disable-line react-hooks/exhaustive-deps -- targetOf only reads `me`
 
     useEffect(() => {
         if (restoredScroll.current && historyScroll.current) {
@@ -184,10 +234,11 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
     }, [lines, other, group?.id, showGroup]);
 
     const deleteMessage = async (message: Line) => {
-        if (!message.mine || deleting !== null || !confirm('Delete this message for everyone? This cannot be undone.')) return;
+        if (deleting !== null || !confirm(message.mine ? 'Delete this message for everyone? This cannot be undone.' : 'Hide this message only for you? The sender keeps their copy.')) return;
         setDeleting(message.id); setError('');
         try {
-            await request('DELETE', route('api.whispers.destroy', message.id));
+            await request('DELETE', route(message.mine ? 'api.whispers.destroy' : 'api.whispers.hide', message.id));
+            hiddenIds.current.add(message.id);
             setLines((now) => now.filter((m) => m.id !== message.id).map((m) => m.reply?.id === message.id ? { ...m, reply: null } : m));
             setReplyTo((now) => now?.id === message.id ? null : now);
             loadList(); refreshCounts();
@@ -204,7 +255,7 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
             const result = await getJson<{ messages: Line[]; has_more: boolean }>(`${url}?before=${lines[0].id}`);
             if (key !== openKey.current) return;
             if (historyScroll.current) restoredScroll.current = { height: historyScroll.current.scrollHeight, top: historyScroll.current.scrollTop };
-            setLines((now) => [...result.messages.filter((m) => !now.some((n) => n.id === m.id)), ...now]);
+            setLines((now) => cleanLines([...result.messages.filter((m) => !now.some((n) => n.id === m.id)), ...now]));
             setHasMore(result.has_more);
         } catch (err) { if (key === openKey.current) setError((err as Error).message); }
         finally { setLoadingOlder(false); }
@@ -217,8 +268,8 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
 
     /** The server took a whisper: show it (the first one to somebody new opens that conversation). */
     const sent = (r: { message: Line; user?: Person }) => {
-        if (!other && !group && r.user) { setOther(r.user); setComposing(false); setTo(''); setLines([r.message]); }
-        else if (keyOf(targetOf(r.message)) === openKey.current) setLines((p) => (p.some((x) => x.id === r.message.id) ? p : [...p, r.message]));
+        if (!other && !group && r.user) { setOther(r.user); setComposing(false); setTo(''); setLines(cleanLines([r.message])); }
+        else if (keyOf(targetOf(r.message)) === openKey.current) setLines((p) => (p.some((x) => x.id === r.message.id) ? p : cleanLines([...p, r.message])));
         loadList();
     };
 
@@ -283,9 +334,10 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
     }, [list, friends, to]);
 
     // consecutive messages from the same person are grouped; a new day gets a heading
-    const rows = lines.map((m, i) => {
-        const prev = lines[i - 1];
-        const next = lines[i + 1];
+    const visibleLines = cleanLines(lines);
+    const rows = visibleLines.map((m, i) => {
+        const prev = visibleLines[i - 1];
+        const next = visibleLines[i + 1];
         const newDay = !prev || !sameDay(prev.at, m.at);
 
         return {
@@ -299,6 +351,9 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
     /** Who wrote the whisper a reply answers: you, the other person, or somebody of the group. */
     const nameOf = (id: number) => (id === me ? 'You' : group ? group.members.find((p) => p.id === id)?.name ?? lines.find((l) => l.from_id === id)?.from?.name ?? 'Someone' : other?.name);
 
+    const blockedThread = !!other && blocked.includes(other.id);
+    useEffect(() => { setReplyTo((message) => message && hiddenAuthors.has(message.from_id) ? null : message); }, [hiddenAuthors]);
+    useEffect(() => { if (blockedThread) { setRecording(false); setReplyTo(null); } }, [blockedThread]);
     const chatOpen = !!other || !!group || composing || makingGroup;
 
     return (
@@ -320,6 +375,7 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
                     </div>
                 </div>
 
+                {error && !chatOpen && <p role="alert" className="px-3 py-2 text-xs text-red-400">{error}</p>}
                 <ul className="min-h-0 flex-1 divide-y divide-white/5 overflow-y-auto">
                     {shown.length === 0 && (
                         <li className="p-6 text-center text-sm text-neutral-500">
@@ -329,7 +385,8 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
                     {shown.map((i) => (
                         <li key={i.key}>
                             {i.kind === 'user' ? (
-                                <button onClick={() => open(i.c.user.id)} className={`flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-white/5 ${other?.id === i.c.user.id ? 'bg-violet-500/10' : ''}`}>
+                                <div className="group flex items-center pr-2">
+                                <button onClick={() => open(i.c.user.id)} className={`flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left transition hover:bg-white/5 ${other?.id === i.c.user.id ? 'bg-violet-500/10' : ''}`}>
                                     <Avatar name={i.c.user.name} avatar={i.c.user.avatar} className="h-10 w-10 text-base" />
                                     <span className="min-w-0 flex-1">
                                         <span className="flex items-baseline justify-between gap-2">
@@ -342,6 +399,8 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
                                         </span>
                                     </span>
                                 </button>
+                                <button type="button" disabled={clearing !== null} onClick={() => void clearConversation(i.c.user)} title="Remove conversation for me" aria-label={`Remove conversation with ${i.c.user.name}`} className="shrink-0 rounded-lg p-2 text-neutral-500 transition hover:bg-red-500/15 hover:text-red-300 disabled:opacity-40"><Trash2 size={15} /></button>
+                                </div>
                             ) : (
                                 <button onClick={() => openGroup(i.g.group.id)} className={`flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-white/5 ${group?.id === i.g.group.id ? 'bg-violet-500/10' : ''}`}>
                                     <GroupAvatar className="h-10 w-10" />
@@ -378,7 +437,7 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
                     </div>
                 ) : makingGroup ? (
                     <>
-                        <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
+                        <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3 sm:gap-3">
                             <button onClick={() => setMakingGroup(false)} className="rounded-lg p-1 text-neutral-400 hover:bg-white/10 md:hidden" aria-label="Back"><ArrowLeft size={18} /></button>
                             <GroupAvatar className="h-9 w-9" />
                             <div className="min-w-0">
@@ -390,7 +449,7 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
                     </>
                 ) : (
                     <>
-                        <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap border-b border-white/10 px-4 py-3 sm:gap-3">
                             <button onClick={() => { setOther(null); setGroup(null); setComposing(false); }} className="rounded-lg p-1 text-neutral-400 hover:bg-white/10 md:hidden" aria-label="Back"><ArrowLeft size={18} /></button>
                             {other ? (
                                 <>
@@ -399,9 +458,12 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
                                         <p className="truncate font-semibold">{other.name}</p>
                                         <p className="truncate text-xs text-neutral-500">@{other.username}</p>
                                     </div>
-                                    <button onClick={() => startWhisperCall(other, false)} aria-label={`Voice call ${other.name}`} title="Voice call" className="rounded-lg bg-violet-500/15 p-2 text-violet-200 hover:bg-violet-500/30"><Phone size={17} /></button>
-                                    <button onClick={() => startWhisperCall(other, true)} aria-label={`Video call ${other.name}`} title="Video call" className="rounded-lg bg-violet-500/15 p-2 text-violet-200 hover:bg-violet-500/30"><Video size={17} /></button>
-                                    <button onClick={() => (openProfile ? openProfile(other.id, other.name) : router.visit(route('users.show', other.id)))} className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20"><UserRound size={14} /> Profile</button>
+                                    <button type="button" disabled={clearing !== null} onClick={() => void clearConversation(other)} title="Remove conversation for me" aria-label="Remove conversation for me" className="shrink-0 rounded-lg p-2 text-neutral-500 hover:bg-red-500/15 hover:text-red-300 disabled:opacity-40"><Trash2 size={17} /></button>
+                                    <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
+                                    <button disabled={blockedThread} onClick={() => startWhisperCall(other, false)} aria-label={`Voice call ${other.name}`} title="Voice call" className="rounded-lg bg-violet-500/15 p-2 text-violet-200 hover:bg-violet-500/30"><Phone size={17} /></button>
+                                    <button disabled={blockedThread} onClick={() => startWhisperCall(other, true)} aria-label={`Video call ${other.name}`} title="Video call" className="rounded-lg bg-violet-500/15 p-2 text-violet-200 hover:bg-violet-500/30"><Video size={17} /></button>
+                                    <button onClick={() => (openProfile ? openProfile(other.id, other.name) : router.visit(route('users.show', other.id)))} aria-label="Open profile" title="Open profile" className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold hover:bg-white/20"><UserRound size={14} /><span>Profile</span></button>
+                                    </div>
                                 </>
                             ) : group ? (
                                 <>
@@ -445,7 +507,7 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
                                             )}
                                         </div>
                                     )}
-                                    {(other || group) && lines.length === 0 && <p className="py-10 text-center text-sm text-neutral-500">No messages yet. Say hi 👋</p>}
+                                    {(other || group) && visibleLines.length === 0 && <p className="py-10 text-center text-sm text-neutral-500">{other && hiddenAuthors.has(other.id) ? 'Messages from this user are hidden.' : 'No messages yet. Say hi 👋'}</p>}
                                     {rows.map(({ m, heading, first, last }) => {
                                         // beside the bubble, on the side facing the middle: shown when the mouse is over the message (always on a touch screen)
                                         const replyButton = <button type="button" onClick={() => { setReplyTo(m); box.current?.focus(); }} aria-label="Reply" title="Reply" className="shrink-0 rounded-md p-1.5 text-neutral-500 opacity-0 transition hover:bg-white/10 hover:text-white focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"><Reply size={14} /></button>;
@@ -454,7 +516,7 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
                                             <div key={m.id}>
                                                 {heading && <p className="my-4 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-500">{heading}</p>}
                                                 <div className={`group flex items-center gap-1 ${m.mine ? 'justify-end' : 'justify-start'} ${first ? 'mt-3' : 'mt-0.5'}`}>
-                                                    {m.mine && <button type="button" onClick={() => void deleteMessage(m)} disabled={deleting !== null} aria-label="Delete message for everyone" title="Delete message" className="shrink-0 rounded-md p-1.5 text-neutral-500 opacity-0 transition hover:bg-red-500/15 hover:text-red-300 focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100 disabled:opacity-40"><Trash2 size={14} /></button>}
+                                                    {(m.mine || !group) && <button type="button" onClick={() => void deleteMessage(m)} disabled={deleting !== null} aria-label={m.mine ? 'Delete message for everyone' : 'Hide message for me'} title={m.mine ? 'Delete message for everyone' : 'Hide message for me'} className="shrink-0 rounded-md p-1.5 text-neutral-500 opacity-60 transition hover:bg-red-500/15 hover:text-red-300 focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100 disabled:opacity-40">{m.mine ? <Trash2 size={14} /> : <EyeOff size={14} />}</button>}
                                                     {m.mine && replyButton}
                                                     <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${m.mine ? 'rounded-br-md bg-linear-to-br from-fuchsia-600 to-violet-600 text-white' : 'rounded-bl-md bg-white/10'}`}>
                                                         {group && !m.mine && first && <p className="mb-0.5 text-xs font-semibold text-violet-300">{m.from?.name}</p>}
@@ -475,7 +537,8 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
                                 </div>
 
                                 {error && <p className="px-4 pb-1 text-xs text-red-400">{error}</p>}
-                                <div className="relative border-t border-white/10">
+                                {blockedThread && <p role="status" className="border-t border-white/10 bg-red-500/10 px-4 py-2 text-xs text-red-200">You blocked this user. Unblock them from their profile or Privacy settings to send Whispers or calls.</p>}
+                                <fieldset disabled={blockedThread} className="relative min-w-0 border-t border-white/10 disabled:opacity-50">
                                     {picker && (
                                         <div className="absolute inset-x-3 bottom-full z-10 mb-1 max-h-72 overflow-y-auto rounded-xl border border-neutral-700 bg-neutral-900 p-3 shadow-xl">
                                             <div className="mb-3 flex gap-1 text-xs font-bold">
@@ -516,7 +579,7 @@ export default function WhisperBox({ start, startGroup, friends = [], openProfil
                                             <button disabled={!text.trim()} onMouseDown={(e) => e.preventDefault()} aria-label="Send" title="Send (Enter)" className="rounded-lg bg-linear-to-r from-fuchsia-500 to-violet-500 p-2.5 text-white transition hover:opacity-90 disabled:opacity-40"><Send size={17} /></button>
                                         </form>
                                     )}
-                                </div>
+                                </fieldset>
                             </>
                         )}
                     </>

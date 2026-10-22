@@ -31,7 +31,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Throwable;
 
 #[Fillable(['name', 'username', 'email', 'password', 'avatar', 'character', 'cosmetics', 'bio', 'favorite_genre', 'country', 'pronouns', 'status'])]
-#[Hidden(['discord_id', 'spotify_id', 'spotify_display_name', 'spotify_access_token', 'spotify_refresh_token', 'youtube_channel_id', 'youtube_channel_title', 'youtube_access_token', 'youtube_refresh_token', 'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'referral_code', 'referred_by', 'coins', 'daily_coins_on', 'stripe_customer_id', 'stripe_subscription_id', 'auth_version', 'two_factor_last_used_at', 'activeSubscriptionGifts'])]
+#[Hidden(['twitch_id', 'twitch_display_name', 'twitch_access_token', 'twitch_refresh_token', 'twitch_token_expires_at', 'tiktok_id', 'tiktok_display_name', 'tiktok_access_token', 'tiktok_refresh_token', 'tiktok_token_expires_at', 'twitch_login', 'discord_id', 'spotify_id', 'spotify_display_name', 'spotify_access_token', 'spotify_refresh_token', 'youtube_channel_id', 'youtube_channel_title', 'youtube_access_token', 'youtube_refresh_token', 'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'referral_code', 'referred_by', 'coins', 'daily_coins_on', 'stripe_customer_id', 'stripe_subscription_id', 'auth_version', 'two_factor_last_used_at', 'activeSubscriptionGifts'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
@@ -438,6 +438,10 @@ class User extends Authenticatable implements MustVerifyEmail
     /** Whether `$from` may whisper to this person (or put them in a group): everyone, only friends or nobody is what they chose; staff can always reach people. */
     public function takesWhispersFrom(User $from): bool
     {
+        if (UserRestriction::blocksBetween($this->id, $from->id)) {
+            return false;
+        }
+
         $mode = $this->pref('privacy.whispers', 'everyone');
         $friends = fn () => Friendship::where('status', 'accepted')->where(fn ($q) => $q->where(['user_id' => $from->id, 'friend_id' => $this->id])->orWhere(fn ($w) => $w->where(['user_id' => $this->id, 'friend_id' => $from->id])))->exists();
 
@@ -479,6 +483,12 @@ class User extends Authenticatable implements MustVerifyEmail
             'spotify_access_token' => 'encrypted',
             'spotify_refresh_token' => 'encrypted',
             'spotify_token_expires_at' => 'datetime',
+            'twitch_access_token' => 'encrypted',
+            'twitch_refresh_token' => 'encrypted',
+            'twitch_token_expires_at' => 'datetime',
+            'tiktok_access_token' => 'encrypted',
+            'tiktok_refresh_token' => 'encrypted',
+            'tiktok_token_expires_at' => 'datetime',
             'youtube_access_token' => 'encrypted',
             'youtube_refresh_token' => 'encrypted',
             'youtube_token_expires_at' => 'datetime',

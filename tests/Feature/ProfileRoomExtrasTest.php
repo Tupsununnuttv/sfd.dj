@@ -511,6 +511,35 @@ class ProfileRoomExtrasTest extends TestCase
         $this->assertStringContainsString('--volume-fill:#22d3ee', $result['css']);
     }
 
+    public function test_navigation_theme_aliases_map_to_the_existing_hooks(): void
+    {
+        foreach (['sfd-navmenu' => 'sfd-menu', 'sfd-profile' => 'sfd-menuprofile'] as $alias => $hook) {
+            foreach (['', ':hover', ':focus-visible'] as $pseudo) {
+                $result = RoomCss::clean(".{$alias}{$pseudo}{color:red}");
+                $this->assertSame([], $result['notes']);
+                $this->assertSame(".sfd-room .{$hook}{$pseudo}{color:red}", $result['css']);
+            }
+        }
+        $result = RoomCss::clean('.sfd-navmenu .sfd-profile:hover{color:red}');
+        $this->assertSame([], $result['notes']);
+        $this->assertSame('.sfd-room .sfd-menu .sfd-menuprofile:hover{color:red}', $result['css']);
+        foreach (['.sfd-navmenu-extra', '.sfd-profile-extra', '.sfd-profile[data-x]', '.sfd-navmenu:has(a)'] as $selector) {
+            $this->assertSame('', RoomCss::clean($selector.'{color:red}')['css']);
+        }
+    }
+
+    public function test_playback_and_booth_css_can_style_states_and_svg_parts(): void
+    {
+        foreach (['.sfd-playback:hover', '.sfd-playbackon', '.sfd-playbackoff', '.sfd-playbackscreen iframe', '.sfd-booth', '.sfd-boothfront', '.sfd-boothtop', '.sfd-boothlights', '.sfd-boothdeck circle', '.sfd-boothmixer', '.sfd-booth g > rect'] as $selector) {
+            $result = RoomCss::clean($selector.'{fill:#22d3ee}');
+            $this->assertSame([], $result['notes'], $selector);
+            $this->assertSame('.sfd-room '.$selector.'{fill:#22d3ee}', $result['css']);
+        }
+        foreach (['svg', 'g', 'rect', '.sfd-booth rect[data-x]', '.sfd-booth #app'] as $selector) {
+            $this->assertSame('', RoomCss::clean($selector.'{fill:red}')['css']);
+        }
+    }
+
     public function test_legacy_chat_selectors_use_the_real_message_hook(): void
     {
         foreach (['chat-message', 'message-bubble'] as $alias) {
@@ -534,7 +563,7 @@ class ProfileRoomExtrasTest extends TestCase
         $this->assertEqualsCanonicalizing(array_keys(RoomCss::HOOKS), $listed[1], 'the list in lib/cssHooks.ts must be the one in App\Support\RoomCss');
 
         // every class is really on an element of the room page
-        $pages = collect(['Components/Sidebar.tsx', 'Components/ContextMenu.tsx', 'Pages/History.tsx', 'Pages/Room.tsx', 'Components/RoomHeader.tsx', 'Components/RoomScene.tsx', 'Components/RoomFootbar.tsx', 'Components/ChatPanel.tsx', 'Components/PlaylistManager.tsx', 'Components/playlists/TrackList.tsx', 'Components/VoteBar.tsx', 'Components/WaitlistCard.tsx', 'Components/Avatar.tsx'])
+        $pages = collect(['Components/PlaybackFrame.tsx', 'Components/scene/DjBooth.tsx', 'Components/AudioEqualizer.tsx', 'Components/Sidebar.tsx', 'Components/ContextMenu.tsx', 'Pages/History.tsx', 'Pages/Room.tsx', 'Components/RoomHeader.tsx', 'Components/RoomScene.tsx', 'Components/RoomFootbar.tsx', 'Components/ChatPanel.tsx', 'Components/PlaylistManager.tsx', 'Components/playlists/TrackList.tsx', 'Components/VoteBar.tsx', 'Components/WaitlistCard.tsx', 'Components/Avatar.tsx'])
             ->map(fn ($f) => $this->source("resources/js/{$f}"))->implode("\n");
         foreach (array_keys(RoomCss::HOOKS) as $hook) {
             $this->assertStringContainsString("sfd-{$hook} ", $pages, "nothing on the page has .sfd-{$hook}");

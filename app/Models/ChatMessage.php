@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Events\MessageSent;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -47,9 +48,17 @@ class ChatMessage extends Model
         return $message;
     }
 
-    public function payload(): array
+    public function scopeVisibleTo(Builder $query, ?int $viewer): void
+    {
+        if ($viewer) {
+            $query->whereNotIn('chat_messages.user_id', UserRestriction::hiddenAuthors($viewer));
+        }
+    }
+
+    public function payload(?int $viewer = null): array
     {
         $reply = $this->reply_to_id ? $this->replyTo : null;
+        $hideReply = $reply && $viewer && UserRestriction::hiddenAuthors($viewer)->where('target_id', $reply->user_id)->exists();
 
         return [
             'id' => $this->id,
@@ -68,8 +77,8 @@ class ChatMessage extends Model
             'sticker' => $this->sticker,
             // GIFs are stored as their https address, uploads as a file name served by MediaController
             'image_url' => $this->image ? (str_starts_with($this->image, 'https://') ? $this->image : route('media.chat', $this->image)) : null,
-            'reply' => $this->reply_to_id
-                ? ['id' => $this->reply_to_id, 'user' => $reply?->user->name, 'body' => $reply ? Str::limit($reply->body ?: ($reply->sticker ?: 'a picture'), 80) : null]
+            'reply' => $this->reply_to_id && ! $hideReply
+                ? ['id' => $this->reply_to_id, 'user_id' => $reply?->user_id, 'user' => $reply?->user->name, 'body' => $reply ? Str::limit($reply->body ?: ($reply->sticker ?: 'a picture'), 80) : null]
                 : null,
         ];
     }

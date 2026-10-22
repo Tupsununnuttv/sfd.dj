@@ -59,6 +59,7 @@ class WhisperCallController extends Controller
         $call = DB::transaction(function () use ($request, $other, $data) {
             $ids = [$request->user()->id, $other->id];
             User::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
+            $this->allowed($request->user(), $other);
             abort_if(WhisperCall::whereIn('status', ['ringing', 'active'])->where(fn ($q) => $q->whereIn('caller_id', $ids)->orWhereIn('callee_id', $ids))->exists(), 409, 'One of you is already in a call.');
 
             return WhisperCall::create(['caller_id' => $ids[0], 'callee_id' => $ids[1], 'video' => $data['video'], 'offer' => $data['offer'] ?? null, 'caller_seen' => now()]);

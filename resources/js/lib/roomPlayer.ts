@@ -43,9 +43,13 @@ export default class RoomPlayer {
             this.youtube = new window.YT.Player(mount, {
                 width: '100%',
                 height: '100%',
-                playerVars: { autoplay: 1, controls: 0, disablekb: 1, rel: 0, modestbranding: 1, playsinline: 1 },
+                playerVars: { autoplay: 1, controls: 1, fs: 1, disablekb: 0, rel: 0, playsinline: 1, origin: window.location.origin },
                 events: {
-                    onReady: () => events.onReady(),
+                    onReady: () => {
+                        const frame = this.youtube?.getIframe?.() as HTMLIFrameElement | undefined;
+                        if (frame) { frame.allowFullscreen = true; frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; }
+                        events.onReady();
+                    },
                     onAutoplayBlocked: () => events.onAutoplayBlocked(),
                     onStateChange: (e: { data: number }) => this.active === 'youtube' && events.onStateChange(e),
                 },

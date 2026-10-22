@@ -2,12 +2,21 @@ import '../../resources/css/app.css';
 import { createRoot } from 'react-dom/client';
 import { useState } from 'react';
 import PeekCard from '../../resources/js/Components/PeekCard';
+import LiveScreen from '../../resources/js/Components/LiveScreen';
+import MobileRoomHarness from './MobileRoomHarness';
 import { browserChannel } from '../../resources/js/lib/browserChannel';
 import { copyText } from '../../resources/js/lib/clipboard';
 import { syncCompactPreferences, saveCompactPreference, useCompactPreferences } from '../../resources/js/lib/compactPreferences';
 
 // Only the preference endpoint is mocked. The production store, CSS and browser APIs run unchanged.
-Object.assign(window, { route: (name: string, params: { name?: string } | number) => name === 'users.card' ? `/profile-api/${params}` : name === 'characters.show' ? `/Avatars/Standing/${(params as { name: string }).name}.svg` : '/preferences' });
+Object.assign(window, { route: (name: string, params: { name?: string; state?: string } | number) => {
+    if (name === 'users.card') return `/profile-api/${params}`;
+    if (name === 'characters.show') {
+        const { name: character, state = 'standing' } = params as { name: string; state?: string };
+        return `/Avatars/${state === 'dancing' ? 'Dancing' : state === 'djing' ? 'DJing' : 'Standing'}/${character}.svg`;
+    }
+    return '/preferences';
+} });
 syncCompactPreferences(42, null);
 const events: unknown[] = [];
 const channel = browserChannel('browser-test', (data) => events.push(data));
@@ -28,4 +37,7 @@ function Harness() {
         <img alt="Bamboo Panda" width="120" height="165" src="/Avatars/Dancing/bamboopanda.svg" />
     </div>;
 }
-createRoot(document.getElementById('root')!).render(<Harness />);
+const liveTest = new URLSearchParams(window.location.search).get('live');
+createRoot(document.getElementById('root')!).render(new URLSearchParams(window.location.search).has('mobile-room') ? <MobileRoomHarness /> : liveTest === 'tiktok' || liveTest === 'twitch'
+    ? <div style={{ position: 'relative', width: '100%', height: 360 }}><LiveScreen live={{ kind: liveTest, ref: 'test_creator', url: liveTest === 'tiktok' ? 'https://www.tiktok.com/@test_creator/live' : 'https://www.twitch.tv/test_creator', thumbnail: null, title: 'Test live set', started_at: new Date().toISOString() }} volume={50} muted={false} /></div>
+    : <Harness />);

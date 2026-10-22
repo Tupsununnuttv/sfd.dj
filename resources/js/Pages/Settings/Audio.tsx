@@ -4,7 +4,7 @@ import SettingsLayout from '@/Layouts/SettingsLayout';
 import { savePrefs, withDefaults } from '@/lib/prefs';
 import { PageProps } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
-import { Volume1, Volume2, VolumeX } from 'lucide-react';
+import { SlidersHorizontal, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { useState } from 'react';
 
 const KEY = 'sfddj.volume';
@@ -43,6 +43,10 @@ export default function Audio() {
             <Card className="divide-y divide-white/5 px-6">
                 <Toggle label="Join rooms muted" hint="The player starts at 0% when you enter a room." checked={audio.mute_on_join} onChange={(v) => savePrefs({ audio: { mute_on_join: v } })} />
             </Card>
+
+            <SettingsSection title={<span className="flex flex-wrap items-center gap-3"><SlidersHorizontal size={20} className="text-violet-300" /> Equalizer <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-violet-300">Coming Soon</span></span>}>
+                <p className="text-sm text-neutral-400">Bass, mids and treble controls will be available here in a future update.</p>
+            </SettingsSection>
         </SettingsLayout>
     );
 }

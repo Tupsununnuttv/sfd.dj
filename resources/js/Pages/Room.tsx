@@ -25,6 +25,8 @@ import { backgroundClass } from '@/lib/backgrounds';
 import type { LiveInfo } from '@/lib/live';
 import { getJson, post, send, sendJson } from '@/lib/post';
 import { refreshCounts } from '@/lib/counts';
+import { useUserRestrictions } from '@/lib/userRestrictions';
+import { useTouchRendering } from '@/lib/touchRendering';
 import { invalidateProfile } from '@/lib/profileCache';
 import { withDefaults } from '@/lib/prefs';
 import { saveCompactPreference, useCompactPreferences } from '@/lib/compactPreferences';
@@ -214,12 +216,30 @@ export default function Room({
     playback: Playback;
 }>) {
     const { auth: { user, guest }, community } = usePage<PageProps>().props;
+    const { hiddenAuthors } = useUserRestrictions();
+    const touchRendering = useTouchRendering();
+    const hiddenAuthorsRef = useRef(hiddenAuthors);
+    hiddenAuthorsRef.current = hiddenAuthors;
     const prefs = withDefaults(user.preferences);
     const { values: compact } = useCompactPreferences();
     prefs.appearance.compact_chat = compact.compact_chat;
     prefs.room.compact_layout = compact.compact_layout;
 
     const [messages, setMessages] = useState(initialMessages);
+    const previousFilters = useRef(hiddenAuthors);
+    useEffect(() => {
+        if (previousFilters.current === hiddenAuthors) return;
+        previousFilters.current = hiddenAuthors;
+        router.reload({ only: ['messages'], onSuccess: (page) => {
+            const fresh = page.props.messages as ChatMessageData[];
+            if (!Array.isArray(fresh)) return;
+            setMessages((now) => {
+                const stored = new Map(now.filter((message) => message.id > 0).map((message) => [message.id, message]));
+                fresh.forEach((message) => stored.set(message.id, message));
+                return [...stored.values()].sort((a, b) => a.id - b.id).slice(-200).concat(now.filter((message) => message.id < 0));
+            });
+        } });
+    }, [hiddenAuthors]);
     const [peopleSearch, setPeopleSearch] = useState('');
     const [notifications, setNotifications] = useState<{ id: number; kind: string; body: string }[]>([]);
     const [playback, setPlayback] = useState(() => stamp(initialPlayback));
@@ -344,6 +364,7 @@ export default function Room({
         }, 4500);
     };
     const receiveMessage = (message: ChatMessageData) => {
+        if (hiddenAuthorsRef.current.has(message.user_id)) return;
         if (isTransientActivity(message)) {
             if (!seenNotifications.current.has(message.id)) {
                 seenNotifications.current.add(message.id);
@@ -430,7 +451,7 @@ export default function Room({
     const activity = useRef(true);
     activity.current = prefs.appearance.show_activity;
     const sayVote = (v: { user_id: number; name: string; type: 'woot' | 'meh' | 'grab' }) => {
-        if (!activity.current || (v.type === 'grab' && v.user_id === user.id)) return; // my own grab says more in the window I just used
+        if (!activity.current || hiddenAuthorsRef.current.has(v.user_id) || (v.type === 'grab' && v.user_id === user.id)) return; // my own grab says more in the window I just used
         notify(v.type, `${v.name} ${v.type === 'woot' ? 'wooted' : v.type === 'meh' ? "meh'd" : 'grabbed'} this song`);
     };
 
@@ -487,11 +508,11 @@ export default function Room({
         })
             .joining((m: Member) => {
                 setUsers((p) => [...p.filter((u) => u.id !== m.id), m]);
-                activity.current && notify('join', `${m.name} joined the room`);
+                activity.current && !hiddenAuthorsRef.current.has(m.id) && notify('join', `${m.name} joined the room`);
             })
             .leaving((m: Member) => {
                 setUsers((p) => p.filter((u) => u.id !== m.id));
-                activity.current && notify('exit', `${m.name} left the room`);
+                activity.current && !hiddenAuthorsRef.current.has(m.id) && notify('exit', `${m.name} left the room`);
                 // gone from the room without saying so (tab closed, computer asleep, connection lost) but still in the line or at the booth:
                 // ask the server to take them out; it checks with the live server itself, so it never takes out somebody who is still here
                 if (lineRef.current.includes(m.id)) {
@@ -751,7 +772,7 @@ export default function Room({
         if (ready) player.current?.setVolume(effectiveVolume);
     }, [ready, effectiveVolume, current?.id, playbackOn]);
 
-    const typing = Object.entries(typers).filter(([id]) => +id !== user.id).map(([, n]) => n);
+    const typing = Object.entries(typers).filter(([id]) => +id !== user.id && !hiddenAuthors.has(+id)).map(([, n]) => n);
     const typingText =
         typing.length === 0 ? '' : typing.length === 1 ? `${typing[0]} is typing…` : typing.length === 2 ? `${typing[0]} and ${typing[1]} are typing…` : 'Several people are typing…';
 
@@ -836,7 +857,8 @@ export default function Room({
 
     // whoever is in the room right now is drawn as they are now: a new frame or a new flag shows in the chat lines they wrote before, too
     const here = new Map(users.map((u) => [u.id, u]));
-    const shownMessages = messages.filter((m) => !isTransientActivity(m)).map((m) => {
+    const shownMessages = messages.filter((m) => !isTransientActivity(m) && !hiddenAuthors.has(m.user_id)).map((message) => {
+        const m = message.reply?.user_id && hiddenAuthors.has(message.reply.user_id) ? { ...message, reply: null } : message;
         if (m.type !== 'system' && !guest && m.user_id === user.id) {
             return { ...m, avatar: user.avatar, cosmetics: user.cosmetics, badges: user.badges, level: user.level, role: user.primary_role };
         }
@@ -845,24 +867,22 @@ export default function Room({
         return u ? { ...m, avatar: u.avatar, cosmetics: u.cosmetics, badges: u.badges ?? m.badges, level: u.level ?? m.level, role: u.role ?? m.role } : m;
     });
 
-    const tabs: [Tab, string][] = [
-        ['room', 'Room'],
-        ['chat', 'Chat'],
-        ['waitlist', `Waitlist (${waitlist.length}/${playback.max})`],
-        ['users', `Users (${users.length})`],
+    const tabs: [Tab, string, string][] = [
+        ['room', 'Room', 'sfd-tabroom '],
+        ['chat', 'Chat', 'sfd-tabchat '],
+        ['waitlist', `Waitlist (${waitlist.length}/${playback.max})`, 'sfd-tabwaitlist '],
+        ['users', `Users (${users.length})`, 'sfd-tabusers '],
     ];
 
     return (
         <>
             <Head title={room.name} />
             {room.css && <style data-room-css>{room.css}</style>}
-            <div className="sfd-room isolate flex h-dvh overflow-hidden bg-black text-white" data-room-layout={prefs.room.compact_layout ? 'compact' : 'normal'}>
+            <div className="sfd-room isolate flex h-dvh overflow-hidden bg-black text-white" data-room-layout={prefs.room.compact_layout ? 'compact' : 'normal'} data-rendering={touchRendering ? 'touch' : 'full'}>
                 <Sidebar
                     room={{
                         slug: room.slug,
                         name: room.name,
-                        canEdit: canEditRoom,
-                        canModerate,
                         canLive: !!can.go_live,
                         isLive: !!live,
                         onRoom: () => { setPage(null); setPanel(null); },
@@ -870,8 +890,6 @@ export default function Room({
                         onWhispers: () => { setWhisperTo(null); setPanel('whispers'); },
                         onLive: () => setPanel('live'),
                         onOpenPage: (url, title) => setPage({ url, title }),
-                        onSettings: () => setPanel('settings'),
-                        onModeration: () => setPanel('moderation'),
                     }}
                 />
 
@@ -910,19 +928,20 @@ export default function Room({
                         waitlist={<WaitlistCard inList={inList} etaSeconds={etaSeconds} etaSince={etaSince} locked={closed} full={waitlist.length >= playback.max} busy={leaving} onClick={joinOrLeave} />}
                         seat={<SeatButton locked={closed} onClick={joinOrLeave} />}
                         votes={<VoteBar votes={playback.votes} mine={mine} disabled={!current || !!live || current.user_id === user.id} ownSong={!!current && current.user_id === user.id} onVote={vote} autowoot={autowoot} onAutowoot={guest ? undefined : setAutowoot} />}
+                        playbackSource={playbackOn ? live ? { key: `live:${live.kind}:${live.ref}`, title: live.title, live, position: () => 0 } : current && !isSoundCloud(current.youtube_id) ? { key: String(current.id), title: current.title, youtubeId: current.youtube_id, position: roomPosition } : null : null}
                         screen={
                             <>
-                                <div ref={box} className="pointer-events-none absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
+                                <div ref={box} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
                                 {live && playbackOn && <LiveScreen live={live} volume={volume} muted={muted || previewing} />}
                                 {playbackOn && current && !live && (
                                     // point at the video and a button appears: it opens the song on YouTube (or SoundCloud), at the place it is at now
-                                    <div className="group absolute inset-0">
+                                    <div className="pointer-events-none group absolute inset-0">
                                         {isSoundCloud(current.youtube_id) ? (
                                             <button
                                                 type="button"
                                                 onClick={() => window.open(player.current?.openUrl?.(roomPosition()) ?? `https://soundcloud.com/search?q=${encodeURIComponent(current.title)}`, '_blank', 'noopener,noreferrer')}
                                                 title="Open this track on SoundCloud, at the place it is at now"
-                                                className="unscale absolute right-3 top-3 flex origin-top-right items-center gap-1.5 rounded-lg bg-black/75 px-3 py-1.5 text-xs font-bold text-white opacity-0 shadow-lg ring-1 ring-white/25 transition hover:bg-orange-600 focus-visible:opacity-100 group-hover:opacity-100"
+                                                className="unscale pointer-events-auto absolute right-3 top-12 flex origin-top-right items-center gap-1.5 rounded-lg bg-black/75 px-3 py-1.5 text-xs font-bold text-white opacity-0 shadow-lg ring-1 ring-white/25 transition hover:bg-orange-600 focus-visible:opacity-100 group-hover/playback:opacity-100"
                                             >
                                                 <ExternalLink size={15} /> Open on SoundCloud
                                             </button>
@@ -932,7 +951,7 @@ export default function Room({
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 title="Open this video on YouTube, at the place it is at now"
-                                                className="unscale absolute right-3 top-3 flex origin-top-right items-center gap-1.5 rounded-lg bg-black/75 px-3 py-1.5 text-xs font-bold text-white opacity-0 shadow-lg ring-1 ring-white/25 transition hover:bg-red-600 focus-visible:opacity-100 group-hover:opacity-100"
+                                                className="unscale pointer-events-auto absolute right-3 top-12 flex origin-top-right items-center gap-1.5 rounded-lg bg-black/75 px-3 py-1.5 text-xs font-bold text-white opacity-0 shadow-lg ring-1 ring-white/25 transition hover:bg-red-600 focus-visible:opacity-100 group-hover/playback:opacity-100"
                                             >
                                                 <SocialIcon name="youtube" size={15} /> Open on YouTube
                                             </a>
@@ -979,6 +998,8 @@ export default function Room({
                         onSkip={() => current && post(route('rooms.skip', room.slug), { item_id: current.id })}
                         onPlaylists={() => setPanel('playlists')}
                         onRoomInfo={() => setPanel('info')}
+                        canModerate={canModerate}
+                        onModeration={() => setPanel('moderation')}
                         community={community}
                         refreshKey={`${current?.id ?? 0}-${deckKey}`}
                     />
@@ -986,11 +1007,11 @@ export default function Room({
 
                 <aside className={`sfd-panel ${tab === 'room' ? 'fixed bottom-17 left-14 right-0 z-20 flex h-14 md:static md:z-auto md:h-auto' : 'flex'} min-w-0 flex-1 flex-col border-t border-neutral-800 bg-black md:w-80 md:flex-none md:border-l md:border-t-0`}>
                     <div className="sfd-tabs flex h-14 shrink-0 border-b border-neutral-800">
-                        {tabs.map(([key, label]) => (
+                        {tabs.map(([key, label, cssClass]) => (
                             <button
                                 key={key}
                                 onClick={() => setTab(key)}
-                                className={`flex-1 text-xs font-semibold ${key === 'room' ? 'md:hidden' : ''} ${tab === key ? 'border-b-2 border-violet-500 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                className={`sfd-tab ${cssClass}flex-1 text-xs font-semibold ${key === 'room' ? 'md:hidden' : ''} ${tab === key ? 'sfd-tabactive border-b-2 border-violet-500 text-white' : 'sfd-tabinactive text-neutral-500 hover:text-neutral-300'}`}
                             >
                                 {label}
                             </button>
@@ -1028,35 +1049,35 @@ export default function Room({
 
                     {tab === 'waitlist' && (
                         <div className="sfd-waitlist flex min-h-0 flex-1 flex-col">
-                            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-neutral-800 p-3 text-xs">
-                                <span className="text-neutral-400">
+                            <div className="sfd-waitliststatus flex shrink-0 items-center justify-between gap-2 border-b border-neutral-800 p-3 text-xs">
+                                <span className="sfd-waitlistposition text-neutral-400">
                                     {myPosition >= 0 ? (myPosition === 0 && current ? 'You are playing now' : `You are #${myPosition} in line`) : 'You are not in the waitlist'}
                                 </span>
                             </div>
                             {(playback.locked || playback.cycle) && (
-                                <p className="flex shrink-0 gap-3 border-b border-neutral-800 px-3 py-2 text-xs text-neutral-400">
-                                    {playback.locked && <span className="text-amber-300">🔒 Waitlist locked</span>}
-                                    {playback.cycle && <span className="text-sky-300">🔁 Cycling</span>}
+                                <p className="sfd-waitlistflags flex shrink-0 gap-3 border-b border-neutral-800 px-3 py-2 text-xs text-neutral-400">
+                                    {playback.locked && <span className="sfd-waitlistlocked text-amber-300">🔒 Waitlist locked</span>}
+                                    {playback.cycle && <span className="sfd-waitlistcycle text-sky-300">🔁 Cycling</span>}
                                 </p>
                             )}
-                            <ol className="flex-1 space-y-2 overflow-y-auto overflow-x-hidden p-3 text-sm">
-                                {waitlist.length === 0 && <li className="text-neutral-500">Nobody is in the waitlist. Press Join Waitlist to be the first.</li>}
+                            <ol className="sfd-waitlistentries flex-1 space-y-2 overflow-y-auto overflow-x-hidden p-3 text-sm">
+                                {waitlist.length === 0 && <li className="sfd-waitlistempty text-neutral-500">Nobody is in the waitlist. Press Join Waitlist to be the first.</li>}
                                 {waitlist.map((s, i) => {
                                     const dj = users.find((u) => u.id === s.user_id);
 
                                     return (
-                                        <li key={s.id} className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 ${i === 0 && current ? 'bg-violet-500/10' : ''}`}>
-                                            <span className="w-5 shrink-0 text-center text-xs text-neutral-500">{i === 0 && current ? '▶' : i}</span>
+                                        <li key={s.id} className={`sfd-waitlistentry flex items-center gap-2.5 rounded-lg px-2 py-1.5 ${i === 0 && current ? 'sfd-waitlistplaying bg-violet-500/10' : ''}`}>
+                                            <span className="sfd-waitlistnumber w-5 shrink-0 text-center text-xs text-neutral-500">{i === 0 && current ? '▶' : i}</span>
                                             <Avatar name={s.added_by} avatar={dj?.avatar ?? null} cosmetics={dj?.cosmetics} className="h-8 w-8 text-sm" />
                                             <div className="min-w-0 flex-1">
-                                                <p className="truncate font-semibold" style={{ color: dj?.role.color }}>{s.added_by}{s.user_id === user.id && <span className="ml-1.5 text-xs font-normal text-green-400">you</span>}</p>
-                                                <p className="truncate text-xs text-neutral-400" title={s.title}>{s.title}</p>
-                                                <p className="text-[11px] text-neutral-500">{i === 0 && current ? 'playing now' : i === 1 ? 'next' : `in ${i} turns`}</p>
+                                                <p className="sfd-waitlistname truncate font-semibold" style={{ color: dj?.role.color }}>{s.added_by}{s.user_id === user.id && <span className="ml-1.5 text-xs font-normal text-green-400">you</span>}</p>
+                                                <p className="sfd-waitlistsong truncate text-xs text-neutral-400" title={s.title}>{s.title}</p>
+                                                <p className="sfd-waitlisteta text-[11px] text-neutral-500">{i === 0 && current ? 'playing now' : i === 1 ? 'next' : `in ${i} turns`}</p>
                                             </div>
                                             {can.manage_queue && (
                                                 <button
                                                     onClick={() => send('DELETE', route('rooms.remove', [room.slug, s.id]))}
-                                                    className="shrink-0 text-neutral-600 hover:text-red-400"
+                                                    className="sfd-waitlistremove shrink-0 text-neutral-600 hover:text-red-400"
                                                     aria-label={`Remove ${s.added_by} from the waitlist`}
                                                 >
                                                     ✕
@@ -1071,39 +1092,39 @@ export default function Room({
 
                     {tab === 'users' && (
                         <div className="sfd-users flex-1 overflow-y-auto overflow-x-hidden p-3 text-sm">
-                            <div className="mb-3 rounded-lg bg-white/5 p-3 text-xs text-neutral-300">
-                                <p className="font-semibold text-white">{room.name} community</p>
-                                <p className="text-neutral-400">{users.length} {users.length === 1 ? 'person is' : 'people are'} here right now, including you.</p>
+                            <div className="sfd-usersinfo mb-3 rounded-lg bg-white/5 p-3 text-xs text-neutral-300">
+                                <p className="sfd-userstitle font-semibold text-white">{room.name} community</p>
+                                <p className="sfd-userscount text-neutral-400">{users.length} {users.length === 1 ? 'person is' : 'people are'} here right now, including you.</p>
                             </div>
-                            {notice && <p className="mb-2 rounded bg-neutral-800 px-2 py-1 text-xs text-neutral-300">{notice}</p>}
-                            <div className="relative mb-3"><Search size={15} className="pointer-events-none absolute left-3 top-3 text-neutral-400" /><input value={peopleSearch} onChange={(e) => setPeopleSearch(e.target.value)} aria-label="Search people in this room" placeholder="Find someone…" className="w-full rounded-xl border-white/10 bg-neutral-900 py-2 pl-9 text-sm text-white placeholder-neutral-500 focus:border-violet-400 focus:ring-violet-400" /></div>
-                            {peopleSearch && !users.some((u) => u.name.toLowerCase().includes(peopleSearch.trim().toLowerCase())) && <p className="py-6 text-center text-xs text-neutral-400">No members match your search.</p>}
+                            {notice && <p className="sfd-usersnotice mb-2 rounded bg-neutral-800 px-2 py-1 text-xs text-neutral-300">{notice}</p>}
+                            <div className="sfd-userssearch relative mb-3"><Search size={15} className="pointer-events-none absolute left-3 top-3 text-neutral-400" /><input value={peopleSearch} onChange={(e) => setPeopleSearch(e.target.value)} aria-label="Search people in this room" placeholder="Find someone…" className="sfd-userssearchinput w-full rounded-xl border-white/10 bg-neutral-900 py-2 pl-9 text-sm text-white placeholder-neutral-500 focus:border-violet-400 focus:ring-violet-400" /></div>
+                            {peopleSearch && !users.some((u) => u.name.toLowerCase().includes(peopleSearch.trim().toLowerCase())) && <p className="sfd-usersempty py-6 text-center text-xs text-neutral-400">No members match your search.</p>}
                             {/* everybody under the room role they hold: the host, then the roles in their order, then everyone else */}
                             {roleGroups.map(({ role, people }) => ({ role, people: people.filter((u) => u.name.toLowerCase().includes(peopleSearch.trim().toLowerCase())) })).filter((g) => g.people.length > 0).map(({ role, people }) => (
-                                <section key={role.key} className="mb-3" data-role-group={role.label}>
-                                    <div className="mb-1.5 flex items-center justify-between gap-2">
-                                        <span className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-bold uppercase leading-none tracking-wider" style={{ color: role.color, borderColor: `${role.color}59`, backgroundColor: `${role.color}1a` }}>
+                                <section key={role.key} className="sfd-usersgroup mb-3" data-role-group={role.label}>
+                                    <div className="sfd-usersgroupheader mb-1.5 flex items-center justify-between gap-2">
+                                        <span className="sfd-usersrole inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-bold uppercase leading-none tracking-wider" style={{ color: role.color, borderColor: `${role.color}59`, backgroundColor: `${role.color}1a` }}>
                                             {role.key === 'site-team' ? <ShieldCheck size={13} /> : role.key === 'staff2-team' ? '🧩' : role.key === 'creator-team' ? '🎨' : role.key === 'community-team' ? '💎' : role.key === 'api-bot' ? '🤖' : <RoleGlyph role={role} size={13} />} {role.label}
                                         </span>
-                                        <span className="rounded-md border border-white/10 bg-white/5 px-1.5 py-1 text-[11px] font-bold leading-none text-neutral-400">{people.length}</span>
+                                        <span className="sfd-usersrolecount rounded-md border border-white/10 bg-white/5 px-1.5 py-1 text-[11px] font-bold leading-none text-neutral-400">{people.length}</span>
                                     </div>
-                                    <ul className="space-y-1.5">
+                                    <ul className="sfd-usersentries space-y-1.5">
                                         {people.map((u) => {
                                             const rr = roomRoleOf(u.id);
                                             
                                             
 
                                             return (
-                                                <li key={u.id} className={`sfd-user rounded-xl border p-3 ${current?.user_id === u.id ? 'border-violet-400/30 bg-violet-500/10' : 'border-white/8 bg-white/3'}`}>
+                                                <li key={u.id} className={`sfd-user rounded-xl border p-3 ${current?.user_id === u.id ? 'sfd-usercurrent border-violet-400/30 bg-violet-500/10' : 'border-white/8 bg-white/3'}`}>
                                                     <div className="flex items-center gap-3">
-                                                        <button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} aria-label={`View ${u.name}'s profile`} className="relative shrink-0"><Avatar name={u.name} avatar={u.avatar} cosmetics={u.cosmetics} className="h-10 w-10" /><StatusDot status={u.status} className="absolute -bottom-0.5 -right-0.5" /></button>
+                                                        <button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} aria-label={`View ${u.name}'s profile`} className="sfd-useravatar relative shrink-0"><Avatar name={u.name} avatar={u.avatar} cosmetics={u.cosmetics} className="h-10 w-10" /><StatusDot status={u.status} className="sfd-userstatus absolute -bottom-0.5 -right-0.5" /></button>
                                                         <div className="min-w-0 flex-1">
-                                                            <div className="flex items-center gap-1.5"><button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} className="min-w-0 truncate text-left text-sm font-semibold text-neutral-100 hover:text-violet-200">{u.name}</button>{u.id === user.id && <span className="shrink-0 text-[10px] text-neutral-400">you</span>}<Flag flag={u.flag} className="h-3 shrink-0" /></div>
-                                                            <p className="mt-1 truncate text-[11px] text-neutral-400">{u.id === host.id ? 'Room host' : rr?.label ?? u.role.label}{u.level !== undefined && ` · Level ${u.level}`}</p>
+                                                            <div className="flex items-center gap-1.5"><button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} className="sfd-username min-w-0 truncate text-left text-sm font-semibold text-neutral-100 hover:text-violet-200">{u.name}</button>{u.id === user.id && <span className="sfd-useryou shrink-0 text-[10px] text-neutral-400">you</span>}<Flag flag={u.flag} className="sfd-userflag h-3 shrink-0" /></div>
+                                                            <p className="sfd-usermeta mt-1 truncate text-[11px] text-neutral-400">{u.id === host.id ? 'Room host' : rr?.label ?? u.role.label}{u.level !== undefined && ` · Level ${u.level}`}</p>
                                                         </div>
-                                                        <button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} aria-label={`Actions for ${u.name}`} title="Profile and actions" className="shrink-0 rounded-lg p-2 text-neutral-400 hover:bg-white/10 hover:text-white"><Ellipsis size={18} /></button>
+                                                        <button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} aria-label={`Actions for ${u.name}`} title="Profile and actions" className="sfd-useractions shrink-0 rounded-lg p-2 text-neutral-400 hover:bg-white/10 hover:text-white"><Ellipsis size={18} /></button>
                                                     </div>
-                                                    {(current?.user_id === u.id || friendIds.includes(u.id)) && <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-white/5 pt-2 text-[10px]">{current?.user_id === u.id && <span className="inline-flex items-center gap-1 font-semibold text-violet-200"><Disc3 size={12} /> Playing now</span>}{friendIds.includes(u.id) && <span className="inline-flex items-center gap-1 text-emerald-300"><UserCheck size={12} /> Friend</span>}</div>}
+                                                    {(current?.user_id === u.id || friendIds.includes(u.id)) && <div className="sfd-userbadges mt-2 flex flex-wrap items-center gap-2 border-t border-white/5 pt-2 text-[10px]">{current?.user_id === u.id && <span className="sfd-userplaying inline-flex items-center gap-1 font-semibold text-violet-200"><Disc3 size={12} /> Playing now</span>}{friendIds.includes(u.id) && <span className="sfd-userfriend inline-flex items-center gap-1 text-emerald-300"><UserCheck size={12} /> Friend</span>}</div>}
                                                 </li>
                                             );
                                         })}

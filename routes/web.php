@@ -26,11 +26,13 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\SpotifyController;
 use App\Http\Controllers\StaffApplicationController;
+use App\Http\Controllers\StreamConnectionController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SubscriptionGiftController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\UserProfileController;
+use App\Http\Controllers\UserRestrictionController;
 use App\Http\Controllers\WhisperCallController;
 use App\Http\Controllers\WhisperController;
 use App\Http\Controllers\WhisperGroupController;
@@ -134,6 +136,11 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
         Route::post('/{playlist}/import', [PlaylistController::class, 'import'])->middleware('throttle:6,1')->name('import');
         Route::delete('/{playlist}/songs/{song}', [PlaylistController::class, 'removeSong'])->name('songs.remove');
     });
+    foreach (['twitch', 'tiktok'] as $provider) {
+        Route::get("/auth/{$provider}", [StreamConnectionController::class, 'connect'])->defaults('provider', $provider)->middleware('throttle:10,1')->name("{$provider}.connect");
+        Route::get("/auth/{$provider}/callback", [StreamConnectionController::class, 'callback'])->defaults('provider', $provider)->middleware('throttle:10,1')->name("{$provider}.callback");
+        Route::delete("/auth/{$provider}", [StreamConnectionController::class, 'disconnect'])->defaults('provider', $provider)->middleware('throttle:10,1')->name("{$provider}.disconnect");
+    }
     Route::get('/auth/discord', [DiscordController::class, 'connect'])->name('discord.connect');
     Route::get('/auth/discord/callback', [DiscordController::class, 'callback'])->name('discord.callback');
     Route::delete('/auth/discord', [DiscordController::class, 'disconnect'])->name('discord.disconnect');
@@ -150,12 +157,16 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::post('/api/whisper-calls', [WhisperCallController::class, 'store'])->middleware('throttle:5,1,call-start')->name('calls.store');
     Route::patch('/api/whisper-calls/{call}', [WhisperCallController::class, 'update'])->middleware('throttle:90,1,call-signal')->name('calls.update');
     Route::get('/api/whispers', [WhisperController::class, 'conversations'])->name('api.whispers');
+    Route::get('/api/user-restrictions', [UserRestrictionController::class, 'index'])->name('api.user-restrictions.index');
+    Route::put('/api/users/{user}/restrictions', [UserRestrictionController::class, 'update'])->whereNumber('user')->middleware('throttle:60,1')->name('api.user-restrictions.update');
     Route::get('/api/whispers/{user}', [WhisperController::class, 'thread'])->name('api.whispers.thread');
     Route::post('/api/whispers/{user}/read', [WhisperController::class, 'read'])->name('api.whispers.read');
     Route::post('/api/whispers', [WhisperController::class, 'send'])->middleware('throttle:30,1')->name('api.whispers.send');
     Route::post('/api/whispers/voice', [WhisperController::class, 'voice'])->middleware('throttle:10,1')->name('api.whispers.voice');
     Route::get('/api/whispers/{whisper}/audio', [WhisperController::class, 'audio'])->name('api.whispers.audio');
     Route::delete('/api/whispers/messages/{whisper}', [WhisperController::class, 'destroy'])->whereNumber('whisper')->name('api.whispers.destroy');
+    Route::delete('/api/whispers/messages/{whisper}/hide', [WhisperController::class, 'hide'])->whereNumber('whisper')->middleware('throttle:60,1')->name('api.whispers.hide');
+    Route::delete('/api/whispers/{user}', [WhisperController::class, 'clearConversation'])->whereNumber('user')->middleware('throttle:20,1')->name('api.whispers.clear');
 
     // whisper groups: messages are sent through api.whispers.send / api.whispers.voice with a group_id
     Route::prefix('api/whisper-groups')->name('api.whisper-groups.')->group(function () {

@@ -37,7 +37,7 @@ class WhisperGroupController extends Controller
         $me = $request->user();
         $groups = $me->whisperGroups()->orderBy('whisper_groups.id')->with('members')->get();
         $latest = Whisper::with(['replyTo', 'sender:id,name,username,avatar'])
-            ->whereIn('id', Whisper::selectRaw('max(id)')->whereIn('group_id', $groups->modelKeys())->groupBy('group_id'))
+            ->whereIn('id', Whisper::visibleTo($me->id)->selectRaw('max(id)')->whereIn('group_id', $groups->modelKeys())->groupBy('group_id'))
             ->get()->keyBy('group_id');
         $unread = WhisperGroup::unreadCounts($me);
 

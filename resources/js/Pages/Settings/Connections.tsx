@@ -1,14 +1,12 @@
-import SocialIcon from '@/Components/SocialIcon';
-import { SettingsSection } from '@/Components/ui';
+import ConnectionCards, { ConnectionCard } from '@/Components/ConnectionCards';
 import SettingsLayout from '@/Layouts/SettingsLayout';
 import { embedded } from '@/lib/embed';
 import { browserChannel } from '@/lib/browserChannel';
 import { Head, router } from '@inertiajs/react';
-import { Music2 } from 'lucide-react';
 import { MouseEvent, ReactNode, useEffect, useState } from 'react';
 
 /** Where each sign-in with another site starts. */
-const START = { spotify: 'spotify.connect', discord: 'discord.connect', youtube: 'youtube.connect' } as const;
+const START = { spotify: 'spotify.connect', discord: 'discord.connect', youtube: 'youtube.connect', twitch: 'twitch.connect', tiktok: 'tiktok.connect' } as const;
 type Service = keyof typeof START;
 const POPUP = 'sfd-connect';
 
@@ -27,7 +25,7 @@ function ConnectLink({ service, className, children }: { service: Service; class
     return <a href={route(START[service])} onClick={open} className={className}>{children}</a>;
 }
 
-type Notices = { discord: string | null; spotify: string | null; spotifyOk: boolean; youtube: string | null };
+type Notices = { discord: string | null; spotify: string | null; spotifyOk: boolean; youtube: string | null; twitch: string | null; tiktok: string | null; twitchOk: boolean; tiktokOk: boolean };
 
 /**
  * The small sign-in window runs through this page twice: first (?connect=spotify) it goes on to the other site; back from it, it hands what the site
@@ -59,7 +57,7 @@ function useSignInWindow(mine: Notices): Notices | null {
 
         if (!embedded) return;
         const channel = browserChannel<Notices>(POPUP, (data) => {
-            if (!data || !['discord', 'spotify', 'youtube'].every((key) => data[key as keyof Notices] === null || typeof data[key as keyof Notices] === 'string') || typeof data.spotifyOk !== 'boolean') return;
+            if (!data || !['discord', 'spotify', 'youtube', 'twitch', 'tiktok'].every((key) => data[key as keyof Notices] === null || typeof data[key as keyof Notices] === 'string') || typeof data.spotifyOk !== 'boolean') return;
             setHanded(data);
             router.reload();
         });
@@ -94,85 +92,65 @@ interface YouTubeState {
     notice: string | null;
 }
 
-function DiscordConnection({ discord }: { discord: DiscordState }) {
-    return (
-        <SettingsSection title="Discord" text="Link your Discord account to sync your SFD-DJ.EU server roles. We do not read your messages.">
-            <div className="space-y-3">
-                {discord.notice && <p className="rounded-lg bg-violet-500/10 px-3 py-2 text-sm text-violet-200">{discord.notice}</p>}
-                {discord.username ? (
-                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 p-4">
-                        <p className="flex items-center gap-2 text-sm"><SocialIcon name="discord" size={18} /> Connected as <span className="font-semibold text-indigo-300">{discord.username}</span></p>
-                        <div className="flex items-center gap-2">
-                            {discord.configured && <ConnectLink service="discord" className="rounded-lg bg-[#5865F2] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90">Sync server roles</ConnectLink>}
-                            <button onClick={() => confirm('Unlink Discord and remove SFD-DJ.EU server roles?') && router.delete(route('discord.disconnect'), { preserveScroll: true })} className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20">Disconnect</button>
-                        </div>
-                    </div>
-                ) : discord.configured ? (
-                    <ConnectLink service="discord" className="inline-flex items-center gap-2 rounded-lg bg-[#5865F2] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"><SocialIcon name="discord" /> Connect Discord</ConnectLink>
-                ) : (
-                    <p className="text-sm text-neutral-500">Discord linking is not configured on this site yet.</p>
-                )}
-                {discord.username && <p className="text-xs text-neutral-500">{discord.role_sync_configured ? 'Your SFD-DJ.EU roles sync to the SFD-DJ.EU Discord server.' : 'Automatic Discord server roles are not configured yet.'}</p>}
-            </div>
-        </SettingsSection>
-    );
+interface StreamState {
+    configured: boolean;
+    connected: boolean;
+    display_name: string | null;
+    notice: string | null;
+    notice_ok: boolean;
+    redirect: string | null;
 }
 
-function SpotifyConnection({ spotify }: { spotify: SpotifyState }) {
-    return (
-        <SettingsSection title="Spotify" text="You do not need this to import a public Spotify playlist or album: just paste its link. Connect Spotify only for your own private playlists, or for playlists with more than 100 songs.">
-            <div className="space-y-3">
-                {spotify.notice && <p className={`rounded-lg px-3 py-2 text-sm ${spotify.notice_ok ? 'bg-green-500/10 text-green-200' : 'bg-red-500/10 text-red-200'}`}>{spotify.notice}</p>}
-                {spotify.connected ? (
-                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 p-4">
-                        <p className="flex items-center gap-2 text-sm"><Music2 size={18} className="text-green-400" /> Connected as <span className="font-semibold text-green-300">{spotify.display_name || 'Spotify user'}</span></p>
-                        <button onClick={() => confirm('Disconnect Spotify from SFD-DJ.EU?') && router.delete(route('spotify.disconnect'), { preserveScroll: true })} className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20">Disconnect</button>
-                    </div>
-                ) : spotify.configured ? (
-                    <ConnectLink service="spotify" className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-500"><Music2 size={17} /> Connect Spotify</ConnectLink>
-                ) : (
-                    <p className="text-sm text-neutral-500">Spotify linking is not configured on this site yet.</p>
-                )}
-                {spotify.connected && <p className="text-xs text-neutral-500">Tokens are encrypted and used only for playlist imports.</p>}
-                {spotify.redirect && <p className="text-xs text-neutral-500">Staff: add this under Redirect URIs in the Spotify app, exactly as it is: <code className="select-all rounded bg-white/10 px-1.5 py-0.5 text-neutral-300">{spotify.redirect}</code></p>}
-            </div>
-        </SettingsSection>
-    );
-}
-function YouTubeConnection({ youtube }: { youtube: YouTubeState }) {
-    return (
-        <SettingsSection title="YouTube" text="Connect your channel to import playlists available to your account and show the channel on your public SFD-DJ.EU profile. We only request read-only access.">
-            <div className="space-y-3">
-                {youtube.notice && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-200">{youtube.notice}</p>}
-                {youtube.connected ? (
-                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 p-4">
-                        <p className="flex min-w-0 items-center gap-2 text-sm"><SocialIcon name="youtube" size={18} /> <span className="truncate">Connected as <span className="font-semibold text-red-300">{youtube.channel_title || 'YouTube channel'}</span></span></p>
-                        <div className="flex items-center gap-2">
-                            {youtube.channel_url && <a href={youtube.channel_url} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20">View channel</a>}
-                            <button onClick={() => confirm('Disconnect YouTube from SFD-DJ.EU and remove it from your profile?') && router.delete(route('youtube.disconnect'), { preserveScroll: true })} className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20">Disconnect</button>
-                        </div>
-                    </div>
-                ) : youtube.configured ? (
-                    <ConnectLink service="youtube" className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500"><SocialIcon name="youtube" size={17} /> Connect YouTube</ConnectLink>
-                ) : (
-                    <p className="text-sm text-neutral-500">YouTube account linking is not configured on this site yet.</p>
-                )}
-                {youtube.connected && <p className="text-xs text-neutral-500">Your OAuth token is encrypted. SFD-DJ.EU uses read-only access to list playlists and channel information.</p>}
-            </div>
-        </SettingsSection>
-    );
+const actionClass = 'inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold text-neutral-200 transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400';
+
+function AppSetup({ label, redirect }: { label: string; redirect: string | null }) {
+    if (!redirect) return null;
+    return <details className="text-xs text-neutral-500"><summary className="cursor-pointer hover:text-neutral-300">{label} app setup</summary><p className="mt-2 leading-relaxed">Register this callback URL in the developer app:</p><code className="mt-1 block select-all break-all rounded-lg bg-black/25 p-2 text-neutral-400">{redirect}</code></details>;
 }
 
-export default function Connections({ discord, spotify, youtube }: { discord: DiscordState; spotify: SpotifyState; youtube: YouTubeState }) {
-    const handed = useSignInWindow({ discord: discord.notice, spotify: spotify.notice, spotifyOk: spotify.notice_ok, youtube: youtube.notice });
+export default function Connections({ discord, spotify, youtube, twitch, tiktok }: { discord: DiscordState; spotify: SpotifyState; youtube: YouTubeState; twitch: StreamState; tiktok: StreamState }) {
+    const handed = useSignInWindow({ discord: discord.notice, spotify: spotify.notice, spotifyOk: spotify.notice_ok, youtube: youtube.notice, twitch: twitch.notice, tiktok: tiktok.notice, twitchOk: twitch.notice_ok, tiktokOk: tiktok.notice_ok });
+    const connect = (service: Service) => (className: string, children: ReactNode) => <ConnectLink service={service} className={className}>{children}</ConnectLink>;
+    const disconnect = (service: Service, message = `Disconnect ${service === 'tiktok' ? 'TikTok' : service.charAt(0).toUpperCase() + service.slice(1)} from SFD-DJ.EU?`) => () => {
+        if (confirm(message)) router.delete(route(`${service}.disconnect`), { preserveScroll: true });
+    };
+    const connections: ConnectionCard[] = [
+        {
+            id: 'discord', label: 'Discord', color: '#7785ff', configured: discord.configured, connected: !!discord.username,
+            account: discord.username || 'Discord user', description: discord.role_sync_configured ? 'Your SFD-DJ.EU server roles sync with your Discord account. We do not read your messages.' : 'Link your Discord account. Automatic server role sync is not configured yet. We do not read your messages.',
+            notice: discord.notice ?? handed?.discord ?? null, connect: connect('discord'),
+            disconnect: disconnect('discord', 'Unlink Discord and remove SFD-DJ.EU server roles?'),
+            actions: discord.configured ? <ConnectLink service="discord" className={actionClass}>Sync server roles</ConnectLink> : null,
+        },
+        {
+            id: 'spotify', label: 'Spotify', color: '#1ed760', configured: spotify.configured, connected: spotify.connected,
+            account: spotify.display_name || 'Spotify user', description: 'Import your private playlists and playlists with more than 100 songs. Public playlist and album links can be imported without connecting.',
+            notice: spotify.notice ?? handed?.spotify ?? null, noticeOk: spotify.notice ? spotify.notice_ok : handed?.spotifyOk,
+            connect: connect('spotify'), disconnect: disconnect('spotify'), details: <AppSetup label="Spotify" redirect={spotify.redirect} />,
+        },
+        {
+            id: 'youtube', label: 'YouTube', color: '#ff4545', configured: youtube.configured, connected: youtube.connected,
+            account: youtube.channel_title || 'YouTube channel', description: 'Import playlists available to your account and show your channel on your public SFD-DJ.EU profile. Access is read-only.',
+            notice: youtube.notice ?? handed?.youtube ?? null, connect: connect('youtube'),
+            disconnect: disconnect('youtube', 'Disconnect YouTube from SFD-DJ.EU and remove it from your profile?'),
+            actions: youtube.channel_url ? <a href={youtube.channel_url} target="_blank" rel="noopener noreferrer" className={actionClass}>View channel</a> : null,
+        },
+        ...(['twitch', 'tiktok'] as const).map((service): ConnectionCard => {
+            const state = service === 'twitch' ? twitch : tiktok;
+            const label = service === 'twitch' ? 'Twitch' : 'TikTok';
+            return {
+                id: service, label, color: service === 'twitch' ? '#a970ff' : '#25f4ee', configured: state.configured, connected: state.connected,
+                account: state.display_name || `${label} user`,
+                description: service === 'twitch' ? 'In a room, use Go live and paste your Twitch channel link to show its live player.' : 'Use Go live in a room with tiktok.com/@yourname/live. Viewers watch the LIVE on TikTok in a new tab.',
+                notice: state.notice ?? handed?.[service] ?? null,
+                noticeOk: state.notice ? state.notice_ok : (service === 'twitch' ? handed?.twitchOk : handed?.tiktokOk),
+                connect: connect(service), disconnect: disconnect(service), details: <AppSetup label={label} redirect={state.redirect} />,
+            };
+        }),
+    ];
 
-    return (
-        <SettingsLayout title="Connections" subtitle="Connect the accounts you use with SFD-DJ.EU. Disconnect them whenever you like.">
-            <Head title="Connections" />
-            <DiscordConnection discord={{ ...discord, notice: discord.notice ?? handed?.discord ?? null }} />
-            <SpotifyConnection spotify={{ ...spotify, notice: spotify.notice ?? handed?.spotify ?? null, notice_ok: spotify.notice ? spotify.notice_ok : (handed?.spotifyOk ?? false) }} />
-            <YouTubeConnection youtube={{ ...youtube, notice: youtube.notice ?? handed?.youtube ?? null }} />
-            <p className="text-xs text-neutral-500">Only connected account names and your YouTube channel link can appear on your public profile. OAuth tokens are private and never sent to the browser.</p>
-        </SettingsLayout>
-    );
+    return <SettingsLayout title="Connections" subtitle="Connect your accounts to import music, sync community roles and share your streams.">
+        <Head title="Connections" />
+        <ConnectionCards connections={connections} />
+    </SettingsLayout>;
 }

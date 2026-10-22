@@ -1,4 +1,6 @@
 import Avatar from '@/Components/Avatar';
+import UserRestrictionActions from '@/Components/UserRestrictionActions';
+import { useUserRestrictions } from '@/lib/userRestrictions';
 import Badges from '@/Components/Badges';
 import Flag, { FlagInfo } from '@/Components/Flag';
 import RoleBadge from '@/Components/RoleBadge';
@@ -98,6 +100,8 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
     anchor: DOMRect;
     onClose: () => void;
 }) {
+    const { blocked } = useUserRestrictions();
+    const isBlocked = blocked.includes(user.id);
     const { profile, failed, retry, setProfile } = useProfile(user.id);
     const [error, setError] = useState('');
     const [muting, setMuting] = useState(false);
@@ -206,7 +210,7 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
 
                 {/* what you can do */}
                 <div className="space-y-2 px-4 pb-4 pt-3">
-                    {!guest && !me && (
+                    {!guest && !me && !isBlocked && (
                         <div className="grid grid-cols-3 gap-1.5">
                             <Action icon={MessageCircle} label="Whisper" onClick={() => { room.onWhisper(); onClose(); }} />
                             <Action icon={AtSign} label="Mention" onClick={() => { room.onMention(); onClose(); }} />
@@ -216,6 +220,7 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
                                 : <Action icon={UserPlus} label="Add friend" onClick={friend} disabled={!profile} />}
                         </div>
                     )}
+                    <UserRestrictionActions userId={user.id} name={user.name} />
                     <button onClick={() => { room.onProfile(); onClose(); }} className="flex w-full items-center justify-center gap-2 rounded-xl bg-white/10 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-white/15">
                         <ExternalLink size={14} /> View full profile
                     </button>

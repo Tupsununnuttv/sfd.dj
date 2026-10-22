@@ -44,6 +44,10 @@
         <env name="DISCORD_MEMBER_ROLE_ID" value="" force="true"/>
         <env name="SPOTIFY_CLIENT_ID" value="" force="true"/>
         <env name="SPOTIFY_CLIENT_SECRET" value="" force="true"/>
+        <env name="TWITCH_CLIENT_ID" value="" force="true"/>
+        <env name="TWITCH_CLIENT_SECRET" value="" force="true"/>
+        <env name="TIKTOK_CLIENT_KEY" value="" force="true"/>
+        <env name="TIKTOK_CLIENT_SECRET" value="" force="true"/>
         <env name="YOUTUBE_CLIENT_ID" value="" force="true"/>
         <env name="YOUTUBE_CLIENT_SECRET" value="" force="true"/>
         <env name="GIPHY_API_KEY" value="" force="true"/>

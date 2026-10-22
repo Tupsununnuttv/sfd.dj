@@ -5,7 +5,7 @@ import { getJson, sendJson } from '@/lib/post';
 import { useNewVersion } from '@/lib/version';
 import { Community } from '@/types';
 import { router } from '@inertiajs/react';
-import { CalendarDays, Check, ChevronUp, CircleHelp, HandCoins, Info, LifeBuoy, ListMusic, Monitor, MonitorOff, MoreHorizontal, Music2, RefreshCw, ScrollText, SkipForward, X } from 'lucide-react';
+import { Bot, Gavel, CalendarDays, Check, ChevronUp, CircleHelp, HandCoins, Info, LifeBuoy, ListMusic, Monitor, MonitorOff, MoreHorizontal, Music2, RefreshCw, ScrollText, SkipForward, X } from 'lucide-react';
 import { FormEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const iconBtn = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-neutral-300 transition hover:bg-white/10 hover:text-white';
@@ -120,7 +120,7 @@ function useWidth() {
  * site has a newer build, Donate, the video on or off, skip, and More). The volume and how far the song is are in the bar at the top (RoomHeader);
  * the playlists open from the menu, or from the two cards here. It leaves things out step by step as it gets narrower.
  */
-export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSkip, onSkip, onPlaylists, onRoomInfo, onOpenPage, community, refreshKey }: {
+export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSkip, onSkip, onPlaylists, onRoomInfo, canModerate = false, onModeration, onOpenPage, community, refreshKey }: {
     guest: boolean;
     slug: string;
     playbackOn: boolean;
@@ -129,6 +129,8 @@ export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSk
     onSkip: () => void;
     onPlaylists: () => void;
     onRoomInfo: () => void;
+    canModerate?: boolean;
+    onModeration?: () => void;
     onOpenPage: (url: string, title: string) => void; // a page of the site in the room's overlay (Events, FAQ, Patch notes)
     community: Community;
     refreshKey: string | number; // when this changes the playlists are read again
@@ -171,7 +173,11 @@ export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSk
         onSelect: () => window.open(url, '_blank', 'noopener,noreferrer'),
     }));
     const moreItems: MenuItem[][] = [
-        [{ label: 'Room info', icon: Info, onSelect: onRoomInfo }],
+        [
+            { label: 'Room info', icon: Info, onSelect: onRoomInfo },
+            ...(!guest && canModerate && onModeration ? [{ label: 'Room moderation', icon: Gavel, onSelect: onModeration }] : []),
+            ...(!guest ? [{ label: 'Selfbots', icon: Bot, onSelect: () => onOpenPage(route('selfbots'), 'Selfbots') }] : []),
+        ],
         [{ label: 'Events', icon: CalendarDays, onSelect: () => onOpenPage(route('events'), 'Events') }, ...socials],
         [
             { label: 'FAQ', icon: CircleHelp, onSelect: () => onOpenPage(route('faq'), 'FAQ') },
@@ -279,7 +285,7 @@ export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSk
                     aria-label={playbackOn ? 'Turn the video off' : 'Turn the video on'}
                     aria-pressed={playbackOn}
                     title={playbackOn ? 'Playback is on. Click to turn the video and sound off here.' : 'Playback is off. Click to turn it on.'}
-                    className={`${iconBtn} ${playbackOn ? '' : 'border-red-400/40! bg-red-500/20! text-red-200!'}`}
+                    className={`sfd-playback ${iconBtn} ${playbackOn ? 'sfd-playbackon ' : 'sfd-playbackoff border-red-400/40! bg-red-500/20! text-red-200!'}`}
                 >
                     {playbackOn ? <Monitor size={18} /> : <MonitorOff size={18} />}
                 </button>

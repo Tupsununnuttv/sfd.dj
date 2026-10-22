@@ -1,4 +1,5 @@
 import Toggle from '@/Components/Toggle';
+import RestrictedUsers from '@/Components/RestrictedUsers';
 import { Card, Segmented, SettingsSection } from '@/Components/ui';
 import SettingsLayout from '@/Layouts/SettingsLayout';
 import { savePrefs, withDefaults } from '@/lib/prefs';
@@ -16,7 +17,7 @@ export default function Privacy() {
         <SettingsLayout title="Privacy" subtitle="You decide who can reach you and what other people see about you.">
             <Head title="Privacy" />
 
-            <SettingsSection title="Who can whisper to you" text="Whispers are private messages. SFD-DJ.EU staff can always reach you, so you can still get help.">
+            <SettingsSection title="Who can whisper to you" text="Whispers are private messages. Staff can reach you unless you have blocked them. Blocked users cannot contact you directly.">
                 <Segmented
                     value={privacy.whispers}
                     onChange={(v) => savePrefs({ privacy: { whispers: v } })}
@@ -42,6 +43,8 @@ export default function Privacy() {
                     onChange={(v) => savePrefs({ privacy: { show_online: v } })}
                 />
             </Card>
+
+            <RestrictedUsers />
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Card className="p-6">

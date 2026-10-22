@@ -37,6 +37,14 @@ const tail = (c) => {
     return `<g class="tail">${shapes[c.tail]}</g>`;
 };
 
+// Seen from behind, Foxy's tail grows from the centre of the lower back.
+// Paint it after the hoodie so its base is attached to the back, rather than
+// reusing the side silhouette from the front-facing Standing/Dancing poses.
+const foxyBackTail = (c) => `<g class="tail tail-back">
+    <path d="M75 182C68 195 66 207 74 218C78 224 85 229 90 232C103 221 109 210 102 198C96 190 88 187 85 181Z" fill="${c.tailColor}"/>
+    <path d="M74 215L81 210L86 218L93 212L102 216C99 222 95 228 90 232C83 228 77 222 74 215Z" fill="${c.tailTip}"/>
+</g>`;
+
 const legs = (c) => `
     <g class="legL"><path d="M66 192V220" stroke="${c.pants}" stroke-width="21"/><path d="M58 230Q66 218 78 228Q80 238 66 238Q54 238 58 230Z" fill="${c.shoes}"/><path d="M60 228Q66 224 74 227" fill="none" stroke="${c.laces}" stroke-width="3"/></g>
     <g class="legR"><path d="M94 192V220" stroke="${c.pants}" stroke-width="21"/><path d="M102 230Q94 218 82 228Q80 238 94 238Q106 238 102 230Z" fill="${c.shoes}"/><path d="M100 228Q94 224 86 227" fill="none" stroke="${c.laces}" stroke-width="3"/></g>`;
@@ -186,13 +194,14 @@ const styles = (state) => {
 };
 
 const draw = (name, c, state) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -32 200 276" width="200" height="276" role="img" aria-label="${c.label}, ${state.toLowerCase()}">
-<style>${styles(state).replace(/\s+/g, ' ')}</style>
+<style>${(styles(state) + (state === 'DJing' && name === 'foxy' ? ' .tail-back { transform-origin: 80px 184px; }' : '')).replace(/\s+/g, ' ')}</style>
 <ellipse cx="80" cy="236" rx="44" ry="6" fill="#000" opacity=".22"/>
 <g stroke="${ink}" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
 <g class="all">
-${tail(c)}
+${state === 'DJing' && name === 'foxy' ? '' : tail(c)}
 ${legs(c)}
 <g class="torso">${state === 'DJing' ? torsoBack(c) : torso(c)}</g>
+${state === 'DJing' && name === 'foxy' ? foxyBackTail(c) : ''}
 ${arm(c, 'L')}${arm(c, 'R')}
 <g class="headgrp">
 ${state === 'DJing' ? earsBack(c) : ears(c)}

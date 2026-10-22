@@ -2,21 +2,17 @@
 
 namespace App\Support;
 
-/**
- * A live stream a room can put on its big screen: a YouTube, Twitch or Kick stream, found from the address somebody pastes. Only these three sites are
- * accepted and only their own players are embedded (the room keeps `kind` and `ref`, never the pasted address), so a room cannot point its visitors at any other page.
- * A stream is made on the site itself (OBS, a phone, the site's own live tools); the room only shows it.
- */
+/** Parse supported live links and store only canonical URLs. TikTok LIVE is an external watch link. */
 final class LiveStream
 {
-    public const KINDS = ['youtube' => 'YouTube', 'twitch' => 'Twitch', 'kick' => 'Kick'];
+    public const KINDS = ['youtube' => 'YouTube', 'twitch' => 'Twitch', 'kick' => 'Kick', 'tiktok' => 'TikTok'];
 
     /** First parts of Twitch and Kick addresses that are pages of the site, not channels. */
     private const NOT_CHANNELS = ['directory', 'videos', 'video', 'p', 'settings', 'downloads', 'jobs', 'turbo', 'store', 'subscriptions', 'friends', 'inventory', 'wallet', 'drops', 'prime', 'popout', 'embed', 'user', 'legal', 'privacy', 'categories', 'category', 'browse', 'dashboard', 'following', 'search', 'clips', 'clip', 'terms'];
 
     /**
      * What the address points at: `kind`, `ref` (the YouTube video or channel id, or the Twitch or Kick channel), the stream's own `url` and a `thumbnail`.
-     * Null when it is not a live stream address of one of the three sites.
+     * Null when it is not a live stream address of a supported site.
      *
      * @return array{kind: string, ref: string, url: string, thumbnail: ?string}|null
      */
@@ -32,8 +28,21 @@ final class LiveStream
             in_array($host, ['youtube.com', 'youtube-nocookie.com', 'youtu.be'], true) => self::youtube($host, $path, $query),
             in_array($host, ['twitch.tv', 'player.twitch.tv'], true) => self::channel('twitch', $host === 'player.twitch.tv' ? (string) ($query['channel'] ?? '') : (string) ($path[0] ?? '')),
             in_array($host, ['kick.com', 'player.kick.com'], true) => self::channel('kick', (string) ($path[0] ?? '')),
+            $host === 'tiktok.com' => self::tiktok($path),
             default => null,
         };
+    }
+
+    /** TikTok LIVE opens on TikTok: its post embed player does not support LIVE. */
+    private static function tiktok(array $path): ?array
+    {
+        if (count($path) !== 2 || $path[1] !== 'live' || ! preg_match('/^@([a-zA-Z0-9_][a-zA-Z0-9_.]{0,23})$/', $path[0], $match)) {
+            return null;
+        }
+
+        $name = strtolower($match[1]);
+
+        return ['kind' => 'tiktok', 'ref' => $name, 'url' => "https://www.tiktok.com/@{$name}/live", 'thumbnail' => null];
     }
 
     /** A video (a live stream is one: watch?v=, /live/, /embed/, youtu.be/) or a channel (/channel/UC…, whose live stream is shown). */

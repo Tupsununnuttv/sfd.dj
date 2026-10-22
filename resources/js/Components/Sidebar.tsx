@@ -7,13 +7,13 @@ import StatusDot from '@/Components/StatusDot';
 import { PageProps } from '@/types';
 import { COUNTS_EVENT } from '@/lib/counts';
 import { embedded } from '@/lib/embed';
-import { levelPercent, xpText } from '@/lib/level';
+import { MAX_LEVEL, levelPercent, xpText } from '@/lib/level';
 import { STATUS, STATUSES, Status, statusOf } from '@/lib/status';
 import { Link, router, usePage } from '@inertiajs/react';
 import { createContext, MouseEvent, useContext, useEffect, useRef, useState } from 'react';
 import {
-    BookOpen, Bot, ChevronDown, CalendarDays, Clock, DoorOpen, Gavel, Gift, HelpCircle, LayoutDashboard, ListMusic, LogIn, LogOut, type LucideIcon,
-    MessageCircle, Package, PanelLeftClose, PanelLeftOpen, Radio, RadioTower, ScrollText, Settings, ShieldCheck, ShoppingBag, Trophy, UserPlus, Users,
+    BookOpen, Bot, Check, ChevronDown, ChevronRight, Sparkles, CalendarDays, Clock, Gift, HelpCircle, LayoutDashboard, ListMusic, LogIn, LogOut, type LucideIcon,
+    MessageCircle, Package, PanelLeftClose, PanelLeftOpen, Radio, RadioTower, ScrollText, ShieldCheck, ShoppingBag, Trophy, UserPlus, Users,
 } from 'lucide-react';
 
 type NavLink = { label: string; routeName: string; icon: LucideIcon; params?: Record<string, string>; membersOnly?: boolean };
@@ -89,32 +89,35 @@ function ProfileCard() {
     const url = route('profile.edit');
     const onOverlay = useOverlayClick(url, 'Profile');
     const pct = levelPercent(user.xp, user.level);
-    const className = `sfd-menuprofile group relative mb-1 block rounded-xl p-1 transition lg:border lg:bg-linear-to-br lg:from-white/[0.07] lg:to-white/2 lg:p-2.5 lg:hover:from-violet-500/15 lg:hover:to-fuchsia-500/5 ${route().current('profile.edit') ? 'lg:border-violet-400/50' : 'lg:border-white/10 lg:hover:border-violet-400/40'}`;
+    const className = `sfd-menuprofile group relative block rounded-t-2xl outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-400 ${expanded ? 'p-3' : 'p-0.5 lg:p-3'} ${route().current('profile.edit') ? 'bg-violet-500/10' : 'hover:bg-violet-500/5'}`;
     const title = `${user.name}: level ${user.level}, ${xpText(user.xp, user.level)}. Open your profile.`;
 
     const body = (
         <>
-            {/* wide menu: picture, name, level and the XP bar */}
+            {/* wide menu: profile, role and progress in one compact card */}
             <div data-profile-card className={`${expanded ? 'block' : 'hidden lg:block'}`}>
-                <div className="flex min-w-0 items-center gap-3">
-                <span className="relative shrink-0">
-                    <Avatar name={user.name} avatar={user.avatar} cosmetics={user.cosmetics} className="h-11 w-11 text-xl" />
-                    <StatusDot status={user.status} className="absolute -bottom-0.5 -right-0.5 h-3! w-3!" />
-                </span>
-                <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-1.5">
-                        <span className="min-w-0 flex-1 truncate text-sm font-bold leading-tight text-white">{user.name}</span>
-                        <span className="shrink-0"><Flag flag={user.flag} className="h-3" /></span>
+                <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-violet-400 via-fuchsia-500 to-violet-700 p-[2px] shadow-[0_0_16px_rgba(168,85,247,0.18)]">
+                        <span className="flex rounded-full bg-[#100b1a] p-0.5"><Avatar name={user.name} avatar={user.avatar} cosmetics={user.cosmetics} className="h-10 w-10 text-xl" /></span>
+                        <span className="absolute -bottom-0.5 -right-0.5 flex"><StatusDot status={user.status} className="h-3.5! w-3.5!" ring="ring-[#100b1a]" /></span>
                     </span>
-                    <span className="mt-1 block"><RoleBadge role={user.primary_role} /></span>
-                </span>
+                    <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-1.5">
+                            <span className="min-w-0 truncate text-sm font-bold leading-tight tracking-tight text-white">{user.name}</span>
+                            <Flag flag={user.flag} className="h-3 shrink-0" />
+                        </span>
+                        <span className="mt-1.5 flex min-w-0 items-center"><RoleBadge role={user.primary_role} /></span>
+                    </span>
+                    <ChevronRight size={15} className="shrink-0 text-violet-300/50 transition group-hover:translate-x-0.5 group-hover:text-violet-200" />
                 </div>
-                <span className="mt-2 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-[11px]">
-                    <span className="whitespace-nowrap font-semibold text-neutral-200">Level {user.level}</span>
-                    <span className="whitespace-nowrap tabular-nums text-neutral-400">{xpText(user.xp, user.level)}</span>
+                <span className="mt-3 flex items-center justify-between gap-2 text-[10px]">
+                    <span className="whitespace-nowrap font-bold text-violet-100">Level {user.level}</span>
+                    {user.level >= MAX_LEVEL
+                        ? <span className="flex items-center gap-1 font-semibold uppercase tracking-wider text-fuchsia-300">Max level <Sparkles size={11} /></span>
+                        : <span className="truncate tabular-nums text-violet-200/50">{xpText(user.xp, user.level)}</span>}
                 </span>
-                <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-white/10">
-                    <span className="block h-full rounded-full bg-linear-to-r from-fuchsia-500 to-violet-500 transition-all duration-700" style={{ width: `${pct}%` }} />
+                <span role="progressbar" aria-label="Level progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)} aria-valuetext={user.level >= MAX_LEVEL ? 'Maximum level' : `${Math.round(pct)}% through level ${user.level}`} className="mt-1.5 block h-2 overflow-hidden rounded-full border border-violet-300/10 bg-black/40 p-px">
+                    <span className="block h-full rounded-full bg-linear-to-r from-violet-600 via-purple-500 to-fuchsia-400 shadow-[0_0_8px_rgba(192,132,252,0.4)] transition-[width] duration-700 motion-reduce:transition-none" style={{ width: `${pct}%` }} />
                 </span>
             </div>
 
@@ -157,21 +160,22 @@ function StatusMenu() {
     };
 
     return (
-        <div ref={box} className="sfd-menustatus relative mb-3 [@media(max-height:900px)]:mb-1">
-            <button onClick={() => setOpen(!open)} aria-haspopup="menu" aria-expanded={open} title={`Status: ${STATUS[status].label}. Click to change it.`} data-status-button className="flex w-full items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs text-neutral-400 transition hover:bg-white/5 hover:text-white lg:justify-start lg:px-3">
+        <div ref={box} className={`sfd-menustatus relative ${expanded ? 'border-t border-violet-300/10 p-2' : 'mt-2 lg:mt-0 lg:border-t lg:border-violet-300/10 lg:p-2'}`}>
+            <button onClick={() => setOpen(!open)} aria-haspopup="menu" aria-expanded={open} title={`Status: ${STATUS[status].label}. Click to change it.`} data-status-button className={`flex w-full items-center gap-2 rounded-xl border border-transparent py-2 text-xs text-violet-100/80 outline-none transition hover:border-violet-300/15 hover:bg-violet-400/10 hover:text-white focus-visible:ring-2 focus-visible:ring-violet-400 ${expanded ? 'justify-start bg-violet-300/5 px-2.5' : 'justify-center px-1 lg:justify-start lg:bg-violet-300/5 lg:px-2.5'}`}>
                 <StatusDot status={status} ring="ring-transparent" className="ring-0!" />
                 <span className={`${expanded ? 'inline' : 'hidden lg:inline'} flex-1 text-left font-medium`}>{STATUS[status].label}</span>
                 <ChevronDown size={14} className={`${expanded ? 'block' : 'hidden lg:block'} transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
             {open && (
-                <div role="menu" aria-label="Status" className="absolute left-0 top-full z-40 mt-1 w-64 animate-menu rounded-xl border border-white/10 bg-neutral-900 p-1.5 shadow-2xl shadow-black/60">
+                <div role="menu" aria-label="Status" className="absolute left-0 top-full z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] animate-menu rounded-2xl border border-violet-300/20 bg-[#110d19] p-1.5 shadow-2xl shadow-black/60">
                     {STATUSES.map((s) => (
-                        <button key={s} role="menuitemradio" aria-checked={s === status} data-status-option={s} onClick={() => pick(s)} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-white/10 ${s === status ? 'bg-white/5' : ''}`}>
+                        <button key={s} role="menuitemradio" aria-checked={s === status} data-status-option={s} onClick={() => pick(s)} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-white/10 ${s === status ? 'bg-violet-500/15 ring-1 ring-inset ring-violet-400/20' : ''}`}>
                             <StatusDot status={s} ring="ring-transparent" className="h-3! w-3! ring-0!" />
-                            <span>
+                            <span className="min-w-0 flex-1">
                                 <span className="block text-sm font-semibold text-white">{STATUS[s].label}</span>
                                 <span className="block text-[11px] leading-snug text-neutral-400">{STATUS[s].hint}</span>
                             </span>
+                            {s === status && <Check size={14} className="shrink-0 text-violet-300" />}
                         </button>
                     ))}
                 </div>
@@ -184,7 +188,7 @@ function StatusMenu() {
 export default function Sidebar({
     room,
 }: {
-    room?: { slug: string; name: string; canEdit: boolean; canModerate: boolean; canLive: boolean; isLive: boolean; onRoom: () => void; onPlaylists: () => void; onWhispers: () => void; onLive: () => void; onOpenPage: (url: string, title: string) => void; onSettings: () => void; onModeration: () => void };
+    room?: { slug: string; name: string; canLive: boolean; isLive: boolean; onRoom: () => void; onPlaylists: () => void; onWhispers: () => void; onLive: () => void; onOpenPage: (url: string, title: string) => void; };
 }) {
     const { auth: { user, guest }, unreadWhispers } = usePage<PageProps>().props;
     const [expanded, setExpanded] = useState(false);
@@ -230,11 +234,13 @@ export default function Sidebar({
                 </button>
             </div>
 
-            {!guest && <ProfileCard />}
-            {!guest && <StatusMenu />}
+            {!guest && <div className={`mb-3 shrink-0 ${expanded ? 'rounded-2xl border border-violet-300/20 bg-linear-to-br from-violet-400/10 via-[#100c18] to-[#09070e] shadow-lg shadow-black/20' : 'lg:rounded-2xl lg:border lg:border-violet-300/20 lg:bg-linear-to-br lg:from-violet-400/10 lg:via-[#100c18] lg:to-[#09070e] lg:shadow-lg lg:shadow-black/20'}`}>
+                <ProfileCard />
+                <StatusMenu />
+            </div>}
 
             <nav id="primary-navigation" onClick={() => expanded && setExpanded(false)} className="min-h-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden [@media(max-height:900px)]:space-y-0">
-                {links.filter((l) => (!guest || !l.membersOnly) && !(room && l.routeName === 'whispers')).map((l) => <NavItem key={l.routeName} {...l} />)}
+                {links.filter((l) => (!guest || !l.membersOnly) && !(room && ['whispers', 'selfbots'].includes(l.routeName))).map((l) => <NavItem key={l.routeName} {...l} />)}
                 <div className={divider} />
                 {help.map((l) => <NavItem key={l.routeName} {...l} />)}
 
@@ -267,22 +273,6 @@ export default function Sidebar({
                             </button>
                         )}
                         <NavItem label="History" routeName="history" icon={Clock} params={{ room: room.slug }} />
-                        {room.canEdit && (
-                            <button onClick={room.onSettings} title="Room settings" className={`${item} ${idle}`}>
-                                <Settings size={18} className="shrink-0" />
-                                <span className={expanded ? 'inline' : 'hidden lg:inline'}>Room settings</span>
-                            </button>
-                        )}
-                        {room.canModerate && (
-                            <button onClick={room.onModeration} title="Room moderation" className={`${item} ${idle}`}>
-                                <Gavel size={18} className="shrink-0" />
-                                <span className={expanded ? 'inline' : 'hidden lg:inline'}>Room moderation</span>
-                            </button>
-                        )}
-                        <Link href={route('dashboard')} title="Leave Room" className={`${item} text-neutral-400 hover:bg-red-500/10 hover:text-red-300`}>
-                            <DoorOpen size={18} className="shrink-0" />
-                            <span className={expanded ? 'inline' : 'hidden lg:inline'}>Leave Room</span>
-                        </Link>
                     </>
                 )}
             </nav>

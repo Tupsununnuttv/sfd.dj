@@ -23,6 +23,29 @@ class LiveStreamTest extends TestCase
         return $host->rooms()->create(['name' => 'Live Room', 'slug' => $slug]);
     }
 
+    public function test_tiktok_live_is_a_canonical_external_watch_link_and_uses_room_permissions(): void
+    {
+        $expected = ['kind' => 'tiktok', 'ref' => 'some.name', 'url' => 'https://www.tiktok.com/@some.name/live', 'thumbnail' => null];
+        foreach (['https://www.tiktok.com/@Some.Name/live?share=1', 'tiktok.com/@some.name/live/'] as $link) {
+            $this->assertSame($expected, LiveStream::parse($link));
+        }
+        foreach (['https://tiktok.com/@name', 'https://tiktok.com/@name/video/123', 'https://tiktok.com/@name/live/extra', 'https://tiktok.com.evil.test/@name/live', 'https://tiktok.com/@<script>/live'] as $link) {
+            $this->assertNull(LiveStream::parse($link));
+        }
+
+        Event::fake([PlaybackUpdated::class, MessageSent::class]);
+        $host = User::factory()->create();
+        $room = $this->room($host);
+        $url = 'https://www.tiktok.com/@Some.Name/live';
+        $this->actingAs(User::factory()->create())->post("/rooms/{$room->slug}/live", ['url' => $url])->assertForbidden();
+        $this->actingAs($host)->post("/rooms/{$room->slug}/live", ['url' => $url])->assertNoContent();
+        $this->assertSame('tiktok', $room->refresh()->live['kind']);
+        $this->get("/rooms/{$room->slug}")->assertInertia(fn (Assert $page) => $page
+            ->where('playback.live.kind', 'tiktok')->where('playback.live.url', $expected['url']));
+        $this->delete("/rooms/{$room->slug}/live")->assertNoContent();
+        $this->assertNull($room->refresh()->live);
+    }
+
     public function test_the_links_of_youtube_twitch_and_kick_streams_are_understood_and_nothing_else(): void
     {
         $video = ['kind' => 'youtube', 'ref' => 'dQw4w9WgXcQ', 'url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'thumbnail' => 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg'];

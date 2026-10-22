@@ -47,7 +47,7 @@ export default function RoomHeader({ room, host, listening, dj, title, live, pla
     const progress = duration > 0 ? Math.min(1, position / duration) : 0;
 
     return (
-        <header className="sfd-navbar flex h-14 shrink-0 items-center gap-3 border-b border-white/10 bg-black/40 px-3 backdrop-blur sm:px-4 md:grid md:grid-cols-[minmax(11rem,1fr)_minmax(0,30rem)_minmax(11rem,1fr)]">
+        <header className="sfd-navbar relative z-30 flex h-14 shrink-0 items-center gap-3 border-b border-white/10 bg-black/40 px-3 backdrop-blur sm:px-4 md:grid md:grid-cols-[minmax(11rem,1fr)_minmax(0,30rem)_minmax(11rem,1fr)]">
             <div className="flex min-w-0 shrink-0 items-center gap-3 md:shrink md:overflow-hidden">
                 <Link href={route('dashboard')} title="Leave the room" aria-label="Leave the room" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-neutral-300 transition hover:bg-white/10 hover:text-white">
                     <ArrowLeft size={18} />

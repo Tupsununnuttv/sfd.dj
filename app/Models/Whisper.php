@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 /** A private message from one person to another, or to a group (`group_id`, with no `to_id`): text, or a voice message (`audio`, with `body` empty). */
 class Whisper extends Model
@@ -40,7 +41,7 @@ class Whisper extends Model
 
     public static function history(Builder|HasMany $query, int $me, int $before = 0): array
     {
-        $messages = $query->when($before > 0, fn ($q) => $q->where('id', '<', $before))->latest('id')->limit(101)->get();
+        $messages = $query->visibleTo($me)->when($before > 0, fn ($q) => $q->where('id', '<', $before))->latest('id')->limit(101)->get();
 
         return ['messages' => $messages->take(100)->reverse()->map->payload($me)->values(), 'has_more' => $messages->count() > 100];
     }
@@ -48,6 +49,19 @@ class Whisper extends Model
     public function sender(): BelongsTo
     {
         return $this->belongsTo(User::class, 'from_id');
+    }
+
+    public function scopeVisibleTo(Builder $query, int $userId): void
+    {
+        $query->whereNotIn('whispers.from_id', UserRestriction::hiddenAuthors($userId));
+        $query->whereNotExists(fn ($hidden) => $hidden->selectRaw('1')->from('hidden_whispers')
+            ->where('hidden_whispers.user_id', $userId)->whereColumn('hidden_whispers.whisper_id', 'whispers.id'));
+    }
+
+    /** Hide this person's copy; the other participant keeps their history and recordings. */
+    public function hideFor(int $userId): void
+    {
+        DB::table('hidden_whispers')->insertOrIgnore(['user_id' => $userId, 'whisper_id' => $this->id]);
     }
 
     public function receiver(): BelongsTo
@@ -100,15 +114,19 @@ class Whisper extends Model
             'from' => $this->group_id ? $this->sender->only('id', 'name', 'username', 'avatar') : null, // in a group the page needs to know who wrote it
             'body' => $this->body,
             'voice' => $this->voicePayload(),
-            'reply' => $this->replyPayload(),
+            'reply' => $this->replyPayload($me),
             'at' => $this->created_at->toIso8601String(),
         ];
     }
 
     /** What the page quotes above a reply: who wrote the whisper it answers and what it said (a voice message has no text). Load `replyTo` first for many at once. */
-    public function replyPayload(): ?array
+    public function replyPayload(?int $viewer = null): ?array
     {
         $original = $this->replyTo;
+
+        if ($original && $viewer && ! self::visibleTo($viewer)->whereKey($original->id)->exists()) {
+            return null;
+        }
 
         return $original ? ['id' => $original->id, 'from_id' => $original->from_id, 'body' => $original->audio ? '🎤 Voice message' : $original->body] : null;
     }

@@ -63,6 +63,7 @@ export type PageProps<
     pendingFriends: number;
     pendingSubscriptionGifts: number;
     unreadWhispers: number;
+    userRestrictions?: import('@/lib/userRestrictions').UserRestrictionState;
     liveCount: number; // rooms with a live stream on (the number in the menu)
     community: Community;
     siteStats: import('@/lib/useLiveStats').SiteStats | null;

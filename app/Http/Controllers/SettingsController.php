@@ -58,6 +58,22 @@ class SettingsController extends Controller
                 'notice_ok' => (bool) session('spotify_notice_ok'),
                 'redirect' => $user->is_staff && $request->getHost() !== 'localhost' ? route('spotify.callback') : null, // what to add under Redirect URIs in the Spotify app (not shown for "localhost": Spotify refuses it)
             ],
+            'twitch' => [
+                'configured' => StreamConnectionController::configured('twitch'),
+                'connected' => filled($user->twitch_id),
+                'display_name' => $user->twitch_display_name,
+                'notice' => session('twitch_notice'),
+                'notice_ok' => (bool) session('twitch_notice_ok'),
+                'redirect' => $user->is_staff ? route('twitch.callback') : null,
+            ],
+            'tiktok' => [
+                'configured' => StreamConnectionController::configured('tiktok'),
+                'connected' => filled($user->tiktok_id),
+                'display_name' => $user->tiktok_display_name,
+                'notice' => session('tiktok_notice'),
+                'notice_ok' => (bool) session('tiktok_notice_ok'),
+                'redirect' => $user->is_staff ? route('tiktok.callback') : null,
+            ],
             'youtube' => [
                 'configured' => YouTubeController::configured(),
                 'connected' => filled($user->youtube_refresh_token),

@@ -6,6 +6,7 @@ use App\Events\FriendRequested;
 use App\Models\Friendship;
 use App\Models\PlaylistItem;
 use App\Models\User;
+use App\Models\UserRestriction;
 use App\Models\Vote;
 use App\Support\Presence;
 use Illuminate\Http\RedirectResponse;
@@ -98,6 +99,9 @@ class FriendController extends Controller
         if ($target->id === $me->id) {
             throw ValidationException::withMessages(['name' => 'You cannot add yourself.']);
         }
+        if (UserRestriction::blocksBetween($me->id, $target->id)) {
+            throw ValidationException::withMessages(['name' => 'Privacy settings do not allow this friend request.']);
+        }
 
         $existing = Friendship::where(fn ($q) => $q->where('user_id', $me->id)->where('friend_id', $target->id))
             ->orWhere(fn ($q) => $q->where('user_id', $target->id)->where('friend_id', $me->id))->first();
@@ -126,6 +130,7 @@ class FriendController extends Controller
     public function accept(Request $request, Friendship $friendship): RedirectResponse
     {
         abort_unless($friendship->friend_id === $request->user()->id && $friendship->status === 'pending', 403);
+        abort_if(UserRestriction::blocksBetween($friendship->user_id, $friendship->friend_id), 403, 'Privacy settings do not allow this friend request.');
 
         $friendship->update(['status' => 'accepted']);
 

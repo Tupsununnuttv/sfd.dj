@@ -27,6 +27,6 @@ class FriendRequested implements ShouldBroadcastNow
     {
         $sender = $this->friendship->sender;
 
-        return ['id' => $this->friendship->id, 'name' => $sender->name, 'avatar' => $sender->avatar];
+        return ['id' => $this->friendship->id, 'user_id' => $sender->id, 'name' => $sender->name, 'avatar' => $sender->avatar];
     }
 }

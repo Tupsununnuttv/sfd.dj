@@ -25,7 +25,11 @@ export default function LiveScreen({ live, volume, muted }: { live: LiveInfo; vo
 
     return (
         <div className="group absolute inset-0 bg-black">
-            <iframe ref={frame} key={src} src={src} title={`${live.title}, live on ${site}`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" className="h-full w-full border-0" />
+            {live.kind === 'tiktok' ? <div className="flex h-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-cyan-950 via-black to-rose-950 px-6 text-center text-white">
+                <p className="text-lg font-bold">{live.title}</p>
+                <p className="max-w-sm text-sm text-neutral-300">Watch @{live.ref} LIVE on TikTok. This stream opens in a new tab; it does not play inside the room.</p>
+                <a href={live.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-bold hover:bg-rose-500"><ExternalLink size={16} /> Watch on TikTok</a>
+            </div> : <iframe ref={frame} key={src} src={src} title={`${live.title}, live on ${site}`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" className="h-full w-full border-0" />}
             <span className="unscale pointer-events-none absolute left-3 top-3 flex origin-top-left items-center gap-1.5 rounded bg-red-600 px-2 py-0.5 text-[11px] font-black uppercase tracking-wider text-white shadow-lg">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> Live
             </span>

@@ -62,6 +62,16 @@ return [
         ],
     ],
 
+    'twitch' => [
+        'client_id' => env('TWITCH_CLIENT_ID'),
+        'client_secret' => env('TWITCH_CLIENT_SECRET'),
+    ],
+
+    'tiktok' => [
+        'client_id' => env('TIKTOK_CLIENT_KEY'),
+        'client_secret' => env('TIKTOK_CLIENT_SECRET'),
+    ],
+
     'giphy' => [
         'api_key' => env('GIPHY_API_KEY'),
         'sdk_key' => env('GIPHY_SDK_API_KEY'),

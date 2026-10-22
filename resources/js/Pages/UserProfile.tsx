@@ -1,4 +1,6 @@
 import Avatar from '@/Components/Avatar';
+import UserRestrictionActions from '@/Components/UserRestrictionActions';
+import { useUserRestrictions } from '@/lib/userRestrictions';
 import Badges from '@/Components/Badges';
 import Flag from '@/Components/Flag';
 import RoleBadge from '@/Components/RoleBadge';
@@ -17,6 +19,8 @@ type Props = { profile: Profile & { avatar: string | null; cosmetics: Cosmetics 
 
 /** Anyone's public profile. */
 export default function UserProfile({ profile: p }: Props) {
+    const { blocked } = useUserRestrictions();
+    const isBlocked = blocked.includes(p.id);
     const guest = usePage<PageProps>().props.auth.guest;
     const status = statusOf(p.status);
     const tiles: [string, number][] = [['Level', p.level], ['XP', p.stats.xp], ['Songs played', p.stats.songs_played], ['Woots', p.stats.woots], ['Grabs', p.stats.grabs], ['Friends', p.stats.friends]];
@@ -63,14 +67,15 @@ export default function UserProfile({ profile: p }: Props) {
                         <Link href={route('profile.edit')} className="rounded-md bg-neutral-800 px-4 py-2 hover:bg-neutral-700">Edit profile</Link>
                     ) : (
                         <>
+                            <UserRestrictionActions userId={p.id} name={p.name} />
                             <Link href={`${route('settings.plus', { recipient: p.id })}#gifts`} className="flex items-center gap-2 rounded-md bg-fuchsia-500/15 px-4 py-2 text-fuchsia-200 hover:bg-fuchsia-500/25"><Gift size={16} /> Gift subscription</Link>
-                            <Link href={`${route('whispers')}?with=${p.id}`} className="rounded-md bg-neutral-800 px-4 py-2 hover:bg-neutral-700">💬 Whisper</Link>
-                            {p.friendship === 'none' || p.friendship === 'received' ? (
+                            {!isBlocked && <Link href={`${route('whispers')}?with=${p.id}`} className="rounded-md bg-neutral-800 px-4 py-2 hover:bg-neutral-700">💬 Whisper</Link>}
+                            {!isBlocked && (p.friendship === 'none' || p.friendship === 'received') ? (
                                 <button onClick={() => router.post(route('friends.store'), { user_id: p.id }, { preserveScroll: true })} className="rounded-md bg-violet-600 px-4 py-2 font-semibold hover:bg-violet-500">
                                     {p.friendship === 'received' ? '✓ Accept friend request' : '＋ Add friend'}
                                 </button>
                             ) : (
-                                <span className="rounded-md bg-neutral-800 px-4 py-2 text-neutral-400">{p.friendship === 'friends' ? '✓ Friends' : '⏳ Request sent'}</span>
+                                <span className="rounded-md bg-neutral-800 px-4 py-2 text-neutral-400">{isBlocked ? 'Blocked' : p.friendship === 'friends' ? '✓ Friends' : '⏳ Request sent'}</span>
                             )}
                         </>
                     )}

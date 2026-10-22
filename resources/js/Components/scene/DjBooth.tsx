@@ -29,7 +29,7 @@ export function BoothFrontArt({ u, p, plate }: { u: Ids; p: ScenePalette; plate:
             <ellipse cx="150" cy="150" rx="168" ry="10" fill={p.accent} opacity=".5" filter={`url(#${u('blur')})`} />
 
             {/* front panel */}
-            <path d="M14 66H286L299.5 146Q300 150 296 150H4Q0 150 0.5 146Z" fill={`url(#${u('face')})`} />
+            <path className="sfd-boothfront " d="M14 66H286L299.5 146Q300 150 296 150H4Q0 150 0.5 146Z" fill={`url(#${u('face')})`} />
             <path d="M18 67H282" stroke={p.accent} strokeWidth="5" opacity=".6" filter={`url(#${u('blur')})`} />
             <path d="M14 66.5H286" stroke={p.accent} strokeWidth="2.4" />
             <path d="M14.5 68 2 146M285.5 68 298 146" stroke={p.accent2} strokeOpacity=".55" strokeWidth="1.4" />
@@ -46,7 +46,7 @@ export function BoothFrontArt({ u, p, plate }: { u: Ids; p: ScenePalette; plate:
             {[18, 226].map((x0) => bars.map((i) => (
                 <rect
                     key={`${x0}-${i}`}
-                    className="av av-bottom sc-bar"
+                    className="sfd-boothlights av av-bottom sc-bar"
                     style={{ animationDelay: `${((i * 3 + (x0 > 100 ? 2 : 0)) % 7) * 0.09}s`, animationDuration: `${0.5 + (i % 3) * 0.15}s` }}
                     x={x0 + i * 9.6}
                     y={136 - (16 + ((i * 11 + (x0 > 100 ? 5 : 0)) % 22))}
@@ -58,11 +58,11 @@ export function BoothFrontArt({ u, p, plate }: { u: Ids; p: ScenePalette; plate:
             )))}
 
             {/* the desk with the decks and the mixer */}
-            <path d="M40 26H260Q265 26 266.5 30L286 66H14L33.5 30Q35 26 40 26Z" fill={`url(#${u('desk')})`} />
+            <path className="sfd-boothtop " d="M40 26H260Q265 26 266.5 30L286 66H14L33.5 30Q35 26 40 26Z" fill={`url(#${u('desk')})`} />
             <rect x="44" y="27" width="212" height="2.6" rx="1.3" fill="#fff" opacity=".24" />
 
             {[74, 226].map((cx, k) => (
-                <g key={cx}>
+                <g key={cx} className="sfd-boothdeck ">
                     <ellipse cx={cx} cy="47" rx="46" ry="14.5" fill="#0c0919" stroke={p.accent2} strokeOpacity=".55" strokeWidth="1.2" />
                     <g transform={`translate(${cx} 47) scale(1 .28)`}>
                         <g className="av sc-spin" style={{ animationDuration: k ? '2.6s' : '3.1s' }}>
@@ -79,7 +79,7 @@ export function BoothFrontArt({ u, p, plate }: { u: Ids; p: ScenePalette; plate:
                 </g>
             ))}
 
-            <rect x="125" y="31" width="50" height="33" rx="6" fill="#0f0b22" stroke={p.accent} strokeOpacity=".6" />
+            <rect className="sfd-boothmixer " x="125" y="31" width="50" height="33" rx="6" fill="#0f0b22" stroke={p.accent} strokeOpacity=".6" />
             {[134, 143, 157, 166].map((x, i) => <circle key={x} cx={x} cy="38.5" r="3" fill={i % 2 ? p.accent : p.accent2} />)}
             <rect x="133.5" y="45" width="3" height="15" rx="1.5" fill="#2a2450" />
             <rect x="163.5" y="45" width="3" height="15" rx="1.5" fill="#2a2450" />
@@ -388,7 +388,7 @@ export function BoothFront({ p, plate = false, className = '', style }: { p: Sce
     const uid = useId().replace(/:/g, '');
 
     return (
-        <svg viewBox="0 0 300 150" width={SCENE.booth.w} height={SCENE.booth.h} overflow="visible" className={className} style={style} aria-hidden>
+        <svg viewBox="0 0 300 150" width={SCENE.booth.w} height={SCENE.booth.h} overflow="visible" className={`sfd-booth ${className}`} style={style} aria-hidden>
             <BoothFrontArt u={(n) => `${uid}-${n}`} p={p} plate={plate} />
         </svg>
     );

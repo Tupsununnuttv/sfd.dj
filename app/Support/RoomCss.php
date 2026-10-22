@@ -24,11 +24,55 @@ final class RoomCss
         'footbar' => 'The bar at the bottom of the room',
         'panel' => 'The whole right side: the tabs and what is under them',
         'tabs' => 'The Chat, Waitlist and Users tabs',
+        'tab' => 'Any room panel tab button',
+        'tabactive' => 'The selected tab (text, background and underline)',
+        'tabinactive' => 'An unselected tab (also supports :hover)',
+        'tabroom' => 'The Room tab on small screens',
+        'tabchat' => 'The Chat tab',
+        'tabwaitlist' => 'The Waitlist tab, including its count',
+        'tabusers' => 'The Users tab, including its count',
         'chat' => 'The chat: its messages and the box you type in',
         'message' => 'One line of chat',
         'users' => 'The list of people in the room',
         'user' => 'One person in that list',
+        'usersinfo' => 'The community summary box',
+        'userstitle' => 'The community title',
+        'userscount' => 'The number of people in the room',
+        'usersnotice' => 'A notice in the Users panel',
+        'userssearch' => 'The user search box and icon',
+        'userssearchinput' => 'The user search input (also supports ::placeholder)',
+        'usersempty' => 'The no-matching-members message',
+        'usersgroup' => 'One role group in the Users panel',
+        'usersgroupheader' => 'The role heading and its member count',
+        'usersrole' => 'The role badge (use !important to override role colours)',
+        'usersrolecount' => 'The member count beside a role',
+        'usersentries' => 'The users listed under a role',
+        'usercurrent' => 'The user card for the DJ playing now',
+        'useravatar' => 'The avatar and profile button in a user card',
+        'userstatus' => 'The online, busy, away or offline indicator',
+        'username' => 'The name button in a user card',
+        'useryou' => 'The you label beside your name',
+        'userflag' => 'The country flag in a user card',
+        'usermeta' => 'The room role and level text',
+        'useractions' => 'The profile and actions button',
+        'userbadges' => 'The playing and friend badges row',
+        'userplaying' => 'The Playing now badge',
+        'userfriend' => 'The Friend badge',
         'waitlist' => 'The waitlist',
+        'waitliststatus' => 'Your waitlist status row',
+        'waitlistposition' => 'Your position or not-in-waitlist text',
+        'waitlistflags' => 'The cycling and locked status row',
+        'waitlistlocked' => 'The Waitlist locked label',
+        'waitlistcycle' => 'The Cycling label',
+        'waitlistentries' => 'The scrollable waitlist contents',
+        'waitlistempty' => 'The empty waitlist message',
+        'waitlistentry' => 'One queued DJ in the waitlist',
+        'waitlistplaying' => 'The waitlist entry playing now',
+        'waitlistnumber' => 'The queue number or playing indicator',
+        'waitlistname' => 'The queued DJ name (use !important to override role colours)',
+        'waitlistsong' => 'The queued song title',
+        'waitlisteta' => 'The playing, next or turns-away label',
+        'waitlistremove' => 'The remove-from-waitlist button',
         'woot' => 'The Woot button',
         'grab' => 'The Grab button',
         'meh' => 'The Meh button',
@@ -53,6 +97,26 @@ final class RoomCss
         'volumebutton' => 'The mute and unmute button',
         'volumeslider' => 'The volume slider (thumb and track pseudo-elements are supported)',
         'volumevalue' => 'The volume percentage',
+        'equalizer' => 'The local audio equalizer',
+        'equalizerbutton' => 'The equalizer toggle button',
+        'equalizerpanel' => 'The equalizer settings panel',
+        'equalizerband' => 'One equalizer frequency slider',
+        'playback' => 'The playback on/off button',
+        'playbackon' => 'The playback button while enabled',
+        'playbackoff' => 'The playback button while disabled',
+        'playbackscreen' => 'The video screen and its overlays',
+        'booth' => 'The whole DJ booth SVG',
+        'boothfront' => 'The front panel of the DJ booth',
+        'boothtop' => 'The top surface of the DJ booth',
+        'boothlights' => 'The animated lights on the booth front',
+        'boothdeck' => 'One turntable on the booth',
+        'boothmixer' => 'The mixer body between the turntables',
+        'chatcomposer' => 'The chat message composer',
+        'chattoolbar' => 'The chat emoji and attachment tools',
+        'chatinput' => 'The chat message input',
+        'chatsend' => 'The chat send button',
+        'equalizerapply' => 'The equalizer Apply button',
+        'playbackcontrols' => 'The video display controls (theatre, video window and fullscreen)',
         'votes' => 'The Woot, Meh and Grab buttons',
         'join' => 'The Join Waitlist button',
         'avatar' => 'Anybody\'s picture',
@@ -63,7 +127,7 @@ final class RoomCss
     private const MAX_RULES = 300;
 
     /** Tags that may stand under a hook, for example `.sfd-chat a`. */
-    private const TAGS = ['a', 'b', 'i', 'u', 'em', 'strong', 'small', 'span', 'div', 'p', 'img', 'svg', 'path', 'button', 'input', 'textarea', 'label', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'footer', 'main', 'nav', 'section', 'aside', 'iframe', 'video', 'canvas', 'time', 'select', 'option'];
+    private const TAGS = ['a', 'b', 'i', 'u', 'em', 'strong', 'small', 'span', 'div', 'p', 'img', 'svg', 'path', 'g', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'text', 'button', 'input', 'textarea', 'label', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'footer', 'main', 'nav', 'section', 'aside', 'iframe', 'video', 'canvas', 'time', 'select', 'option'];
 
     private const PSEUDO_CLASSES = ['hover', 'focus', 'focus-within', 'focus-visible', 'active', 'first-child', 'last-child', 'only-child', 'first-of-type', 'last-of-type', 'nth-child', 'nth-last-child', 'nth-of-type', 'empty', 'not', 'checked', 'disabled', 'enabled', 'link', 'visited'];
 
@@ -295,6 +359,10 @@ final class RoomCss
         // Older room themes call the chat row by these names. Translate to the
         // real hook before validation so the same scope and safety rules apply.
         $selector = preg_replace('/\.(?:chat-message|message-bubble)(?![a-z0-9_-])/', '.sfd-message', $selector);
+
+        // Alternate names used by existing navigation themes.
+        $selector = preg_replace('/\.sfd-navmenu(?![a-z0-9_-])/', '.sfd-menu', $selector);
+        $selector = preg_replace('/\.sfd-profile(?![a-z0-9_-])/', '.sfd-menuprofile', $selector);
 
         // Support old vote themes without allowing arbitrary attribute selectors.
         $selector = preg_replace('/\[class\s*\*=\s*([\x22\x27])(woot|grab|meh)\1\s*\]/', '.sfd-$2', $selector);

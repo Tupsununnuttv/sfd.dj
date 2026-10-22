@@ -1,4 +1,5 @@
 import { voiceTime } from '@/Components/VoiceBubble';
+import { useUserRestrictions } from '@/lib/userRestrictions';
 import { PageProps } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
 import { echo } from '@laravel/echo-react';
@@ -7,6 +8,7 @@ import { withDefaults } from '@/lib/prefs';
 import { useEffect, useRef, useState } from 'react';
 
 interface Incoming {
+    id: number;
     from_id: number;
     body: string;
     voice?: { seconds: number } | null; // a voice message has no text
@@ -19,6 +21,9 @@ const said = (w: Incoming) => (w.voice ? `🎤 Voice message (${voiceTime(w.voic
 /** A small popup when someone whispers to you (not when you are already reading whispers). */
 export default function WhisperToast() {
     const { auth } = usePage<PageProps>().props;
+    const { hiddenAuthors } = useUserRestrictions();
+    const hiddenAuthorsRef = useRef(hiddenAuthors);
+    hiddenAuthorsRef.current = hiddenAuthors;
     const [toast, setToast] = useState<Incoming | null>(null);
     const prefs = useRef(withDefaults(auth.user.preferences).notifications);
     prefs.current = withDefaults(auth.user.preferences).notifications; // the listener below always reads the latest settings
@@ -29,7 +34,7 @@ export default function WhisperToast() {
         if (auth.guest) return;
         const ch = echo<'reverb'>().private(`App.Models.User.${auth.user.id}`);
         const onWhisper = (w: Incoming) => {
-            if (w.from_id === auth.user.id) return;
+            if (w.from_id === auth.user.id || hiddenAuthorsRef.current.has(w.from_id)) return;
             router.reload({ only: ['unreadWhispers'] });
 
             // a notification from the browser itself, when this tab is in the background
@@ -43,11 +48,21 @@ export default function WhisperToast() {
             }
         };
         ch.listen('.whisper', onWhisper);
+        const onDeleted = (event: { id: number }) => {
+            setToast((current) => current?.id === event.id ? null : current);
+            router.reload({ only: ['unreadWhispers'] });
+        };
+        const onCleared = (event: { user_id: number; through_id: number }) => {
+            setToast((current) => current && !current.group && current.from_id === event.user_id && current.id <= event.through_id ? null : current);
+            router.reload({ only: ['unreadWhispers'] });
+        };
+        ch.listen('.whisper-deleted', onDeleted);
+        ch.listen('.whisper-conversation-cleared', onCleared);
 
-        return () => { ch.stopListening('.whisper', onWhisper); };
+        return () => { ch.stopListening('.whisper', onWhisper); ch.stopListening('.whisper-deleted', onDeleted); ch.stopListening('.whisper-conversation-cleared', onCleared); };
     }, [auth.guest, auth.user.id]);
 
-    if (!toast) return null;
+    if (!toast || hiddenAuthors.has(toast.from_id)) return null;
 
     return (
         <div className="fixed bottom-4 left-4 z-50 w-72 rounded-xl border border-violet-500/40 bg-neutral-900 p-4 text-sm shadow-2xl">

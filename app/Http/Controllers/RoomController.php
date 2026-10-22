@@ -220,7 +220,7 @@ class RoomController extends Controller
         if ($request->boolean('start_live')) {
             $stream = LiveStream::parse($data['stream_url']);
             if (! $stream) {
-                throw ValidationException::withMessages(['stream_url' => 'Enter a YouTube live video, Twitch channel or Kick channel link.']);
+                throw ValidationException::withMessages(['stream_url' => 'Enter a YouTube live video, Twitch or Kick channel link, or a TikTok LIVE link (tiktok.com/@yourname/live).']);
             }
             if ($why = WordGuard::check($title)) {
                 throw ValidationException::withMessages(['stream_title' => $why]);
@@ -283,8 +283,8 @@ class RoomController extends Controller
             'myVotes' => ['woot' => in_array('woot', $mine, true), 'meh' => in_array('meh', $mine, true), 'grab' => in_array('grab', $mine, true)],
             'stickers' => self::STICKERS,
             'emojis' => $room->emojis()->get()->map(fn ($e) => ['id' => $e->id, 'name' => $e->name, 'url' => $e->url()]),
-            'messages' => $room->messages()->with([ChatMessage::WITH_USER, 'replyTo.user', 'reactions'])->latest('id')->limit(50)->get()
-                ->reverse()->map->payload()->values(),
+            'messages' => $room->messages()->visibleTo($user?->id)->with([ChatMessage::WITH_USER, 'replyTo.user', 'reactions'])->latest('id')->limit(50)->get()
+                ->reverse()->map(fn ($message) => $message->payload($user?->id))->values(),
             'playback' => $room->playback(),
             'listening' => RoomPresence::counts()[$room->id] ?? 0,
             'stats' => $this->stats($room),
@@ -455,7 +455,7 @@ class RoomController extends Controller
     }
 
     /**
-     * Put a live stream on the big screen instead of the DJs (`url`: a YouTube, Twitch or Kick stream), or switch to another one. Everybody in the room, guests too,
+     * Put a live stream on the big screen instead of the DJs (`url`: a YouTube, Twitch, Kick or TikTok LIVE stream), or switch to another one. Everybody in the room, guests too,
      * sees it at once and the chat tells them. The songs in the waitlist wait until the stream ends.
      */
     public function goLive(Request $request, Room $room): Response
@@ -470,7 +470,7 @@ class RoomController extends Controller
 
         $stream = LiveStream::parse($data['url']);
         if (! $stream) {
-            throw ValidationException::withMessages(['url' => 'Paste the link of a YouTube, Twitch or Kick live stream. For YouTube it is the address of the live video (youtube.com/watch?v=… or youtube.com/live/…), not the name of the channel.']);
+            throw ValidationException::withMessages(['url' => 'Paste the link of a YouTube, Twitch, Kick or TikTok live stream. For YouTube it is the address of the live video (youtube.com/watch?v=… or youtube.com/live/…), not the name of the channel.']);
         }
 
         $title = trim((string) ($data['title'] ?? ''));

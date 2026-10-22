@@ -18,17 +18,26 @@ class RoomBarsTest extends TestCase
         return file_get_contents(resource_path("js/{$path}"));
     }
 
-    public function test_the_menu_of_a_room_has_the_room_a_way_out_and_still_every_old_item_in_its_place(): void
+    public function test_the_room_menu_keeps_its_order_and_moves_selfbots_to_more(): void
     {
         $menu = $this->source('Components/Sidebar.tsx');
 
-        // the heading is the name of the room, then Room, then what was there before in the same order, and Leave Room last
-        $places = array_map(fn (string $text) => strpos($menu, $text), ['{room.name}</p>', "<span className={expanded ? 'inline' : 'hidden lg:inline'}>Room</span>", 'Playlists</span>', 'Whispers</span>', 'label="History"', 'Room settings</span>', 'Room moderation</span>', 'Leave Room</span>']);
+        // Room navigation keeps its order without the redundant Leave Room link.
+        $places = array_map(fn (string $text) => strpos($menu, $text), ['{room.name}</p>', "<span className={expanded ? 'inline' : 'hidden lg:inline'}>Room</span>", 'Playlists</span>', 'Whispers</span>', 'label="History"']);
         $this->assertNotContains(false, $places);
         $this->assertSame($places, collect($places)->sort()->values()->all(), 'the room section is out of order');
 
-        // Leave Room goes to the Dashboard, and the menu above the room section is unchanged
-        $this->assertStringContainsString("href={route('dashboard')} title=\"Leave Room\"", $menu);
+        // Selfbots stays available outside rooms and opens from More inside a room.
+        $this->assertStringNotContainsString('Leave Room', $menu);
+        $this->assertStringNotContainsString('Room settings', $menu);
+        $this->assertStringNotContainsString('Room moderation', $menu);
+        $this->assertStringContainsString("['whispers', 'selfbots'].includes(l.routeName)", $menu);
+        $footbar = $this->source('Components/RoomFootbar.tsx');
+        $this->assertStringContainsString("...(!guest && canModerate && onModeration ? [{ label: 'Room moderation'", $footbar);
+        $this->assertStringContainsString('canModerate={canModerate}', $this->source('Pages/Room.tsx'));
+        $this->assertStringContainsString("onModeration={() => setPanel('moderation')}", $this->source('Pages/Room.tsx'));
+        $this->assertStringContainsString("...(!guest ? [{ label: 'Selfbots'", $footbar);
+        $this->assertStringContainsString("onOpenPage(route('selfbots'), 'Selfbots')", $footbar);
         foreach (['Dashboard', 'Community', 'Events', 'Friends', 'Avatar shop', 'Referral', 'FAQ', 'Patch notes', 'Docs', 'My Stuff', 'Admin panel', 'Log out'] as $label) {
             $this->assertStringContainsString($label, $menu);
         }

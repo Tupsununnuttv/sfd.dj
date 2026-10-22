@@ -115,7 +115,7 @@ const sections: Section[] = [
                 <P>A room can show a live stream on its big screen instead of the DJs: a YouTube, Twitch or Kick stream. Start the stream where you always do (OBS or your phone; only music? a still picture as the video works), then in your room press <b>Go live</b> in the menu on the left, paste the link and give it a title. Everybody in the room, guests too, sees it at once, and the chat goes on beside it. The same controls are in Room settings → Live stream.</P>
                 <List
                     items={[
-                        <>Links that work: a YouTube live video (<K>youtube.com/watch?v=…</K> or <K>youtube.com/live/…</K>, not the channel's @name), <K>twitch.tv/yourname</K> and <K>kick.com/yourname</K>.</>,
+                        <>Links that work: a YouTube live video (<K>youtube.com/watch?v=…</K> or <K>youtube.com/live/…</K>, not the channel's @name), <K>twitch.tv/yourname</K>, <K>kick.com/yourname</K> and <K>tiktok.com/@yourname/live</K>. TikTok LIVE opens on TikTok in a new tab; the other platforms play inside the room.</>,
                         'The host can always go live. Other people need the room right “Go live” (Room settings → Roles): the Co-Host role has it.',
                         'While a stream is on, the songs in the waitlist wait. When it ends they go on where they stopped, and a song that began meanwhile starts from the beginning. A stream nobody ended stops by itself after 24 hours.',
                         'The host, the Co-Hosts and the moderators of the room can end a stream. The Live streams page in the menu lists every room that is live now, with the title, who streams and how many watch; the room cards show a red Live mark.',
