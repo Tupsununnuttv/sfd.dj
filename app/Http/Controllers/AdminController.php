@@ -8,6 +8,7 @@ use App\Models\ChatMessage;
 use App\Models\IpBan;
 use App\Models\PlaylistItem;
 use App\Models\Room;
+use App\Models\RoomFeatureRelease;
 use App\Models\RoomLog;
 use App\Models\Setting;
 use App\Models\SitePermission;
@@ -19,6 +20,7 @@ use App\Support\DiscordRoleSync;
 use App\Support\MailStatus;
 use App\Support\Plans;
 use App\Support\RoomPresence;
+use App\Support\RoomReleases;
 use App\Support\Stripe;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -86,7 +88,8 @@ class AdminController extends Controller
             'awardList' => Awards::catalog(),
             'planList' => array_map(fn ($key, $t) => ['key' => $key, 'name' => $t['name'], 'color' => $t['color']], array_keys(Plans::TIERS), Plans::TIERS),
             'roleOptions' => array_values(array_filter(Role::meta(), fn ($r) => $r['key'] !== 'member')),
-            'rooms' => fn () => Room::with('user:id,name')->withCount('items')->latest()->get(),
+            'rooms' => fn () => Room::with('user:id,name')->withCount('items')->latest()->get()->each->append('early_access'),
+            'roomReleases' => fn () => $actor->hasPermission('releases.manage') ? RoomReleases::adminCatalog() : [],
             'counts' => fn () => (object) RoomPresence::counts(),
             'openTickets' => fn () => SupportTicket::where('status', 'open')->count(),
             'assignable' => array_values(array_map(fn (Role $r) => $r->info(), $this->grantable($actor))),
@@ -403,6 +406,21 @@ class AdminController extends Controller
 
         $room->delete();
 
+        return back();
+    }
+
+    public function updateRoomRelease(Request $request, string $feature): RedirectResponse
+    {
+        $this->allow($request, 'releases.manage');
+        abort_unless(array_key_exists($feature, config('room-releases.features', [])), 404);
+        $data = $request->validate([
+            'enabled' => ['required', 'boolean'], 'preview_at' => ['nullable', 'date'],
+            'early_days' => ['required', 'integer', 'between:1,30'],
+        ]);
+        if ($data['enabled'] && empty($data['preview_at'])) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['preview_at' => 'Choose when early access starts.']);
+        }
+        RoomFeatureRelease::updateOrCreate(['key' => $feature], $data);
         return back();
     }
 

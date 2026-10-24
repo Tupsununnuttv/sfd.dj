@@ -52,6 +52,7 @@ class AvatarController extends Controller
 
     /** Shop names that are not just the file name with a capital letter. */
     private const CHARACTER_LABELS = [
+        '2014hw07' => 'Calavera',
         'icemini' => 'Ice Mini', 'azuremini' => 'Azure Mini', 'sunmini' => 'Sun Mini', 'nebulamini' => 'Nebula Mini', 'blazeref' => 'Blaze Ref', 'echoref' => 'Echo Ref', 'zoos02' => 'Zoo S02', 'pandabear' => 'Panda Bear', 'emberdragon' => 'Ember Dragon', 'frostdragon' => 'Frost Dragon', 'dragone01' => 'Green Dragon', 'dragone02' => 'Red Dragon', 'dragone03' => 'Golden Dragon', 'dragone04' => 'Blue Dragon', 'kikomochi' => 'Kiko & Mochi', 'wilmer' => 'Wilmer', 'adammochi' => 'Adam & Mochi', 'elementaar' => 'Elementary', 'bamboopanda' => 'Bamboo Panda', 'vesperpip' => 'Vesper & Pip',
         'admin01' => 'Admin 01', 'admin02' => 'Admin 02', 'admin03' => 'Admin 03', 'admin04' => 'Admin 04', 'admin05' => 'Admin 05',
         'admin06' => 'Admin 06', 'admin07' => 'Admin 07', 'admin08' => 'Admin 08', 'admin09' => 'Admin 09',

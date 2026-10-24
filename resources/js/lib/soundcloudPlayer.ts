@@ -41,6 +41,8 @@ export default class SoundCloudPlayer {
     private widget: any = null;
     private frame: HTMLIFrameElement | null = null;
     private starting = false; // the widget script is loading, the frame is not made yet
+    private ready = false;
+    private playingWanted = false;
     private wanted = ''; // the newest track asked for
     private position = 0; // seconds, as of the last progress report
     private positionAt = 0; // and when that was (ms)
@@ -59,6 +61,8 @@ export default class SoundCloudPlayer {
     load(id: string) {
         this.wanted = id;
         this.loads++;
+        this.ready = false;
+        this.playingWanted = true;
         this.position = 0;
         this.positionAt = Date.now();
         this.duration = 0;
@@ -69,7 +73,8 @@ export default class SoundCloudPlayer {
 
         if (this.widget) {
             const load = this.loads;
-            this.widget.load(soundcloudApiUrl(id), { ...WIDGET_OPTIONS, auto_play: true, callback: () => this.loaded(load) });
+            // A fresh widget can reset its volume. Start only after the ready callback reapplies it.
+            this.widget.load(soundcloudApiUrl(id), { ...WIDGET_OPTIONS, auto_play: false, callback: () => this.loaded(load) });
         } else if (!this.starting) {
             this.boot();
         }
@@ -85,13 +90,14 @@ export default class SoundCloudPlayer {
             frame.allow = 'autoplay'; // without it a browser never lets a frame from another site start the sound
             frame.title = 'SoundCloud';
             frame.style.cssText = 'width:100%;height:100%;border:0';
-            frame.src = soundcloudEmbedUrl(this.wanted, true);
+            frame.src = soundcloudEmbedUrl(this.wanted, false);
             this.mount.appendChild(frame);
             this.frame = frame;
 
             const widget = (this.widget = SC.Widget(frame));
             const E = SC.Widget.Events;
-            widget.bind(E.READY, () => this.loaded(this.loads));
+            const load = this.loads;
+            widget.bind(E.READY, () => this.loaded(load));
             widget.bind(E.PLAY, (e: any) => this.mine(e) && this.played(e));
             widget.bind(E.PAUSE, (e: any) => this.mine(e) && this.state === PLAYING && this.set(PAUSED));
             widget.bind(E.FINISH, (e: any) => this.mine(e) && this.set(ENDED));
@@ -115,7 +121,9 @@ export default class SoundCloudPlayer {
     /** The widget has the track (the volume it had may be gone with the old one). */
     private loaded(load: number) {
         if (this.dead || load !== this.loads || !this.widget) return;
+        this.ready = true;
         this.applyVolume();
+        if (this.playingWanted) this.widget.play();
     }
 
     /** What the widget knows once the track plays: its length, and where it lives on SoundCloud. */
@@ -127,9 +135,10 @@ export default class SoundCloudPlayer {
     }
 
     private played(event: any) {
+        if (!this.playingWanted) { this.widget?.pause(); return; }
         window.clearTimeout(this.blocked);
-        this.set(PLAYING);
         this.applyVolume();
+        this.set(PLAYING);
         this.askDuration();
         const load = this.loads;
         this.widget?.getCurrentSound((sound: any) => load === this.loads && (this.permalink = sound?.permalink_url ?? null));
@@ -152,15 +161,18 @@ export default class SoundCloudPlayer {
     }
 
     play() {
+        this.playingWanted = true;
         if (this.state !== PLAYING) {
             this.state = BUFFERING;
             this.armBlocked();
         }
-        this.widget?.play();
+        this.applyVolume();
+        if (this.ready) this.widget?.play();
     }
 
     /** Quiet and still, without telling anybody (nobody has paused it: the room switched the music off, or YouTube has the next song). */
     stop() {
+        this.playingWanted = false;
         window.clearTimeout(this.blocked);
         this.state = UNSTARTED;
         this.widget?.pause();

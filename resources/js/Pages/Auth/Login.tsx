@@ -15,7 +15,7 @@ export default function Login({ status, canResetPassword, discordLoginEnabled, d
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
-        remember: false as boolean,
+        remember: true as boolean,
     });
 
     const [save, setSave] = useState(false);
@@ -81,7 +81,7 @@ export default function Login({ status, canResetPassword, discordLoginEnabled, d
 
                 <div className="space-y-2">
                     <label className="flex items-center gap-2 text-sm text-neutral-400">
-                        <Checkbox name="remember" checked={data.remember} onChange={(e) => setData('remember', (e.target.checked || false) as false)} /> Keep me logged in on this device
+                        <Checkbox name="remember" checked={data.remember} onChange={(e) => setData('remember', e.target.checked)} /> Keep me logged in on this device
                     </label>
                     {canSaveAccounts && (
                         <label className="flex items-center gap-2 text-sm text-neutral-400">
@@ -96,7 +96,7 @@ export default function Login({ status, canResetPassword, discordLoginEnabled, d
             {discordLoginEnabled && (
                 <>
                     <div className="my-6 flex items-center gap-3 text-xs text-neutral-600"><span className="h-px flex-1 bg-white/10" /> or <span className="h-px flex-1 bg-white/10" /></div>
-                    <a href={route('discord.login')} className="mb-5 flex w-full items-center justify-center gap-2 rounded-lg bg-[#5865F2] px-4 py-3 text-sm font-semibold text-white hover:opacity-90">
+                    <a href={route('discord.login', { remember: data.remember ? 1 : 0 })} className="mb-5 flex w-full items-center justify-center gap-2 rounded-lg bg-[#5865F2] px-4 py-3 text-sm font-semibold text-white hover:opacity-90">
                         <SocialIcon name="discord" size={18} /> Continue with Discord
                     </a>
                 </>

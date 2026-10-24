@@ -99,6 +99,7 @@ Route::middleware(VerifiedIfLoggedIn::class)->group(function () {
     Route::get('/dashboard', [RoomController::class, 'index'])->name('dashboard');
     Route::get('/live', [LiveController::class, 'index'])->name('live');
     Route::get('/rooms/{room}', [RoomController::class, 'show'])->name('rooms.show');
+    Route::get('/rooms/{room}/updates', [RoomController::class, 'updates'])->middleware([EnsureRoomAccess::class, 'throttle:60,1'])->name('rooms.updates');
     Route::get('/rooms/{room}/members', [RoomController::class, 'members'])->middleware('throttle:60,1')->name('rooms.members');
     Route::match(['post', 'delete'], '/rooms/{room}/watchers', [RoomController::class, 'watchers'])->middleware('throttle:room-watchers')->name('rooms.watchers');
     Route::get('/history', [RoomController::class, 'history'])->name('history');
@@ -221,6 +222,7 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::post('/admin/users/{user}/violations', [AdminController::class, 'warn'])->name('admin.warn');
     Route::delete('/admin/users/{user}', [AdminController::class, 'destroyUser'])->name('admin.users.destroy');
     Route::patch('/admin/rooms/{room}', [AdminController::class, 'updateRoom'])->name('admin.rooms.update');
+    Route::put('/admin/room-releases/{feature}', [AdminController::class, 'updateRoomRelease'])->name('admin.room-releases.update');
     Route::delete('/admin/rooms/{room}', [AdminController::class, 'destroyRoom'])->name('admin.rooms.destroy');
     Route::put('/admin/permissions', [AdminController::class, 'updatePermissions'])->name('admin.permissions');
     Route::post('/admin/broadcast', [AdminController::class, 'broadcast'])->name('admin.broadcast');

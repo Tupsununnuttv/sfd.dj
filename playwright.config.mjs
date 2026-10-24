@@ -6,7 +6,7 @@ const webServer = [{ command: 'npx vite --config tests/Browser/vite.config.mjs',
 if (process.env.BROWSER_SHOP_TEST === '1') {
     process.env.BROWSER_APP_URL = 'http://127.0.0.1:8012';
     webServer.push({
-        command: `php tests/Browser/${process.env.BROWSER_SITE_TEST === '1' ? 'seed-site' : process.env.BROWSER_LOCALIZATION_TEST === '1' ? 'seed-localization' : process.env.BROWSER_PERKS_TEST === '1' ? 'seed-perks' : 'seed-shop'}.php && ${process.env.BROWSER_SITE_TEST === '1' ? 'php -S 127.0.0.1:8012 -t public tests/Browser/serve-static.php' : 'php artisan serve --host=127.0.0.1 --port=8012 --no-reload'}`,
+        command: `php tests/Browser/${process.env.BROWSER_RELEASE_TEST === '1' ? 'seed-room-releases' : process.env.BROWSER_SITE_TEST === '1' ? 'seed-site' : process.env.BROWSER_LOCALIZATION_TEST === '1' ? 'seed-localization' : process.env.BROWSER_PERKS_TEST === '1' ? 'seed-perks' : 'seed-shop'}.php && ${process.env.BROWSER_SITE_TEST === '1' ? 'php -S 127.0.0.1:8012 -t public tests/Browser/serve-static.php' : 'php artisan serve --host=127.0.0.1 --port=8012 --no-reload'}`,
         url: process.env.BROWSER_APP_URL + '/login',
         reuseExistingServer: false,
         env: {

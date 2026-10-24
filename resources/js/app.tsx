@@ -1,6 +1,7 @@
 import '../css/app.css';
 import '../css/subscription.css';
 import { applyRegional, getLanguage, getRegionalSnapshot, loadRegionalLanguage, previewRegional, setRegionalAccount, subscribeLanguage, translate } from '@/lib/regional';
+import { isLanguage } from '@/lib/languages';
 
 import RoomLoading from '@/Components/RoomLoading';
 import WhisperCalls from '@/Components/WhisperCalls';
@@ -41,7 +42,7 @@ const motion = (page: { props: unknown; url?: string }) => {
     applyRegional(auth?.user?.preferences);
     const appearance = auth?.user?.preferences?.appearance;
     applyMotion(appearance?.always_animate);
-    syncCompactPreferences(auth?.guest ? null : auth?.user?.id ?? null, auth?.user?.preferences);
+    syncCompactPreferences(auth?.guest ? null : auth?.user?.id ?? null, auth?.user?.preferences, page.url !== systemPageUrl);
     syncSystemPreferences(auth?.guest ? null : auth?.user?.id ?? null, auth?.user?.preferences, page.url !== systemPageUrl);
     systemPageUrl = page.url;
 };
@@ -52,7 +53,7 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 if (!embedded) {
     window.addEventListener('message', (event) => {
-        if (event.origin === window.location.origin && event.source !== window && event.data?.type === 'sfd:regional-preview' && ['en', 'et', 'ru'].includes(event.data.regional?.language) && ['12', '24'].includes(event.data.regional?.time_format)) previewRegional(event.data.regional);
+        if (event.origin === window.location.origin && event.source !== window && event.data?.type === 'sfd:regional-preview' && isLanguage(event.data.regional?.language) && ['12', '24'].includes(event.data.regional?.time_format)) previewRegional(event.data.regional);
         if (event.origin === window.location.origin && event.source !== window && event.data?.type === 'sfd:preferences-updated') {
             router.reload({ only: ['auth', 'host', 'profile', 'playback'] });
         }

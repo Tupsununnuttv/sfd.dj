@@ -16,10 +16,10 @@ export const CHARACTER_RATIO = 200 / 276;
 
 /** Match imported GIF canvases so a portrait box does not shrink their figures. */
 const WIDE_DRAGONS = new Set(['dragone01', 'dragone02', 'dragone03', 'dragone04']);
-const IMPORTED_STAFF = new Set(['admin01', 'admin02', 'admin03', 'admin04', 'admin05', 'admin06', 'admin07', 'admin08', 'admin09', 'ba01', 'ba02', 'ba03', 'ba04']);
+const IMPORTED_GIFS = new Set(['admin01', 'admin02', 'admin03', 'admin04', 'admin05', 'admin06', 'admin07', 'admin08', 'admin09', 'ba01', 'ba02', 'ba03', 'ba04', '2014hw07']);
 export const characterRatio = (name: string, state: CharacterState): number => {
     if (WIDE_DRAGONS.has(name)) return state === 'djing' ? 340 / 220 : 440 / 220;
-    if (IMPORTED_STAFF.has(name)) {
+    if (IMPORTED_GIFS.has(name)) {
         if (state === 'djing') return 170 / 220;
         const canvasHeight = name === 'admin09' ? 217 : name === 'ba02' ? 218 : 220;
         return 220 / canvasHeight;

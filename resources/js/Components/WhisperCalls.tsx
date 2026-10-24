@@ -1,5 +1,7 @@
 import { callMedia, gatheredDescription, receiveCallTracks, remoteCallDescription } from '@/lib/calls';
 import { getJson, send, sendJson } from '@/lib/post';
+import { poll } from '@/lib/polling';
+import { echo } from '@laravel/echo-react';
 import { router } from '@inertiajs/react';
 import { Mic, MicOff, Phone, PhoneOff, Video, VideoOff, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -40,7 +42,13 @@ export default function WhisperCalls({ initialUser }: { initialUser: number | nu
     const connectedAt = useRef<number | null>(null);
     const connectionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const alive = useRef(true);
-    const setCurrent = (next: Call | null) => { current.current = next; setCall(next); };
+    const updates = useRef<ReturnType<typeof poll> | null>(null);
+    const heartbeat = useRef<{ id: string; at: number } | null>(null);
+    const setCurrent = (next: Call | null) => {
+        const changed = current.current?.id !== next?.id || current.current?.status !== next?.status;
+        current.current = next; setCall(next);
+        if (changed) updates.current?.refresh();
+    };
     const cleanup = () => {
         operation.current++;
         owned.current = null;
@@ -151,16 +159,16 @@ export default function WhisperCalls({ initialUser }: { initialUser: number | nu
 
     useEffect(() => {
         if (!me) { void end(); return; }
-        let polling = false;
         let cancelled = false;
-        const poll = async () => {
-            if (polling) return;
-            polling = true;
+        const refresh = poll(async (signal) => {
             const generation = operation.current;
             try {
                 const snapshot = current.current;
-                if (snapshot && owned.current === snapshot.id) await send('PATCH', route('calls.update', snapshot.id), { action: 'heartbeat' }).catch(() => {});
-                const result = await getJson<{ call: Call | null }>(route('calls.index'));
+                if (snapshot && owned.current === snapshot.id && (heartbeat.current?.id !== snapshot.id || Date.now() - heartbeat.current.at >= 10000)) {
+                    await send('PATCH', route('calls.update', snapshot.id), { action: 'heartbeat' }, { signal });
+                    heartbeat.current = { id: snapshot.id, at: Date.now() };
+                }
+                const result = await getJson<{ call: Call | null }>(route('calls.index'), { signal });
                 if (cancelled || generation !== operation.current) return;
                 if (!result.call && snapshot && current.current?.id === snapshot.id) { cleanup(); setCurrent(null); setStatus(''); setError('Call ended or was not answered.'); }
                 else if (result.call && !working.current) {
@@ -180,10 +188,17 @@ export default function WhisperCalls({ initialUser }: { initialUser: number | nu
                 }
             } catch (e) {
                 if (current.current && !cancelled) setStatus('Connection interrupted. Retrying…');
-            } finally { polling = false; }
-        };
-        void poll();
-        const timer = setInterval(() => { void poll(); if (connectedAt.current) setSeconds(Math.floor((Date.now() - connectedAt.current) / 1000)); }, 2000);
+                throw e;
+            }
+        }, { interval: () => current.current ? connectedAt.current ? 10000 : 2000 : document.hidden ? 30000 : 15000, background: true });
+        updates.current = refresh;
+        const timer = setInterval(() => { if (connectedAt.current) setSeconds(Math.floor((Date.now() - connectedAt.current) / 1000)); }, 1000);
+        let unsubscribe = () => {};
+        try {
+            const channel = echo<'reverb'>().private(`App.Models.User.${me}`);
+            channel.listen('.whisper-call-changed', refresh.refresh);
+            unsubscribe = () => channel.stopListening('.whisper-call-changed', refresh.refresh);
+        } catch { /* The slower poll still receives invitations if realtime is unavailable. */ }
         const request = (event: MessageEvent) => {
             if (event.origin !== window.location.origin || event.data?.type !== 'sfd-whisper-call') return;
             if (!Number.isInteger(event.data.user?.id) || typeof event.data.video !== 'boolean') return;
@@ -191,7 +206,7 @@ export default function WhisperCalls({ initialUser }: { initialUser: number | nu
             void start(event.data.user, event.data.video);
         };
         window.addEventListener('message', request);
-        return () => { cancelled = true; clearInterval(timer); window.removeEventListener('message', request); };
+        return () => { cancelled = true; refresh.stop(); updates.current = null; unsubscribe(); clearInterval(timer); window.removeEventListener('message', request); };
     }, [me]);
 
     useEffect(() => {

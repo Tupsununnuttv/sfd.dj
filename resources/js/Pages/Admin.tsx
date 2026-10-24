@@ -5,6 +5,7 @@ import { BroadcastTab, IpBansTab, MaintenanceTab } from '@/Components/admin/Misc
 import MatrixTab from '@/Components/admin/MatrixTab';
 import Overview from '@/Components/admin/Overview';
 import RoomsTab from '@/Components/admin/RoomsTab';
+import RoomReleasesPanel from '@/Components/admin/RoomReleasesPanel';
 import { AdminProps } from '@/Components/admin/types';
 import UsersTab from '@/Components/admin/UsersTab';
 import SupportInbox from '@/Components/SupportInbox';
@@ -15,7 +16,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { Ban, Disc3, KeyRound, LayoutDashboard, LifeBuoy, Mail, Megaphone, UserRound, Users, Wrench } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-type Tab = 'Overview' | 'Users' | 'Accounts' | 'Rooms' | 'Support' | 'Permissions' | 'Broadcast' | 'Email' | 'IP bans' | 'Maintenance';
+type Tab = 'Overview' | 'Users' | 'Accounts' | 'Rooms' | 'Room updates' | 'Support' | 'Permissions' | 'Broadcast' | 'Email' | 'IP bans' | 'Maintenance';
 
 // each tab needs its own permission; the ones you may not use stay hidden
 const needs: Record<Tab, string> = {
@@ -23,6 +24,7 @@ const needs: Record<Tab, string> = {
     Users: 'admin.access',
     Accounts: 'users.manage',
     Rooms: 'rooms.manage',
+    'Room updates': 'releases.manage',
     Support: 'support.manage',
     Permissions: 'admin.access',
     Broadcast: 'broadcast.send',
@@ -40,6 +42,7 @@ export default function Admin(props: AdminProps) {
         { key: 'Users', label: 'Users', icon: Users, count: props.stats.accounts },
         { key: 'Accounts', label: 'Accounts', icon: UserRound },
         { key: 'Rooms', label: 'Rooms', icon: Disc3, count: props.stats.rooms },
+        { key: 'Room updates', label: 'Room updates', icon: Disc3 },
         { key: 'Support', label: 'Support', icon: LifeBuoy, alert: props.openTickets || undefined },
         { key: 'Permissions', label: 'Permissions', icon: KeyRound },
         { key: 'Broadcast', label: 'Broadcast', icon: Megaphone },
@@ -87,6 +90,7 @@ export default function Admin(props: AdminProps) {
             {tab === 'Users' && <UsersTab q={props.q} filters={props.filters} users={props.users} roleOptions={props.roleOptions} assignable={props.assignable} groups={props.roleGroups} awardList={props.awardList} planList={props.planList} />}
             {tab === 'Accounts' && <AccountsTab q={props.q} filters={props.filters} users={props.users} />}
             {tab === 'Rooms' && <RoomsTab rooms={props.rooms} counts={props.counts} />}
+            {tab === 'Room updates' && <RoomReleasesPanel releases={props.roomReleases} />}
             {tab === 'Support' && <SupportInbox />}
             {tab === 'Permissions' && <MatrixTab matrix={props.matrix} groups={props.roleGroups} />}
             {tab === 'Broadcast' && <BroadcastTab announcements={props.announcements} />}

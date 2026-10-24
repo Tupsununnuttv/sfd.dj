@@ -87,7 +87,8 @@ class RegisteredUserController extends Controller
         event(new Registered($user));
         $request->session()->put('verification_mail', $user->verificationMail ?: 'sent');
 
-        Auth::login($user);
+        Auth::login($user, true);
+        $request->session()->put('auth_version', (int) $user->auth_version);
 
         // where the confirming is asked for the new member lands on the confirm page, otherwise they are in (a banner invites them to confirm later)
         return redirect(route(Setting::verificationRequired() ? 'verification.notice' : 'dashboard', absolute: false));

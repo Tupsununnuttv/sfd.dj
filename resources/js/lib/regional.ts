@@ -1,8 +1,9 @@
 import type { Preferences } from '@/types';
 import { overrides } from './locales/overrides.ts';
+import { languages, type Language } from './languages.ts';
+import { expandedOverrides } from './locales/expandedOverrides.ts';
 
-export type Language = 'en' | 'et' | 'ru';
-const locales = { en: 'en-GB', et: 'et-EE', ru: 'ru-RU' };
+export type { Language } from './languages.ts';
 let language: Language = 'en';
 let hour12 = false;
 let pending: Preferences['regional'] | null = null;
@@ -12,6 +13,13 @@ type Catalog = Record<string, string>;
 const emptyCatalog: Catalog = {};
 const catalogs: Partial<Record<Language, Catalog>> = { en: emptyCatalog };
 const loading: Partial<Record<Language, Promise<void>>> = {};
+const loaders = {
+    et: () => import('./locales/et.ts'), ru: () => import('./locales/ru.ts'),
+    'pt-BR': () => import('./locales/pt-BR.ts'), es: () => import('./locales/es.ts'),
+    de: () => import('./locales/de.ts'), fr: () => import('./locales/fr.ts'),
+    fi: () => import('./locales/fi.ts'), uk: () => import('./locales/uk.ts'),
+    lv: () => import('./locales/lv.ts'), lt: () => import('./locales/lt.ts'), pl: () => import('./locales/pl.ts'),
+};
 const listeners = new Set<() => void>();
 export const getLanguage = () => language;
 export const getRegionalSnapshot = () => `${language}:${revision}`;
@@ -21,10 +29,11 @@ const notifyLanguage = () => { revision++; listeners.forEach((listener) => liste
 export function loadRegionalLanguage(selected: Language): Promise<void> {
     if (catalogs[selected]) return Promise.resolve();
     if (loading[selected]) return loading[selected];
-    const request = selected === 'et' ? import('./locales/et.ts') : import('./locales/ru.ts');
+    if (selected === 'en') return Promise.resolve();
+    const request = loaders[selected]();
     return loading[selected] = request.then(module => {
         catalogs[selected] = module.default;
-        delete templates[selected as 'et' | 'ru'];
+        delete templates[selected];
         if (language === selected) notifyLanguage();
     }).catch(error => { delete loading[selected]; throw error; });
 }
@@ -53,15 +62,15 @@ export function applyRegional(preferences?: Preferences | null) {
 }
 
 export function formatTime(value: string | Date, options: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }) {
-    return new Date(value).toLocaleTimeString(locales[language], { ...options, hour12 });
+    return new Date(value).toLocaleTimeString(languages[language].locale, { ...options, hour12 });
 }
 
 export function formatDateTime(value: string | Date, options?: Intl.DateTimeFormatOptions) {
-    return new Date(value).toLocaleString(locales[language], { ...options, hour12 });
+    return new Date(value).toLocaleString(languages[language].locale, { ...options, hour12 });
 }
 
 export function formatDate(value: string | Date, options?: Intl.DateTimeFormatOptions) {
-    return new Date(value).toLocaleDateString(locales[language], options);
+    return new Date(value).toLocaleDateString(languages[language].locale, options);
 }
 
 const translations: Record<string, [string, string]> = {
@@ -92,10 +101,11 @@ export function translate(text: string, selected: Language = language): string {
     if (selected === 'en' || !text.trim()) return text;
     const core = text.trim().replace(/\s+/g, ' ');
     const catalog = catalogs[selected] ?? emptyCatalog;
-    const manual = Object.hasOwn(translations, core) ? translations[core]?.[selected === 'et' ? 0 : 1] : undefined;
+    const reviewed = reviewedCatalogs[selected];
+    const manual = Object.hasOwn(reviewed, core) ? reviewed[core] : undefined;
     let result = manual ?? (Object.hasOwn(catalog, core) ? catalog[core] : undefined);
     if (!result) {
-        const patterns = templates[selected] ??= compileTemplates({ ...catalog, ...Object.fromEntries(Object.entries(translations).map(([key, value]) => [key, value[selected === 'et' ? 0 : 1]])) });
+        const patterns = templates[selected] ??= compileTemplates({ ...catalog, ...reviewed });
         for (const template of patterns) {
             if (template.prefix && !core.startsWith(template.prefix)) continue;
             if (template.anchor && !core.includes(template.anchor)) continue;
@@ -117,4 +127,9 @@ function compileTemplates(catalog: Record<string, string>) {
         return { pattern: new RegExp(`^${escaped}$`), order, value, prefix: key.split('{')[0], anchor: key.split(/\{\d+\}/).sort((a, b) => b.length - a.length)[0] };
     }).sort((a, b) => b.anchor.length - a.anchor.length);
 }
-const templates: Partial<Record<'et' | 'ru', ReturnType<typeof compileTemplates>>> = {};
+const reviewedCatalogs: Record<Exclude<Language, 'en'>, Catalog> = {
+    ...expandedOverrides,
+    et: Object.fromEntries(Object.entries(translations).map(([key, value]) => [key, value[0]])),
+    ru: Object.fromEntries(Object.entries(translations).map(([key, value]) => [key, value[1]])),
+};
+const templates: Partial<Record<Language, ReturnType<typeof compileTemplates>>> = {};

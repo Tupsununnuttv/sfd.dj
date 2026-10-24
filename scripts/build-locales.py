@@ -1,5 +1,6 @@
-"""Author static ET/RU catalogs with local Argos/CTranslate2 models; no runtime service."""
+"""Author static catalogs with local Argos/CTranslate2 models; no runtime service."""
 import json
+import os
 import pathlib
 import re
 import sys
@@ -9,9 +10,27 @@ import sentencepiece
 language = sys.argv[1]
 root = pathlib.Path('.tmp/translation-tools')
 package = next((root / ('en-' + language)).glob('*'))
-sp = sentencepiece.SentencePieceProcessor(model_file=str(package / 'sentencepiece.model'))
-model = ctranslate2.Translator(str(package / 'model'), device='cpu', compute_type='int8', inter_threads=2, intra_threads=4)
+if (package / 'sentencepiece.model').exists():
+    sp = sentencepiece.SentencePieceProcessor(model_file=str(package / 'sentencepiece.model'))
+else:
+    from sacremoses import MosesTokenizer, MosesDetokenizer, MosesPunctNormalizer
+    from subword_nmt.apply_bpe import BPE
+    class BPETokenizer:
+        def __init__(self):
+            self.tokenizer = MosesTokenizer(lang='en')
+            self.detokenizer = MosesDetokenizer(lang=language)
+            self.normalizer = MosesPunctNormalizer(lang='en')
+            with (package / 'bpe.model').open(encoding='utf-8') as stream:
+                self.bpe = BPE(stream)
+        def encode(self, text, out_type=str):
+            return self.bpe.segment_tokens(self.tokenizer.tokenize(self.normalizer.normalize(text)))
+        def decode(self, tokens):
+            return self.detokenizer.detokenize(' '.join(tokens).replace('@@ ', '').split(' '))
+    sp = BPETokenizer()
+model = ctranslate2.Translator(str(package / 'model'), device='cpu', compute_type='int8', inter_threads=1, intra_threads=int(os.environ.get('TRANSLATION_THREADS', '2')))
 messages = json.loads(pathlib.Path('tmp/ui-messages.json').read_text(encoding='utf-8'))
+for source in ['et', 'ru']:
+    messages.update({value: [] for value in json.loads(pathlib.Path(f'resources/js/lib/locales/{source}.json').read_text(encoding='utf-8'))})
 extra = pathlib.Path('tmp/server-messages.json')
 if extra.exists(): messages.update({value: [] for value in json.loads(extra.read_text(encoding='utf-8-sig'))})
 skip = re.compile(r'[<>\\]|(?:^| )(?:bg|text|border|px|py|mt|mb|gap|rounded|flex|grid|min|max|z|shadow|hover|focus|disabled|opacity|items|justify|space|lg|md|sm|xl|w|h)-|^(?:M |m |rgba|var\(|linear-gradient|translate|data-|\./|\.\./|@/)|\b(?:const |function |return |import |export )')
@@ -30,11 +49,12 @@ def protect(text):
     return brands.sub(sub, text), originals
 
 def restore(text, originals, source):
+    text = text.replace('\u2581', ' ').strip()
     for index, original in enumerate(originals):
         number = str(9876500 + index)
         pattern = r'[\s,.]*'.join(number)
         text, count = re.subn(pattern, lambda _: original, text)
-        if not count:
+        if count != 1:
             # Keep dynamic values intact even if the MT model drops a token.
             return None
     return text
@@ -43,14 +63,17 @@ failed = []
 for offset in range(0, len(keys), 24):
     batch = keys[offset:offset + 24]
     protected = [protect(text) for text in batch]
-    results = model.translate_batch([sp.encode(text, out_type=str) for text, _ in protected], beam_size=2, max_decoding_length=512, max_input_length=512)
+    encoded = [sp.encode(text, out_type=str) for text, _ in protected]
+    # Bound a model's output for short labels as well as long descriptions.
+    limit = min(512, max(48, max(map(len, encoded)) * 2 + 16))
+    results = model.translate_batch(encoded, beam_size=1, max_decoding_length=limit, max_input_length=512, no_repeat_ngram_size=4)
     for source, (_, originals), result in zip(batch, protected, results):
         translated = restore(sp.decode(result.hypotheses[0]), originals, source)
         if translated is None:
             chunks = re.split(r'(\{\d+\})', source)
             literals = [chunk for chunk in chunks if chunk and not re.fullmatch(r'\{\d+\}', chunk)]
-            decoded = model.translate_batch([sp.encode(chunk, out_type=str) for chunk in literals], beam_size=2)
-            lookup = iter([sp.decode(item.hypotheses[0]) for item in decoded])
+            decoded = model.translate_batch([sp.encode(chunk, out_type=str) for chunk in literals], beam_size=1)
+            lookup = iter([sp.decode(item.hypotheses[0]).replace('\u2581', ' ').strip() for item in decoded])
             translated = ''.join(chunk if re.fullmatch(r'\{\d+\}', chunk or '') else next(lookup) if chunk else '' for chunk in chunks)
             failed.append(source)
         catalog[source] = translated

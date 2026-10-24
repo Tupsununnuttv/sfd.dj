@@ -15,7 +15,7 @@ export default function MatrixTab({ matrix, groups }: { matrix: AdminProps['matr
     const has = (role: string, perm: string) => (granted[role] ?? []).includes(perm);
     const flip = (role: string, perm: string) =>
         setGranted((g) => ({ ...g, [role]: has(role, perm) ? (g[role] ?? []).filter((p) => p !== perm) : [...(g[role] ?? []), perm] }));
-    const categories: Record<string, string> = { admin: 'Administration', users: 'User accounts', subscriptions: 'Subscriptions', support: 'Support', email: 'Email', rooms: 'Rooms', broadcast: 'Announcements', events: 'Events', community: 'Community', ipbans: 'IP bans', maintenance: 'Maintenance' };
+    const categories: Record<string, string> = { admin: 'Administration', users: 'User accounts', subscriptions: 'Subscriptions', support: 'Support', email: 'Email', rooms: 'Rooms', releases: 'Room update releases', broadcast: 'Announcements', events: 'Events', community: 'Community', ipbans: 'IP bans', maintenance: 'Maintenance' };
     const needle = search.trim().toLocaleLowerCase();
     const perms = Object.entries(matrix.permissions).filter(([key, label]) => (category === 'all' || key.startsWith(`${category}.`)) && (!needle || `${key} ${label} ${translate(label)}`.toLocaleLowerCase().includes(needle)));
     const flipVisible = (role: string) => {

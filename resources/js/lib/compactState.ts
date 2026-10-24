@@ -1,6 +1,11 @@
 export type CompactKey = 'compact' | 'compact_chat' | 'compact_layout';
 export type CompactValues = Record<CompactKey, boolean>;
 export type CompactEvent = { key: CompactKey; token: string; phase: 'preview' | 'saved' | 'failed'; value: boolean };
+/** A master toggle is one transaction; the chat toolbar can still write only chat. */
+export function compactEvents(event: CompactEvent): CompactEvent[] {
+    const keys: CompactKey[] = event.key === 'compact' ? ['compact', 'compact_chat', 'compact_layout'] : [event.key];
+    return keys.map(key => ({ ...event, key }));
+}
 export interface CompactState {
     values: CompactValues;
     confirmed: CompactValues;

@@ -6,9 +6,9 @@
     },
     "type": "module",
     "scripts": {
-        "test:frontend": "node --test tests/Frontend/*.test.mjs",
-        "test:browsers": "playwright test",
-        "test:browsers:mobile": "playwright test --config playwright.mobile.config.mjs",
+        "test:frontend": "node scripts/test-workspace.mjs frontend",
+        "test:browsers": "node scripts/test-workspace.mjs browsers",
+        "test:browsers:mobile": "node scripts/test-workspace.mjs mobile",
         "test:browsers:install": "playwright install chromium firefox webkit",
         "avatars:previews": "node scripts/character-posters.mjs",
         "backgrounds:previews": "node scripts/background-thumbnails.mjs",

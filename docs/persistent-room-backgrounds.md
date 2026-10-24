@@ -26,8 +26,10 @@ The command is idempotent and reports missing or unsupported files. It leaves th
 
 Deploy the new frontend build as usual. The local workspace migration and archive command were run; the workspace had no existing backgrounds to archive. This does not verify or migrate the separate production server.
 
-## Compact room layout
+## Compact layout preset
 
-Settings → Appearance → Compact room layout saves `room.compact_layout` for the signed-in member. It makes room navigation/player bars, chat, member/waitlist spacing and the desktop side panel more compact. It is independent of the overall Compact preference, affects only that member's room view and does not resize/reposition the uploaded image or its scene canvas.
+Settings → Appearance has one Compact switch. It sets `appearance.compact`, `appearance.compact_chat` and `room.compact_layout` together, with a single atomic preference write. The separate Compact chat and Compact room layout settings were removed. Turning the preset off clears all three flags. Other preferences, the uploaded image and the scene canvas are preserved.
 
-Compact, Compact chat and Compact room layout now apply optimistically before the server responds. Same-origin settings overlays and open tabs synchronize these choices using BroadcastChannel. The parent room owns saves requested from its settings overlay, so closing the overlay does not discard its write queue. Writes are serialized and preferences are merged under a database row lock. A failed write restores the last confirmed value and displays a notice; an old response cannot replace a newer visible choice.
+The chat's existing Compact chat toolbar button remains independent and can override chat density after the preset is applied. Chat-specific CSS follows that button's density attribute rather than the room/global density, so the override remains visible while the room stays compact. Legacy preference fields remain accepted for older clients.
+
+The complete preset applies optimistically as one notification before the server responds. Same-origin settings overlays and open tabs synchronize the group using BroadcastChannel, with frame/storage fallbacks. The parent room owns overlay saves, so closing the overlay does not discard its write queue. Writes are serialized under a database row lock. A failed write restores the last confirmed flags; an older response cannot replace a newer chat override. Unchanged stale auth props on background Inertia reloads do not reset locally saved density choices.

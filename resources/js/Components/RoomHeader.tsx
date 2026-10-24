@@ -17,7 +17,7 @@ import { useEffect, useState } from 'react';
  * the room info is in More, in the bar at the bottom) and the volume.
  */
 export default function RoomHeader({ room, host, listening, dj, title, live, playing, elapsed, receivedAt, duration, volume, muted, onVolume, onMute, social, onDj }: {
-    room: { name: string; badges: string[] | null };
+    room: { name: string; badges: string[] | null; early_access?: boolean };
     host: { name: string; avatar: string | null; cosmetics?: Cosmetics | null };
     listening: number;
     dj: Dancer | null;
@@ -56,7 +56,7 @@ export default function RoomHeader({ room, host, listening, dj, title, live, pla
                 <div className="min-w-0 max-w-60 sm:max-w-76">
                     <p className="flex items-center gap-2 leading-tight">
                         <span className="truncate text-sm font-extrabold tracking-tight" title={room.name}>{room.name}</span>
-                        <RoomBadge badges={room.badges} compact />
+                        <RoomBadge badges={room.badges} compact earlyAccess={room.early_access} />
                         <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-green-400" title={`${listening} listening`}>
                             <Users size={13} /> {listening}<span className="hidden font-normal 2xl:inline"> listening</span>
                         </span>

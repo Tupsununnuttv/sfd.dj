@@ -1,4 +1,5 @@
 import SiteCounters from '@/Components/SiteCounters';
+import DiscordInvite from '@/Components/DiscordInvite';
 import { useLiveStats } from '@/lib/useLiveStats';
 import ApplicationLogo, { LogoMark } from '@/Components/ApplicationLogo';
 import Crowd from '@/Components/Crowd';
@@ -122,6 +123,7 @@ export default function Guest({ children, aside, title, subtitle, switcher }: Pr
                             </div>
                         )}
                         <div className="animate-rise [animation-delay:80ms]">{children}</div>
+                        {switcher && <div className="mt-6 border-t border-white/10 pt-5"><DiscordInvite className="w-full" /></div>}
                     </div>
                     {aside && <div className="mt-6 animate-rise [animation-delay:160ms]">{aside}</div>}
                 </div>

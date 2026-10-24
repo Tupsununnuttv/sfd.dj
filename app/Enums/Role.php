@@ -61,6 +61,7 @@ enum Role: string
         'email.manage' => 'Manage email verification and send test emails',
         'rooms.moderate' => 'Moderate chat and queue in any room',
         'rooms.manage' => 'Edit, badge and delete any room',
+        'releases.manage' => 'Manage room feature releases',
         'broadcast.send' => 'Send site-wide announcements',
         'events.manage' => 'Create and delete site events',
         'community.manage' => 'Edit social links and the donation goal',
@@ -191,7 +192,7 @@ enum Role: string
     public static function defaultPermissions(): array
     {
         $account = ['users.manage', 'users.roles', 'users.awards', 'subscriptions.manage', 'users.verify', 'users.violations', 'users.delete'];
-        $staff = ['admin.access', ...$account, 'support.manage', 'rooms.moderate', 'rooms.manage', 'broadcast.send', 'events.manage', 'community.manage', 'ipbans.manage'];
+        $staff = ['admin.access', ...$account, 'support.manage', 'rooms.moderate', 'rooms.manage', 'releases.manage', 'broadcast.send', 'events.manage', 'community.manage', 'ipbans.manage'];
 
         return [
             self::Developer->value => [...$staff, 'maintenance.toggle', 'email.manage'],

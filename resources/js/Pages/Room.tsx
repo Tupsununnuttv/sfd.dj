@@ -35,6 +35,7 @@ import { useUserRestrictions } from '@/lib/userRestrictions';
 import { useTouchRendering } from '@/lib/touchRendering';
 import { invalidateProfile } from '@/lib/profileCache';
 import { withDefaults } from '@/lib/prefs';
+import { EMPTY_ROOM_RELEASES, type RoomReleaseState } from '@/lib/roomReleases';
 import { saveCompactPreference, useCompactPreferences } from '@/lib/compactPreferences';
 import RoomPlayer from '@/lib/roomPlayer';
 import { isSoundCloud } from '@/lib/soundcloud';
@@ -55,6 +56,7 @@ const WhisperBox = lazy(() => import('@/Components/WhisperBox'));
 const RoomInfoPanel = lazy(() => import('@/Components/RoomInfoPanel'));
 const ModerationPanel = lazy(() => import('@/Components/ModerationPanel'));
 const RoomSettingsPanel = lazy(() => import('@/Components/RoomSettingsPanel'));
+const RoomUpdatesPanel = lazy(() => import('@/Components/RoomUpdatesPanel'));
 const loadingPanel = <div className="flex min-h-0 flex-1 items-center justify-center p-6 text-sm text-neutral-400">Loading...</div>;
 
 interface Song {
@@ -97,6 +99,7 @@ interface Member {
 }
 
 interface RoomInfo {
+    early_access?: boolean;
     id: number;
     name: string;
     slug: string;
@@ -130,7 +133,7 @@ const isTransientActivity = (message: ChatMessageData) => message.type === 'syst
     transientNotificationKinds.has(message.kind ?? '')
     || ((message.kind === 'join' || message.kind === 'leave') && /(?:joined|left) the waitlist/i.test(message.body))
 );
-type PanelName = 'info' | 'settings' | 'moderation' | 'playlists' | 'whispers' | 'live' | null;
+type PanelName = 'info' | 'settings' | 'moderation' | 'playlists' | 'whispers' | 'live' | 'updates' | null;
 
 // Stamp each playback with arrival time so late joiners can add the time that passed since.
 const stamp = (p: Playback) => ({ ...p, receivedAt: Date.now() });
@@ -174,6 +177,7 @@ function Panel({ title, onClose, children, wide = false, large = false, bare = f
 
 export default function Room({
     room,
+    roomReleases = EMPTY_ROOM_RELEASES,
     host,
     roleOrder,
     roleGroupOf,
@@ -198,6 +202,7 @@ export default function Room({
     playback: initialPlayback,
 }: PageProps<{
     room: RoomInfo;
+    roomReleases?: RoomReleaseState;
     host: Host;
     roleOrder: string[];
     roleGroupOf: Record<string, string>; // role key => staff, staff2, creator or community
@@ -229,6 +234,12 @@ export default function Room({
     const hiddenAuthorsRef = useRef(hiddenAuthors);
     hiddenAuthorsRef.current = hiddenAuthors;
     const prefs = withDefaults(user.preferences);
+    useEffect(() => {
+        const refresh = () => { if (!document.hidden) router.reload({ only: ['room', 'roomReleases'] }); };
+        const timer = window.setInterval(refresh, 60_000);
+        document.addEventListener('visibilitychange', refresh);
+        return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', refresh); };
+    }, [room.id]);
     const { values: compact } = useCompactPreferences();
     prefs.appearance.compact_chat = compact.compact_chat;
     prefs.room.compact_layout = compact.compact_layout;
@@ -265,6 +276,7 @@ export default function Room({
     const [typers, setTypers] = useState<Record<number, string>>({});
     const [tab, setTab] = useState<Tab>(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'room' : 'chat');
     const [panel, setPanel] = useState<PanelName>(null);
+    useEffect(() => { if (panel === 'updates' && !roomReleases.features.includes('room_updates')) setPanel(null); }, [panel, roomReleases]);
     const [whisperTo, setWhisperTo] = useState<number | null>(null);
     const [page, setPage] = useState<{ url: string; title: string } | null>(null);
     const [card, setCard] = useState<{ user: CardUser; anchor: DOMRect } | null>(null);
@@ -416,6 +428,8 @@ export default function Room({
         return () => window.removeEventListener('sfd:preview', preview);
     }, []);
     const effectiveVolume = muted || previewing ? 0 : volume;
+    const effectiveVolumeRef = useRef(effectiveVolume);
+    effectiveVolumeRef.current = effectiveVolume;
     const canSkip = (s: Song) => can.skip || s.user_id === user.id;
     const waitlist = [...(current ? [current] : []), ...playback.queue];
     const myPosition = waitlist.findIndex((s) => s.user_id === user.id);
@@ -453,7 +467,7 @@ export default function Room({
     }, [guest, current?.id, current?.duration, playback.elapsed, playback.receivedAt, room.slug, !!live]);
 
     // The host changed the room (its name, scene, rules, CSS ...): read it again. A moment apart, so a full room does not ask all at once.
-    const reloadRoom = () => { window.setTimeout(() => router.reload({ only: ['room', 'backgrounds', 'host'] }), Math.random() * 1500); };
+    const reloadRoom = () => { window.setTimeout(() => router.reload({ only: ['room', 'backgrounds', 'host', 'roomReleases'] }), Math.random() * 1500); };
 
     // who joins, leaves and votes shows as lines in the chat, unless this person turned that off (Settings, Appearance)
     const activity = useRef(true);
@@ -658,6 +672,8 @@ export default function Room({
                 }
             },
         }, roomPosition);
+        // Cache the chosen level before the asynchronous provider becomes ready or loads a song.
+        player.current.setVolume(effectiveVolumeRef.current);
 
         return () => {
             player.current?.destroy?.();
@@ -665,6 +681,10 @@ export default function Room({
             setReady(false);
         };
     }, [room.id]); // eslint-disable-line react-hooks/exhaustive-deps -- by room, not by address: a rename must not restart the player
+
+    useEffect(() => {
+        if (ready) player.current?.setVolume(effectiveVolume);
+    }, [ready, effectiveVolume, current?.id, playbackOn]);
 
     // Start/stop the video when the song changes, when the player is ready, or when playback is switched on/off.
     useEffect(() => {
@@ -677,7 +697,7 @@ export default function Room({
             const t = setTimeout(() => {
                 const p = player.current;
                 const state = p?.getPlayerState?.();
-                if ((state === 1 || state === 3) && !p?.isMuted?.()) return;
+                if ((state === 1 || state === 3) && (!p?.isMuted?.() || effectiveVolumeRef.current === 0)) return;
                 p?.mute?.();
                 (state === 1 || state === 3) || p?.load?.(current.youtube_id, at());
                 p?.playVideo?.();
@@ -780,10 +800,6 @@ export default function Room({
         events.forEach((e) => window.addEventListener(e, unmute, true));
         return () => events.forEach((e) => window.removeEventListener(e, unmute, true));
     }, [silenced]);
-
-    useEffect(() => {
-        if (ready) player.current?.setVolume(effectiveVolume);
-    }, [ready, effectiveVolume, current?.id, playbackOn]);
 
     const typing = Object.entries(typers).filter(([id]) => +id !== user.id && !hiddenAuthors.has(+id)).map(([, n]) => n);
     const typingText =
@@ -908,7 +924,7 @@ export default function Room({
 
                 <main style={subscriptionVars(host.cosmetics?.subscription)} data-sub-theme={perk(host.cosmetics?.subscription, 'theme') || undefined} className={`sfd-main relative ${tab === 'room' ? 'flex' : 'hidden md:flex'} min-w-0 flex-1 flex-col ${backgroundClass(room.background)}`}>
                     <Live />
-                    <SubscriptionRoomEffects host={host.cosmetics} dj={dj?.cosmetics} songId={current?.id} />
+                    <SubscriptionRoomEffects host={host.cosmetics} dj={dj?.cosmetics} songId={current?.id} entranceSounds={prefs.audio.entrance_sounds} />
 
                     <RoomHeader
                         room={room}
@@ -1013,6 +1029,7 @@ export default function Room({
                         onSkip={() => current && post(route('rooms.skip', room.slug), { item_id: current.id })}
                         onPlaylists={() => setPanel('playlists')}
                         onRoomInfo={() => setPanel('info')}
+                        onUpdates={roomReleases.features.includes('room_updates') ? () => setPanel('updates') : undefined}
                         canModerate={canModerate}
                         onModeration={() => setPanel('moderation')}
                         community={community}
@@ -1230,6 +1247,8 @@ export default function Room({
                     <Suspense fallback={loadingPanel}><LiveControls slug={room.slug} live={live} /></Suspense>
                 </Panel>
             )}
+
+            {panel === 'updates' && roomReleases.features.includes('room_updates') && <Panel title="Room updates" onClose={() => setPanel(null)} large><Suspense fallback={loadingPanel}><RoomUpdatesPanel slug={room.slug} /></Suspense></Panel>}
 
             {panel === 'playlists' && (
                 <div className="sfd-room text-white">

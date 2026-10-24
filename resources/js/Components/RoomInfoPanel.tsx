@@ -28,7 +28,7 @@ export interface RoomStats {
 
 /** Everything about a room in one window: who runs it, what it is about, what is playing, who is here, the rules. */
 export default function RoomInfoPanel({ room, host, online, team, now, queue, stats, canEdit, guest, myId, onEdit, onClose, onProfile, onWhisper }: {
-    room: { name: string; slug: string; description: string | null; badges: string[] | null; background: string | null; genre: string | null; is_private: boolean; welcome_message: string | null; rules: string | null; rule_list?: RoomRule[] | null; created_at: string };
+    room: { name: string; slug: string; description: string | null; badges: string[] | null; background: string | null; genre: string | null; is_private: boolean; welcome_message: string | null; rules: string | null; rule_list?: RoomRule[] | null; created_at: string; early_access?: boolean };
     host: { id: number; name: string; avatar: string | null; primary_role: RoleInfo };
     online: Person[];
     team: { role: RoleInfo; people: Person[] }[];
@@ -69,7 +69,7 @@ export default function RoomInfoPanel({ room, host, online, team, now, queue, st
                 <button onClick={onClose} aria-label="Close" className="absolute right-4 top-4 rounded-lg bg-black/30 p-1.5 text-neutral-300 backdrop-blur hover:bg-black/50 hover:text-white"><X size={18} /></button>
 
                 <div className="relative">
-                    <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-violet-300">Room info <RoomBadge badges={room.badges} /></p>
+                    <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-violet-300">Room info <RoomBadge badges={room.badges} earlyAccess={room.early_access} /></p>
                     <h2 className="mt-1 wrap-break-word text-3xl font-black tracking-tight sm:text-4xl">{room.name}</h2>
                     <div className="mt-3 flex flex-wrap gap-2">
                         {room.genre && <span className={pill}>🎵 {room.genre}</span>}

@@ -30,6 +30,7 @@ class DiscordController extends Controller
         }
 
         $request->session()->put('discord_login_state', $state = Str::random(40));
+        $request->session()->put('discord_login_remember', $request->boolean('remember', true));
 
         return redirect()->away('https://discord.com/oauth2/authorize?'.http_build_query([
             'client_id' => config('services.discord.client_id'),
@@ -43,6 +44,7 @@ class DiscordController extends Controller
     public function loginCallback(Request $request): RedirectResponse
     {
         $state = $request->session()->pull('discord_login_state');
+        $remember = (bool) $request->session()->pull('discord_login_remember', true);
 
         if (! $state || ! hash_equals($state, (string) $request->query('state'))) {
             return to_route('login')->with('discord_error', 'The Discord login took too long or was not started here. Please try again.');
@@ -89,12 +91,12 @@ class DiscordController extends Controller
         $request->session()->regenerate();
 
         if ($user->two_factor_enabled) {
-            AccountSecurity::challenge($request, $user, false);
+            AccountSecurity::challenge($request, $user, $remember);
 
             return to_route('two-factor.challenge');
         }
 
-        Auth::login($user);
+        Auth::login($user, $remember);
         $request->session()->forget('two_factor');
         $request->session()->put('auth_version', (int) $user->auth_version);
 

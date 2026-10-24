@@ -21,7 +21,7 @@ export default function protectUserContent() {
                 }
                 if (node.type === 'JSXExpressionContainer' && parent?.type !== 'JSXAttribute') {
                     const expression = source.slice(node.start + 1, node.end - 1);
-                    const staticSiteContent = /\/Pages\/(?:Site\/|Docs\.tsx$)/.test(id.replaceAll('\\', '/')) && /\b[psrg]\.(?:title|text|description|body)\b/.test(expression);
+                    const staticSiteContent = /\/Pages\/(?:Site\/|(?:Docs|PatchNotes)\.tsx$)/.test(id.replaceAll('\\', '/')) && /\b[psrg]\.(?:title|text|description|body)\b/.test(expression);
                     const identity = /(?:\?\.|\.)(?:name|username|body|bio|welcome_message|added_by|sender_name|display_name|who)\b/.test(expression);
                     if (node.expression?.type !== 'Literal' && !staticSiteContent && (userText.test(expression) || identity) && !/[`]|<[A-Za-z>]|=>|\bfunction\b/.test(expression)) {
                         edits.push([node.start, node.end, `{<__SfdOriginal>${source.slice(node.start, node.end)}</__SfdOriginal>}`]);

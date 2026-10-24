@@ -35,6 +35,7 @@ export interface AdminRoom {
     genre: string | null;
     is_private: boolean;
     is_featured: boolean;
+    early_access: boolean;
     items_count: number;
     created_at: string;
     user: { name: string };
@@ -62,6 +63,7 @@ export interface AdminProps {
     planList: { key: string; name: string; color: string }[];
     roleOptions: RoleMeta[];
     rooms: AdminRoom[];
+    roomReleases: import('@/lib/roomReleases').RoomFeatureRelease[];
     counts: Record<number, number>;
     openTickets: number;
     assignable: RoleMeta[];

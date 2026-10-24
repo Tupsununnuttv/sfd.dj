@@ -1,7 +1,8 @@
 import { formatDate, formatTime, translate } from '@/lib/regional';
+import DiscordInvite from '@/Components/DiscordInvite';
 import CreateRoom from '@/Components/CreateRoom';
 import SiteCounters from '@/Components/SiteCounters';
-import { useLiveStats } from '@/lib/useLiveStats';
+import { poll } from '@/lib/polling';
 import type { LucideIcon } from 'lucide-react';
 import { levelPercent, toNextText } from '@/lib/level';
 import Avatar from '@/Components/Avatar';
@@ -73,7 +74,7 @@ type Sort = 'listeners' | 'newest' | 'name';
 export default function Dashboard({ rooms, mine, featured, genres, counts, nowPlaying, activity, stats, daily, friendIds, goals, continue: resume, friendsOnline, recommended, events, topDjs, mySongs }: Props) {
     const { auth: { user, guest }, community, pendingFriends, unreadWhispers } = usePage<PageProps>().props;
     const [creating, setCreating] = useState(false);
-    const liveStats = useLiveStats(usePage<PageProps>().props.siteStats);
+    const siteStats = usePage<PageProps>().props.siteStats;
     const [tab, setTab] = useState<Tab>('all');
     const [q, setQ] = useState('');
     const [genre, setGenre] = useState(() => new URLSearchParams(window.location.search).get('genre') ?? '');
@@ -83,25 +84,28 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
     const [refreshFailed, setRefreshFailed] = useState(false);
     const [feed, setFeed] = useState<'all' | 'friends'>('all');
 
-    // Live numbers: refetch just the changing parts every 5s while the tab is visible.
+    // One background request updates both the dashboard and its site counters.
     useEffect(() => {
-        let refreshing = false;
-        const refresh = () => {
-            if (document.hidden || refreshing) return;
-            refreshing = true;
-            router.reload({ only: ['rooms', 'mine', 'featured', 'counts', 'nowPlaying', 'activity', 'friendsOnline'],
-                onSuccess: () => setRefreshFailed(false),
-                onHttpException: () => { setRefreshFailed(true); return false; },
-                onNetworkError: () => { setRefreshFailed(true); return false; },
-                onFinish: () => { refreshing = false; },
+        let mounted = true;
+        const updates = poll((signal) => new Promise<void>((resolve, reject) => {
+            let failed = false;
+            const fail = () => { failed = true; if (mounted) setRefreshFailed(true); return false as const; };
+            let cancel = () => {};
+            const abort = () => cancel();
+            signal.addEventListener('abort', abort, { once: true });
+            router.reload({ only: ['rooms', 'mine', 'featured', 'counts', 'nowPlaying', 'activity', 'friendsOnline', 'siteStats'],
+                showProgress: false,
+                onCancelToken: (token) => { cancel = () => token.cancel(); if (signal.aborted) cancel(); },
+                onSuccess: () => { if (mounted) setRefreshFailed(false); },
+                onHttpException: fail,
+                onNetworkError: fail,
+                onFinish: () => { signal.removeEventListener('abort', abort); failed || signal.aborted ? reject(new Error('Dashboard refresh interrupted')) : resolve(); },
             });
-        };
-        const timer = setInterval(refresh, 5000);
-        document.addEventListener('visibilitychange', refresh);
-        return () => { clearInterval(timer); document.removeEventListener('visibilitychange', refresh); };
+        }), { interval: 15000, immediate: false });
+        return () => { mounted = false; updates.stop(); };
     }, []);
 
-    const online = liveStats.stats?.listening ?? null;
+    const online = siteStats?.listening ?? null;
     const live = useMemo(() => rooms.filter((r) => (counts[r.id] ?? 0) > 0 || nowPlaying[r.id] || r.live).sort((a, b) => Number(!!b.live) - Number(!!a.live) || (counts[b.id] ?? 0) - (counts[a.id] ?? 0)).slice(0, 4), [rooms, counts, nowPlaying]); // rooms with a live stream first
 
     const source = tab === 'featured' ? featured : tab === 'mine' ? mine : rooms;
@@ -133,7 +137,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
     ];
 
     return (
-        <AppLayout title="Discover" subtitle="Good music starts with good company." actions={<a href="#discover-rooms" className="rounded-xl border border-white/15 px-4 py-2 text-sm text-neutral-300 hover:bg-white/5">Browse rooms</a>}>
+        <AppLayout title="Discover" subtitle="Good music starts with good company." actions={<div className="flex flex-wrap gap-2"><DiscordInvite /><a href="#discover-rooms" className="rounded-xl border border-white/15 px-4 py-2 text-sm text-neutral-300 hover:bg-white/5">Browse rooms</a></div>}>
             <Head title="Dashboard" />
 
             <section className="relative isolate overflow-hidden rounded-3xl border border-violet-300/20 bg-neutral-900 p-6 shadow-2xl shadow-violet-950/20 sm:p-8">
@@ -157,7 +161,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                     </div>
                 </div>
             </section>
-            <SiteCounters {...liveStats} />
+            <SiteCounters stats={siteStats} stale={refreshFailed} />
             {/* things that need you */}
             {!guest && (pendingFriends > 0 || unreadWhispers > 0) && (
                 <div className="flex flex-wrap gap-3">

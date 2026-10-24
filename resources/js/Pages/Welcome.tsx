@@ -1,4 +1,5 @@
 import SiteCounters from '@/Components/SiteCounters';
+import DiscordInvite from '@/Components/DiscordInvite';
 import { SiteStats, useLiveStats } from '@/lib/useLiveStats';
 import Avatar from '@/Components/Avatar';
 import Crowd from '@/Components/Crowd';
@@ -170,6 +171,7 @@ export default function Welcome({ rooms, event, topDjs, genres, stats: initialSt
                     <div className="mt-9 flex flex-wrap gap-3">
                         <Link href={guest ? route('register') : route('dashboard')} className={`${btn} inline-flex items-center gap-2 bg-linear-to-r from-fuchsia-500 to-violet-500 shadow-lg shadow-violet-900/30 hover:opacity-90`}>{guest ? 'Get started, it is free' : 'Open my rooms'} <ArrowRight size={16} /></Link>
                         <Link href={route('dashboard')} className={`${btn} bg-white/10 hover:bg-white/20`}>{guest ? 'Browse as guest' : 'Browse all rooms'}</Link>
+                        <DiscordInvite />
                     </div>
                     <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-neutral-400">
                         {['Free to use', 'Nothing to download', 'Plays through YouTube and SoundCloud'].map((t) => <li key={t} className="flex items-center gap-1.5"><Check size={15} className="text-green-400" /> {t}</li>)}

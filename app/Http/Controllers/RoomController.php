@@ -31,9 +31,11 @@ use App\Support\Automod;
 use App\Support\LinkGuard;
 use App\Support\LiveStream;
 use App\Support\Presence;
+use App\Support\PublicStats;
 use App\Support\RoomCss;
 use App\Support\RoomPresence;
 use App\Support\RoomGuests;
+use App\Support\RoomReleases;
 use App\Support\Season;
 use App\Support\WordGuard;
 use Illuminate\Http\Client\ConnectionException;
@@ -72,6 +74,7 @@ class RoomController extends Controller
         $mineId = $me?->id;
 
         return Inertia::render('Dashboard', [
+            'siteStats' => fn () => PublicStats::get(),
             'rooms' => $rooms,
             'mine' => fn () => $rooms()->where('user_id', $mineId)->values(),
             'featured' => fn () => $rooms()->where('is_featured', true)->values(),
@@ -275,13 +278,14 @@ class RoomController extends Controller
         $css = RoomCss::clean($room->custom_css);
 
         return Inertia::render('Room', [
-            'room' => $room->only('id', 'name', 'slug', 'description', 'badges', 'genre', 'is_private', 'welcome_message', 'rules', 'rule_list') + [
+            'room' => $room->only('id', 'name', 'slug', 'description', 'badges', 'genre', 'is_private', 'welcome_message', 'rules', 'rule_list', 'early_access') + [
                 'background' => $room->shownBackground(), // in Halloween or Christmas time the season's
                 'created_at' => $room->created_at,
                 'custom_background_url' => $room->custom_background ? route('media.room', $room->custom_background) : null,
                 'css' => $css['css'], // what everybody gets: only the harmless part, all of it inside the room
             ] + ($this->ownsCss($user, $room) ? ['css_source' => $room->custom_css, 'css_notes' => $css['notes']] : []), // the host sees what they wrote and what was left out
             'genres' => Room::GENRES,
+            'roomReleases' => fn () => RoomReleases::payload($room),
             'host' => fn () => $room->user->only('id', 'name', 'avatar', 'cosmetics') + ['primary_role' => $room->user->primary_role],
             'can' => fn () => $user ? array_fill_keys($can(), true) + ['delete_room' => $room->canDelete($user), 'selfbots' => $user->id === $room->user_id || $user->is_staff] : [],
             'roles' => fn () => $room->roles()->get(['id', 'name', 'color', 'rank', 'permissions', 'builtin']),
@@ -310,6 +314,12 @@ class RoomController extends Controller
             'listening' => fn () => (RoomPresence::counts()[$room->id] ?? 0) + count(RoomGuests::members($room)),
             'stats' => fn () => $this->stats($room),
         ]);
+    }
+
+    public function updates(Room $room): JsonResponse
+    {
+        abort_unless(RoomReleases::allows($room, 'room_updates'), 403, 'These updates are not available in this room yet.');
+        return response()->json(RoomReleases::payload($room))->header('Cache-Control', 'private, no-store');
     }
 
     /** The privacy-visible participants for guests watching a public room. */

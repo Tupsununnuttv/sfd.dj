@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\WhisperCallChanged;
 use App\Models\User;
 use App\Models\WhisperCall;
 use Illuminate\Http\Request;
@@ -43,8 +44,8 @@ class WhisperCallController extends Controller
 
     public function index(Request $request)
     {
-        WhisperCall::expire();
         $me = $request->user()->id;
+        WhisperCall::expire([$me]);
         $call = WhisperCall::whereIn('status', ['ringing', 'active'])->where(fn ($q) => $q->where('caller_id', $me)->orWhere('callee_id', $me))->latest()->first();
 
         return response()->json(['call' => $call ? $this->payload($call, $me) : null]);
@@ -55,7 +56,7 @@ class WhisperCallController extends Controller
         $data = $request->validate(['user_id' => ['required', 'integer', 'exists:users,id'], 'video' => ['required', 'boolean'], 'offer' => ['nullable', 'string', 'max:60000', 'starts_with:v=0']]);
         $other = User::findOrFail($data['user_id']);
         $this->allowed($request->user(), $other);
-        WhisperCall::expire();
+        WhisperCall::expire([$request->user()->id, $other->id]);
         $call = DB::transaction(function () use ($request, $other, $data) {
             $ids = [$request->user()->id, $other->id];
             User::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
@@ -65,6 +66,8 @@ class WhisperCallController extends Controller
             return WhisperCall::create(['caller_id' => $ids[0], 'callee_id' => $ids[1], 'video' => $data['video'], 'offer' => $data['offer'] ?? null, 'caller_seen' => now()]);
         });
 
+        WhisperCallChanged::dispatch($call);
+
         return response()->json(['call' => $this->payload($call->refresh(), $request->user()->id)], 201);
     }
 
@@ -72,7 +75,7 @@ class WhisperCallController extends Controller
     {
         $this->participant($request, $call);
         $data = $request->validate(['action' => ['required', 'in:heartbeat,accept,offer,answer,end'], 'offer' => ['required_if:action,offer', 'nullable', 'string', 'max:60000', 'starts_with:v=0'], 'answer' => ['required_if:action,answer', 'nullable', 'string', 'max:60000', 'starts_with:v=0']]);
-        WhisperCall::expire();
+        WhisperCall::expire([$request->user()->id]);
         DB::transaction(function () use ($request, $call, $data) {
             $call = WhisperCall::whereKey($call->id)->lockForUpdate()->firstOrFail();
             if ($data['action'] === 'end') {
@@ -101,6 +104,11 @@ class WhisperCallController extends Controller
             $call->save();
         });
 
-        return response()->json(['call' => $this->payload($call->refresh(), $request->user()->id)]);
+        $call->refresh();
+        if ($data['action'] !== 'heartbeat') {
+            WhisperCallChanged::dispatch($call);
+        }
+
+        return response()->json(['call' => $this->payload($call, $request->user()->id)]);
     }
 }

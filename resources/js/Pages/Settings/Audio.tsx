@@ -42,6 +42,7 @@ export default function Audio() {
 
             <Card className="divide-y divide-white/5 px-6">
                 <Toggle label="Join rooms muted" hint="The player starts at 0% when you enter a room." checked={audio.mute_on_join} onChange={(v) => savePrefs({ audio: { mute_on_join: v } })} />
+                <Toggle label="Entrance sounds" hint="Play a sound when someone enters the room." checked={audio.entrance_sounds} onChange={(v) => savePrefs({ audio: { entrance_sounds: v } })} />
             </Card>
 
             <SettingsSection title={<span className="flex flex-wrap items-center gap-3"><SlidersHorizontal size={20} className="text-violet-300" /> Equalizer <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-violet-300">Coming Soon</span></span>}>

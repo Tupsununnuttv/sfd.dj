@@ -3,6 +3,7 @@ import SocialIcon, { socialLabels } from '@/Components/SocialIcon';
 import { Deck, mmss, originLabel } from '@/lib/playlists';
 import { getJson, sendJson } from '@/lib/post';
 import { useNewVersion } from '@/lib/version';
+import { DISCORD_INVITE } from '@/lib/community';
 import { Community } from '@/types';
 import { router } from '@inertiajs/react';
 import { Bot, Gavel, CalendarDays, Check, ChevronUp, CircleHelp, HandCoins, Info, LifeBuoy, ListMusic, Monitor, MonitorOff, MoreHorizontal, Music2, RefreshCw, ScrollText, SkipForward, X } from 'lucide-react';
@@ -120,7 +121,7 @@ function useWidth() {
  * site has a newer build, Donate, the video on or off, skip, and More). The volume and how far the song is are in the bar at the top (RoomHeader);
  * the playlists open from the menu, or from the two cards here. It leaves things out step by step as it gets narrower.
  */
-export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSkip, onSkip, onPlaylists, onRoomInfo, canModerate = false, onModeration, onOpenPage, community, refreshKey }: {
+export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSkip, onSkip, onPlaylists, onRoomInfo, onUpdates, canModerate = false, onModeration, onOpenPage, community, refreshKey }: {
     guest: boolean;
     slug: string;
     playbackOn: boolean;
@@ -129,6 +130,7 @@ export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSk
     onSkip: () => void;
     onPlaylists: () => void;
     onRoomInfo: () => void;
+    onUpdates?: () => void;
     canModerate?: boolean;
     onModeration?: () => void;
     onOpenPage: (url: string, title: string) => void; // a page of the site in the room's overlay (Events, FAQ, Patch notes)
@@ -167,7 +169,7 @@ export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSk
     const goal = community.donation;
 
     // More: the room, then the community (events, our Discord and the other links staff set in Community settings), then help
-    const socials = Object.entries({ ...community.social, discord: 'https://discord.gg/p4FD5VHgbN' }).map(([key, url]): MenuItem => ({
+    const socials = Object.entries({ ...community.social, discord: DISCORD_INVITE }).map(([key, url]): MenuItem => ({
         label: socialLabels[key] ?? key,
         icon: ({ size, className }: { size?: number; className?: string }) => <span className={className}><SocialIcon name={key} size={size} /></span>,
         onSelect: () => window.open(url, '_blank', 'noopener,noreferrer'),
@@ -175,6 +177,7 @@ export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSk
     const moreItems: MenuItem[][] = [
         [
             { label: 'Room info', icon: Info, onSelect: onRoomInfo },
+            ...(onUpdates ? [{ label: 'Room updates', icon: ScrollText, onSelect: onUpdates }] : []),
             ...(!guest && canModerate && onModeration ? [{ label: 'Room moderation', icon: Gavel, onSelect: onModeration }] : []),
             ...(!guest ? [{ label: 'Selfbots', icon: Bot, onSelect: () => onOpenPage(route('selfbots'), 'Selfbots') }] : []),
         ],

@@ -46,12 +46,19 @@ export default class RoomPlayer {
                 playerVars: { autoplay: 1, controls: 1, fs: 1, disablekb: 0, rel: 0, playsinline: 1, origin: window.location.origin },
                 events: {
                     onReady: () => {
+                        if (this.dead) return;
                         const frame = this.youtube?.getIframe?.() as HTMLIFrameElement | undefined;
                         if (frame) { frame.allowFullscreen = true; frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; }
+                        this.applyYouTubeAudio();
                         events.onReady();
                     },
                     onAutoplayBlocked: () => events.onAutoplayBlocked(),
-                    onStateChange: (e: { data: number }) => this.active === 'youtube' && events.onStateChange(e),
+                    onStateChange: (e: { data: number }) => {
+                        if (this.dead || this.active !== 'youtube') return;
+                        // Loading/buffering a different video can restore the provider's audio defaults.
+                        this.applyYouTubeAudio();
+                        events.onStateChange(e);
+                    },
                 },
             });
         };
@@ -75,7 +82,9 @@ export default class RoomPlayer {
         } else {
             this.soundcloud?.stop();
             this.show('youtube');
+            this.applyYouTubeAudio();
             this.youtube?.loadVideoById?.({ videoId: songId, startSeconds });
+            this.applyYouTubeAudio();
         }
     }
 
@@ -96,6 +105,7 @@ export default class RoomPlayer {
     }
 
     playVideo() {
+        this.applyYouTubeAudio();
         this.active === 'soundcloud' ? this.soundcloud?.play() : this.youtube?.playVideo?.();
     }
 
@@ -106,13 +116,13 @@ export default class RoomPlayer {
 
     mute() {
         this.muted = true;
-        this.youtube?.mute?.();
+        this.applyYouTubeAudio();
         this.soundcloud?.mute();
     }
 
     unMute() {
         this.muted = false;
-        this.youtube?.unMute?.();
+        this.applyYouTubeAudio();
         this.soundcloud?.unMute();
     }
 
@@ -122,8 +132,16 @@ export default class RoomPlayer {
 
     setVolume(volume: number) {
         this.volume = volume;
-        this.youtube?.setVolume?.(volume);
+        this.applyYouTubeAudio();
         this.soundcloud?.setVolume(volume);
+    }
+
+    private applyYouTubeAudio() {
+        // Zero is an intentional mute, including after an autoplay recovery calls unMute().
+        const quiet = this.muted || this.volume === 0;
+        if (quiet) this.youtube?.mute?.();
+        this.youtube?.setVolume?.(this.volume);
+        if (!quiet) this.youtube?.unMute?.();
     }
 
     getPlayerState(): number | undefined {

@@ -197,7 +197,7 @@ class SettingsController extends Controller
             'system.background_effects' => ['sometimes', 'boolean'],
             'system.visual_effects' => ['sometimes', 'boolean'],
             'system.simple_background' => ['sometimes', 'boolean'],
-            'regional.language' => ['sometimes', Rule::in(['en', 'et', 'ru'])],
+            'regional.language' => ['sometimes', Rule::in(['en', 'et', 'ru', 'pt-BR', 'es', 'de', 'fr', 'fi', 'uk', 'lv', 'lt', 'pl'])],
             'regional.time_format' => ['sometimes', Rule::in(['12', '24'])],
             'appearance.chat_size' => ['sometimes', Rule::in(['small', 'normal', 'large'])],
             'appearance.show_avatars' => ['sometimes', 'boolean'],
@@ -208,6 +208,7 @@ class SettingsController extends Controller
             'room.compact_layout' => ['sometimes', 'boolean'],
             'audio.default_volume' => ['sometimes', 'integer', 'between:0,100'],
             'audio.mute_on_join' => ['sometimes', 'boolean'],
+            'audio.entrance_sounds' => ['sometimes', 'boolean'],
             'notifications.friend_requests' => ['sometimes', 'boolean'],
             'notifications.announcements' => ['sometimes', 'boolean'],
             'notifications.whispers' => ['sometimes', 'boolean'],
@@ -221,6 +222,15 @@ class SettingsController extends Controller
         ]);
 
         if (isset($data['system'])) $data['system'] = array_map(fn ($value) => (bool) $value, $data['system']);
+
+        // The main Compact switch owns the complete layout preset. The chat toolbar
+        // sends only compact_chat, so it can still override just that part later.
+        if (array_key_exists('compact', $data['appearance'] ?? [])) {
+            $compact = (bool) $data['appearance']['compact'];
+            $data['appearance']['compact'] = $compact;
+            $data['appearance']['compact_chat'] = $compact;
+            $data['room']['compact_layout'] = $compact;
+        }
 
         $preferences = DB::transaction(function () use ($request, $data) {
             $user = User::whereKey($request->user()->id)->lockForUpdate()->firstOrFail();

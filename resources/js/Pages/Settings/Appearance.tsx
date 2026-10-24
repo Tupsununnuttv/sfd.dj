@@ -12,11 +12,10 @@ const text = { small: 'text-xs', normal: 'text-sm', large: 'text-base' };
 
 export default function Appearance() {
     const { user } = usePage<PageProps>().props.auth;
-    const { appearance, room } = withDefaults(user.preferences);
+    const { appearance } = withDefaults(user.preferences);
     const { values: compact } = useCompactPreferences();
     appearance.compact = compact.compact;
     appearance.compact_chat = compact.compact_chat;
-    room.compact_layout = compact.compact_layout;
 
     // the same lines as in a room, in your size, with or without pictures and badges
     const lines: [string, string, string, number, string][] = [
@@ -56,8 +55,6 @@ export default function Appearance() {
             </SettingsSection>
 
             <Card className="divide-y divide-white/5 px-6">
-                <Toggle label="Compact chat" hint="Smaller chat avatars and tighter message spacing. Keeps your text size, badges and room layout unchanged." checked={appearance.compact_chat} onChange={(v) => saveCompactPreference('compact_chat', v)} />
-                <Toggle label="Compact room layout" hint="Smaller room bars and tighter chat, member and waitlist spacing. Gives the stage more space and affects only your view." checked={room.compact_layout} onChange={(v) => saveCompactPreference('compact_layout', v)} />
                 <Toggle label="Compact" hint="Tighter spacing everywhere: more chat lines, people and songs fit on the screen, with smaller pictures and slimmer bars in the rooms." checked={appearance.compact} onChange={(v) => saveCompactPreference('compact', v)} />
                 <Toggle label="Show avatars in chat" hint="Turn off for a denser chat." checked={appearance.show_avatars} onChange={(v) => savePrefs({ appearance: { show_avatars: v } })} />
                 <Toggle label="Show badges and levels in chat" hint="The little role icons and Lv numbers in front of names." checked={appearance.show_badges} onChange={(v) => savePrefs({ appearance: { show_badges: v } })} />

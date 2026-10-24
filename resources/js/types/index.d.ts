@@ -1,6 +1,7 @@
 import type { FlagInfo } from '@/Components/Flag';
 import { Cosmetics } from '@/lib/cosmetics';
 import type { Status } from '@/lib/status';
+import type { Language } from '@/lib/languages';
 
 export interface RoleInfo {
     icon?: string;
@@ -13,10 +14,10 @@ export interface RoleInfo {
 export interface Preferences {
     system?: { low_performance?: boolean; animated_characters?: boolean; background_effects?: boolean; visual_effects?: boolean; simple_background?: boolean };
     subscription?: Record<string, string>;
-    regional?: { language?: 'en' | 'et' | 'ru'; time_format?: '12' | '24' };
+    regional?: { language?: Language; time_format?: '12' | '24' };
     appearance?: { chat_size?: 'small' | 'normal' | 'large'; show_avatars?: boolean; show_badges?: boolean; show_activity?: boolean; always_animate?: boolean; compact?: boolean; compact_chat?: boolean };
     room?: { autowoot?: boolean; compact_layout?: boolean };
-    audio?: { default_volume?: number; mute_on_join?: boolean };
+    audio?: { default_volume?: number; mute_on_join?: boolean; entrance_sounds?: boolean };
     notifications?: { friend_requests?: boolean; announcements?: boolean; whispers?: boolean; mentions?: boolean; desktop?: boolean };
     privacy?: { whispers?: 'everyone' | 'friends' | 'nobody'; friend_requests?: boolean; show_online?: boolean };
 }

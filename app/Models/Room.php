@@ -53,6 +53,12 @@ class Room extends Model
     /** The badges staff can give a room, in the order they are shown. A room can have any of them at once. */
     public const BADGES = ['official', 'verified', 'partnered'];
 
+    /** The benefit belongs to this room, independently of its host's other rooms. */
+    public function getEarlyAccessAttribute(): bool
+    {
+        return (bool) $this->is_featured || (bool) array_intersect($this->badges ?? [], ['verified', 'partnered']);
+    }
+
     public const GENRES = ['Pop', 'Rock', 'Hip-Hop', 'R&B', 'Electronic', 'House', 'Techno', 'Drum & Bass', 'Dubstep', 'Lo-fi', 'Jazz', 'Classical', 'Metal', 'Indie', 'Country', 'Reggae', 'Latin', 'K-Pop', 'Mixed'];
 
     protected $fillable = ['user_id', 'name', 'slug', 'description', 'current_item_id', 'current_started_at', 'badges', 'background', 'genre', 'is_private', 'is_featured', 'custom_background', 'welcome_message', 'rules', 'rule_list', 'custom_css', 'live', 'waitlist_locked', 'waitlist_cycle', 'automod', 'auto_host_bot_id', 'auto_host_playlist_id'];

@@ -1,13 +1,14 @@
 import { Preferences } from '@/types';
 import { router } from '@inertiajs/react';
 import { SYSTEM_DEFAULTS } from './systemState';
+import type { Language } from './languages';
 
 export const defaults = {
     system: SYSTEM_DEFAULTS,
-    regional: { language: 'en' as 'en' | 'et' | 'ru', time_format: '24' as '12' | '24' },
+    regional: { language: 'en' as Language, time_format: '24' as '12' | '24' },
     appearance: { chat_size: 'normal' as 'small' | 'normal' | 'large', show_avatars: true, show_badges: true, show_activity: true, always_animate: false, compact: false, compact_chat: false },
     room: { autowoot: false, compact_layout: false },
-    audio: { default_volume: 80, mute_on_join: false },
+    audio: { default_volume: 80, mute_on_join: false, entrance_sounds: false },
     notifications: { friend_requests: true, announcements: true, whispers: true, mentions: true, desktop: false },
     privacy: { whispers: 'everyone' as 'everyone' | 'friends' | 'nobody', friend_requests: true, show_online: true },
 };

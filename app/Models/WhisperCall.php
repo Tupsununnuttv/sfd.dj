@@ -16,13 +16,17 @@ class WhisperCall extends Model
         return ['caller_id' => 'integer', 'callee_id' => 'integer', 'video' => 'boolean', 'caller_seen' => 'datetime', 'callee_seen' => 'datetime'];
     }
 
-    public static function expire(): void
+    public static function expire(?array $participants = null): void
     {
-        static::whereIn('status', ['ringing', 'active'])->where(function ($q) {
+        static::when($participants !== null, fn ($q) => $q->where(fn ($p) => $p->whereIn('caller_id', $participants)->orWhereIn('callee_id', $participants)))
+            ->whereIn('status', ['ringing', 'active'])->where(function ($q) {
             $q->where('caller_seen', '<', now()->subSeconds(45))
                 ->orWhere(fn ($r) => $r->where('status', 'ringing')->where('created_at', '<', now()->subSeconds(90)))
                 ->orWhere(fn ($r) => $r->where('status', 'active')->where('callee_seen', '<', now()->subSeconds(45)));
         })->update(['status' => 'ended', 'offer' => null, 'answer' => null]);
-        static::where('status', 'ended')->where('updated_at', '<', now()->subDay())->delete();
+        // The scheduled sweep owns historical cleanup; idle polling should not scan every call.
+        if ($participants === null) {
+            static::where('status', 'ended')->where('updated_at', '<', now()->subDay())->delete();
+        }
     }
 }

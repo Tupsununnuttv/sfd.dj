@@ -97,11 +97,11 @@ export default function PlaybackFrame({ children, normal, wide, source }: { chil
     const button = 'flex h-8 w-8 items-center justify-center rounded-lg text-white/85 outline-none transition hover:bg-white/15 hover:text-white focus-visible:ring-2 focus-visible:ring-violet-400 disabled:opacity-30';
     return <div ref={frame} className={`sfd-playbackscreen group/playback absolute overflow-hidden rounded-md bg-neutral-950 ${theatre ? 'z-600 shadow-[0_0_0_2000px_rgba(0,0,0,0.8)]' : 'z-5'}`} style={theatre ? wide : normal} data-theatre={theatre ? 'on' : 'off'}>
         {children}
-        <div className="sfd-playbackcontrols unscale absolute left-2 top-2 z-30 flex origin-top-left items-center gap-0.5 rounded-xl border border-white/10 bg-black/75 p-1 opacity-0 backdrop-blur transition-opacity group-hover/playback:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100" role="group" aria-label="Video display controls">
+        <div className="sfd-playbackcontrols unscale absolute left-2 top-4 z-30 flex origin-top-left items-center gap-0.5 rounded-xl border border-white/10 bg-black/75 p-1 opacity-0 backdrop-blur transition-opacity group-hover/playback:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100" role="group" aria-label="Video display controls">
             <button type="button" aria-label={theatre ? 'Exit theatre mode' : 'Theatre mode'} title={theatre ? 'Exit theatre mode' : 'Theatre mode'} aria-pressed={theatre} onClick={() => setTheatre(!theatre)} className={button}>{theatre ? <X size={17} /> : <RectangleHorizontal size={17} />}</button>
             <button type="button" aria-label="Open video window" title={videoSource ? 'Open a small video window (sound stays in the room)' : 'A video must be playing to open a video window'} disabled={!videoSource} onClick={popout} className={button}><PictureInPicture2 size={17} /></button>
             <button type="button" aria-label={fullscreen ? 'Exit video fullscreen' : 'Video fullscreen'} title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'} disabled={typeof document === 'undefined' || !document.fullscreenEnabled} onClick={toggleFullscreen} className={button}>{fullscreen ? <Minimize size={17} /> : <Maximize size={17} />}</button>
         </div>
-        {error && <p role="alert" className="unscale absolute inset-x-3 top-14 z-40 origin-top-left rounded-lg bg-black/90 p-2 text-xs text-amber-200">{error}</p>}
+        {error && <p role="alert" className="unscale absolute inset-x-3 top-16 z-40 origin-top-left rounded-lg bg-black/90 p-2 text-xs text-amber-200">{error}</p>}
     </div>;
 }
