@@ -18,6 +18,28 @@ class SettingsUpgradeTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_language_and_time_preferences_are_saved_validated_and_shared(): void
+    {
+        $user = User::factory()->create(['preferences' => ['audio' => ['default_volume' => 35]]]);
+        $this->actingAs($user)->get('/settings/language-time')->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('Settings/LanguageTime'));
+        foreach (['en', 'et', 'ru'] as $language) {
+            $this->patchJson('/settings/preferences', ['regional' => ['language' => $language, 'time_format' => '12']])
+                ->assertOk()->assertJsonPath('preferences.regional.language', $language)
+                ->assertJsonPath('preferences.regional.time_format', '12')
+                ->assertJsonPath('preferences.audio.default_volume', 35);
+        }
+        $this->patchJson('/settings/preferences', ['regional' => ['time_format' => '24']])
+            ->assertOk()->assertJsonPath('preferences.regional.language', 'ru');
+        $user->refresh();
+        $this->get('/settings/language-time')->assertInertia(fn (Assert $page) => $page
+            ->where('auth.user.preferences.regional.language', 'ru')
+            ->where('auth.user.preferences.regional.time_format', '24'));
+        $this->patchJson('/settings/preferences', ['regional' => ['language' => 'invalid', 'time_format' => 'invalid']])
+            ->assertUnprocessable()->assertJsonValidationErrors(['regional.language', 'regional.time_format']);
+        $this->assertSame('24', $user->fresh()->pref('regional.time_format'));
+    }
+
     public function test_compact_preferences_can_save_as_json_without_reloading_a_page(): void
     {
         $user = User::factory()->create(['preferences' => ['room' => ['autowoot' => true]]]);

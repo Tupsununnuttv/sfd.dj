@@ -606,3 +606,35 @@ input[type='range'].vol:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px 
     contain: paint;
     isolation: isolate;
 }
+
+/* Explicit System choices override decorative animation preferences, including Always animate. */
+:root[data-system-low='true'] body *,
+:root[data-system-low='true'] body *::before,
+:root[data-system-low='true'] body *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+    will-change: auto !important;
+}
+:root[data-character-motion='off'] .animated-avatar *,
+:root[data-character-motion='off'] .dance-bounce,
+:root[data-character-motion='off'] .dance-sway,
+:root[data-character-motion='off'] .dance-hop,
+:root[data-character-motion='off'] .dance-wiggle,
+:root[data-character-motion='off'] .dance-dj,
+:root[data-background-effects='off'] .sc-live * { animation: none !important; }
+:root[data-visual-effects='off'] body *,
+:root[data-visual-effects='off'] body *::before,
+:root[data-visual-effects='off'] body *::after {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    filter: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    will-change: auto !important;
+}
+/* Keep keyboard focus visible when decorative box-shadow rings are disabled. */
+:root[data-visual-effects='off'] :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid #c4b5fd !important;
+    outline-offset: 2px !important;
+}

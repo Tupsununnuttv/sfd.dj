@@ -10,6 +10,7 @@ import { Cosmetics, ShopBadge } from '@/lib/cosmetics';
 import { levelPercent, toNextText } from '@/lib/level';
 import { ago } from '@/lib/time';
 import { appearanceSaved } from '@/lib/appearanceChanges';
+import { useSystemRendering } from '@/lib/systemPreferences';
 import { PageProps, RoleInfo } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
@@ -47,6 +48,7 @@ const isAnimated = (avatar: string | null) => !!avatar && (avatar.startsWith('an
 const buyBtn = 'flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition';
 
 export default function Shop({ catalog, coins, daily, earn, history }: { catalog: Record<Slot, Item[]>; coins: number; daily: { amount: number; claimable: boolean }; earn: string[][]; history: Line[] }) {
+    useSystemRendering();
     const { user } = usePage<PageProps>().props.auth;
     const level = user.level;
     const staff = user.is_staff;

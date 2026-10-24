@@ -77,6 +77,7 @@ class AdminController extends Controller
                     'plan_paid' => $u->activePlan() && filled($u->stripe_subscription_id), // bought through Stripe: Stripe runs it
                     'email_verified' => $u->hasVerifiedEmail(),
                     'editable' => $actor->hasPermission('users.manage') && $actor->outranks($u),
+                    'outranked' => $actor->outranks($u),
                     'violations' => $u->violations_count,
                     'joined' => $u->created_at->toIso8601String(),
                     'last_seen_at' => $u->last_seen_at?->toIso8601String(),
@@ -99,7 +100,7 @@ class AdminController extends Controller
             'ipBans' => fn () => IpBan::latest()->get(['id', 'ip', 'reason', 'created_at']),
             'maintenance' => fn () => Setting::get('maintenance') === '1',
             // the mail setup (server, from address) goes only to those who may open the Email tab
-            'email' => fn () => $actor->hasPermission('maintenance.toggle') ? MailStatus::describe() + [
+            'email' => fn () => $actor->hasPermission('email.manage') ? MailStatus::describe() + [
                 'choice' => Setting::get('email_verification') ?? 'required', // what staff chose
                 'enforced' => Setting::verificationRequired(), // what is true now: "required" only counts while the site can send mail
                 'unverified' => User::where('is_bot', false)->whereNull('email_verified_at')->count(),
@@ -222,7 +223,7 @@ class AdminController extends Controller
 
     public function updateRoles(Request $request, User $user): RedirectResponse
     {
-        $actor = $this->allow($request, 'users.manage');
+        $actor = $this->allow($request, 'users.roles');
         abort_unless($actor->outranks($user), 403);
 
         $allowed = array_map(fn (Role $r) => $r->value, $this->grantable($actor));
@@ -242,7 +243,7 @@ class AdminController extends Controller
     /** Give or take the special badges (beta tester, bug hunter ...). */
     public function updateAwards(Request $request, User $user): RedirectResponse
     {
-        $this->allow($request, 'users.manage');
+        $this->allow($request, 'users.awards');
 
         $data = $request->validate([
             'awards' => ['present', 'array'],
@@ -258,7 +259,7 @@ class AdminController extends Controller
     /** Give somebody a plan (Bronze to Premium) by hand (for a month, a year or for good), or take it away. A plan paid through Stripe is run by Stripe: staff only see it. */
     public function updatePlan(Request $request, User $user): RedirectResponse
     {
-        $this->allow($request, 'users.manage');
+        $this->allow($request, 'subscriptions.manage');
 
         $data = $request->validate([
             'plan' => ['nullable', Rule::in(array_keys(Plans::TIERS))],
@@ -276,7 +277,7 @@ class AdminController extends Controller
     /** Staff choose whether people must confirm their email (it is only asked for while the site can send mail, see Setting::verificationRequired). */
     public function emailSettings(Request $request): RedirectResponse
     {
-        $this->allow($request, 'maintenance.toggle');
+        $this->allow($request, 'email.manage');
 
         Setting::put('email_verification', $request->validate(['verification' => ['required', Rule::in(['required', 'optional'])]])['verification']);
 
@@ -286,7 +287,7 @@ class AdminController extends Controller
     /** Send a test message to the staff member's own address and say what happened: the way to find out if the mail server in .env works. */
     public function testMail(Request $request): RedirectResponse
     {
-        $actor = $this->allow($request, 'maintenance.toggle');
+        $actor = $this->allow($request, 'email.manage');
         $configured = MailStatus::configured();
 
         try {
@@ -303,7 +304,7 @@ class AdminController extends Controller
     /** Staff confirm somebody's email by hand: for the person whose message never arrives. */
     public function confirmEmail(Request $request, User $user): RedirectResponse
     {
-        $this->allow($request, 'users.manage');
+        $this->allow($request, 'users.verify');
 
         $user->hasVerifiedEmail() || $user->markEmailAsVerified();
 
@@ -356,7 +357,7 @@ class AdminController extends Controller
 
     public function warn(Request $request, User $user): RedirectResponse
     {
-        $actor = $this->allow($request, 'users.manage');
+        $actor = $this->allow($request, 'users.violations');
         abort_unless($actor->outranks($user), 403);
 
         $reason = $request->validate(['reason' => ['required', 'string', 'max:200']])['reason'];
@@ -368,7 +369,7 @@ class AdminController extends Controller
     /** Delete somebody's account for good: their rooms, playlists, messages and friends go with it. Only people ranked below you (so never yourself). */
     public function destroyUser(Request $request, User $user): RedirectResponse
     {
-        $actor = $this->allow($request, 'users.manage');
+        $actor = $this->allow($request, 'users.delete');
         abort_unless($actor->outranks($user), 403);
 
         $user->delete();

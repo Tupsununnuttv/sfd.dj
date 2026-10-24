@@ -10,9 +10,10 @@ import { features, Partner, partners } from '@/lib/siteContent';
 import { countdown, until, useNow } from '@/lib/time';
 import { PageProps, RoleInfo } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowRight, Calendar, Check, ChevronDown, Code2, Heart, PlugZap, Plus, Shirt, Sparkles, Trophy } from 'lucide-react';
+import { ArrowRight, Bot, Calendar, Check, ChevronDown, Code2, Heart, PlugZap, Plus, Shirt, Sparkles, Trophy } from 'lucide-react';
 
 interface HomeRoom {
+    auto_host_bot?: { id: number; name: string } | null;
     id: number;
     name: string;
     slug: string;
@@ -242,6 +243,7 @@ export default function Welcome({ rooms, event, topDjs, genres, stats: initialSt
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                     <h3 className="max-w-full truncate font-semibold">{r.name}</h3>
                                     <RoomBadge badges={r.badges} />
+                                    {r.auto_host_bot && <span data-selfbot className="flex min-w-0 items-center gap-1 text-xs text-sky-300"><Bot size={13} /><span className="truncate">Selfbot: {r.auto_host_bot.name}</span></span>}
                                     {r.live_title && <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">Live</span>}
                                 </div>
                                 {r.genre && <span className="mt-1 inline-block rounded-full bg-violet-500/15 px-2 py-0.5 text-[11px] text-violet-300">🎵 {r.genre}</span>}

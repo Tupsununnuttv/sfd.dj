@@ -21,6 +21,7 @@ export interface AdminUser {
     email_verified: boolean;
     is_bot: boolean;
     editable: boolean;
+    outranked: boolean;
     violations: number;
     joined: string;
     last_seen_at: string | null;

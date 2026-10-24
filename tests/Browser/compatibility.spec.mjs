@@ -169,8 +169,8 @@ test('quick profile uses the fresh server avatar and refreshes a cached look aft
     await page.route('**/profile-api/77', (route) => route.fulfill({ json: { id: 77, name: 'DJ Test', avatar, cosmetics: null, level: 29, stats: { xp: 15860, songs_played: 1, woots: 2, friends: 3 } } }));
     await page.goto(harness);
     await page.locator('#peek').click();
-    await expect(page.locator('img[src="/Avatars/Standing/panda.svg"]')).toBeVisible();
+    await expect(page.locator('img[src^="/Avatars/Previews/panda."]')).toBeVisible();
     avatar = 'char:bamboopanda';
     await page.evaluate(async () => { const { invalidateProfile } = await import('/resources/js/lib/profileCache.ts'); invalidateProfile(77); });
-    await expect(page.locator('img[src="/Avatars/Standing/bamboopanda.svg"]')).toBeVisible();
+    await expect(page.locator('img[src^="/Avatars/Previews/bamboopanda."]')).toBeVisible();
 });

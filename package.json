@@ -12,7 +12,7 @@
         "test:browsers:install": "playwright install chromium firefox webkit",
         "avatars:previews": "node scripts/character-posters.mjs",
         "backgrounds:previews": "node scripts/background-thumbnails.mjs",
-        "build": "node scripts/character-posters.mjs && node scripts/background-thumbnails.mjs && tsc && vite build",
+        "build": "node scripts/character-posters.mjs && node scripts/character-animations.mjs && node scripts/background-thumbnails.mjs && tsc && vite build",
         "dev": "concurrently --names web,bot \"vite\" \"npm:bot:dev\"",
         "bot:install": "npm --prefix bot install",
         "bot:dev": "npm --prefix bot run dev",

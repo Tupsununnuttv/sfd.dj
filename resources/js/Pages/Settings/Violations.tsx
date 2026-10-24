@@ -1,3 +1,4 @@
+import { formatDate } from '@/lib/regional';
 import { Card, EmptyState } from '@/Components/ui';
 import SettingsLayout from '@/Layouts/SettingsLayout';
 import { ago } from '@/lib/time';
@@ -19,7 +20,7 @@ export default function Violations({ violations }: { violations: { id: number; r
                                 <ShieldAlert size={20} className="mt-0.5 shrink-0 text-amber-400" />
                                 <div>
                                     <p className="text-sm font-semibold">{v.reason}</p>
-                                    <p className="text-xs text-neutral-500">{new Date(v.created_at).toLocaleDateString()} · {ago(v.created_at)}</p>
+                                    <p className="text-xs text-neutral-500">{formatDate(v.created_at)} · {ago(v.created_at)}</p>
                                 </div>
                             </div>
                         ))}

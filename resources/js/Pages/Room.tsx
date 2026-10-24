@@ -1,3 +1,7 @@
+import SubscriptionRoomEffects, { subscriptionEntrance, subscriptionReaction } from '@/Components/SubscriptionRoomEffects';
+import SubscriberName from '@/Components/SubscriberName';
+import { perk, subscriptionVars } from '@/lib/subscriptionStyle';
+import type { SubscriptionAppearance } from '@/lib/cosmetics';
 import { Cosmetics } from '@/lib/cosmetics';
 import Avatar from '@/Components/Avatar';
 import Badges from '@/Components/Badges';
@@ -19,6 +23,8 @@ import type { RoomRoleInfo } from '@/Components/RoomRolesEditor';
 import type { MemberRow, SeasonInfo } from '@/Components/RoomSettingsPanel';
 import Sidebar from '@/Components/Sidebar';
 import RoomScene from '@/Components/RoomScene';
+import RoomGuestList from '@/Components/RoomGuestList';
+import { useRoomGuests, type RoomGuest } from '@/lib/roomGuests';
 import VoteBar, { MyVotes, Votes } from '@/Components/VoteBar';
 import { SeatButton, WaitlistCard } from '@/Components/WaitlistCard';
 import { backgroundClass } from '@/lib/backgrounds';
@@ -186,7 +192,7 @@ export default function Room({
     myVotes,
     stickers,
     emojis,
-    listening,
+    guestMembers = [],
     stats,
     messages: initialMessages,
     playback: initialPlayback,
@@ -201,6 +207,7 @@ export default function Room({
     members: Record<string, number>;
     friendIds: number[];
     botMembers: Member[];
+    guestMembers?: RoomGuest[];
     memberList: MemberRow[];
     mod: ModData | null;
     permissionLabels: Record<string, string>;
@@ -218,6 +225,7 @@ export default function Room({
     const { auth: { user, guest }, community } = usePage<PageProps>().props;
     const { hiddenAuthors } = useUserRestrictions();
     const touchRendering = useTouchRendering();
+    const [watchers, updateWatchers] = useRoomGuests(room.slug, guestMembers, guest);
     const hiddenAuthorsRef = useRef(hiddenAuthors);
     hiddenAuthorsRef.current = hiddenAuthors;
     const prefs = withDefaults(user.preferences);
@@ -445,13 +453,14 @@ export default function Room({
     }, [guest, current?.id, current?.duration, playback.elapsed, playback.receivedAt, room.slug, !!live]);
 
     // The host changed the room (its name, scene, rules, CSS ...): read it again. A moment apart, so a full room does not ask all at once.
-    const reloadRoom = () => { window.setTimeout(() => router.reload({ only: ['room', 'backgrounds'] }), Math.random() * 1500); };
+    const reloadRoom = () => { window.setTimeout(() => router.reload({ only: ['room', 'backgrounds', 'host'] }), Math.random() * 1500); };
 
     // who joins, leaves and votes shows as lines in the chat, unless this person turned that off (Settings, Appearance)
     const activity = useRef(true);
     activity.current = prefs.appearance.show_activity;
-    const sayVote = (v: { user_id: number; name: string; type: 'woot' | 'meh' | 'grab' }) => {
+    const sayVote = (v: { user_id: number; name: string; type: 'woot' | 'meh' | 'grab'; appearance?: SubscriptionAppearance | null }) => {
         if (!activity.current || hiddenAuthorsRef.current.has(v.user_id) || (v.type === 'grab' && v.user_id === user.id)) return; // my own grab says more in the window I just used
+        subscriptionReaction(v.name, v.appearance);
         notify(v.type, `${v.name} ${v.type === 'woot' ? 'wooted' : v.type === 'meh' ? "meh'd" : 'grabbed'} this song`);
     };
 
@@ -477,6 +486,7 @@ export default function Room({
                 .listen('.message-deleted', (d: { id: number }) => setMessages((p) => p.filter((m) => m.id !== d.id)))
                 .listen('.playback', (p: Playback) => setPlayback(stamp(p)))
                 .listen('.room-bot-presence', applyBotPresence)
+                .listen('.room-guests', (data: { guests: RoomGuest[] }) => updateWatchers(data.guests))
                 .listen('.chat-cleared', () => setMessages([]))
                 .listen('.vote-cast', sayVote)
                 .listen('.room-updated', reloadRoom);
@@ -504,9 +514,11 @@ export default function Room({
         ch.here((list: Member[]) => {
             setUsers((currentUsers) => [...new Map([...list, ...currentUsers.filter((member) => member.is_bot)].map((member) => [member.id, member])).values()]);
             const count = list.length + users.filter((member) => member.is_bot).length;
+            subscriptionEntrance(user.name, user.cosmetics);
             notify('join', `You joined ${room.name}. ${count} ${count === 1 ? 'person is' : 'people are'} here.`);
         })
             .joining((m: Member) => {
+                if (!hiddenAuthorsRef.current.has(m.id)) subscriptionEntrance(m.name, m.cosmetics);
                 setUsers((p) => [...p.filter((u) => u.id !== m.id), m]);
                 activity.current && !hiddenAuthorsRef.current.has(m.id) && notify('join', `${m.name} joined the room`);
             })
@@ -525,6 +537,7 @@ export default function Room({
             .listen('.message-deleted', (d: { id: number }) => setMessages((p) => p.filter((m) => m.id !== d.id)))
             .listen('.playback', (p: Playback) => setPlayback(stamp(p)))
             .listen('.room-bot-presence', applyBotPresence)
+            .listen('.room-guests', (data: { guests: RoomGuest[] }) => updateWatchers(data.guests))
             .listen('.chat-cleared', () => setMessages([]))
             .listen('.roles-updated', () => router.reload({ only: ['roles', 'members', 'memberList', 'can', 'bans', 'mod'] }))
             .listen('.room-updated', reloadRoom)
@@ -871,7 +884,7 @@ export default function Room({
         ['room', 'Room', 'sfd-tabroom '],
         ['chat', 'Chat', 'sfd-tabchat '],
         ['waitlist', `Waitlist (${waitlist.length}/${playback.max})`, 'sfd-tabwaitlist '],
-        ['users', `Users (${users.length})`, 'sfd-tabusers '],
+        ['users', `Users (${users.length + watchers.length})`, 'sfd-tabusers '],
     ];
 
     return (
@@ -893,13 +906,14 @@ export default function Room({
                     }}
                 />
 
-                <main className={`sfd-main ${tab === 'room' ? 'flex' : 'hidden md:flex'} min-w-0 flex-1 flex-col ${backgroundClass(room.background)}`}>
+                <main style={subscriptionVars(host.cosmetics?.subscription)} data-sub-theme={perk(host.cosmetics?.subscription, 'theme') || undefined} className={`sfd-main relative ${tab === 'room' ? 'flex' : 'hidden md:flex'} min-w-0 flex-1 flex-col ${backgroundClass(room.background)}`}>
                     <Live />
+                    <SubscriptionRoomEffects host={host.cosmetics} dj={dj?.cosmetics} songId={current?.id} />
 
                     <RoomHeader
                         room={room}
                         host={host}
-                        listening={guest ? listening : users.length}
+                        listening={users.length + watchers.length}
                         dj={dj}
                         title={current?.title ?? null}
                         live={live}
@@ -918,6 +932,7 @@ export default function Room({
                     {/* the room: the video on the big screen, the DJ in front of the booth, Woot / Grab / Meh on one side of it and Join Waitlist on the other, everybody else standing until they press Woot or Grab */}
                     <RoomScene
                         background={room.background}
+                        cosmetics={host.cosmetics}
                         image={room.custom_background_url}
                         users={users}
                         dj={dj}
@@ -1018,6 +1033,7 @@ export default function Room({
                         ))}
                     </div>
 
+                    {tab === 'chat' && <button onClick={() => setTab('users')} className="shrink-0 border-b border-white/10 px-3 py-2 text-left text-xs text-neutral-400 hover:text-white" data-room-watchers>{watchers.length} {watchers.length === 1 ? 'guest watching' : 'guests watching'} · View people</button>}
                     {tab === 'chat' && (
                         <ChatPanel
                             slug={room.slug}
@@ -1029,6 +1045,7 @@ export default function Room({
                             emojis={emojis}
                             stickers={stickers}
                             typingText={typingText}
+                            typingEffect={perk(users.find((member) => Object.keys(typers).includes(String(member.id)))?.cosmetics?.subscription, 'typing')}
                             onType={whisperTyping}
                             roomRoleOf={roomRoleOf}
                             chatSize={prefs.appearance.chat_size}
@@ -1066,11 +1083,11 @@ export default function Room({
                                     const dj = users.find((u) => u.id === s.user_id);
 
                                     return (
-                                        <li key={s.id} className={`sfd-waitlistentry flex items-center gap-2.5 rounded-lg px-2 py-1.5 ${i === 0 && current ? 'sfd-waitlistplaying bg-violet-500/10' : ''}`}>
+                                        <li key={s.id} data-queue-highlight={dj?.cosmetics?.subscription?.queue_highlight || undefined} style={subscriptionVars(dj?.cosmetics?.subscription)} className={`sfd-waitlistentry flex items-center gap-2.5 rounded-lg px-2 py-1.5 ${i === 0 && current ? 'sfd-waitlistplaying bg-violet-500/10' : ''}`}>
                                             <span className="sfd-waitlistnumber w-5 shrink-0 text-center text-xs text-neutral-500">{i === 0 && current ? '▶' : i}</span>
                                             <Avatar name={s.added_by} avatar={dj?.avatar ?? null} cosmetics={dj?.cosmetics} className="h-8 w-8 text-sm" />
                                             <div className="min-w-0 flex-1">
-                                                <p className="sfd-waitlistname truncate font-semibold" style={{ color: dj?.role.color }}>{s.added_by}{s.user_id === user.id && <span className="ml-1.5 text-xs font-normal text-green-400">you</span>}</p>
+                                                <p className="sfd-waitlistname truncate font-semibold" style={{ color: dj?.role.color }}><SubscriberName cosmetics={dj?.cosmetics}>{s.added_by}</SubscriberName>{s.user_id === user.id && <span className="ml-1.5 text-xs font-normal text-green-400">you</span>}</p>
                                                 <p className="sfd-waitlistsong truncate text-xs text-neutral-400" title={s.title}>{s.title}</p>
                                                 <p className="sfd-waitlisteta text-[11px] text-neutral-500">{i === 0 && current ? 'playing now' : i === 1 ? 'next' : `in ${i} turns`}</p>
                                             </div>
@@ -1094,11 +1111,11 @@ export default function Room({
                         <div className="sfd-users flex-1 overflow-y-auto overflow-x-hidden p-3 text-sm">
                             <div className="sfd-usersinfo mb-3 rounded-lg bg-white/5 p-3 text-xs text-neutral-300">
                                 <p className="sfd-userstitle font-semibold text-white">{room.name} community</p>
-                                <p className="sfd-userscount text-neutral-400">{users.length} {users.length === 1 ? 'person is' : 'people are'} here right now, including you.</p>
+                                <p className="sfd-userscount text-neutral-400">{users.length} {users.length === 1 ? 'member' : 'members'} · {watchers.length} {watchers.length === 1 ? 'guest' : 'guests'} watching</p>
                             </div>
                             {notice && <p className="sfd-usersnotice mb-2 rounded bg-neutral-800 px-2 py-1 text-xs text-neutral-300">{notice}</p>}
                             <div className="sfd-userssearch relative mb-3"><Search size={15} className="pointer-events-none absolute left-3 top-3 text-neutral-400" /><input value={peopleSearch} onChange={(e) => setPeopleSearch(e.target.value)} aria-label="Search people in this room" placeholder="Find someone…" className="sfd-userssearchinput w-full rounded-xl border-white/10 bg-neutral-900 py-2 pl-9 text-sm text-white placeholder-neutral-500 focus:border-violet-400 focus:ring-violet-400" /></div>
-                            {peopleSearch && !users.some((u) => u.name.toLowerCase().includes(peopleSearch.trim().toLowerCase())) && <p className="sfd-usersempty py-6 text-center text-xs text-neutral-400">No members match your search.</p>}
+                            {peopleSearch && ![...users, ...watchers].some((u) => u.name.toLowerCase().includes(peopleSearch.trim().toLowerCase())) && <p className="sfd-usersempty py-6 text-center text-xs text-neutral-400">No members match your search.</p>}
                             {/* everybody under the room role they hold: the host, then the roles in their order, then everyone else */}
                             {roleGroups.map(({ role, people }) => ({ role, people: people.filter((u) => u.name.toLowerCase().includes(peopleSearch.trim().toLowerCase())) })).filter((g) => g.people.length > 0).map(({ role, people }) => (
                                 <section key={role.key} className="sfd-usersgroup mb-3" data-role-group={role.label}>
@@ -1119,7 +1136,7 @@ export default function Room({
                                                     <div className="flex items-center gap-3">
                                                         <button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} aria-label={`View ${u.name}'s profile`} className="sfd-useravatar relative shrink-0"><Avatar name={u.name} avatar={u.avatar} cosmetics={u.cosmetics} className="h-10 w-10" /><StatusDot status={u.status} className="sfd-userstatus absolute -bottom-0.5 -right-0.5" /></button>
                                                         <div className="min-w-0 flex-1">
-                                                            <div className="flex items-center gap-1.5"><button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} className="sfd-username min-w-0 truncate text-left text-sm font-semibold text-neutral-100 hover:text-violet-200">{u.name}</button>{u.id === user.id && <span className="sfd-useryou shrink-0 text-[10px] text-neutral-400">you</span>}<Flag flag={u.flag} className="sfd-userflag h-3 shrink-0" /></div>
+                                                            <div className="flex items-center gap-1.5"><button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} className="sfd-username min-w-0 truncate text-left text-sm font-semibold text-neutral-100 hover:text-violet-200"><SubscriberName cosmetics={u.cosmetics}>{u.name}</SubscriberName></button>{u.id === user.id && <span className="sfd-useryou shrink-0 text-[10px] text-neutral-400">you</span>}<Flag flag={u.flag} className="sfd-userflag h-3 shrink-0" /></div>
                                                             <p className="sfd-usermeta mt-1 truncate text-[11px] text-neutral-400">{u.id === host.id ? 'Room host' : rr?.label ?? u.role.label}{u.level !== undefined && ` · Level ${u.level}`}</p>
                                                         </div>
                                                         <button onClick={(e) => setCard({ user: u, anchor: e.currentTarget.getBoundingClientRect() })} aria-label={`Actions for ${u.name}`} title="Profile and actions" className="sfd-useractions shrink-0 rounded-lg p-2 text-neutral-400 hover:bg-white/10 hover:text-white"><Ellipsis size={18} /></button>
@@ -1131,6 +1148,7 @@ export default function Room({
                                     </ul>
                                 </section>
                             ))}
+                            <RoomGuestList guests={watchers} search={peopleSearch} />
                         </div>
                     )}
                 </aside>

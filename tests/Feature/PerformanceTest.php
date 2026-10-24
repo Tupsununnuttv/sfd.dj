@@ -12,6 +12,31 @@ class PerformanceTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_dashboard_room_cards_do_not_download_room_css_rules_or_moderation_configuration(): void
+    {
+        $user = User::factory()->create();
+        $room = $user->rooms()->create(['name' => 'Small card', 'slug' => 'small-card', 'custom_css' => str_repeat('.sfd-room{color:red}', 100)]);
+        $response = $this->actingAs($user)->get('/dashboard')->assertOk();
+        $card = collect($response->inertiaProps('rooms'))->firstWhere('id', $room->id);
+        $this->assertSame('Small card', $card['name']);
+        foreach (['custom_css', 'rules', 'rule_list', 'automod', 'auto_host_playlist_id'] as $field) $this->assertArrayNotHasKey($field, $card);
+    }
+
+    public function test_room_auth_refresh_does_not_load_chat_roles_queue_or_room_statistics(): void
+    {
+        $user = User::factory()->create();
+        $room = $user->rooms()->create(['name' => 'Fast room', 'slug' => 'fast-room']);
+        $queries = [];
+        DB::listen(function ($query) use (&$queries) { $queries[] = $query->sql; });
+        $this->actingAs($user)->get('/rooms/'.$room->slug, [
+            'X-Inertia' => 'true', 'X-Inertia-Version' => app(HandleInertiaRequests::class)->version(request()),
+            'X-Inertia-Partial-Component' => 'Room', 'X-Inertia-Partial-Data' => 'auth',
+        ])->assertOk()->assertJsonPath('props.auth.user.id', $user->id)->assertJsonMissingPath('props.messages');
+        foreach (['chat_messages', 'room_roles', 'room_members', 'room_bot_presences', 'playlist_items', 'room_emojis'] as $table) {
+            $this->assertEmpty(array_filter($queries, fn ($sql) => str_contains($sql, 'from "'.$table.'"')), 'Unrequested room data queried '.$table);
+        }
+    }
+
     public function test_sidebar_refresh_skips_unrequested_dashboard_queries(): void
     {
         $user = User::factory()->create();

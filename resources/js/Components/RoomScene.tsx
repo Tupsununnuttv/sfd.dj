@@ -1,15 +1,18 @@
+import SubscriberName from '@/Components/SubscriberName';
+import { subscriptionScenePalette, subscriptionVars, useSubscriptionStyle } from '@/lib/subscriptionStyle';
 import PlaybackFrame, { type PlaybackWindowSource } from '@/Components/PlaybackFrame';
 import Avatar from '@/Components/Avatar';
 import SceneBackdrop from '@/Components/scene/Backdrop';
 import { BoothFront, DjBody } from '@/Components/scene/DjBooth';
 import Snow from '@/Components/scene/Snow';
-import { CHARACTER_RATIO, characterOf, characterUrl, DEFAULT_CHARACTER } from '@/lib/characters';
+import { characterRatio, characterOf, characterUrl, DEFAULT_CHARACTER } from '@/lib/characters';
 import { Cosmetics } from '@/lib/cosmetics';
 import { crowdSlots, paletteOf, SCENE } from '@/lib/scenes';
 import { RoleInfo } from '@/types';
 import characterPosters from '@/lib/characterPosters.json';
 import { useTouchRendering } from '@/lib/touchRendering';
-import { CSSProperties, ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useSystemRendering } from '@/lib/systemPreferences';
+import { CSSProperties, ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 export interface Dancer {
     id: number;
@@ -30,9 +33,10 @@ const DANCES = ['dance-bounce', 'dance-sway', 'dance-hop', 'dance-wiggle'];
  * then they dance. A character (avatar "char:<name>") is a whole person with a picture for each of Standing, Dancing and DJing.
  * Text and buttons are kept readable when the canvas is scaled down: `--s` is the canvas scale and `--f` how much of it they follow.
  */
-export default function RoomScene({ background, image = null, users, dj, dancing, playing, myId, screen, playbackSource, votes, waitlist, seat, onUser }: {
+export default function RoomScene({ background, image = null, cosmetics, users, dj, dancing, playing, myId, screen, playbackSource, votes, waitlist, seat, onUser }: {
     background: string | null;
     image?: string | null; // the host's own picture, when the background is "custom"
+    cosmetics?: Cosmetics | null;
     users: Dancer[];
     dj: Dancer | null; // whoever is playing now: stands in front of the booth, and always dances while the song plays
     dancing: ReadonlySet<number>; // who has pressed Woot or Grab on this song
@@ -46,8 +50,12 @@ export default function RoomScene({ background, image = null, users, dj, dancing
     onUser: (user: Dancer, anchor: DOMRect) => void;
 }) {
     const touchRendering = useTouchRendering();
-    const animateScenery = playing && !touchRendering;
-    const palette = paletteOf(background);
+    const system = useSystemRendering();
+    const animateScenery = playing && !touchRendering && system.background_effects;
+    const subscription = useSubscriptionStyle(cosmetics);
+    const djStyle = useSubscriptionStyle(dj?.cosmetics);
+    const customPalette = subscriptionScenePalette(subscription);
+    const palette = customPalette ?? paletteOf(background);
     const wrap = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(0.6);
     const [height, setHeight] = useState<number>(SCENE.h); // the canvas is 900 tall, or taller when the window is: the floor just goes on
@@ -73,17 +81,9 @@ export default function RoomScene({ background, image = null, users, dj, dancing
 
     const { booth, screen: tv, votes: ballot, join, dj: stand, people } = SCENE;
     const half = SCENE.crowdSize / 2;
-    const crowdW = people.crowd * CHARACTER_RATIO;
-    const djW = people.dj * CHARACTER_RATIO;
     const personOf = (user: Dancer) => characterOf(user.character) ?? characterOf(user.avatar) ?? DEFAULT_CHARACTER;
     const djPerson = dj ? personOf(dj) : null;
-
-    // The pictures for dancing and for the stage load before anybody needs them, so a press on Woot changes the pose at once.
-    const names = [...new Set([...users, ...(dj ? [dj] : [])].map(personOf))].sort().join(',');
-    useEffect(() => {
-        if (touchRendering) return; // Do not decode every unused animated pose on a phone.
-        for (const name of names ? names.split(',') : []) for (const state of ['dancing', 'djing'] as const) new Image().src = characterUrl(name, state);
-    }, [names, touchRendering]);
+    const djW = people.dj * characterRatio(djPerson ?? DEFAULT_CHARACTER, 'djing');
 
     // Everybody keeps their spot while others come and go: a newcomer takes the free spot nearest the booth.
     const spots = useRef(new Map<number, string>());
@@ -130,14 +130,15 @@ export default function RoomScene({ background, image = null, users, dj, dancing
                 className={`absolute left-1/2 top-0 ${animateScenery ? 'sc-live' : ''}`}
                 style={{ width: SCENE.w, height, transform: `translateX(-50%) scale(${scale})`, transformOrigin: 'top center', '--s': scale, '--f': f } as CSSProperties}
             >
-                <SceneBackdrop palette={palette} image={image} live={animateScenery} height={height} className="absolute inset-0 h-full w-full" />
+                <SceneBackdrop background={background} palette={palette} image={customPalette ? null : image} live={animateScenery} height={height} className="absolute inset-0 h-full w-full" />
 
                 <PlaybackFrame normal={{ left: tv.x, top: tv.y, width: tv.w, height: tv.h }} wide={{ left: SCENE.w / 2 - Math.min(width / scale - 32, 1400) / 2, top: 16, width: Math.min(width / scale - 32, 1400), height: Math.min((width / scale - 32) * 9 / 16, 787.5) }} source={playbackSource}>{screen}</PlaybackFrame>
 
                 {/* the crowd: nearer the front, drawn later. Everybody stands until they press Woot or Grab. */}
                 {placed.map(({ u, x, y }) => {
                     const person = personOf(u);
-                    const moving = playing && dancing.has(u.id);
+                    const moving = playing && dancing.has(u.id) && system.animated_characters;
+                    const crowdW = people.crowd * characterRatio(person, moving ? 'dancing' : 'standing');
 
                     return (
                         <button
@@ -150,7 +151,7 @@ export default function RoomScene({ background, image = null, users, dj, dancing
                             {person ? (
                                 // a whole person, the feet on this spot
                                 <img
-                                    src={touchRendering && !moving && (characterPosters as Record<string, string>)[person] ? (characterPosters as Record<string, string>)[person] : characterUrl(person, moving ? 'dancing' : 'standing')}
+                                    src={!moving && (characterPosters as Record<string, string>)[person] ? (characterPosters as Record<string, string>)[person] : characterUrl(person, moving ? 'dancing' : 'standing')}
                                     alt=""
                                     draggable={false}
                                     className="absolute left-1/2 max-w-none -translate-x-1/2 object-contain object-bottom"
@@ -171,12 +172,12 @@ export default function RoomScene({ background, image = null, users, dj, dancing
                                 className={`pointer-events-none absolute left-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold leading-4 shadow ${u.id === myId ? 'bg-violet-600 text-white' : 'bg-black/80 text-neutral-100 opacity-0 transition-opacity group-hover:opacity-100'}`}
                                 style={{ top: person ? 66 - people.crowd + 18 : -8, transform: `translateX(-50%) translateY(-100%) scale(${f})`, transformOrigin: 'bottom center', color: u.id === myId ? undefined : u.role.color }}
                             >
-                                {u.id === myId ? 'You' : u.name}
+                                <SubscriberName cosmetics={u.cosmetics}>{u.id === myId ? 'You' : u.name}</SubscriberName>
                             </span>
                         </button>
                     );
                 })}
-                {!touchRendering && <>
+                {!touchRendering && system.background_effects && <>
                     {(palette.theme === 'christmas' || palette.theme === 'winter') && <Snow />}
                     {(palette.theme === 'spring' || palette.theme === 'anime') && <Snow petals />}
                     {palette.theme === 'foxy' && <Snow variant="leaves" />}
@@ -200,6 +201,7 @@ export default function RoomScene({ background, image = null, users, dj, dancing
                 )}
                 {dj && (
                     <>
+                        {system.visual_effects && djStyle?.dj_spotlight && <div aria-hidden className="sub-dj-spotlight pointer-events-none absolute z-9 rounded-full" style={{ ...subscriptionVars(djStyle), left: stand.x - 170, top: stand.y + off - 210, width: 340, height: 360 }} />}
                         <div className="pointer-events-none absolute z-9" style={{ left: stand.x - 190, top: stand.y + off - 200, width: 380, height: 380, background: 'radial-gradient(closest-side, rgba(255,255,255,0.26), rgba(255,255,255,0))' }} />
                         <div
                             className="absolute z-14"
@@ -213,7 +215,7 @@ export default function RoomScene({ background, image = null, users, dj, dancing
                                     <img src={characterUrl(djPerson, 'djing')} alt="" draggable={false} className="h-full w-full max-w-none object-contain object-bottom" />
                                 </button>
                             ) : (
-                                <div className={`relative h-full w-full ${playing ? 'dance-dj sc-live' : ''}`}>
+                                <div className={`relative h-full w-full ${playing && system.animated_characters ? 'dance-dj sc-live' : ''}`}>
                                     <DjBody p={palette} className="absolute inset-0" />
                                     <button
                                         onClick={(e) => onUser(dj, e.currentTarget.getBoundingClientRect())}
@@ -231,7 +233,7 @@ export default function RoomScene({ background, image = null, users, dj, dancing
                             className={`pointer-events-none absolute z-490 whitespace-nowrap rounded-full bg-black/80 px-2.5 py-0.5 text-xs font-bold leading-4 shadow ring-1 ring-white/20 transition-opacity ${djHover ? 'opacity-100' : 'opacity-0'}`}
                             style={{ left: stand.x, top: (djPerson ? stand.y - people.dj / 2 : stand.y - 60) + off - 4, transform: `translateX(-50%) translateY(-100%) scale(${f})`, transformOrigin: 'bottom center', color: dj.role.color }}
                         >
-                            {dj.name}
+                            <SubscriberName cosmetics={dj.cosmetics}>{dj.name}</SubscriberName>
                         </span>
                     </>
                 )}

@@ -1,3 +1,4 @@
+import { formatDate } from '@/lib/regional';
 import { copyText } from '@/lib/clipboard';
 import Avatar from '@/Components/Avatar';
 import RoleBadge from '@/Components/RoleBadge';
@@ -50,7 +51,7 @@ export default function RoomInfoPanel({ room, host, online, team, now, queue, st
         }).catch(() => {});
     };
 
-    const since = new Date(room.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    const since = formatDate(room.created_at, { year: 'numeric', month: 'long', day: 'numeric' });
     const rules: RoomRule[] = room.rule_list?.length ? room.rule_list : (room.rules ?? '').split('\n').map((l) => l.trim()).filter(Boolean).map((l) => ({ title: l.replace(/^\d+[.)]\s*/, ''), text: '' }));
     const shown = online.slice(0, 9);
     const present = team.filter((t) => t.people.length > 0);

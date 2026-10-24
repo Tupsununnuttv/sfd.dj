@@ -1,3 +1,6 @@
+import SubscriberName from '@/Components/SubscriberName';
+import { perk, subscriptionVars } from '@/lib/subscriptionStyle';
+import { formatDateTime, formatTime } from '@/lib/regional';
 import { copyText } from '@/lib/clipboard';
 import { useUserRestrictions } from '@/lib/userRestrictions';
 import { Cosmetics } from '@/lib/cosmetics';
@@ -18,7 +21,7 @@ import { AtSign, Check, Copy, Ellipsis, Gift, Image as ImageIcon, ImagePlus, Mes
 import { FormEvent, MouseEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export interface ChatMessageData {
-    reactions?: { emoji: string; users: number[] }[];
+    reactions?: { emoji: string; users: number[]; animation?: string | null }[];
     id: number;
     created_at?: string;
     type: 'user' | 'system';
@@ -224,6 +227,7 @@ export default function ChatPanel({
     emojis,
     stickers,
     typingText,
+    typingEffect,
     onType,
     roomRoleOf,
     chatSize,
@@ -250,6 +254,7 @@ export default function ChatPanel({
     emojis: RoomEmojiData[];
     stickers: string[];
     typingText: string;
+    typingEffect?: string;
     onType: () => void;
     roomRoleOf: (userId: number) => RoleInfo | null;
     chatSize: 'small' | 'normal' | 'large';
@@ -487,6 +492,9 @@ export default function ChatPanel({
                         <div
                             key={m.id}
                             data-row
+                            data-bubble={perk(m.cosmetics?.subscription, 'bubble') || undefined}
+                            data-message-effect={perk(m.cosmetics?.subscription, 'message') || undefined}
+                            style={subscriptionVars(m.cosmetics?.subscription)}
                             onContextMenu={(e) => {
                                 if ((e.target as HTMLElement).closest('a, [data-media]')) return; // links and pictures keep the browser's own menu
                                 e.preventDefault();
@@ -498,9 +506,9 @@ export default function ChatPanel({
                             <div className="min-w-0 flex-1">
                                 <p className="flex flex-wrap items-center gap-1.5 text-xs font-semibold" style={{ color: m.role.color }}>
                                     {showBadges && <Badges badges={m.badges} level={m.level} />}
-                                    <button onClick={openCard} {...peekOn} aria-label={`${m.user}: quick profile`} className="font-semibold hover:underline">{m.user}</button> <RoleBadge role={m.role} />
+                                    <button onClick={openCard} {...peekOn} aria-label={`${m.user}: quick profile`} className="font-semibold hover:underline"><SubscriberName cosmetics={m.cosmetics}>{m.user}</SubscriberName></button> <RoleBadge role={m.role} />
                                     {rr && <RoleBadge role={rr} />}
-                                    {timestamp && <time dateTime={m.created_at} title={timestamp.toLocaleString()} className="ml-1 font-normal text-neutral-500">{timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>}
+                                    {timestamp && <time dateTime={m.created_at} title={formatDateTime(timestamp)} className="ml-1 font-normal text-neutral-500">{formatTime(timestamp)}</time>}
                                 </p>
 
                                 {m.reply && (
@@ -512,7 +520,7 @@ export default function ChatPanel({
                                 {m.body && <p className="wrap-break-word text-neutral-200">{withEmojis(m.body, emojis)}</p>}
                                 {m.sticker && <p className="text-5xl leading-tight">{m.sticker}</p>}
                                 {m.image_url && <img src={m.image_url} data-media alt="" loading="lazy" className="mt-1 max-h-48 max-w-full rounded-lg" />}
-                                {!!m.reactions?.length && <div className="mt-2 flex flex-wrap gap-1" aria-label="Message reactions">{m.reactions.map((r) => <button key={r.emoji} disabled={readOnly || reactionBusy} aria-label={`${r.emoji}: ${r.users.length} reactions${r.users.includes(userId) ? ', including you. Click to remove.' : '. Click to react.'}`} aria-pressed={r.users.includes(userId)} onClick={() => void react(m.id, r.emoji)} className={`flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs disabled:cursor-default ${r.users.includes(userId) ? 'border-violet-400/60 bg-violet-500/20 text-violet-100' : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'}`}><span className="text-base">{r.emoji}</span><span>{r.users.length}</span></button>)}</div>}
+                                {!!m.reactions?.length && <div className="mt-2 flex flex-wrap gap-1" aria-label="Message reactions">{m.reactions.map((r) => <button key={r.emoji} data-reaction-animation={r.animation || undefined} disabled={readOnly || reactionBusy} aria-label={`${r.emoji}: ${r.users.length} reactions${r.users.includes(userId) ? ', including you. Click to remove.' : '. Click to react.'}`} aria-pressed={r.users.includes(userId)} onClick={() => void react(m.id, r.emoji)} className={`flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs disabled:cursor-default ${r.users.includes(userId) ? 'border-violet-400/60 bg-violet-500/20 text-violet-100' : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'}`}><span className="text-base">{r.emoji}</span><span>{r.users.length}</span></button>)}</div>}
                                 {reactingTo === m.id && <div className="mt-2 flex flex-wrap gap-1 rounded-xl border border-white/15 bg-neutral-900 p-2" role="group" aria-label="Choose a reaction">{['❤️', '😂', '🔥', '👏', '👍', '😮', '😢', '🎵'].map((emoji) => <button key={emoji} disabled={reactionBusy} onClick={() => void react(m.id, emoji)} aria-label={`React ${emoji}`} className="rounded-lg p-1.5 text-xl hover:bg-violet-500/20 disabled:opacity-50">{emoji}</button>)}<button onClick={() => setReactingTo(null)} aria-label="Close reactions" className="rounded-lg p-1.5 text-neutral-400 hover:text-white"><X size={16} /></button><p className="w-full text-[10px] text-neutral-400">One reaction per person. Tap your reaction again to remove it.</p></div>}
                             </div>
 
@@ -542,7 +550,7 @@ export default function ChatPanel({
                 })}
             </div>
 
-            <div className="h-5 shrink-0 px-3 text-xs italic text-neutral-500">{typingText}</div>
+            <div data-typing-effect={typingText ? typingEffect : undefined} className="h-5 shrink-0 px-3 text-xs italic text-neutral-500">{typingText}</div>
 
             {readOnly ? (
                 <div className="shrink-0 space-y-2 border-t border-neutral-800 p-4 text-center text-sm">

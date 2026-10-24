@@ -1,3 +1,7 @@
+import SubscriberName from '@/Components/SubscriberName';
+import SubscriptionShowcase from '@/Components/SubscriptionShowcase';
+import { perk, profileVars } from '@/lib/subscriptionStyle';
+import { formatDate, formatDateTime } from '@/lib/regional';
 import Avatar from '@/Components/Avatar';
 import UserRestrictionActions from '@/Components/UserRestrictionActions';
 import { useUserRestrictions } from '@/lib/userRestrictions';
@@ -150,8 +154,8 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
         run(send('POST', route(`rooms.${what}`, [room.slug, user.id])), onClose);
     };
 
-    const joined = profile && new Date(profile.joined).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-    const mutedLabel = room.mutedUntil ? `Muted until ${new Date(room.mutedUntil).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : 'Muted until someone unmutes them';
+    const joined = profile && formatDate(profile.joined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const mutedLabel = room.mutedUntil ? `Muted until ${formatDateTime(room.mutedUntil, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : 'Muted until someone unmutes them';
     const stats: [LucideIcon, string, number | undefined][] = [[Music, 'Songs', s?.songs_played], [ThumbsUp, 'Woots', s?.woots], [Bookmark, 'Grabs', s?.grabs], [Users, 'Friends', s?.friends]];
 
     return (
@@ -167,11 +171,11 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
                 onContextMenu={(e) => e.stopPropagation()}
             >
                 {/* who */}
-                <div className="h-16 bg-linear-to-br from-violet-600/50 via-fuchsia-600/30 to-sky-500/20" />
+                <div style={profileVars(profile?.cosmetics ?? user.cosmetics)} data-profile-animation={perk((profile?.cosmetics ?? user.cosmetics)?.subscription, 'background_animation') || undefined} className="sub-profile h-16 bg-linear-to-br from-violet-600/50 via-fuchsia-600/30 to-sky-500/20" />
                 <div className="-mt-9 flex items-end gap-3 px-4">
                     <div className="rounded-full bg-neutral-900 p-1"><Avatar name={profile?.name ?? user.name} avatar={profile?.avatar !== undefined ? profile.avatar : user.avatar} cosmetics={profile?.cosmetics !== undefined ? profile.cosmetics : user.cosmetics} className="h-16 w-16 text-3xl" /></div>
                     <div className="min-w-0 pb-1">
-                        <p className="truncate text-base font-bold leading-tight" style={{ color: user.role.color }}>{user.name}</p>
+                        <p className="truncate text-base font-bold leading-tight" style={{ color: user.role.color }}><SubscriberName cosmetics={profile?.cosmetics ?? user.cosmetics}>{user.name}</SubscriberName></p>
                         {(profile?.username || profile?.pronouns) && <p className="truncate text-xs text-neutral-400">{profile.username && `@${profile.username}`}{profile.username && profile.pronouns && ' · '}{profile.pronouns}</p>}
                     </div>
                 </div>
@@ -208,6 +212,7 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
                 {profile?.bio && <p className="mx-4 mt-3 line-clamp-4 whitespace-pre-line wrap-break-word rounded-xl bg-white/5 px-3 py-2 text-xs italic text-neutral-300">“{profile.bio}”</p>}
                 {joined && <p className="flex flex-wrap items-center gap-2 px-4 pt-2 text-[11px] text-neutral-500">Joined {joined}{profile?.discord && <> · Discord {profile.discord}</>}{profile?.youtube_channel && <a href={profile.youtube_channel.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-red-300"><SocialIcon name="youtube" size={13} /> {profile.youtube_channel.title || 'YouTube channel'}</a>}</p>}
 
+                <div className="px-4 pt-3"><SubscriptionShowcase cosmetics={profile?.cosmetics ?? user.cosmetics} badges={user.badges} /></div>
                 {/* what you can do */}
                 <div className="space-y-2 px-4 pb-4 pt-3">
                     {!guest && !me && !isBlocked && (

@@ -1,3 +1,4 @@
+import SubscriberName from '@/Components/SubscriberName';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import { CoinPill } from '@/Components/CoinIcon';
 import Avatar from '@/Components/Avatar';
@@ -103,7 +104,7 @@ function ProfileCard() {
                     </span>
                     <span className="min-w-0 flex-1">
                         <span className="flex items-center gap-1.5">
-                            <span className="min-w-0 truncate text-sm font-bold leading-tight tracking-tight text-white">{user.name}</span>
+                            <span className="min-w-0 truncate text-sm font-bold leading-tight tracking-tight text-white"><SubscriberName cosmetics={user.cosmetics}>{user.name}</SubscriberName></span>
                             <Flag flag={user.flag} className="h-3 shrink-0" />
                         </span>
                         <span className="mt-1.5 flex min-w-0 items-center"><RoleBadge role={user.primary_role} /></span>

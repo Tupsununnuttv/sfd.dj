@@ -79,7 +79,7 @@ class SupportController extends Controller
 
     private function staff(Request $request)
     {
-        abort_unless($request->user()?->hasPermission('admin.access'), 403);
+        abort_unless($request->user()?->hasPermission('support.manage'), 403);
 
         return $request->user();
     }

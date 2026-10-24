@@ -46,6 +46,8 @@ function Code({ children }: { children: string }) {
     );
 }
 
+Code.originalText = true;
+
 const origin = () => (typeof window === 'undefined' ? 'https://sfd-dj.eu' : window.location.origin);
 
 const sections: Section[] = [

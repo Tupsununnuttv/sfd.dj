@@ -19,3 +19,16 @@ test('every shipped background has a current small PNG for room settings', () =>
         assert.equal(png.readUInt32BE(20), 126);
     }
 });
+
+test('lightweight room backgrounds have a static 960px image for every selectable background', () => {
+    const root = new URL('../../', import.meta.url);
+    const manifest = JSON.parse(fs.readFileSync(new URL('resources/js/lib/backgroundStills.json', root), 'utf8'));
+    const thumbnails = JSON.parse(fs.readFileSync(new URL('resources/js/lib/backgroundThumbnails.json', root), 'utf8'));
+    assert.deepEqual(Object.keys(manifest), Object.keys(thumbnails));
+    for (const url of Object.values(manifest)) {
+        const png = fs.readFileSync(new URL('public' + url, root));
+        assert.equal(png.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+        assert.equal(png.readUInt32BE(16), 960);
+        assert.equal(png.readUInt32BE(20), 540);
+    }
+});

@@ -48,3 +48,17 @@ Remove-Item Env:BROWSER_SHOP_TEST
 ```
 
 Playwright starts and stops its own server on port 8012. The fixture script refuses any database except `tmp/browser-tests.sqlite` in the testing environment. Do not point these fixtures at development member data or production. Existing profile photos stay independent when the shop checkbox is unticked; selecting a character ticks it, and saving with it checked replaces the photo. Older API clients that omit the option keep their existing behavior.
+
+## Guests, selfbots and new connection controls
+
+```powershell
+npm run build
+$env:BROWSER_SHOP_TEST = '1'
+$env:BROWSER_SITE_TEST = '1'
+npx playwright test tests/Browser/site-upgrade.spec.mjs tests/Browser/lazy-language.spec.mjs
+Remove-Item Env:BROWSER_SHOP_TEST, Env:BROWSER_SITE_TEST
+```
+
+This scenario uses production assets even if the normal development Vite server is running. Its PHP router and seed script refuse any database except the disposable test SQLite file. Persistent cache entries also stay in that database. Two anonymous tabs share one guest alias, a signed-in member sees the guest without sockets, room cards show the configured selfbot and all four new connection controls render with honest configuration status. The separate language scenario checks the real development language loader and mounted text, including that English fetches neither dictionary and Estonian does not fetch Russian. Keep the production build unchanged until these tests finish.
+
+`scripts/localized-react.mjs` keeps the stateful JSX runtime out of Vite dependency prebundling; bundling it separately would create a second regional store. The shared browser server scans both the component harness and full app before serving tests, so tests with blocked hot-reload sockets use the same React dependency graph.

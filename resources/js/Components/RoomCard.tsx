@@ -2,6 +2,7 @@ import Avatar from '@/Components/Avatar';
 import RoomBadge from '@/Components/RoomBadge';
 import { Equalizer } from '@/Components/ui';
 import { Link } from '@inertiajs/react';
+import { Bot } from 'lucide-react';
 
 export interface NowPlaying {
     title: string;
@@ -21,6 +22,7 @@ export interface RoomSummary {
     items_count: number;
     created_at?: string;
     user?: { name: string };
+    auto_host_bot?: { id: number; name: string } | null;
     live?: { kind: string; title: string; thumbnail: string | null; started_at: string } | null; // a live stream is on the big screen
 }
 
@@ -56,6 +58,7 @@ export default function RoomCard({ room, listening = 0, playing }: { room: RoomS
                     <RoomBadge badges={room.badges} />
                     {room.is_private && <span title="Private room: staff only">🔒</span>}
                 </div>
+                {room.auto_host_bot && <p data-selfbot className="mt-2 flex items-center gap-1.5 text-xs text-sky-300"><Bot size={13} /><span className="truncate">Selfbot: {room.auto_host_bot.name}</span></p>}
                 {room.live ? (
                     <p className="mt-1 truncate text-sm text-neutral-200">🔴 {room.live.title}</p>
                 ) : playing ? (

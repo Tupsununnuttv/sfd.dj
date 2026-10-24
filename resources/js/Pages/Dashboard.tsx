@@ -1,3 +1,4 @@
+import { formatDate, formatTime, translate } from '@/lib/regional';
 import CreateRoom from '@/Components/CreateRoom';
 import SiteCounters from '@/Components/SiteCounters';
 import { useLiveStats } from '@/lib/useLiveStats';
@@ -62,8 +63,8 @@ const greeting = () => {
 const when = (iso: string) => {
     const d = new Date(iso);
     const days = Math.round((d.getTime() - Date.now()) / 86400000);
-    const day = days <= 0 ? 'Today' : days === 1 ? 'Tomorrow' : d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
-    return `${day}, ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const day = days <= 0 ? 'Today' : days === 1 ? 'Tomorrow' : formatDate(d, { weekday: 'short', day: 'numeric', month: 'short' });
+    return `${day}, ${formatTime(d)}`;
 };
 
 type Tab = 'all' | 'featured' | 'mine';
@@ -141,7 +142,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                     <div>
                         <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300"><Radio size={13} /> Your music. Your people.</span>
                         <h2 className="mt-5 text-4xl font-black leading-tight tracking-tight sm:text-5xl">Find your next<br /><span className="bg-linear-to-r from-violet-300 via-fuchsia-300 to-sky-300 bg-clip-text text-transparent">favourite room.</span></h2>
-                        <p className="mt-4 max-w-md text-sm leading-relaxed text-neutral-300">{guest ? 'Discover live music, meet the community and find a sound that feels like home.' : `${greeting()}, ${user.name}. Take the decks, tune into a stream or bring your friends together.`}</p>
+                        <p className="mt-4 max-w-md text-sm leading-relaxed text-neutral-300">{guest ? 'Discover live music, meet the community and find a sound that feels like home.' : `${translate(greeting())}, ${user.name}. Take the decks, tune into a stream or bring your friends together.`}</p>
                         <div className="mt-6 flex flex-wrap gap-3">
                             <a href="#discover-rooms" className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-neutral-950 hover:bg-violet-100"><Search size={16} /> Explore rooms</a>
                             {guest ? <Link href={route('register')} className="rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold hover:bg-white/10">Join the community</Link> : <button onClick={() => setCreating(true)} className="flex items-center gap-2 rounded-xl border border-violet-300/30 bg-violet-500/20 px-5 py-3 text-sm font-semibold text-violet-100 hover:bg-violet-500/30"><Plus size={17} /> Create a room</button>}

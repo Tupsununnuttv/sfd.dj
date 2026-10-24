@@ -11,7 +11,7 @@ class VoteCast implements ShouldBroadcastNow
 {
     use Dispatchable;
 
-    public function __construct(public int $roomId, public int $userId, public string $name, public string $type) {}
+    public function __construct(public int $roomId, public int $userId, public string $name, public string $type, public ?array $appearance = null) {}
 
     public function broadcastOn(): array
     {
@@ -25,6 +25,6 @@ class VoteCast implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
-        return ['user_id' => $this->userId, 'name' => $this->name, 'type' => $this->type];
+        return ['user_id' => $this->userId, 'name' => $this->name, 'type' => $this->type] + ($this->appearance ? ['appearance' => $this->appearance] : []);
     }
 }

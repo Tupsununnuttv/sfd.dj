@@ -60,7 +60,7 @@ export function LogoMark({ className = '', detail = 'simple', spin = false }: { 
 /** The mark, a small gap, then the name: SFD in white (dark with `onLight`), -DJ.EU in colour. */
 export default function ApplicationLogo({ className = '', textClassName = '', detail = 'simple', spin = false, onLight = false }: { className?: string; textClassName?: string; detail?: 'full' | 'simple'; spin?: boolean; onLight?: boolean }) {
     return (
-        <span className={`inline-flex items-center gap-2.5 ${className}`} style={{ fontSize: '1.2em' }}>
+        <span translate="no" className={`inline-flex items-center gap-2.5 ${className}`} style={{ fontSize: '1.2em' }}>
             <LogoMark detail={detail} spin={spin} />
             <span className={`font-black tracking-tight ${textClassName}`}>
                 <span className={onLight ? 'text-neutral-950' : 'text-white'}>SFD</span>

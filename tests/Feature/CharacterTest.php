@@ -512,6 +512,43 @@ class CharacterTest extends TestCase
         }
     }
 
+    public function test_imported_staff_gifs_require_brand_ambassador_even_for_a_rich_member_or_other_staff(): void
+    {
+        $names = ['admin01', 'admin02', 'admin03', 'admin04', 'admin05', 'admin06', 'admin07', 'admin08', 'admin09', 'ba01', 'ba02', 'ba03', 'ba04'];
+        $ambassador = $this->withRole('brand_ambassador');
+        $member = $this->atLevel(50);
+        $member->forceFill(['coins' => 10000])->save();
+        $moderator = $this->withRole('moderator');
+        SitePermission::create(['role' => 'moderator', 'permission' => 'admin.access']);
+        SitePermission::forget();
+        $this->assertTrue($moderator->refresh()->is_staff);
+
+        $catalog = collect($this->actingAs($ambassador)->get('/shop')->inertiaProps('catalog.avatar'))->keyBy('key');
+        foreach ([$member, $moderator] as $denied) {
+            $hidden = collect($this->actingAs($denied)->get('/shop')->inertiaProps('catalog.avatar'))->keyBy('key');
+            foreach ($names as $name) {
+                $key = "char:{$name}";
+                $this->assertFalse($hidden->has($key));
+                $this->post('/shop/equip', ['avatar' => $key])->assertSessionHasErrors('avatar');
+                $this->post('/shop/outfit', ['avatar' => $key])->assertSessionHasErrors('avatar');
+                $this->post('/shop/buy', ['items' => [['slot' => 'avatar', 'key' => $key]]])->assertSessionHasErrors($denied->is_staff ? 'items' : 'items.0.key');
+            }
+        }
+
+        foreach ($names as $name) {
+            $key = "char:{$name}";
+            $this->assertSame(['staff', 'brand_ambassador', 0, true], [$catalog[$key]['rarity'], $catalog[$key]['role']['key'], $catalog[$key]['price'], $catalog[$key]['owned']]);
+            $this->actingAs($ambassador)->post('/shop/equip', ['avatar' => $key])->assertSessionHasNoErrors();
+            $this->assertSame($key, $ambassador->refresh()->character);
+
+            foreach (['standing' => 'Standing', 'dancing' => 'Dancing', 'djing' => 'DJing'] as $state => $folder) {
+                $response = $this->get("/characters/{$state}/{$name}")->assertOk();
+                $this->assertSame('image/gif', $response->headers->get('Content-Type'));
+                $this->assertSame(realpath(public_path("Avatars/{$folder}/{$name}.gif")), realpath($response->baseResponse->getFile()->getPathname()));
+            }
+        }
+    }
+
     public function test_adam_and_mochi_are_for_brand_ambassadors_and_up(): void
     {
         $shelf = fn (User $user) => collect($this->actingAs($user)->get('/shop')->inertiaProps('catalog.avatar'))->keyBy('key');

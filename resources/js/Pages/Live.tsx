@@ -5,11 +5,11 @@ import AppLayout from '@/Layouts/AppLayout';
 import { LIVE_SITES, LiveInfo } from '@/lib/live';
 import { ago } from '@/lib/time';
 import { Head, Link, router } from '@inertiajs/react';
-import { Users } from 'lucide-react';
+import { Bot, Users } from 'lucide-react';
 import { useEffect } from 'react';
 
 interface Stream {
-    room: { id: number; name: string; slug: string; genre: string | null; badges: string[] | null; is_private: boolean };
+    room: { id: number; name: string; slug: string; genre: string | null; badges: string[] | null; is_private: boolean; auto_host_bot?: { id: number; name: string } | null };
     live: LiveInfo;
     listening: number;
 }
@@ -52,6 +52,7 @@ export default function LiveStreams({ streams }: { streams: Stream[] }) {
                             </div>
                             <div className="flex flex-1 flex-col p-4">
                                 <h3 className="truncate font-bold" title={live.title}>{live.title}</h3>
+                                {room.auto_host_bot && <p data-selfbot className="mt-2 flex items-center gap-1.5 text-xs text-sky-300"><Bot size={13} /><span className="truncate">Selfbot: {room.auto_host_bot.name}</span></p>}
                                 <p className="mt-1 flex min-w-0 items-center gap-2 text-sm text-neutral-400">
                                     {live.by && <Avatar name={live.by.name} avatar={live.by.avatar} cosmetics={live.by.cosmetics} className="h-5 w-5 text-[10px]" />}
                                     <span className="truncate">{live.by?.name}<span className="text-neutral-600"> in </span><span className="text-neutral-200">{room.name}</span></span>

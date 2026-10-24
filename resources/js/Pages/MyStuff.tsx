@@ -1,3 +1,4 @@
+import { formatDate } from '@/lib/regional';
 import Avatar from '@/Components/Avatar';
 import { levelPercent, toNextText } from '@/lib/level';
 import RoleBadge from '@/Components/RoleBadge';
@@ -66,7 +67,7 @@ export default function MyStuff({ stats, rooms, playlists, recent, worn, account
                     <Avatar name={user.name} avatar={user.avatar} cosmetics={user.cosmetics} className="h-24 w-24 text-4xl" />
                     <div className="min-w-0 flex-1">
                         <h2 className="flex flex-wrap items-center gap-3 text-2xl font-black tracking-tight">{user.name} <RoleBadge role={user.primary_role} /></h2>
-                        <p className="text-sm text-neutral-400">@{account.username} · member since {new Date(account.joined).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        <p className="text-sm text-neutral-400">@{account.username} · member since {formatDate(account.joined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                         <div className="mt-4 max-w-md">
                             <div className="mb-1.5 flex items-baseline justify-between text-xs text-neutral-300"><span className="font-semibold">Level {lv}</span><span>{stats.xp.toLocaleString()} XP · {toNextText(stats.xp, lv)}</span></div>
                             <ProgressBar value={levelPercent(stats.xp, lv)} />

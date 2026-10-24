@@ -2,15 +2,19 @@
 export type Kind = 'new' | 'improved' | 'fixed';
 
 export const latestRelease: { version: string; title: string; notes: [Kind, string][] } = {
-    version: '1.75',
-    title: 'Better room playback controls',
+    version: '1.76',
+    title: 'System settings, lighter rooms and guest viewers',
     notes: [
-        ['fixed', 'Touch devices use lighter room rendering to reduce intermittent black or missing header and chat areas: static avatar thumbnails, simpler decorative effects, and no stacked blur layers from room CSS. Decorative background motion and particles are disabled on touch devices; video, music and dancing stage characters remain available. This also applies in landscape and desktop-site mode.'],
-        ['new', 'The room video has theatre mode, fullscreen and a separate video window. Theatre mode enlarges the existing player inside the room without restarting it.'],
-        ['new', 'Open a small video window while staying in the room. The video starts at the current song position and stays muted; sound and volume remain in the room. Supported browsers use an always-on-top picture-in-picture window, with a regular pop-out window as the fallback.'],
-        ['improved', 'YouTube playback now exposes its own player controls and settings, including video quality choices such as 720p when available for the video.'],
-        ['improved', 'Video display controls appear on hover, keyboard focus and touch screens. Fullscreen keeps the buttons at a readable size, and blocked pop-out windows show a clear message.'],
-        ['improved', 'Moved Open on YouTube and Open on SoundCloud slightly lower in the playback area. Room CSS can also style the video display controls.'],
+        ['new', 'Settings > System > Performance includes Low performance mode for older computers and laptops. It uses still characters, a lightweight room background and fewer decorative effects while keeping music, chat and room controls available.'],
+        ['new', 'Control animated characters, background motion and particles, visual effects such as blur and shadows, and the lightweight room background separately. Low performance mode temporarily overrides these choices and restores them when switched off. System animation settings also take priority over Always play animations.'],
+        ['improved', 'Performance preferences apply immediately, save to your account and update the room when changed from the profile overlay. Closing the overlay keeps pending saves running, and supported open tabs receive the updated preferences. System settings also explain where to change hardware acceleration in your browser.'],
+        ['fixed', 'Background room refreshes no longer overwrite recently saved performance choices. Failed saves restore the last confirmed settings and show a message. Keyboard focus stays visible when shadows are disabled.'],
+        ['improved', 'Room and chat portraits use still thumbnails, and character animations load when needed instead of preloading every dance and DJ pose. Selected complex characters use pre-rendered animation loops to reduce rendering work.'],
+        ['improved', 'The site loads the selected language dictionary and opens heavier panels when needed. Smaller room updates and lighter room cards reduce unnecessary loading and processing across the home page, dashboard and listening rooms.'],
+        ['new', 'Visitors without an account appear as Guest viewers in the room Users list and viewer counts. Guests can watch without registering; chat and account actions still require sign-in. Tabs sharing the same session use one guest identity, and inactive guests expire automatically.'],
+        ['new', 'Room cards on the home page, dashboard and Live page show the configured selfbot name when a room has one.'],
+        ['new', 'Reddit, Instagram, Facebook and X (Twitter) join Settings > Connections with account authorization and disconnect controls. Linking becomes available once each provider app is configured for the site. Instagram linking supports Business and Creator accounts.'],
+        ['fixed', 'Removed the blinking light from the centre of the Elementary character mask and made the Cancer mark larger and higher on its back.'],
     ],
 };
 

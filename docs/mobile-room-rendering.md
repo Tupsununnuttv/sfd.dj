@@ -10,7 +10,7 @@ The supplied 12.7-second landscape recording shows intermittent black/missing na
 - Touch scenes stop decorative background/booth animation and omit the large particle overlays. They do not preload every unused dancing/DJ SVG. The actual video, music, dance poses and DJ characters remain mounted and available.
 - The already-clipped stage gets paint containment to bound scene repainting. Panels do not get containment, which could clip their fixed menus. No blanket `translateZ`/`will-change` layer promotion is added.
 
-This is automatic rendering hardening, independent of viewport width or the user's reduced-motion preference. An ordinary non-touch desktop retains its animated scenery, avatar images and room glass effects. Existing uploaded avatar photos are unchanged.
+This is automatic rendering hardening, independent of viewport width or the user's reduced-motion preference. An ordinary non-touch desktop retains its animated scenery, dancing characters and room glass effects. Small character thumbnails and idle crowd figures now use static posters on every device (see `performance.md`). Existing uploaded avatar photos are unchanged.
 
 ## Verification
 

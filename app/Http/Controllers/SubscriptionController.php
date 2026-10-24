@@ -26,6 +26,7 @@ class SubscriptionController extends Controller
 
         return Inertia::render('Settings/Plus', [
             'plans' => Plans::catalog(),
+            'perkControls' => \App\Support\SubscriptionPerks::schema($me),
             'free' => Plans::FREE,
             'mine' => $active ? [
                 'key' => $active,

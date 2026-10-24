@@ -8,10 +8,17 @@ import { useId } from 'react';
 
 /** What a user has equipped from the Avatar shop (slot -> item key). The keys are the ones in AvatarController. */
 export interface Cosmetics {
+    subscription?: SubscriptionAppearance;
     badge?: string;
     accessory?: string;
     frame?: string;
     effect?: string;
+}
+
+export interface SubscriptionAppearance {
+    plan: string;
+    color: string;
+    [key: string]: string | boolean | undefined;
 }
 
 /** Ids for the gradients of one picture: the same all through it and unlike those of any other picture on the page. */

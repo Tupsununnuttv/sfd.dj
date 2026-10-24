@@ -473,7 +473,7 @@ class Room extends Model
      */
     private function nextReady(?array $present = null): ?PlaylistItem
     {
-        while ($item = $this->items()->first()) {
+        while ($item = $this->priorityOrder($this->items()->with('user')->get())->first()) {
             if ($present !== null && ! in_array($item->user_id, $present, true)) {
                 $item->delete();
 
@@ -493,6 +493,27 @@ class Room extends Model
         }
 
         return null;
+    }
+
+    /** Priority can advance a DJ by at most five positions. After three completed turns,
+     * the oldest waiting entry is guaranteed the next turn, regardless of subscription. */
+    public function priorityOrder(Collection $items): Collection
+    {
+        $waiting = $items->reject(fn ($item) => $item->id === $this->current_item_id)->values();
+        if ($waiting->count() < 2) return $waiting;
+        $oldest = $waiting->first();
+        $turns = PlaylistItem::where('room_id', $this->id)->whereNotNull('played_at')->where('played_at', '>=', $oldest->created_at)->count();
+        // A playback snapshot describes the turn after the currently playing song finishes.
+        $protected = $turns + ($items->contains('id', $this->current_item_id) ? 1 : 0) >= 3;
+        $scores = [];
+        foreach ($waiting as $index => $item) {
+            $boost = \App\Support\SubscriptionPerks::priority($item->user);
+            $scores[$item->id] = $index - $boost - ($boost > 0 ? 0.01 : 0);
+        }
+        $sorted = $waiting->sort(function ($a, $b) use ($scores) {
+            return ($scores[$a->id] <=> $scores[$b->id]) ?: ($a->position <=> $b->position) ?: ($a->id <=> $b->id);
+        })->values();
+        return $protected ? collect([$oldest])->concat($sorted->reject(fn ($item) => $item->id === $oldest->id))->values() : $sorted;
     }
 
     private function removeDuplicateWaitingItems(): void
@@ -631,7 +652,9 @@ class Room extends Model
     /** State sent to clients: what plays now, seconds already elapsed, and the queue. */
     public function playback(): array
     {
-        $models = $this->items()->with('user:id,name,avatar,character,cosmetics,roles,awards,xp,is_bot,plan,plan_until')->get();
+        $models = $this->items()->with('user:id,name,avatar,character,cosmetics,roles,awards,xp,is_bot,plan,plan_until,preferences')->get();
+        $playing = $models->firstWhere('id', $this->current_item_id);
+        $models = collect($playing ? [$playing] : [])->concat($this->priorityOrder($models));
         $items = $models->map(fn (PlaylistItem $i) => [
             'id' => $i->id,
             'user_id' => $i->user_id,
@@ -640,6 +663,7 @@ class Room extends Model
             'thumbnail' => $i->thumbnail,
             'duration' => $i->duration,
             'added_by' => $i->user->name,
+            'cosmetics' => $i->user->cosmetics,
         ]);
 
         $current = $items->firstWhere('id', $this->current_item_id);

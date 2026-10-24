@@ -1,0 +1,11 @@
+# Interface languages
+
+English, Estonian and Russian apply across the React interface, including portals, menus, form descriptions, placeholders and accessible labels. Changing Language & Time previews immediately and saves account preferences with a keepalive request. Room overlays notify the parent immediately and refresh its account preferences after saving.
+
+`resources/js/lib/localizedReact` is the JSX runtime. It localizes text through React without rewriting the DOM, while preserving refs, cloned element props, input values and existing component state. The Vite user-content transform marks user names, chat messages, room names and track metadata as original text. Code examples and language autonyms are also excluded. A component requiring literal string children can opt out with `Component.originalText = true`.
+
+The shipped catalogs are static and need no translation service or credentials. Only the selected non-English catalog loads; English needs neither dictionary. The initial selected language loads before the first app render, and switching language updates already mounted text when its dictionary arrives. Reviewed product wording is in `resources/js/lib/locales/overrides.ts`; dynamic sentences use numbered placeholders such as `{0}`. Add user-content exclusions with the transform when introducing new content fields.
+
+Catalog authoring scripts extract source messages and can generate an offline baseline with [Argos Translate](https://github.com/argosopentech/argos-translate), its English–Estonian and English–Russian 1.9 models, CTranslate2 and SentencePiece. These tools are not needed to build or run the website. The temporary models/tools were removed during cleanup; run `python scripts/prepare-translation-tools.py` to recreate `.tmp/translation-tools` before generating new baseline catalogs. The extraction scripts recreate `tmp` for their own output. Review new translations in the overrides file, especially product terminology and short labels.
+
+Checks: frontend tests cover optimistic state and original text protection. The browser localization scenario covers immediate switching, navigation, original user content, Discord, permission controls and Russian mobile settings. It uses the disposable browser fixture database.

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
+import protectUserContent from './scripts/protect-user-content.mjs';
 import laravel from 'laravel-vite-plugin';
-import react from '@vitejs/plugin-react';
+import localizedReact from './scripts/localized-react.mjs';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
@@ -9,11 +10,12 @@ export default defineConfig({
         cssTarget: ['chrome111', 'edge111', 'firefox128', 'safari16.4'],
     },
     plugins: [
+        protectUserContent(),
         laravel({
             input: 'resources/js/app.tsx',
             refresh: true,
         }),
-        react(),
+        localizedReact(),
         tailwindcss(),
     ],
 });

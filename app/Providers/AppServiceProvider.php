@@ -7,6 +7,9 @@ use App\Support\ForgivingBroadcaster;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('room-watchers', fn (Request $request) => [
+            Limit::perMinute(8)->by('watcher:'.hash('sha256', $request->session()->getId())),
+            Limit::perMinute(240)->by('watcher-ip:'.$request->ip()),
+        ]);
         // Keep page chunks and room scenes on demand: global prefetch fetches the whole app after login.
 
         // a live-update server (Reverb here, Pusher on the live site) that is down must not turn a saved chat line or vote into an error page

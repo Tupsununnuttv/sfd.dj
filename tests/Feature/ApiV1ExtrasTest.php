@@ -53,7 +53,7 @@ class ApiV1ExtrasTest extends TestCase
 
         $plans = $this->getJson('/api/v1/plans')->assertOk()->assertJsonPath('free.playlists', 100)->json('plans');
         $this->assertSame(['bronze', 'silver', 'gold', 'plus', 'pro', 'premium'], array_column($plans, 'key'));
-        $this->assertSame(['key' => 'plus', 'currency' => 'eur', 'name' => 'Plus', 'color' => '#14b8a6', 'month' => 999, 'year' => 5999, 'xp' => 1.25, 'playlists' => 200, 'songs' => 10000, 'emojis' => 50], $plans[3]);
+        $this->assertSame(['key' => 'plus', 'currency' => 'eur', 'name' => 'Plus', 'color' => '#14b8a6', 'month' => 999, 'year' => 5999, 'xp' => 1.2, 'playlists' => 200, 'songs' => 12000, 'emojis' => 50], $plans[3]);
 
         // everything else still wants a token
         $this->getJson('/api/v1/playlists')->assertUnauthorized();

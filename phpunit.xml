@@ -48,6 +48,14 @@
         <env name="TWITCH_CLIENT_SECRET" value="" force="true"/>
         <env name="TIKTOK_CLIENT_KEY" value="" force="true"/>
         <env name="TIKTOK_CLIENT_SECRET" value="" force="true"/>
+        <env name="REDDIT_CLIENT_ID" value="" force="true"/>
+        <env name="REDDIT_CLIENT_SECRET" value="" force="true"/>
+        <env name="INSTAGRAM_CLIENT_ID" value="" force="true"/>
+        <env name="INSTAGRAM_CLIENT_SECRET" value="" force="true"/>
+        <env name="FACEBOOK_CLIENT_ID" value="" force="true"/>
+        <env name="FACEBOOK_CLIENT_SECRET" value="" force="true"/>
+        <env name="X_CLIENT_ID" value="" force="true"/>
+        <env name="X_CLIENT_SECRET" value="" force="true"/>
         <env name="YOUTUBE_CLIENT_ID" value="" force="true"/>
         <env name="YOUTUBE_CLIENT_SECRET" value="" force="true"/>
         <env name="GIPHY_API_KEY" value="" force="true"/>

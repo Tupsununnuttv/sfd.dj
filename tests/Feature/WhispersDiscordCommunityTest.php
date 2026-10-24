@@ -438,6 +438,7 @@ class WhispersDiscordCommunityTest extends TestCase
 
     public function test_songs_that_ran_past_their_length_are_finished_when_the_room_opens(): void
     {
+        $this->freezeTime();
         $host = User::factory()->create();
         $room = $host->rooms()->create(['name' => 'Lobby', 'slug' => 'lobby-1']);
         $song = ['youtube_id' => 'aaaaaaaaaaa', 'thumbnail' => null, 'duration' => 200];

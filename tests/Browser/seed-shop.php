@@ -22,7 +22,7 @@ if (! is_file($database)) {
     touch($database);
 }
 Artisan::call('migrate', ['--force' => true]);
-foreach (['chromium', 'firefox', 'chrome', 'edge', 'opera-gx'] as $project) {
+foreach (['chromium', 'firefox', 'chrome', 'edge', 'opera-gx', 'brave'] as $project) {
     $user = User::query()->firstOrNew(['email' => $project.'@browser-test.invalid']);
     $user->forceFill([
         'name' => 'Kornelius Browser '.$project, 'username' => 'browser_'.str_replace('-', '_', $project),

@@ -1,0 +1,91 @@
+import { test, expect as baseExpect } from '@playwright/test';
+const expect = baseExpect.configure({ timeout: 30000 });
+
+test('low mode removes live scenery and character animations without remounting the screen', async ({ page }) => {
+    await page.goto('/tests/Browser/index.html?mobile-room');
+    await expect(page.locator('.sfd-stage img[src*=".dancing."]')).toBeVisible();
+    await expect.poll(() => page.locator('.sfd-stage *').count()).toBeGreaterThan(300);
+    const before = await page.locator('.sfd-stage *').count();
+    await page.evaluate(async () => {
+        window.systemVideoNode = document.querySelector('[data-test-video]');
+        const { syncSystemPreferences } = await import('/resources/js/lib/systemPreferences.ts');
+        syncSystemPreferences(42, { appearance: { always_animate: true }, system: { low_performance: true } });
+    });
+    await expect(page.locator('html')).toHaveAttribute('data-system-low', 'true');
+    await expect(page.locator('[data-static-scenery] img')).toHaveAttribute('src', /\/backgrounds\/stills\/dragon\./);
+    await expect(page.locator('.sfd-stage img[src*=".dancing."]')).toHaveCount(0);
+    await expect(page.locator('.sfd-stage img[src*="djing-foxy."]')).toBeVisible();
+    await expect(page.locator('.snow')).toHaveCount(0);
+    expect(await page.locator('.sfd-stage *').count()).toBeLessThan(before / 2);
+    await expect(page.locator('.sfd-navbar')).toHaveCSS('backdrop-filter', 'none');
+    await page.keyboard.press('Tab');
+    await page.getByRole('button', { name: 'Woot', exact: true }).focus();
+    await expect(page.getByRole('button', { name: 'Woot', exact: true })).toHaveCSS('outline-width', '2px');
+    expect(await page.evaluate(() => window.systemVideoNode === document.querySelector('[data-test-video]'))).toBe(true);
+    await page.evaluate(async () => {
+        const { syncSystemPreferences } = await import('/resources/js/lib/systemPreferences.ts');
+        syncSystemPreferences(42, { system: { low_performance: false } });
+    });
+    await expect(page.locator('[data-static-scenery]')).toHaveCount(0);
+    await expect(page.locator('.sfd-stage img[src*=".dancing."]')).toBeVisible();
+    expect(await page.evaluate(() => window.systemVideoNode === document.querySelector('[data-test-video]'))).toBe(true);
+});
+
+test('System settings persist, update the surrounding room and survive closing an overlay before a save completes', async ({ page, context }, testInfo) => {
+    test.skip(process.env.BROWSER_SITE_TEST !== '1', 'Requires isolated production-asset site fixtures.');
+    test.setTimeout(180000);
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await context.routeWebSocket(/.*/, socket => socket.close());
+    const base = process.env.BROWSER_APP_URL;
+    await page.goto(`${base}/login`);
+    await page.getByLabel('Email or username').fill(`${testInfo.project.name}@browser-test.invalid`);
+    await page.getByLabel('Password', { exact: true }).fill('Browser-Test-Only-9284!');
+    await page.getByRole('button', { name: 'Log in', exact: true }).click();
+    await expect(page).not.toHaveURL(/\/login$/);
+    await page.goto(`${base}/rooms/browser-shop-${testInfo.project.name}`);
+    await page.locator('a[title*="Open your profile"]').click();
+    const settings = page.frameLocator('iframe[title="Profile"]');
+    await settings.getByRole('link', { name: 'Performance', exact: true }).click();
+    const low = settings.getByRole('switch', { name: /Low performance mode/ });
+    let release;
+    const hold = new Promise(resolve => { release = resolve; });
+    await context.route('**/settings/preferences', async route => {
+        if (route.request().method() === 'PATCH') await hold;
+        await route.continue();
+    });
+    const saved = page.waitForResponse(response => response.url().endsWith('/settings/preferences') && response.request().method() === 'PATCH');
+    await low.click();
+    await expect(page.locator('html')).toHaveAttribute('data-system-low', 'true');
+    await expect(page.locator('[data-static-scenery]')).toBeVisible();
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    release();
+    expect((await saved).status()).toBe(200);
+    await context.unroute('**/settings/preferences');
+    await page.reload();
+    await expect(page.locator('[data-static-scenery]')).toBeVisible();
+    await page.goto(`${base}/settings/system`);
+    const switchFor = name => page.getByRole('switch', { name });
+    await expect(switchFor(/Low performance mode/)).toHaveAttribute('aria-checked', 'true');
+    await expect(switchFor(/Animated characters/)).toBeDisabled();
+    const change = async name => {
+        const response = page.waitForResponse(r => r.url().endsWith('/settings/preferences') && r.request().method() === 'PATCH');
+        await switchFor(name).click();
+        expect((await response).status()).toBe(200);
+    };
+    await change(/Low performance mode/);
+    await expect(switchFor(/Animated characters/)).toBeEnabled();
+    await change(/Animated characters/);
+    await change(/Low performance mode/);
+    await change(/Low performance mode/);
+    await expect(switchFor(/Animated characters/)).toHaveAttribute('aria-checked', 'false');
+    await context.route('**/settings/preferences', route => route.fulfill({ status: 503, json: { message: 'Test save failure' } }), { times: 1 });
+    await switchFor(/Low performance mode/).click();
+    await expect(page.getByRole('alert')).toContainText('Could not save your performance settings');
+    await expect(switchFor(/Low performance mode/)).toHaveAttribute('aria-checked', 'false');
+    await page.getByLabel('Dismiss performance settings notice').click();
+    if (testInfo.project.name === 'chromium') await page.screenshot({ path: testInfo.outputPath('system-settings.png'), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    expect(errors).toEqual([]);
+});

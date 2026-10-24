@@ -169,7 +169,7 @@ class RoomBarsTest extends TestCase
         $this->assertStringContainsString('activePlayer.seekTo?.(target, true)', $room);
         $this->assertStringNotContainsString('title="Add friend"', $room);
         $this->assertStringNotContainsString('addFriend(', $room);
-        $this->assertStringContainsString('min-w-0 max-w-full flex-1 truncate leading-5', $room);
+        $this->assertStringContainsString('min-w-0 truncate', $this->source('Components/RoomHeader.tsx'));
         $this->assertStringNotContainsString('auto_join', $this->source('Pages/Settings/Audio.tsx'));
     }
 }

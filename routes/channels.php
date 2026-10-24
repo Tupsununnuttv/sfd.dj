@@ -19,4 +19,4 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 });
 
 // the staff inbox of the live support chat
-Broadcast::channel('support-staff', fn ($user) => $user->hasPermission('admin.access'));
+Broadcast::channel('support-staff', fn ($user) => $user->hasPermission('support.manage'));

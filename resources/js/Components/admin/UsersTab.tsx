@@ -1,3 +1,4 @@
+import { formatDate } from '@/lib/regional';
 import Avatar from '@/Components/Avatar';
 import Badges from '@/Components/Badges';
 import RoleBadge from '@/Components/RoleBadge';
@@ -117,7 +118,8 @@ function PlanEditor({ user, list }: { user: AdminUser; list: AdminProps['planLis
 
 export default function UsersTab({ q, filters, users, roleOptions, assignable, groups, awardList, planList }: Pick<AdminProps, 'q' | 'filters' | 'users' | 'roleOptions' | 'assignable' | 'awardList' | 'planList'> & { groups: RoleGroups }) {
     const [search, setSearch] = useState(q);
-    const canAward = usePage<PageProps>().props.auth.user.site_permissions.includes('users.manage');
+    const permissions = usePage<PageProps>().props.auth.user.site_permissions;
+    const canAward = permissions.includes('users.awards');
 
     const go = (next: Partial<{ q: string; role: string | null; type: string | null; sort: string }>) => {
         const f = { q: search, role: filters.role, type: filters.type, sort: filters.sort, ...next };
@@ -187,19 +189,19 @@ Their rooms, playlists, messages and friends go with it. This cannot be undone.`
                                         <RoleBadge role={u.primary_role} showMember />
                                         {(u.roles?.length ?? 0) > 1 && <span className="text-xs text-neutral-500">+{u.roles!.length - 1} more</span>}
                                     </div>
-                                    {u.plan && <p className="mt-1 text-[11px] font-semibold" style={{ color: planList.find((p) => p.key === u.plan)?.color }}>{planList.find((p) => p.key === u.plan)?.name} {u.plan_until ? `until ${new Date(u.plan_until).toLocaleDateString()}` : 'for good'}</p>}
+                                    {u.plan && <p className="mt-1 text-[11px] font-semibold" style={{ color: planList.find((p) => p.key === u.plan)?.color }}>{planList.find((p) => p.key === u.plan)?.name} {u.plan_until ? `until ${formatDate(u.plan_until)}` : 'for good'}</p>}
                                 </td>
                                 <td className="px-3 py-3 text-neutral-300">Lv {u.level} <span className="text-xs text-neutral-500">· {u.xp} XP</span></td>
-                                <td className="whitespace-nowrap px-3 py-3 text-xs text-neutral-400">{new Date(u.joined).toLocaleDateString()}</td>
+                                <td className="whitespace-nowrap px-3 py-3 text-xs text-neutral-400">{formatDate(u.joined)}</td>
                                 <td className="whitespace-nowrap px-3 py-3 text-xs text-neutral-400">{within(u.last_seen_at, 5) ? <span className="text-green-400">online</span> : ago(u.last_seen_at)}</td>
                                 <td className="px-3 py-3">{u.violations > 0 ? <span className="flex items-center gap-1 text-amber-300"><ShieldAlert size={14} />{u.violations}</span> : <span className="text-neutral-600">0</span>}</td>
                                 <td className="space-y-2 px-3 py-3">
-                                    <RoleEditor key={u.id + (u.roles ?? []).join()} user={u} assignable={assignable} groups={groups} />
-                                    {canAward && !u.email_verified && !u.is_bot && <button onClick={() => router.patch(route('admin.users.confirm-email', u.id), {}, { preserveScroll: true })} className="block text-xs text-emerald-300 hover:underline" data-confirm-email>Confirm email</button>}
+                                    {permissions.includes('users.roles') && u.outranked && <RoleEditor key={u.id + (u.roles ?? []).join()} user={{ ...u, editable: true }} assignable={assignable} groups={groups} />}
+                                    {permissions.includes('users.verify') && !u.email_verified && !u.is_bot && <button onClick={() => router.patch(route('admin.users.confirm-email', u.id), {}, { preserveScroll: true })} className="block text-xs text-emerald-300 hover:underline" data-confirm-email>Confirm email</button>}
                                     {canAward && <AwardEditor key={u.id + u.awards.join()} user={u} list={awardList} />}
-                                    {canAward && <PlanEditor key={`${u.id}${u.plan}${u.plan_until}`} user={u} list={planList} />}
-                                    {u.editable && <button onClick={() => warn(u)} className="block text-xs text-amber-400 hover:underline">Issue violation</button>}
-                                    {u.editable && <button onClick={() => remove(u)} className="flex items-center gap-1 text-xs text-red-400 hover:underline" data-delete-user><Trash2 size={12} /> Delete account</button>}
+                                    {permissions.includes('subscriptions.manage') && <PlanEditor key={`${u.id}${u.plan}${u.plan_until}`} user={u} list={planList} />}
+                                    {permissions.includes('users.violations') && u.outranked && <button onClick={() => warn(u)} className="block text-xs text-amber-400 hover:underline">Issue violation</button>}
+                                    {permissions.includes('users.delete') && u.outranked && <button onClick={() => remove(u)} className="flex items-center gap-1 text-xs text-red-400 hover:underline" data-delete-user><Trash2 size={12} /> Delete account</button>}
                                 </td>
                             </tr>
                         ))}

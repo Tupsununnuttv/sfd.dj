@@ -1,0 +1,18 @@
+{
+  "aether": {
+    "dancing": "/Avatars/Animations/aether.dancing.cdf086c25ff6.png",
+    "djing": "/Avatars/Animations/aether.djing.b5228972855b.png"
+  },
+  "kaida": {
+    "dancing": "/Avatars/Animations/kaida.dancing.43b6b4096a78.png",
+    "djing": "/Avatars/Animations/kaida.djing.e9a9c7305a60.png"
+  },
+  "solstice": {
+    "dancing": "/Avatars/Animations/solstice.dancing.5d903af9dd30.png",
+    "djing": "/Avatars/Animations/solstice.djing.1f943802321f.png"
+  },
+  "veyra": {
+    "dancing": "/Avatars/Animations/veyra.dancing.3ed1efbba13e.png",
+    "djing": "/Avatars/Animations/veyra.djing.f1ed9f3110a5.png"
+  }
+}

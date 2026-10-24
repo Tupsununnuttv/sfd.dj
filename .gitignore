@@ -16,7 +16,8 @@
 /node_modules
 /test-results
 /playwright-report
-/tmp/browser-tests.sqlite*
+/tmp/
+/.tmp/
 /public/build
 /public/fonts-manifest.dev.json
 /public/hot
@@ -34,3 +35,7 @@ Thumbs.db
 
 .env*
 !/bot/.env.example
+/.tmp/translation-tools/
+/tmp/ui-messages.json
+/tmp/server-messages.json
+/tmp/ui-human.txt

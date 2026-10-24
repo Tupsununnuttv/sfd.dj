@@ -1,3 +1,4 @@
+import { formatDateTime } from '@/lib/regional';
 import Avatar from '@/Components/Avatar';
 import AppLayout from '@/Layouts/AppLayout';
 import { PageProps } from '@/types';
@@ -62,7 +63,7 @@ export default function History({ songs, rooms, filters, room_css }: Props) {
                                     <Avatar name={s.user.name} avatar={s.user.avatar} className="h-4 w-4 text-[9px]" />
                                     <span className="text-neutral-300">{s.user.name}</span> played it in
                                     <Link href={route('rooms.show', s.room.slug)} className="text-violet-400 hover:underline">{s.room.name}</Link>
-                                    · {new Date(s.played_at).toLocaleString()}
+                                    · {formatDateTime(s.played_at)}
                                 </p>
                             </div>
                         </li>

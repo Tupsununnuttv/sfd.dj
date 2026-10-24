@@ -120,7 +120,7 @@ class SubscriptionGiftsTest extends TestCase
         $this->assertSame(Role::Member, $recipient->role());
         $this->assertSame(200, $recipient->limits()['playlists']);
         $recipient->addXp(100);
-        $this->assertSame(125, $recipient->refresh()->xp);
+        $this->assertSame(120, $recipient->refresh()->xp);
         $this->assertSame('2026-02-28', $gift->refresh()->expires_at->toDateString());
         $this->assertNull($recipient->plan);
         $this->assertNull($recipient->stripe_subscription_id);

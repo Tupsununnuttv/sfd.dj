@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 class ChatMessage extends Model
 {
     /** Columns of the sender needed to show their badges. Roles and XP must be here or everyone looks like a Member. */
-    public const WITH_USER = 'user:id,name,avatar,roles,awards,xp,cosmetics,is_bot,plan,plan_until';
+    public const WITH_USER = 'user:id,name,avatar,roles,awards,xp,cosmetics,is_bot,plan,plan_until,preferences';
 
     protected $fillable = ['room_id', 'user_id', 'body', 'type', 'kind', 'image', 'sticker', 'reply_to_id'];
 
@@ -20,8 +20,13 @@ class ChatMessage extends Model
 
     public function reactionSummary(): array
     {
-        return ($this->relationLoaded('reactions') ? $this->reactions : $this->reactions()->get())
-            ->groupBy('emoji')->map(fn ($rows, $emoji) => ['emoji' => $emoji, 'users' => $rows->pluck('user_id')->map(fn ($id) => (int) $id)->values()->all()])->values()->all();
+        $reactions = $this->relationLoaded('reactions') ? $this->reactions : $this->reactions()->get();
+        $reactions->loadMissing('user');
+        return $reactions->groupBy('emoji')->map(fn ($rows, $emoji) => [
+            'emoji' => $emoji,
+            'users' => $rows->pluck('user_id')->map(fn ($id) => (int) $id)->values()->all(),
+            'animation' => $rows->map(fn ($reaction) => $reaction->user?->cosmetics['subscription']['reaction'] ?? null)->filter()->first(),
+        ])->values()->all();
     }
 
     public function reactions(): HasMany

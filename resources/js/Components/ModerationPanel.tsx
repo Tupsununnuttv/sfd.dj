@@ -1,3 +1,4 @@
+import { formatDateTime } from '@/lib/regional';
 import Avatar from '@/Components/Avatar';
 import Toggle from '@/Components/Toggle';
 import { send } from '@/lib/post';
@@ -39,7 +40,7 @@ interface Props {
 const input = 'w-full rounded-xl border-white/10 bg-black/25 text-sm text-white placeholder-neutral-600 focus:border-violet-400 focus:ring-violet-400/20 disabled:opacity-50';
 const button = 'inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-200 transition hover:bg-white/10 disabled:opacity-40';
 const card = 'rounded-2xl border border-white/10 bg-white/3 p-4 sm:p-5';
-const when = (iso: string) => new Date(iso).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
+const when = (iso: string) => formatDateTime(iso, { dateStyle: 'short', timeStyle: 'short' });
 const verbs: Record<string, string> = { kick: 'kicked', ban: 'banned', unban: 'unbanned', mute: 'muted', unmute: 'unmuted', role: 'changed the role of', clear_chat: 'cleared the chat', delete_message: 'deleted a message by', skip: 'skipped a song by', remove_song: 'removed a song by', settings: 'changed settings', waitlist: 'changed the queue', automod: 'blocked a message by', live: 'started a live stream', live_end: 'ended a live stream' };
 type Operation = () => Promise<void>;
 

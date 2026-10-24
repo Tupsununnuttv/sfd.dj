@@ -136,7 +136,7 @@ class PlaybackRewardsTest extends TestCase
             ->where('xpGuide.chat_cooldown_seconds', 10)
             ->where('xpGuide.grab', 3)
             ->where('xpGuide.referral', 100)
-            ->where('xpGuide.multiplier', 1.25)
+            ->where('xpGuide.multiplier', 1.2)
             ->where('xpGuide.plan', 'Plus')
         );
     }

@@ -1,0 +1,42 @@
+{
+  "scenario": "37 characters, 120 chat rows, Dragon scene, no video decoder",
+  "tag": "system-low",
+  "frames": {
+    "frames": 302,
+    "longFrames": 0,
+    "maxFrameMs": 16.80000000000109
+  },
+  "jsHeapMB": 3.7480125427246094,
+  "nodes": 1171,
+  "taskSeconds": 0.060092000000000007,
+  "animatedCharacterRequests": 0,
+  "djRequests": 0,
+  "memory": [
+    {
+      "Id": 12340,
+      "WorkingSet64": 55701504,
+      "PrivateMemorySize64": 26472448,
+      "type": "GPU"
+    },
+    {
+      "Id": 16972,
+      "WorkingSet64": 119459840,
+      "PrivateMemorySize64": 48783360,
+      "type": "renderer"
+    },
+    {
+      "Id": 20632,
+      "WorkingSet64": 39272448,
+      "PrivateMemorySize64": 17379328,
+      "type": "network.mojom.NetworkService"
+    },
+    {
+      "Id": 33648,
+      "WorkingSet64": 55660544,
+      "PrivateMemorySize64": 19566592,
+      "type": "browser"
+    }
+  ],
+  "errors": [],
+  "lowPerformance": true
+}

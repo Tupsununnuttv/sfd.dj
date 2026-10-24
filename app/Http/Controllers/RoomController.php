@@ -33,6 +33,7 @@ use App\Support\LiveStream;
 use App\Support\Presence;
 use App\Support\RoomCss;
 use App\Support\RoomPresence;
+use App\Support\RoomGuests;
 use App\Support\Season;
 use App\Support\WordGuard;
 use Illuminate\Http\Client\ConnectionException;
@@ -66,7 +67,7 @@ class RoomController extends Controller
         $roomList = null;
         // Resolve once, and only when a requested prop needs the room catalogue.
         $rooms = function () use ($me, &$roomList) {
-            return $roomList ??= Room::visibleTo($me)->withCount('items')->with('user:id,name')->latest()->get();
+            return $roomList ??= Room::visibleTo($me)->select(['id', 'user_id', 'name', 'slug', 'description', 'badges', 'genre', 'is_private', 'is_featured', 'live', 'current_item_id', 'auto_host_bot_id', 'created_at'])->withCount('items')->with(['user:id,name', 'autoHostBot:id,name'])->latest()->get();
         };
         $mineId = $me?->id;
 
@@ -76,7 +77,7 @@ class RoomController extends Controller
             'featured' => fn () => $rooms()->where('is_featured', true)->values(),
             'genres' => Room::GENRES,
             // re-fetched every few seconds by the page (partial reload): live listener counts, what plays where, the feed
-            'counts' => fn () => (object) RoomPresence::counts(),
+            'counts' => fn () => (object) $this->listenerCounts($rooms()),
             'nowPlaying' => fn () => (object) $this->nowPlaying($rooms()),
             'activity' => fn () => $this->recentActivity($me),
             'stats' => fn () => $me ? $this->myStats($me) : null,
@@ -135,7 +136,7 @@ class RoomController extends Controller
     {
         $genre = $me->favorite_genre ?: PlaylistItem::where('user_id', $me->id)->whereNotNull('played_at')->with('room:id,genre')->get()
             ->pluck('room.genre')->filter()->countBy()->sortDesc()->keys()->first();
-        $counts = RoomPresence::counts();
+        $counts = $this->listenerCounts($rooms);
         $pick = fn ($list) => $list->where('user_id', '!=', $me->id)->sortByDesc(fn ($r) => $counts[$r->id] ?? 0)->take(3)->values();
         $matching = $genre ? $pick($rooms->where('genre', $genre)) : collect();
 
@@ -153,6 +154,16 @@ class RoomController extends Controller
         return $rooms->filter(fn (Room $r) => $items->has($r->current_item_id))->mapWithKeys(fn (Room $r) => [
             $r->id => ['title' => $items[$r->current_item_id]->title, 'thumbnail' => $items[$r->current_item_id]->thumbnail, 'dj' => $items[$r->current_item_id]->user->name],
         ])->all();
+    }
+
+    private function listenerCounts($rooms): array
+    {
+        $counts = RoomPresence::counts();
+        foreach (RoomGuests::counts($rooms->modelKeys()) as $id => $guests) {
+            $counts[$id] = ($counts[$id] ?? 0) + $guests;
+        }
+
+        return $counts;
     }
 
     /** The numbers on the dashboard's top row. */
@@ -246,12 +257,21 @@ class RoomController extends Controller
             return to_route('rooms.show', $room);
         }
 
-        $room->syncCurrent();
+        $synced = false;
+        $sync = function () use ($room, &$synced) {
+            if (! $synced) { $room->syncCurrent(); $synced = true; }
+        };
         $user = $request->user(); // null for guests: they can watch and read, nothing more
         abort_if($user && $room->bans()->where('user_id', $user->id)->exists(), 403, 'You are banned from this room.');
 
-        $can = $user ? $room->permissionsFor($user) : [];
-        $mine = $user ? Vote::where('playlist_item_id', $room->current_item_id)->where('user_id', $user->id)->pluck('type')->all() : [];
+        $permissions = null;
+        $can = function () use (&$permissions, $user, $room) { return $permissions ??= $user ? $room->permissionsFor($user) : []; };
+        $mine = function () use ($sync, $room, $user) {
+            $sync();
+            $votes = $user ? Vote::where('playlist_item_id', $room->current_item_id)->where('user_id', $user->id)->pluck('type')->all() : [];
+
+            return ['woot' => in_array('woot', $votes, true), 'meh' => in_array('meh', $votes, true), 'grab' => in_array('grab', $votes, true)];
+        };
         $css = RoomCss::clean($room->custom_css);
 
         return Inertia::render('Room', [
@@ -262,32 +282,33 @@ class RoomController extends Controller
                 'css' => $css['css'], // what everybody gets: only the harmless part, all of it inside the room
             ] + ($this->ownsCss($user, $room) ? ['css_source' => $room->custom_css, 'css_notes' => $css['notes']] : []), // the host sees what they wrote and what was left out
             'genres' => Room::GENRES,
-            'host' => $room->user->only('id', 'name', 'avatar', 'cosmetics') + ['primary_role' => $room->user->primary_role],
-            'can' => $user ? array_fill_keys($can, true) + ['delete_room' => $room->canDelete($user), 'selfbots' => $user->id === $room->user_id || $user->is_staff] : [],
-            'roles' => $room->roles()->get(['id', 'name', 'color', 'rank', 'permissions', 'builtin']),
+            'host' => fn () => $room->user->only('id', 'name', 'avatar', 'cosmetics') + ['primary_role' => $room->user->primary_role],
+            'can' => fn () => $user ? array_fill_keys($can(), true) + ['delete_room' => $room->canDelete($user), 'selfbots' => $user->id === $room->user_id || $user->is_staff] : [],
+            'roles' => fn () => $room->roles()->get(['id', 'name', 'color', 'rank', 'permissions', 'builtin']),
             'roleOrder' => array_map(fn (Role $role) => $role->value, Role::manual()),
             'roleGroupOf' => collect(Role::manual())->mapWithKeys(fn (Role $role) => [$role->value => $role->group()]),
-            'members' => $room->members()->pluck('room_role_id', 'user_id'),
-            'botMembers' => RoomBotPresence::activeMembers($room),
-            'friendIds' => $user ? $this->friendIds($user) : [],
-            'memberList' => in_array('manage_roles', $can, true)
+            'members' => fn () => $room->members()->pluck('room_role_id', 'user_id'),
+            'botMembers' => function () use ($sync, $room) { $sync(); return RoomBotPresence::activeMembers($room); },
+            'guestMembers' => fn () => RoomGuests::members($room),
+            'friendIds' => fn () => $user ? $this->friendIds($user) : [],
+            'memberList' => fn () => in_array('manage_roles', $can(), true)
                 ? $room->members()->with('user:id,name,avatar')->get()->map(fn ($m) => ['user_id' => $m->user_id, 'name' => $m->user->name, 'avatar' => $m->user->avatar, 'room_role_id' => $m->room_role_id])->values()
                 : [],
-            'mod' => array_intersect(['moderate_chat', 'moderate_users', 'edit_settings'], $can) ? $this->modPanel($room) + ['can_clear_logs' => $room->clearsLogs($user)] : null,
+            'mod' => fn () => array_intersect(['moderate_chat', 'moderate_users', 'edit_settings'], $can()) ? $this->modPanel($room) + ['can_clear_logs' => $room->clearsLogs($user)] : null,
             'permissionLabels' => Room::PERMISSIONS,
-            'backgrounds' => $this->visibleBackgrounds($user, $room),
+            'backgrounds' => fn () => $this->visibleBackgrounds($user, $room),
             'seasons' => Season::list(),
-            'bans' => in_array('moderate_users', $can, true)
+            'bans' => fn () => in_array('moderate_users', $can(), true)
                 ? $room->bans()->with('user:id,name,avatar')->get()->map(fn ($b) => $b->user->only('id', 'name', 'avatar'))->values()
                 : [],
-            'myVotes' => ['woot' => in_array('woot', $mine, true), 'meh' => in_array('meh', $mine, true), 'grab' => in_array('grab', $mine, true)],
+            'myVotes' => $mine,
             'stickers' => self::STICKERS,
-            'emojis' => $room->emojis()->get()->map(fn ($e) => ['id' => $e->id, 'name' => $e->name, 'url' => $e->url()]),
-            'messages' => $room->messages()->visibleTo($user?->id)->with([ChatMessage::WITH_USER, 'replyTo.user', 'reactions'])->latest('id')->limit(50)->get()
+            'emojis' => fn () => $room->emojis()->get()->map(fn ($e) => ['id' => $e->id, 'name' => $e->name, 'url' => $e->url()]),
+            'messages' => fn () => $room->messages()->visibleTo($user?->id)->with([ChatMessage::WITH_USER, 'replyTo.user', 'reactions'])->latest('id')->limit(50)->get()
                 ->reverse()->map(fn ($message) => $message->payload($user?->id))->values(),
-            'playback' => $room->playback(),
-            'listening' => RoomPresence::counts()[$room->id] ?? 0,
-            'stats' => $this->stats($room),
+            'playback' => function () use ($sync, $room) { $sync(); return $room->playback(); },
+            'listening' => fn () => (RoomPresence::counts()[$room->id] ?? 0) + count(RoomGuests::members($room)),
+            'stats' => fn () => $this->stats($room),
         ]);
     }
 
@@ -295,6 +316,14 @@ class RoomController extends Controller
     public function members(Room $room): JsonResponse
     {
         return response()->json(RoomPresence::membersIn($room));
+    }
+
+    public function watchers(Request $request, Room $room): JsonResponse
+    {
+        abort_if($request->user() && $room->bans()->where('user_id', $request->user()->id)->exists(), 403);
+
+        return response()->json(['guests' => RoomGuests::heartbeat($request, $room, $request->isMethod('DELETE'))])
+            ->header('Cache-Control', 'no-store');
     }
 
     /** What the Room info window shows about the room's history. */
@@ -936,7 +965,7 @@ class RoomController extends Controller
 
         // one line in the chat per person, song and kind of vote: pressing again and again does not fill it
         if ($voted && Cache::add("vote-line.{$item->id}.{$me->id}.{$type}", true, 21600)) {
-            VoteCast::dispatch($room->id, $me->id, $me->name, $type);
+            VoteCast::dispatch($room->id, $me->id, $me->name, $type, \App\Support\SubscriptionPerks::appearance($me));
         }
 
         PlaybackUpdated::dispatch($room->refresh());

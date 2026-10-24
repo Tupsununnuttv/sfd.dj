@@ -43,11 +43,20 @@ class AvatarController extends Controller
         'char:sun' => 'brand_ambassador', 'char:sunmini' => 'brand_ambassador', 'char:nebula' => 'brand_ambassador', 'char:nebulamini' => 'brand_ambassador',
         'char:fedora' => 'brand_ambassador', 'char:blaze' => 'brand_ambassador', 'char:echo' => 'brand_ambassador', 'char:blazeref' => 'brand_ambassador', 'char:echoref' => 'brand_ambassador',
         'char:pandabear' => 'brand_ambassador', 'char:adammochi' => 'brand_ambassador', 'char:skelly' => 'owner',
+        'char:admin01' => 'brand_ambassador', 'char:admin02' => 'brand_ambassador', 'char:admin03' => 'brand_ambassador',
+        'char:admin04' => 'brand_ambassador', 'char:admin05' => 'brand_ambassador', 'char:admin06' => 'brand_ambassador',
+        'char:admin07' => 'brand_ambassador', 'char:admin08' => 'brand_ambassador', 'char:admin09' => 'brand_ambassador',
+        'char:ba01' => 'brand_ambassador', 'char:ba02' => 'brand_ambassador', 'char:ba03' => 'brand_ambassador', 'char:ba04' => 'brand_ambassador',
         'char:zoos02' => 'owner', 'char:rift' => 'owner', 'char:skully' => 'owner', 'char:fox' => 'owner',
     ];
 
     /** Shop names that are not just the file name with a capital letter. */
-    private const CHARACTER_LABELS = ['icemini' => 'Ice Mini', 'azuremini' => 'Azure Mini', 'sunmini' => 'Sun Mini', 'nebulamini' => 'Nebula Mini', 'blazeref' => 'Blaze Ref', 'echoref' => 'Echo Ref', 'zoos02' => 'Zoo S02', 'pandabear' => 'Panda Bear', 'emberdragon' => 'Ember Dragon', 'frostdragon' => 'Frost Dragon', 'kikomochi' => 'Kiko & Mochi', 'wilmer' => 'Wilmer', 'adammochi' => 'Adam & Mochi', 'elementaar' => 'Elementary', 'bamboopanda' => 'Bamboo Panda', 'vesperpip' => 'Vesper & Pip'];
+    private const CHARACTER_LABELS = [
+        'icemini' => 'Ice Mini', 'azuremini' => 'Azure Mini', 'sunmini' => 'Sun Mini', 'nebulamini' => 'Nebula Mini', 'blazeref' => 'Blaze Ref', 'echoref' => 'Echo Ref', 'zoos02' => 'Zoo S02', 'pandabear' => 'Panda Bear', 'emberdragon' => 'Ember Dragon', 'frostdragon' => 'Frost Dragon', 'dragone01' => 'Green Dragon', 'dragone02' => 'Red Dragon', 'dragone03' => 'Golden Dragon', 'dragone04' => 'Blue Dragon', 'kikomochi' => 'Kiko & Mochi', 'wilmer' => 'Wilmer', 'adammochi' => 'Adam & Mochi', 'elementaar' => 'Elementary', 'bamboopanda' => 'Bamboo Panda', 'vesperpip' => 'Vesper & Pip',
+        'admin01' => 'Admin 01', 'admin02' => 'Admin 02', 'admin03' => 'Admin 03', 'admin04' => 'Admin 04', 'admin05' => 'Admin 05',
+        'admin06' => 'Admin 06', 'admin07' => 'Admin 07', 'admin08' => 'Admin 08', 'admin09' => 'Admin 09',
+        'ba01' => 'Brand Ambassador 01', 'ba02' => 'Brand Ambassador 02', 'ba03' => 'Brand Ambassador 03', 'ba04' => 'Brand Ambassador 04',
+    ];
 
     /** Where to look for a state's picture, in order: a character with no DJing picture dances on the stage, and one with no Dancing picture just stands. */
     private const CHARACTER_FOLDERS = ['standing' => ['Standing'], 'dancing' => ['Dancing', 'Standing'], 'djing' => ['DJing', 'Dancing', 'Standing']];
@@ -88,7 +97,7 @@ class AvatarController extends Controller
 
     /** The level that unlocks an item. Everything not listed here is free from level 1. */
     public const UNLOCK = [
-        'avatar' => ['char:neko' => 2, 'char:bun' => 3, 'char:wilmer' => 4, 'char:panda' => 5, 'char:bamboopanda' => 5, 'char:vesperpip' => 22, 'char:milky' => 6, 'char:pip' => 7, 'char:wolfie' => 8, 'char:robo' => 10, 'char:elementaar' => 12, 'char:lumen' => 9, 'char:aether' => 18, 'char:solstice' => 25, 'char:veyra' => 28, 'char:kaida' => 32, 'char:spooky' => 14, 'char:kikomochi' => 16, 'char:boomer' => 20, 'char:emberdragon' => 30, 'char:frostdragon' => 35],
+        'avatar' => ['char:neko' => 2, 'char:bun' => 3, 'char:wilmer' => 4, 'char:panda' => 5, 'char:bamboopanda' => 5, 'char:vesperpip' => 22, 'char:milky' => 6, 'char:pip' => 7, 'char:wolfie' => 8, 'char:robo' => 10, 'char:elementaar' => 12, 'char:lumen' => 9, 'char:aether' => 18, 'char:solstice' => 25, 'char:veyra' => 28, 'char:kaida' => 32, 'char:spooky' => 14, 'char:kikomochi' => 16, 'char:boomer' => 20, 'char:emberdragon' => 30, 'char:frostdragon' => 35, 'char:dragone01' => 25, 'char:dragone02' => 25, 'char:dragone03' => 25, 'char:dragone04' => 25],
         'badge' => ['digger' => 2, 'bassline' => 3, 'streak' => 4, 'nightowl' => 6, 'voltage' => 8, 'goldenear' => 10, 'diamond' => 13, 'spotlight' => 16, 'platinum' => 20, 'laureate' => 24, 'royal' => 28, 'phoenixheart' => 30, 'cosmic' => 34, 'dragonseal' => 42, 'legend' => 55],
         'accessory' => ['cap' => 2, 'beanie' => 3, 'catears' => 4, 'foxears' => 5, 'flowers' => 7, 'halo' => 9, 'visor' => 10, 'laurel' => 12, 'horns' => 15, 'tophat' => 18, 'crown' => 22, 'lunarfox' => 24, 'wings' => 26, 'dragon' => 32, 'phoenix' => 45],
         'frame' => ['gold' => 2, 'fireflies' => 3, 'neon' => 4, 'comic' => 5, 'carbon' => 6, 'emerald' => 8, 'web' => 9, 'vinyl' => 11, 'candles' => 12, 'equalizer' => 14, 'skulls' => 16, 'thorns' => 18, 'lanterns' => 20, 'frost' => 22, 'crystals' => 25, 'hellfire' => 28, 'portal' => 32, 'aurora' => 38, 'prism' => 50],

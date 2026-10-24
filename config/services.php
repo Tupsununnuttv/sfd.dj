@@ -76,6 +76,16 @@ return [
         'api_key' => env('GIPHY_API_KEY'),
         'sdk_key' => env('GIPHY_SDK_API_KEY'),
     ],
+    'reddit' => [
+        'client_id' => env('REDDIT_CLIENT_ID'), 'client_secret' => env('REDDIT_CLIENT_SECRET'),
+        'user_agent' => env('REDDIT_USER_AGENT', 'web:SFD-DJ.EU:1.0 (account linking)'),
+    ],
+    'instagram' => ['client_id' => env('INSTAGRAM_CLIENT_ID'), 'client_secret' => env('INSTAGRAM_CLIENT_SECRET')],
+    'facebook' => [
+        'client_id' => env('FACEBOOK_CLIENT_ID'), 'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
+        'graph_version' => env('META_GRAPH_VERSION', 'v25.0'),
+    ],
+    'x' => ['client_id' => env('X_CLIENT_ID'), 'client_secret' => env('X_CLIENT_SECRET')],
 
     // Legacy Tenor endpoint; the chat GIF picker now uses GIPHY directly from the browser.
     // payments for the SFD-DJ.EU subscriptions (App\Support\Stripe): the secret key and the signing secret of the webhook /stripe/webhook

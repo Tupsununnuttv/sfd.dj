@@ -321,8 +321,7 @@ const motion = (state) => {
         return common + `.aura{animation:aura 3.2s ease-in-out infinite}` +
             move('.up', 'breathe', 3.2, [0, 0], [0, 1]) +
             move('.hd', 'look', 8, [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, -1, -1, 0, 0, 0, 0], zero(16)) +
-            looks('gl', 4, GLINT_SEQ, 4) + hideOthers('gl', 4) +
-            track('led', 'opacity', [1, 0.35]) + run('.led', 'led', 1.6);
+            looks('gl', 4, GLINT_SEQ, 4) + hideOthers('gl', 4);
     }
     if (state === 'Dancing') {
         const hop = [0, -1, -2, -1, 0, -1, -2, -1];
@@ -332,8 +331,7 @@ const motion = (state) => {
             move('.lgL', 'kickL', 1.2, zero(8), [0, 0, -1, 0, 0, 0, 0, 0]) + move('.lgR', 'kickR', 1.2, zero(8), [0, 0, 0, 0, 0, 0, -1, 0]) +
             track('shrink', 'transform', hop.map((h) => `scale(${1 + h * 0.07})`)) + run('.shadow,.floor', 'shrink', 1.2) +
             looks('aL', 3, [0, 0, 1, 1, 2, 2, 1, 1], 1.2) + looks('aR', 3, [0, 0, 1, 1, 2, 2, 0, 0], 1.2) + hideOthers('aL', 3) + hideOthers('aR', 3) +
-            looks('gl', 4, [0, 1, 2, 3, 0, 0, 0, 0], 1.2) + hideOthers('gl', 4) +
-            track('led', 'opacity', [1, 0.35, 1, 0.35]) + run('.led', 'led', 0.6);
+            looks('gl', 4, [0, 1, 2, 3, 0, 0, 0, 0], 1.2) + hideOthers('gl', 4);
     }
 
     return common + `.aura{animation:aura 1s ease-in-out infinite}` +
@@ -354,15 +352,14 @@ export function elementaar(state) {
     const dancing = state === 'Dancing', back = state === 'DJing';
     const glint = [[[17, 23], [18, 22], [19, 21]], [[19, 23], [20, 22], [21, 21]], [[21, 23], [22, 22], [23, 21]]];
     const lenses = `<path fill="#ffc2b8" d="M17 19h2v1h-2zM30 19h2v1h-2zM17 20h1v1h-1zM30 20h1v1h-1z"/>` + glint.map((cells, i) => `<g class="gl${i + 1}">${dots('#ffc2b8', cells)}${dots('#ffc2b8', cells.map(([x, y]) => [x + 13, y]))}</g>`).join('');
-    const led = `<g class="led">${dots('#ff6a5a', [[26, 31], [27, 31], [26, 32], [27, 32]])}</g>`;
     const glyph = `<g transform="translate(27 7.5) scale(.9)">${CANCER('stroke="#ffe9e4" stroke-width=".55"')}</g>`;
-    const backGlyph = `<g transform="translate(27 57) scale(.9)" opacity=".8">${CANCER('stroke="#ff8a7a" stroke-width=".6"')}</g>`;
+    const backGlyph = `<g transform="translate(27 46) scale(1.8)" opacity=".8">${CANCER('stroke="#ff8a7a" stroke-width=".6"')}</g>`;
 
     let figure;
     if (!back) {
         const armsFor = dancing ? { L: ['up', 'side', 'down'], R: ['side', 'down', 'up'] } : { L: ['down'], R: ['down'] };
         const arms = (side) => armsFor[side].map((name, i) => layer(armsFor[side].length > 1 ? `a${side}${i}` : `a${side}`, arm(name, side === 'R'))).join('');
-        figure = `<g class="all"><g class="lgL">${draw(leg(false))}</g><g class="lgR">${draw(leg(true))}</g><g class="up">${draw(torso(false))}<g class="hd">${draw(headFront())}${lenses}${glyph}${led}</g>${arms('L')}${arms('R')}</g></g>`;
+        figure = `<g class="all"><g class="lgL">${draw(leg(false))}</g><g class="lgR">${draw(leg(true))}</g><g class="up">${draw(torso(false))}<g class="hd">${draw(headFront())}${lenses}${glyph}</g>${arms('L')}${arms('R')}</g></g>`;
     } else {
         const arms = (side, names) => names.map((name, i) => layer(`a${side}${i}`, arm(name, side === 'R'))).join('');
         figure = `<g class="all"><g class="lgL">${draw(leg(false, true))}</g><g class="lgR">${draw(leg(true, true))}</g><g class="up">${arms('L', ['rest', 'scratchL', 'scratchR'])}${draw(torso(true))}${backGlyph}<g class="hd">${draw(headBack())}</g>${arms('R', ['high', 'low'])}</g></g>`;

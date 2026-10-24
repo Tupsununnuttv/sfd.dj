@@ -1,3 +1,7 @@
+import SubscriberName from '@/Components/SubscriberName';
+import SubscriptionShowcase from '@/Components/SubscriptionShowcase';
+import { perk, profileVars } from '@/lib/subscriptionStyle';
+import { formatDate } from '@/lib/regional';
 import Avatar from '@/Components/Avatar';
 import UserRestrictionActions from '@/Components/UserRestrictionActions';
 import { useUserRestrictions } from '@/lib/userRestrictions';
@@ -36,22 +40,22 @@ export default function UserProfile({ profile: p }: Props) {
         <AppLayout title="Profile">
             <Head title={p.name} />
 
-            <section className="flex flex-wrap items-center gap-5 rounded-xl border border-neutral-800 bg-linear-to-br from-violet-600/20 to-fuchsia-600/10 p-6">
+            <section data-profile-animation={perk(p.cosmetics?.subscription, 'background_animation') || undefined} style={profileVars(p.cosmetics)} className="sub-profile flex flex-wrap items-center gap-5 rounded-xl border border-neutral-800 bg-linear-to-br from-violet-600/20 to-fuchsia-600/10 p-6">
                 <span className="relative inline-block"><Avatar name={p.name} avatar={p.avatar} cosmetics={p.cosmetics} className="h-24 w-24 text-4xl" /><StatusDot status={status} ring="ring-neutral-900" className="absolute bottom-1 right-1 h-5! w-5!" /></span>
                 <div className="min-w-0 flex-1">
                     <p className="flex flex-wrap items-center gap-2 text-2xl font-bold" style={{ color: p.primary_role.color }}>
-                        <Badges badges={p.badges} level={p.level} awards={9} /> {p.name} <RoleBadge role={p.primary_role} showMember />
+                        <Badges badges={p.badges} level={p.level} awards={9} /> <SubscriberName cosmetics={p.cosmetics}>{p.name}</SubscriberName> <RoleBadge role={p.primary_role} showMember />
                     </p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-neutral-400">
                         {p.username && <span>@{p.username}</span>}
                         {p.pronouns && <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-neutral-200" title="Pronouns">{p.pronouns}</span>}
                         {p.flag && <span className="flex items-center gap-1.5 text-neutral-300"><Flag flag={p.flag} className="h-4" /> {p.flag.name}</span>}
-                        <span className={`flex items-center gap-1.5 text-xs font-semibold ${STATUS[status].text}`}><StatusDot status={status} ring="ring-transparent" className="ring-0!" /> {STATUS[status].label}</span>
+                        <span data-status-style={perk(p.cosmetics?.subscription, 'status') || undefined} className={`flex items-center gap-1.5 text-xs font-semibold ${STATUS[status].text}`}><StatusDot status={status} ring="ring-transparent" className="ring-0!" /> {STATUS[status].label}</span>
                     </p>
                     {p.favorite_genre && <span className="mt-2 inline-block rounded-full bg-violet-500/15 px-2.5 py-0.5 text-xs text-violet-300">🎵 {p.favorite_genre}</span>}
                     {p.bio && <p className="mt-3 max-w-2xl whitespace-pre-line wrap-break-word text-sm text-neutral-200">{p.bio}</p>}
                     <p className="mt-1 flex flex-wrap items-center gap-3 text-xs text-neutral-500">
-                        <span>Joined {new Date(p.joined).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                        <span>Joined {formatDate(p.joined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                         {p.discord && <span className="flex items-center gap-1"><SocialIcon name="discord" size={14} /> {p.discord}</span>}
                         {p.youtube_channel && <a href={p.youtube_channel.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-red-300"><SocialIcon name="youtube" size={14} /> {p.youtube_channel.title || 'YouTube channel'}</a>}
                     </p>
@@ -82,6 +86,7 @@ export default function UserProfile({ profile: p }: Props) {
                 </div>
             </section>
 
+            <SubscriptionShowcase cosmetics={p.cosmetics} badges={p.badges} />
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 {tiles.map(([label, value]) => (
                     <div key={label} className="rounded-2xl border border-white/10 bg-white/4 p-4">

@@ -1,3 +1,4 @@
+import SubscriberName from '@/Components/SubscriberName';
 import Avatar from '@/Components/Avatar';
 import RoomBadge from '@/Components/RoomBadge';
 import { Dancer } from '@/Components/RoomScene';
@@ -62,7 +63,7 @@ export default function RoomHeader({ room, host, listening, dj, title, live, pla
                     </p>
                     <p className="mt-0.5 flex items-center gap-1.5 text-[11px] leading-tight text-neutral-400">
                         <Avatar name={host.name} avatar={host.avatar} cosmetics={host.cosmetics} className="h-4 w-4 text-[9px]" />
-                        <span className="truncate" title={host.name}>{host.name}</span>
+                        <span className="truncate" title={host.name}><SubscriberName cosmetics={host.cosmetics}>{host.name}</SubscriberName></span>
                         <span className="shrink-0 whitespace-nowrap text-amber-300">Room host</span>
                     </p>
                 </div>
@@ -81,7 +82,7 @@ export default function RoomHeader({ room, host, listening, dj, title, live, pla
                             <p className="flex min-w-0 items-center gap-2 text-sm leading-tight">
                                 <span className="hidden shrink-0 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white sm:inline">Live</span>
                                 <span className="min-w-0 truncate">
-                                    {dj && <><span className="font-semibold" style={{ color: dj.role.color }}>{dj.name}</span> <span className="text-neutral-400">is live:</span>{' '}</>}
+                                    {dj && <><span className="font-semibold" style={{ color: dj.role.color }}><SubscriberName cosmetics={dj.cosmetics}>{dj.name}</SubscriberName></span> <span className="text-neutral-400">is live:</span>{' '}</>}
                                     <span className="font-bold text-white" title={live.title}>{live.title}</span>
                                 </span>
                                 <span className="hidden shrink-0 sm:inline">{playing ? <Equalizer /> : <Music2 size={14} className="text-neutral-600" />}</span>
@@ -97,7 +98,7 @@ export default function RoomHeader({ room, host, listening, dj, title, live, pla
                         <div className="min-w-0 flex-1">
                             <p className="flex min-w-0 items-center gap-2 text-sm leading-tight">
                                 <span className="min-w-0 truncate">
-                                    <span className="text-neutral-400"><span className="font-semibold" style={{ color: dj.role.color }}>{dj.name}</span> is playing:</span>{' '}
+                                    <span className="text-neutral-400"><span className="font-semibold" style={{ color: dj.role.color }}><SubscriberName cosmetics={dj.cosmetics}>{dj.name}</SubscriberName></span> is playing:</span>{' '}
                                     <span className="font-bold text-white" title={title}>{title}</span>
                                 </span>
                                 {playing ? <Equalizer className="shrink-0" /> : <Music2 size={14} className="shrink-0 text-neutral-600" />}

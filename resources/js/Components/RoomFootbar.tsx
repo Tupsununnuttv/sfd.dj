@@ -167,7 +167,7 @@ export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSk
     const goal = community.donation;
 
     // More: the room, then the community (events, our Discord and the other links staff set in Community settings), then help
-    const socials = Object.entries(community.social).map(([key, url]): MenuItem => ({
+    const socials = Object.entries({ ...community.social, discord: 'https://discord.gg/p4FD5VHgbN' }).map(([key, url]): MenuItem => ({
         label: socialLabels[key] ?? key,
         icon: ({ size, className }: { size?: number; className?: string }) => <span className={className}><SocialIcon name={key} size={size} /></span>,
         onSelect: () => window.open(url, '_blank', 'noopener,noreferrer'),
@@ -292,6 +292,8 @@ export default function RoomFootbar({ guest, slug, playbackOn, onPlayback, canSk
                 {canSkip && <button onClick={onSkip} aria-label="Skip song" title="Skip song" className={`${iconBtn} border-violet-400/30! bg-violet-500/15! text-violet-100! hover:bg-violet-500/30!`}><SkipForward size={18} /></button>}
                 <button
                     data-menu-trigger
+                    aria-label="More"
+                    title="More"
                     onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setMore(more ? null : { x: r.right, y: window.innerHeight, right: true, flipTo: r.top - 8 }); /* y at the bottom of the window: it never fits below, so it opens above */ }}
                     aria-haspopup="menu"
                     className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 text-[13px] font-semibold text-neutral-200 transition hover:bg-white/10"

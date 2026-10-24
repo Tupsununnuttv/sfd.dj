@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from '@/lib/regional';
 import Avatar from '@/Components/Avatar';
 import { Card, EmptyState, fieldClass, ghostBtn, primaryBtn, SectionTitle, Tabs } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
@@ -30,8 +31,8 @@ interface Props {
     rooms: { id: number; name: string }[];
 }
 
-const when = (iso: string) => new Date(iso).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-const month = (iso: string) => new Date(iso).toLocaleDateString([], { month: 'short' }).toUpperCase();
+const when = (iso: string) => formatDateTime(iso, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const month = (iso: string) => formatDate(iso, { month: 'short' }).toUpperCase();
 const day = (iso: string) => new Date(iso).getDate();
 
 /** Which heading an upcoming event goes under. */

@@ -1,3 +1,5 @@
+import { formatDate } from '@/lib/regional';
+import SubscriptionCustomization, { PerkControl } from '@/Components/SubscriptionCustomization';
 import PlanCards, { Interval, IntervalSwitch, PlanInfo } from '@/Components/PlanCards';
 import SubscriptionGifts, { GiftMember, SubscriptionGiftInfo } from '@/Components/SubscriptionGifts';
 import { Card } from '@/Components/ui';
@@ -14,10 +16,10 @@ interface Mine {
     renews: boolean;
 }
 
-const day = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+const day = (iso: string) => formatDate(iso, { day: 'numeric', month: 'long', year: 'numeric' });
 
 /** SFD-DJ.EU Subscriptions (Bronze, Silver, Gold, Plus, Pro and Premium): what you have, the plans and their prices, and buying one on Stripe. */
-export default function Plus({ plans, mine, manageable, payments, paid, giftPayments, giftSent, giftRecipient, receivedGifts, sentGifts }: { plans: PlanInfo[]; mine: Mine | null; manageable: boolean; payments: boolean; paid: boolean; giftPayments: boolean; giftSent: boolean; giftRecipient: GiftMember | null; receivedGifts: SubscriptionGiftInfo[]; sentGifts: SubscriptionGiftInfo[] }) {
+export default function Plus({ plans, mine, manageable, payments, paid, giftPayments, giftSent, giftRecipient, receivedGifts, sentGifts, perkControls }: { plans: PlanInfo[]; mine: Mine | null; manageable: boolean; payments: boolean; paid: boolean; giftPayments: boolean; giftSent: boolean; giftRecipient: GiftMember | null; receivedGifts: SubscriptionGiftInfo[]; sentGifts: SubscriptionGiftInfo[]; perkControls: PerkControl[] }) {
     const [period, setPeriod] = useState<Interval>('month');
     const [busy, setBusy] = useState<string | null>(null);
     const buy = (plan: string) => { setBusy(plan); router.post(route('settings.plus.checkout'), { plan, interval: period }, { onFinish: () => setBusy(null) }); };
@@ -57,6 +59,7 @@ export default function Plus({ plans, mine, manageable, payments, paid, giftPaym
                 </Card>
 
                 <SubscriptionGifts plans={plans} payments={giftPayments} recipient={giftRecipient} received={receivedGifts} sent={sentGifts} hasPlan={!!mine} />
+                {mine && <SubscriptionCustomization controls={perkControls} />}
 
                 <div className="flex justify-center"><IntervalSwitch value={period} onChange={setPeriod} plans={plans} /></div>
 

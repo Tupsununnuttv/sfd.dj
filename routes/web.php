@@ -27,6 +27,7 @@ use App\Http\Controllers\SiteController;
 use App\Http\Controllers\SpotifyController;
 use App\Http\Controllers\StaffApplicationController;
 use App\Http\Controllers\StreamConnectionController;
+use App\Http\Controllers\SocialConnectionController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SubscriptionGiftController;
 use App\Http\Controllers\SupportController;
@@ -99,6 +100,7 @@ Route::middleware(VerifiedIfLoggedIn::class)->group(function () {
     Route::get('/live', [LiveController::class, 'index'])->name('live');
     Route::get('/rooms/{room}', [RoomController::class, 'show'])->name('rooms.show');
     Route::get('/rooms/{room}/members', [RoomController::class, 'members'])->middleware('throttle:60,1')->name('rooms.members');
+    Route::match(['post', 'delete'], '/rooms/{room}/watchers', [RoomController::class, 'watchers'])->middleware('throttle:room-watchers')->name('rooms.watchers');
     Route::get('/history', [RoomController::class, 'history'])->name('history');
     Route::get('/community', [CommunityController::class, 'index'])->name('community');
     Route::get('/users/{user}', [UserProfileController::class, 'show'])->name('users.show');
@@ -116,6 +118,11 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
 
     Route::get('/playlists', [PlaylistController::class, 'index'])->name('playlists');
     Route::get('/selfbots', [SelfDjBotController::class, 'index'])->name('selfbots');
+    foreach (SocialConnectionController::PROVIDERS as $provider) {
+        Route::get("/auth/{$provider}", [SocialConnectionController::class, 'connect'])->defaults('provider', $provider)->middleware('throttle:10,1')->name("{$provider}.connect");
+        Route::get("/auth/{$provider}/callback", [SocialConnectionController::class, 'callback'])->defaults('provider', $provider)->middleware('throttle:20,1')->name("{$provider}.callback");
+        Route::delete("/auth/{$provider}", [SocialConnectionController::class, 'disconnect'])->defaults('provider', $provider)->middleware('throttle:10,1')->name("{$provider}.disconnect");
+    }
     Route::post('/selfbots', [SelfDjBotController::class, 'store'])->middleware('throttle:10,1')->name('selfbots.store');
     Route::put('/selfbots/{selfbot}', [SelfDjBotController::class, 'update'])->whereNumber('selfbot')->name('selfbots.update');
     Route::patch('/selfbots/{selfbot}/enabled', [SelfDjBotController::class, 'toggle'])->whereNumber('selfbot')->name('selfbots.toggle');
@@ -282,6 +289,8 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::post('/settings/plus/checkout', [SubscriptionController::class, 'checkout'])->middleware('throttle:10,1')->name('settings.plus.checkout');
     Route::post('/settings/plus/portal', [SubscriptionController::class, 'portal'])->middleware('throttle:10,1')->name('settings.plus.portal');
     Route::get('/settings/audio', fn () => Inertia::render('Settings/Audio'))->name('settings.audio');
+    Route::get('/settings/system', fn () => Inertia::render('Settings/System'))->name('settings.system');
+    Route::get('/settings/language-time', fn () => Inertia::render('Settings/LanguageTime'))->name('settings.language-time');
     Route::get('/settings/notifications', fn () => Inertia::render('Settings/Notifications'))->name('settings.notifications');
     Route::get('/settings/developers', [DeveloperController::class, 'index'])->name('settings.developers');
     Route::post('/settings/developers/bots', [DeveloperController::class, 'storeBot'])->middleware('throttle:10,1')->name('developers.bots.store');
@@ -294,6 +303,9 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::get('/settings/privacy', fn () => Inertia::render('Settings/Privacy'))->name('settings.privacy');
     Route::get('/settings/violations', [SettingsController::class, 'violations'])->name('settings.violations');
     Route::patch('/settings/preferences', [SettingsController::class, 'updatePreferences'])->name('settings.preferences');
+    Route::patch('/settings/subscription-perks', [\App\Http\Controllers\SubscriptionPerksController::class, 'update'])->name('settings.subscription-perks');
+    Route::post('/settings/subscription-background', [\App\Http\Controllers\SubscriptionPerksController::class, 'background'])->name('settings.subscription-background');
+    Route::delete('/settings/subscription-background', [\App\Http\Controllers\SubscriptionPerksController::class, 'removeBackground'])->name('settings.subscription-background.remove');
 
     Route::post('/two-factor', [TwoFactorController::class, 'enable'])->middleware('throttle:6,1,two-factor-enable')->name('two-factor.enable');
     Route::post('/two-factor/confirm', [TwoFactorController::class, 'confirm'])->middleware('throttle:6,1,two-factor-confirm')->name('two-factor.confirm');

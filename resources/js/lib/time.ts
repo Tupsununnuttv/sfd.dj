@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { formatDate } from '@/lib/regional';
 
 /** "just now", "5m ago", "3h ago", "2d ago". */
 export const ago = (iso: string | null | undefined): string => {
@@ -8,7 +9,7 @@ export const ago = (iso: string | null | undefined): string => {
     if (s < 3600) return `${Math.floor(s / 60)}m ago`;
     if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
     if (s < 86400 * 30) return `${Math.floor(s / 86400)}d ago`;
-    return new Date(iso).toLocaleDateString();
+    return formatDate(iso);
 };
 
 /** "in 5 min", "in 3 h", "in 2 days", or "now" once it has started. */

@@ -6,6 +6,7 @@ use App\Models\ChatMessage;
 use App\Models\PlaylistItem;
 use App\Models\User;
 use App\Models\Whisper;
+use App\Models\SocialConnection;
 use App\Support\AccountSecurity;
 use App\Support\DiscordRoleSync;
 use Illuminate\Http\JsonResponse;
@@ -40,8 +41,17 @@ class SettingsController extends Controller
     public function connections(Request $request): Response
     {
         $user = $request->user();
+        $linked = SocialConnection::where('user_id', $user->id)->get()->keyBy('provider');
 
         return Inertia::render('Settings/Connections', [
+            'social' => collect(SocialConnectionController::PROVIDERS)->mapWithKeys(fn ($provider) => [$provider => [
+                'configured' => SocialConnectionController::configured($provider),
+                'connected' => $linked->has($provider),
+                'display_name' => $linked->get($provider)?->display_name,
+                'username' => $linked->get($provider)?->username,
+                'notice' => session("{$provider}_notice"), 'notice_ok' => (bool) session("{$provider}_notice_ok"),
+                'redirect' => $user->is_staff ? route("{$provider}.callback") : null,
+            ]]),
             'discord' => [
                 'configured' => DiscordController::configured(),
                 'role_sync_configured' => DiscordRoleSync::configured(),
@@ -181,6 +191,14 @@ class SettingsController extends Controller
     public function updatePreferences(Request $request): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
+            'system' => ['sometimes', 'array:low_performance,animated_characters,background_effects,visual_effects,simple_background'],
+            'system.low_performance' => ['sometimes', 'boolean'],
+            'system.animated_characters' => ['sometimes', 'boolean'],
+            'system.background_effects' => ['sometimes', 'boolean'],
+            'system.visual_effects' => ['sometimes', 'boolean'],
+            'system.simple_background' => ['sometimes', 'boolean'],
+            'regional.language' => ['sometimes', Rule::in(['en', 'et', 'ru'])],
+            'regional.time_format' => ['sometimes', Rule::in(['12', '24'])],
             'appearance.chat_size' => ['sometimes', Rule::in(['small', 'normal', 'large'])],
             'appearance.show_avatars' => ['sometimes', 'boolean'],
             'appearance.always_animate' => ['sometimes', 'boolean'],
@@ -201,6 +219,8 @@ class SettingsController extends Controller
             'privacy.friend_requests' => ['sometimes', 'boolean'],
             'privacy.show_online' => ['sometimes', 'boolean'],
         ]);
+
+        if (isset($data['system'])) $data['system'] = array_map(fn ($value) => (bool) $value, $data['system']);
 
         $preferences = DB::transaction(function () use ($request, $data) {
             $user = User::whereKey($request->user()->id)->lockForUpdate()->firstOrFail();

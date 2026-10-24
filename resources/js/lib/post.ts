@@ -35,13 +35,14 @@ export async function getJson<T>(url: string, options: { signal?: AbortSignal } 
 }
 
 /** Send JSON and read the JSON that comes back (the playlist API). */
-export async function sendJson<T>(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: string, data?: object): Promise<T> {
+export async function sendJson<T>(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: string, data?: object, options: { signal?: AbortSignal } = {}): Promise<T> {
     const xsrf = decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '');
 
     const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-XSRF-TOKEN': xsrf },
         body: data ? JSON.stringify(data) : undefined,
+        signal: options.signal,
     });
     const json = await res.json().catch(() => ({}));
 

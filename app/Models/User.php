@@ -218,6 +218,23 @@ class User extends Authenticatable implements MustVerifyEmail
         return array_intersect_key(Plans::TIERS[$this->activePlan()] ?? Plans::FREE, array_flip(['playlists', 'songs', 'emojis']));
     }
 
+    /** Subscription styling is derived at read time, so expiry immediately removes paid effects. */
+    protected function cosmetics(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                $cosmetics = is_array($value) ? $value : (json_decode($value ?? 'null', true) ?: null);
+                unset($cosmetics['subscription']);
+                $style = \App\Support\SubscriptionPerks::appearance($this);
+                return $style ? [...($cosmetics ?? []), 'subscription' => $style] : ($cosmetics ?: null);
+            },
+            set: function ($value) {
+                if (is_array($value)) unset($value['subscription']);
+                return $value ? json_encode($value) : null;
+            },
+        );
+    }
+
     public function addXp(int $amount): void
     {
         $amount = (int) round($amount * (Plans::TIERS[$this->activePlan()]['xp'] ?? 1)); // a plan gives more XP for everything

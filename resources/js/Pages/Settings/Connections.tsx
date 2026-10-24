@@ -6,8 +6,10 @@ import { Head, router } from '@inertiajs/react';
 import { MouseEvent, ReactNode, useEffect, useState } from 'react';
 
 /** Where each sign-in with another site starts. */
-const START = { spotify: 'spotify.connect', discord: 'discord.connect', youtube: 'youtube.connect', twitch: 'twitch.connect', tiktok: 'tiktok.connect' } as const;
+const START = { spotify: 'spotify.connect', discord: 'discord.connect', youtube: 'youtube.connect', twitch: 'twitch.connect', tiktok: 'tiktok.connect', reddit: 'reddit.connect', instagram: 'instagram.connect', facebook: 'facebook.connect', x: 'x.connect' } as const;
 type Service = keyof typeof START;
+type SocialService = 'reddit' | 'instagram' | 'facebook' | 'x';
+const socialLabels = { reddit: 'Reddit', instagram: 'Instagram', facebook: 'Facebook', x: 'X / Twitter' };
 const POPUP = 'sfd-connect';
 
 /**
@@ -25,7 +27,7 @@ function ConnectLink({ service, className, children }: { service: Service; class
     return <a href={route(START[service])} onClick={open} className={className}>{children}</a>;
 }
 
-type Notices = { discord: string | null; spotify: string | null; spotifyOk: boolean; youtube: string | null; twitch: string | null; tiktok: string | null; twitchOk: boolean; tiktokOk: boolean };
+type Notices = { discord: string | null; spotify: string | null; spotifyOk: boolean; youtube: string | null; twitch: string | null; tiktok: string | null; twitchOk: boolean; tiktokOk: boolean } & Record<SocialService, string | null> & { socialOk: Partial<Record<SocialService, boolean>> };
 
 /**
  * The small sign-in window runs through this page twice: first (?connect=spotify) it goes on to the other site; back from it, it hands what the site
@@ -57,7 +59,7 @@ function useSignInWindow(mine: Notices): Notices | null {
 
         if (!embedded) return;
         const channel = browserChannel<Notices>(POPUP, (data) => {
-            if (!data || !['discord', 'spotify', 'youtube', 'twitch', 'tiktok'].every((key) => data[key as keyof Notices] === null || typeof data[key as keyof Notices] === 'string') || typeof data.spotifyOk !== 'boolean') return;
+            if (!data || !Object.keys(START).every((key) => data[key as keyof Notices] === null || typeof data[key as keyof Notices] === 'string') || typeof data.spotifyOk !== 'boolean') return;
             setHanded(data);
             router.reload();
         });
@@ -108,8 +110,8 @@ function AppSetup({ label, redirect }: { label: string; redirect: string | null 
     return <details className="text-xs text-neutral-500"><summary className="cursor-pointer hover:text-neutral-300">{label} app setup</summary><p className="mt-2 leading-relaxed">Register this callback URL in the developer app:</p><code className="mt-1 block select-all break-all rounded-lg bg-black/25 p-2 text-neutral-400">{redirect}</code></details>;
 }
 
-export default function Connections({ discord, spotify, youtube, twitch, tiktok }: { discord: DiscordState; spotify: SpotifyState; youtube: YouTubeState; twitch: StreamState; tiktok: StreamState }) {
-    const handed = useSignInWindow({ discord: discord.notice, spotify: spotify.notice, spotifyOk: spotify.notice_ok, youtube: youtube.notice, twitch: twitch.notice, tiktok: tiktok.notice, twitchOk: twitch.notice_ok, tiktokOk: tiktok.notice_ok });
+export default function Connections({ discord, spotify, youtube, twitch, tiktok, social = {} }: { discord: DiscordState; spotify: SpotifyState; youtube: YouTubeState; twitch: StreamState; tiktok: StreamState; social?: Partial<Record<SocialService, StreamState & { username?: string | null }>> }) {
+    const handed = useSignInWindow({ discord: discord.notice, spotify: spotify.notice, spotifyOk: spotify.notice_ok, youtube: youtube.notice, twitch: twitch.notice, tiktok: tiktok.notice, twitchOk: twitch.notice_ok, tiktokOk: tiktok.notice_ok, reddit: social.reddit?.notice ?? null, instagram: social.instagram?.notice ?? null, facebook: social.facebook?.notice ?? null, x: social.x?.notice ?? null, socialOk: Object.fromEntries(Object.entries(social).map(([key, state]) => [key, state.notice_ok])) });
     const connect = (service: Service) => (className: string, children: ReactNode) => <ConnectLink service={service} className={className}>{children}</ConnectLink>;
     const disconnect = (service: Service, message = `Disconnect ${service === 'tiktok' ? 'TikTok' : service.charAt(0).toUpperCase() + service.slice(1)} from SFD-DJ.EU?`) => () => {
         if (confirm(message)) router.delete(route(`${service}.disconnect`), { preserveScroll: true });
@@ -145,6 +147,18 @@ export default function Connections({ discord, spotify, youtube, twitch, tiktok 
                 notice: state.notice ?? handed?.[service] ?? null,
                 noticeOk: state.notice ? state.notice_ok : (service === 'twitch' ? handed?.twitchOk : handed?.tiktokOk),
                 connect: connect(service), disconnect: disconnect(service), details: <AppSetup label={label} redirect={state.redirect} />,
+            };
+        }),
+        ...(['reddit', 'instagram', 'facebook', 'x'] as const).map((service): ConnectionCard => {
+            const state = social[service];
+            const label = socialLabels[service];
+            return {
+                id: service, label, color: { reddit: '#ff4500', instagram: '#e668a0', facebook: '#1877f2', x: '#f5f5f5' }[service],
+                configured: state?.configured ?? false, connected: state?.connected ?? false, account: state?.display_name || `${label} account`,
+                description: service === 'instagram' ? 'Connect your Instagram Business or Creator account. Personal accounts are not supported by the Instagram API.' : `Connect your ${label} account. Linking does not publish posts or send messages.`,
+                notice: state?.notice ?? handed?.[service] ?? null, noticeOk: state?.notice ? state.notice_ok : handed?.socialOk?.[service],
+                connect: connect(service), disconnect: disconnect(service, `Disconnect ${label} from SFD-DJ.EU?`),
+                details: <AppSetup label={label} redirect={state?.redirect ?? null} />,
             };
         }),
     ];

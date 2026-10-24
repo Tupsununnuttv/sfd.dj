@@ -1,6 +1,8 @@
 import { BoothFrontArt } from '@/Components/scene/DjBooth';
 import { floorLineX as lineX, floorRowY as rowY, floorTile as tile, SCENE, ScenePalette } from '@/lib/scenes';
 import { ComponentType, lazy, LazyExoticComponent, Suspense, useId } from 'react';
+import { useSystemRendering } from '@/lib/systemPreferences';
+import stills from '@/lib/backgroundStills.json';
 
 const FLOOR = SCENE.floor;
 const tv = SCENE.screen;
@@ -8,10 +10,15 @@ const font = 'Figtree, system-ui, sans-serif';
 
 const tiles = Array.from({ length: 12 }, (_, j) => Array.from({ length: 16 }, (_, k) => k - 8).map((i) => ({ i, j }))).flat().filter(({ i, j }) => (i * 7 + j * 3 + 100) % 5 === 0 || (i + j) % 6 === 0);
 
-interface Props { palette: ScenePalette; live?: boolean; withBooth?: boolean; height?: number; className?: string; image?: string | null }
+interface Props { palette: ScenePalette; live?: boolean; withBooth?: boolean; height?: number; className?: string; image?: string | null; background?: string | null }
 
 /** The room's scenery: the club, or the scenery a palette asks for (Halloween, Halloween V2, Christmas, Christmas V2, Winter, Spring, Easter, Summer, Midsummer, Synthwave, Retrowave, Midnight Definity, Anime, LATAM, Lightshow, Cats, Gold Mine, Skull, Skulls, Ultra, Foxy, Dragon, Tastycat, Tasty, Monstercat), or the host's own picture. It is a different component, so a room that changes its background starts a fresh one. */
 export default function SceneBackdrop(props: Props) {
+    const system = useSystemRendering();
+    if (system.simple_background) {
+        const image = props.palette.theme === 'custom' && props.image ? props.image : (stills as Record<string, string>)[props.background ?? props.palette.theme ?? 'default'] ?? stills.default;
+        return <div aria-hidden className={props.className} data-static-scenery style={{ backgroundColor: props.palette.floorBottom }}><img src={image} alt="" draggable={false} decoding="async" className="absolute inset-x-0 top-0 h-[900px] w-full object-cover" /></div>;
+    }
     const Scene = props.palette.theme && SCENES[props.palette.theme];
 
     if (!Scene) {

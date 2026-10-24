@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from '@/lib/regional';
 import { copyText } from '@/lib/clipboard';
 import SettingsLayout from '@/Layouts/SettingsLayout';
 import { Head, router, usePage } from '@inertiajs/react';
@@ -47,7 +48,7 @@ function TokenList({ tokens }: { tokens: Token[] }) {
             {tokens.map((t) => (
                 <li key={t.id} className="flex items-center justify-between gap-3 py-2">
                     <span>
-                        {t.name} <span className="text-xs text-neutral-500">· made {new Date(t.created_at).toLocaleDateString()} · {t.last_used_at ? `last used ${new Date(t.last_used_at).toLocaleString()}` : 'never used'}</span>
+                        {t.name} <span className="text-xs text-neutral-500">· made {formatDate(t.created_at)} · {t.last_used_at ? `last used ${formatDateTime(t.last_used_at)}` : 'never used'}</span>
                     </span>
                     <button onClick={() => confirm(`Delete the token "${t.name}"? Anything using it stops working.`) && router.delete(route('developers.tokens.destroy', t.id), { preserveScroll: true })} className="text-xs text-red-400 hover:underline">Delete</button>
                 </li>

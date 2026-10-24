@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Room;
 use App\Support\RoomPresence;
+use App\Support\RoomGuests;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,8 +23,10 @@ class LiveController extends Controller
     private function streams(Request $request): array
     {
         $listening = RoomPresence::counts();
+        $rooms = Room::visibleTo($request->user())->whereNotNull('live')->with('autoHostBot:id,name')->get();
+        foreach (RoomGuests::counts($rooms->modelKeys()) as $id => $count) $listening[$id] = ($listening[$id] ?? 0) + $count;
 
-        return Room::visibleTo($request->user())->whereNotNull('live')->get()
+        return $rooms
             ->filter(function (Room $room) {
                 if ($room->liveNow()) {
                     return true;
@@ -33,7 +36,7 @@ class LiveController extends Controller
                 return false;
             })
             ->map(fn (Room $room) => [
-                'room' => $room->only('id', 'name', 'slug', 'genre', 'badges', 'is_private'),
+                'room' => $room->only('id', 'name', 'slug', 'genre', 'badges', 'is_private') + ['auto_host_bot' => $room->autoHostBot?->only('id', 'name')],
                 'live' => $room->liveState(),
                 'listening' => $listening[$room->id] ?? 0,
             ])

@@ -1,9 +1,12 @@
 {
     "compilerOptions": {
         "allowJs": true,
+        "allowImportingTsExtensions": true,
         "module": "ESNext",
         "moduleResolution": "bundler",
+        "resolveJsonModule": true,
         "jsx": "react-jsx",
+        "jsxImportSource": "@/lib/localizedReact",
         "strict": true,
         "isolatedModules": true,
         "target": "ESNext",

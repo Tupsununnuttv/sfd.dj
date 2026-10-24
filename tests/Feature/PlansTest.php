@@ -21,6 +21,24 @@ class PlansTest extends TestCase
 
     private const SECRET = 'whsec_test_secret';
 
+    public function test_requested_perk_limits_and_features_are_shared_by_both_billing_periods(): void
+    {
+        $expected = [[5, 120, 6000, 35], [10, 150, 7500, 40], [15, 175, 9000, 45], [20, 200, 12000, 50], [25, 250, 15000, 60], [30, 350, 20000, 75]];
+        foreach (Plans::catalog() as $index => $plan) {
+            $this->assertSame($expected[$index], array_values($plan['limits']));
+            $this->assertCount(35, $plan['features']);
+            foreach ($plan['features'] as $feature) {
+                $this->assertTrue($feature['available']);
+            }
+            $user = User::factory()->create(['plan' => $plan['key'], 'plan_until' => now()->addYear()]);
+            $this->assertSame(array_slice($expected[$index], 1), array_values($user->limits()));
+            $user->addXp(100);
+            $this->assertSame(100 + $expected[$index][0], $user->refresh()->xp);
+        }
+        $this->assertSame(['—', '2', '4', '7', '12', 'All'], Plans::FEATURES['song_effects'][1]);
+        $this->assertSame(['—', 'Basic', 'Better', 'High', 'Higher', 'Highest'], Plans::FEATURES['priority_queue'][1]);
+    }
+
     private function stripe(): void
     {
         config(['services.stripe.secret' => 'sk_test_123', 'services.stripe.webhook_secret' => self::SECRET]);
@@ -50,11 +68,11 @@ class PlansTest extends TestCase
 
         $me->forceFill(['plan' => 'plus', 'plan_until' => now()->addDays(3)])->save();
         $this->assertSame('plus', $me->refresh()->activePlan());
-        $this->assertSame(['playlists' => 200, 'songs' => 10000, 'emojis' => 50], $me->limits());
+        $this->assertSame(['playlists' => 200, 'songs' => 12000, 'emojis' => 50], $me->limits());
         $this->assertSame(['key' => 'plus', 'label' => 'Plus', 'color' => '#14b8a6', 'icon' => '💎'], $me->primary_role);
         $this->assertSame(['plus'], array_column($me->badges, 'key'));
         $me->addXp(100);
-        $this->assertSame(125, $me->refresh()->xp);
+        $this->assertSame(120, $me->refresh()->xp);
 
         // a Plus member makes their 101st playlist, somebody without a plan cannot
         $me->playlists()->createMany(array_map(fn ($i) => ['name' => "List {$i}", 'kind' => 'custom'], range(1, 100)));

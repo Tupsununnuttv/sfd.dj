@@ -1,3 +1,4 @@
+import { formatDate, formatTime } from '@/lib/regional';
 import Avatar from '@/Components/Avatar';
 import { EmojiPicker, EmotePicker } from '@/Components/ChatPanel';
 import { withEmojis } from '@/lib/chatEmojis';
@@ -61,12 +62,12 @@ interface Incoming extends Omit<Line, 'mine'> {
 type Target = { user: number } | { group: number };
 const keyOf = (t: Target) => ('group' in t ? `g${t.group}` : `u${t.user}`);
 
-const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const clock = (iso: string) => formatTime(iso, { hour: '2-digit', minute: '2-digit' });
 const sameDay = (a: string, b: string) => new Date(a).toDateString() === new Date(b).toDateString();
 const dayLabel = (iso: string) => {
     const d = new Date(iso);
     const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(d).setHours(0, 0, 0, 0)) / 86400000);
-    return days === 0 ? 'Today' : days === 1 ? 'Yesterday' : d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' });
+    return days === 0 ? 'Today' : days === 1 ? 'Yesterday' : formatDate(d, { weekday: 'long', day: 'numeric', month: 'long' });
 };
 const people = (n: number) => `${n} ${n === 1 ? 'person' : 'people'}`;
 /** A whisper as one short line, for the list of conversations. */

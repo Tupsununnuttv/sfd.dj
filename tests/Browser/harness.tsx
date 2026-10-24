@@ -6,6 +6,7 @@ import LiveScreen from '../../resources/js/Components/LiveScreen';
 import MobileRoomHarness from './MobileRoomHarness';
 import { browserChannel } from '../../resources/js/lib/browserChannel';
 import { copyText } from '../../resources/js/lib/clipboard';
+import { previewRegional } from '../../resources/js/lib/regional';
 import { syncCompactPreferences, saveCompactPreference, useCompactPreferences } from '../../resources/js/lib/compactPreferences';
 
 // Only the preference endpoint is mocked. The production store, CSS and browser APIs run unchanged.
@@ -26,6 +27,7 @@ function Harness() {
     const [peek, setPeek] = useState(false);
     return <div className="bg-neutral-950 p-4 text-neutral-100">
         <h1>Browser compatibility</h1>
+        <button id="language-et" onClick={() => previewRegional({ language: 'et', time_format: '24' })}>Estonian</button>
         <button id="copy" onClick={() => void copyText('SFD-DJ.EU').then(() => { document.body.dataset.copy = 'ok'; }).catch(() => { document.body.dataset.copy = 'error'; })}>Copy</button>
         <input id="focus" defaultValue="Keep my focus" />
         <button id="peek" onClick={() => setPeek(true)}>Preview member</button>

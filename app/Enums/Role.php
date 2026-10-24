@@ -50,7 +50,15 @@ enum Role: string
     /** Site-wide abilities that can be switched per role in the admin Permissions Matrix. */
     public const PERMISSIONS = [
         'admin.access' => 'Open the admin panel',
-        'users.manage' => 'Manage user accounts, assign roles and issue violations',
+        'users.manage' => 'Edit user account details and passwords',
+        'users.roles' => 'Assign and remove user roles',
+        'users.awards' => 'Grant and remove profile badges',
+        'subscriptions.manage' => 'Grant and remove manual subscriptions',
+        'users.verify' => 'Confirm user email addresses',
+        'users.violations' => 'Issue user violations',
+        'users.delete' => 'Delete lower-ranked user accounts',
+        'support.manage' => 'Read and answer support conversations',
+        'email.manage' => 'Manage email verification and send test emails',
         'rooms.moderate' => 'Moderate chat and queue in any room',
         'rooms.manage' => 'Edit, badge and delete any room',
         'broadcast.send' => 'Send site-wide announcements',
@@ -182,12 +190,13 @@ enum Role: string
     /** Starting point for the permissions matrix. The Owner role always has everything and is not stored. */
     public static function defaultPermissions(): array
     {
-        $staff = ['admin.access', 'users.manage', 'rooms.moderate', 'rooms.manage', 'broadcast.send', 'events.manage', 'community.manage', 'ipbans.manage'];
+        $account = ['users.manage', 'users.roles', 'users.awards', 'subscriptions.manage', 'users.verify', 'users.violations', 'users.delete'];
+        $staff = ['admin.access', ...$account, 'support.manage', 'rooms.moderate', 'rooms.manage', 'broadcast.send', 'events.manage', 'community.manage', 'ipbans.manage'];
 
         return [
-            self::Developer->value => [...$staff, 'maintenance.toggle'],
+            self::Developer->value => [...$staff, 'maintenance.toggle', 'email.manage'],
             self::Admin->value => $staff,
-            self::LeadModerator->value => ['admin.access', 'users.manage', 'rooms.moderate', 'ipbans.manage'],
+            self::LeadModerator->value => ['admin.access', ...$account, 'support.manage', 'rooms.moderate', 'ipbans.manage'],
             self::Moderator->value => ['rooms.moderate'],
             self::SiteModerator->value => ['rooms.moderate', 'ipbans.manage'],
             self::Promoter->value => ['events.manage'],

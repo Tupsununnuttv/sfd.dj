@@ -27,7 +27,7 @@ for (const device of [
         expect(styles).toEqual({ backdrop: 'none', filter: 'none', animation: 'none', containment: 'paint' });
         await expect(page.locator('.snow')).toHaveCount(0);
         await expect(page.locator('.sfd-stage .sc-live')).toHaveCount(0);
-        await expect(page.locator('.sfd-stage img[src*="/Dancing/"]')).toHaveCount(2);
+        await expect(page.locator('.sfd-stage img[src*="/Dancing/"], .sfd-stage img[src*=".dancing."]')).toHaveCount(2);
         await expect(page.locator('.sfd-stage img[src*="/DJing/"]')).toHaveCount(1);
         await page.locator('[data-test-video]').evaluate((element) => { element.dataset.instance = 'original'; });
         // Span the supplied recording's ~13 seconds, including the middle where its UI disappears.
@@ -69,12 +69,12 @@ for (const device of [
     });
 }
 
-test('ordinary desktop keeps animated scenery and avatar images', async ({ browser }) => {
+test('ordinary desktop keeps animated scenery and uses static avatar thumbnails', async ({ browser }) => {
     const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, hasTouch: false });
     const page = await context.newPage();
     await page.goto(url);
     await expect(page.locator('.sfd-room')).toHaveAttribute('data-rendering', 'full');
-    await expect(page.locator('.sfd-navbar .sfd-avatar img')).toHaveAttribute('src', '/Avatars/Standing/kaida.svg');
+    await expect(page.locator('.sfd-navbar .sfd-avatar img')).toHaveAttribute('src', /\/Avatars\/Previews\/kaida\./);
     await expect(page.locator('.sfd-stage .sc-live').first()).toBeVisible();
     await expect(page.locator('.snow')).toHaveCount(3);
     expect(await page.locator('.sfd-navbar').evaluate((element) => getComputedStyle(element).backdropFilter || getComputedStyle(element).webkitBackdropFilter)).toBe('blur(14px)');
