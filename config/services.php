@@ -62,6 +62,12 @@ return [
         ],
     ],
 
+    // Activities can belong to a different application from the website's Discord login/bot.
+    'discord_activity' => [
+        'client_id' => env('DISCORD_ACTIVITY_CLIENT_ID', '1563979983582535841'),
+        'client_secret' => env('DISCORD_ACTIVITY_CLIENT_SECRET'),
+    ],
+
     'twitch' => [
         'client_id' => env('TWITCH_CLIENT_ID'),
         'client_secret' => env('TWITCH_CLIENT_SECRET'),

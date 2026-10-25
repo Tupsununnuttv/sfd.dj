@@ -35,15 +35,23 @@ interface ActivityRoom {
 
 // one SDK per page: its constructor reads frame_id from the address and throws without it; ready() never answers outside Discord, so it times out
 let sdk: Promise<DiscordSDK> | null = null;
+let sdkInstance: DiscordSDK | null = null;
 function startSdk(applicationId: string): Promise<DiscordSDK> {
     sdk ??= import('@discord/embedded-app-sdk')
         .then(async ({ DiscordSDK }) => {
-            const discord = new DiscordSDK(applicationId);
-            await Promise.race([discord.ready(), new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Discord did not answer.')), 15000))]);
+            const discord = sdkInstance ??= new DiscordSDK(applicationId);
+            let timeout: number | undefined;
+            try {
+                await Promise.race([discord.ready(), new Promise<never>((_, reject) => {
+                    timeout = window.setTimeout(() => reject(new Error('Discord did not answer.')), 15000);
+                })]);
+            } finally {
+                window.clearTimeout(timeout);
+            }
             return discord;
         })
         .catch((error) => {
-            sdk = null; // "Try again" starts over
+            sdk = null; // retry the same handshake without registering another SDK message listener
             throw error;
         });
     return sdk;
@@ -57,7 +65,7 @@ const signInNotes: Record<string, string> = {
     unverified: 'Confirm your email address on the full website first.',
 };
 
-export default function Activity({ applicationId, siteUrl, rooms }: { applicationId: string | null; siteUrl: string; rooms: ActivityRoom[] }) {
+export default function Activity({ applicationId, signInAvailable, siteUrl, rooms }: { applicationId: string | null; signInAvailable: boolean; siteUrl: string; rooms: ActivityRoom[] }) {
     const { auth } = usePage<PageProps>().props;
     const [phase, setPhase] = useState<'outside' | 'starting' | 'ready' | 'failed'>(discordActivity ? 'starting' : 'outside');
     const [attempt, setAttempt] = useState(0);
@@ -73,6 +81,7 @@ export default function Activity({ applicationId, siteUrl, rooms }: { applicatio
             return;
         }
         let live = true;
+        setProblem(null);
         setPhase('starting');
         startSdk(applicationId)
             .then(() => live && setPhase('ready'))
@@ -102,7 +111,7 @@ export default function Activity({ applicationId, siteUrl, rooms }: { applicatio
     };
 
     const signIn = async () => {
-        if (!applicationId) return;
+        if (!applicationId || !signInAvailable) return;
         setSigningIn(true);
         setNote(null);
         try {
@@ -150,7 +159,7 @@ export default function Activity({ applicationId, siteUrl, rooms }: { applicatio
                 <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                     <h1 className="text-xl font-black">Live rooms</h1>
                     {auth?.guest ? (
-                        phase === 'ready' && (
+                        phase === 'ready' && signInAvailable && (
                             <button type="button" onClick={signIn} disabled={signingIn} className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-60">
                                 <LogIn size={15} aria-hidden /> {signingIn ? 'Signing in…' : 'Sign in with Discord'}
                             </button>

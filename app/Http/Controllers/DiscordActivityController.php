@@ -29,7 +29,8 @@ class DiscordActivityController extends DiscordController
         $site = DiscordActivity::siteUrl();
 
         return Inertia::render('Discord/Activity', [
-            'applicationId' => self::configured() ? (string) config('services.discord.client_id') : null, // public (it is in every Discord invite); the secret never leaves the server
+            'applicationId' => filled(config('services.discord_activity.client_id')) ? (string) config('services.discord_activity.client_id') : null,
+            'signInAvailable' => self::configured('discord_activity'), // ready() needs only the public ID; OAuth needs the server-side secret too
             'siteUrl' => $site,
             'rooms' => fn () => SiteController::topRooms($me, 12)->map(fn (array $room) => $room + ['url' => "{$site}/rooms/{$room['slug']}"])->all(),
         ]);
@@ -38,15 +39,15 @@ class DiscordActivityController extends DiscordController
     /** Trades the code the Discord SDK gave the Activity for a signed-in session, the same way "Log in with Discord" does. */
     public function token(Request $request): JsonResponse
     {
-        abort_unless(self::configured(), 503, 'Discord is not set up on this site yet.');
+        abort_unless(self::configured('discord_activity'), 503, 'Discord Activity sign-in is not set up on this site yet.');
         $code = $request->validate(['code' => ['required', 'string', 'max:512']])['code'];
 
         $accessToken = '';
 
         try {
             $token = Http::asForm()->timeout(10)->post('https://discord.com/api/oauth2/token', [
-                'client_id' => config('services.discord.client_id'),
-                'client_secret' => config('services.discord.client_secret'),
+                'client_id' => config('services.discord_activity.client_id'),
+                'client_secret' => config('services.discord_activity.client_secret'),
                 'grant_type' => 'authorization_code',
                 'code' => $code, // an Activity's code is exchanged without a redirect_uri
             ]);
@@ -60,7 +61,7 @@ class DiscordActivityController extends DiscordController
                 : null;
         } catch (ConnectionException) {
             if ($accessToken !== '') {
-                $this->revokeAccessToken($accessToken);
+                $this->revokeAccessToken($accessToken, 'discord_activity');
             }
 
             return response()->json(['message' => 'Discord could not be reached. Please try again later.'], 503);
@@ -68,7 +69,7 @@ class DiscordActivityController extends DiscordController
 
         // the Activity only needs to know who this is: the Discord token is not kept, and never sent to the browser
         if ($accessToken !== '') {
-            $this->revokeAccessToken($accessToken);
+            $this->revokeAccessToken($accessToken, 'discord_activity');
         }
         if (! $me?->ok() || ! $me->json('id')) {
             return response()->json(['message' => 'Discord could not verify your account. Please try again.'], 422);

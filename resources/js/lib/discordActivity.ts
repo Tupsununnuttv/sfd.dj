@@ -1,5 +1,8 @@
 /**
- * True when Discord opened this page as an Activity. Discord loads the site in an iframe through its proxy and puts frame_id in the address;
- * the SDK needs it too, and its constructor throws without it, so the SDK is only started when this is true.
+ * Discord's proxy host and launch parameter identify the Activity. Ordinary browser tabs and the site's room overlays never start the SDK.
  */
-export const discordActivity = typeof window !== 'undefined' && window.self !== window.top && new URLSearchParams(window.location.search).has('frame_id');
+export function isDiscordActivity(location: Pick<Location, 'hostname' | 'search'>, framed: boolean): boolean {
+    return framed && location.hostname.endsWith('.discordsays.com') && Boolean(new URLSearchParams(location.search).get('frame_id'));
+}
+
+export const discordActivity = typeof window !== 'undefined' && isDiscordActivity(window.location, window.self !== window.top);

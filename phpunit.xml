@@ -39,6 +39,8 @@
         <env name="DISCORD_BOT_TOKEN" value="" force="true"/>
         <env name="DISCORD_CLIENT_ID" value="" force="true"/>
         <env name="DISCORD_CLIENT_SECRET" value="" force="true"/>
+        <env name="DISCORD_ACTIVITY_CLIENT_ID" value="1563979983582535841" force="true"/>
+        <env name="DISCORD_ACTIVITY_CLIENT_SECRET" value="" force="true"/>
         <env name="DISCORD_GUILD_ID" value="" force="true"/>
         <env name="DISCORD_ROLE_PREFIX" value="SFD-DJ.EU | " force="true"/><!-- the tests name their fake Discord roles with the default prefix, whatever .env says -->
         <env name="DISCORD_MEMBER_ROLE_ID" value="" force="true"/>

@@ -1,6 +1,6 @@
 /** Keep test sources in a local archive; materialize them only while testing. */
 import { createHash } from 'node:crypto';
-import { existsSync, lstatSync, mkdirSync, readdirSync, realpathSync, renameSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, lstatSync, mkdirSync, readdirSync, realpathSync, renameSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -21,6 +21,9 @@ function run(command, args, capture = false) {
 function checkArchive(file) {
     const entries = run('tar', ['-tzf', file], true).trim().split(/\r?\n/);
     if (!entries.length || entries.some(entry => !entry.startsWith('tests/') || entry.split(/[\\/]/).includes('..'))) throw new Error('Unexpected paths in the test archive.');
+    if (!entries.includes('tests/TestCase.php') || !entries.some(entry => entry.startsWith('tests/Feature/') && entry.endsWith('.php')) || !entries.some(entry => entry.startsWith('tests/Frontend/') && entry.endsWith('.mjs'))) {
+        throw new Error(`The test archive is incomplete: ${file}. Restore the complete developer archive; generated Desktop/obj files are not the test suite.`);
+    }
 }
 function noLinks(directory) {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
@@ -32,16 +35,20 @@ function noLinks(directory) {
 function saveSources() {
     const tests = join(root, 'tests');
     if (!existsSync(tests)) return;
+    if (!existsSync(join(tests, 'TestCase.php')) || !existsSync(join(tests, 'Feature')) || !existsSync(join(tests, 'Frontend'))) {
+        throw new Error('Refusing to overwrite the test archive with an incomplete tests directory. Restore the complete suite first.');
+    }
     if (lstatSync(tests).isSymbolicLink()) throw new Error('Refusing a linked tests directory.');
     noLinks(tests);
     mkdirSync(dirname(archive), { recursive: true });
     const next = `${archive}.next`;
     run('tar', ['-czf', next, '-C', root, 'tests']);
     checkArchive(next);
+    if (existsSync(archive)) copyFileSync(archive, `${archive}.previous`);
     renameSync(next, archive);
 }
 function restoreSources() {
-    if (existsSync(join(root, 'tests'))) return;
+    if (existsSync(join(root, 'tests', 'TestCase.php')) && existsSync(join(root, 'tests', 'Feature')) && existsSync(join(root, 'tests', 'Frontend'))) return;
     if (!existsSync(archive)) throw new Error(`Test sources are not installed. Restore the developer archive at ${archive}, or set SFD_TEST_ARCHIVE to its location.`);
     checkArchive(archive);
     run('tar', ['-xzf', archive, '-C', root]);
@@ -66,13 +73,13 @@ const commands = {
 try {
     if (mode === 'archive') { saveSources(); console.log(`Test source archive: ${archive}`); }
     else if (mode === 'prepare') { restoreSources(); console.log('Test sources restored for an active test/editing session. Run a test command or clean when finished.'); }
-    else if (mode === 'clean') { saveSources(); clean(); }
+    else if (mode === 'clean') { try { saveSources(); } finally { clean(); } }
     else {
         if (mode !== 'exec' && !Object.hasOwn(commands, mode)) throw new Error('Unknown test command. Use frontend, browsers, mobile, php or exec.');
         const command = mode === 'exec' ? args : [...commands[mode], ...args];
         if (!command.length) throw new Error('Use frontend, browsers, mobile, php, exec <command> [args], prepare, archive or clean.');
         restoreSources();
         try { run(command[0], command.slice(1)); }
-        finally { saveSources(); clean(); }
+        finally { try { saveSources(); } finally { clean(); } }
     }
 } catch (error) { console.error(error.message); process.exitCode = 1; }

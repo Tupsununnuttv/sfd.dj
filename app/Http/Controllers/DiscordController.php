@@ -18,9 +18,9 @@ use Illuminate\Support\Str;
  */
 class DiscordController extends Controller
 {
-    public static function configured(): bool
+    public static function configured(string $service = 'discord'): bool
     {
-        return filled(config('services.discord.client_id')) && filled(config('services.discord.client_secret'));
+        return filled(config("services.{$service}.client_id")) && filled(config("services.{$service}.client_secret"));
     }
 
     public function login(Request $request): RedirectResponse
@@ -167,12 +167,12 @@ class DiscordController extends Controller
         return $this->back($roleSyncError ? "Discord unlinked, but server roles could not be removed: {$roleSyncError}" : 'Discord unlinked and SFD-DJ.EU roles removed.');
     }
 
-    protected function revokeAccessToken(string $accessToken): void
+    protected function revokeAccessToken(string $accessToken, string $service = 'discord'): void
     {
         try {
             Http::asForm()->timeout(5)->post('https://discord.com/api/oauth2/token/revoke', [
-                'client_id' => config('services.discord.client_id'),
-                'client_secret' => config('services.discord.client_secret'),
+                'client_id' => config("services.{$service}.client_id"),
+                'client_secret' => config("services.{$service}.client_secret"),
                 'token' => $accessToken,
                 'token_type_hint' => 'access_token',
             ]);
