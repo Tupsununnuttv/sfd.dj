@@ -66,6 +66,7 @@ enum Role: string
         'events.manage' => 'Create and delete site events',
         'community.manage' => 'Edit social links and the donation goal',
         'ipbans.manage' => 'Ban and unban IP addresses',
+        'devicebans.manage' => 'Ban and unban browser and Windows devices',
         'maintenance.toggle' => 'Switch maintenance mode',
     ];
 
@@ -192,14 +193,14 @@ enum Role: string
     public static function defaultPermissions(): array
     {
         $account = ['users.manage', 'users.roles', 'users.awards', 'subscriptions.manage', 'users.verify', 'users.violations', 'users.delete'];
-        $staff = ['admin.access', ...$account, 'support.manage', 'rooms.moderate', 'rooms.manage', 'releases.manage', 'broadcast.send', 'events.manage', 'community.manage', 'ipbans.manage'];
+        $staff = ['admin.access', ...$account, 'support.manage', 'rooms.moderate', 'rooms.manage', 'releases.manage', 'broadcast.send', 'events.manage', 'community.manage', 'ipbans.manage', 'devicebans.manage'];
 
         return [
             self::Developer->value => [...$staff, 'maintenance.toggle', 'email.manage'],
             self::Admin->value => $staff,
-            self::LeadModerator->value => ['admin.access', ...$account, 'support.manage', 'rooms.moderate', 'ipbans.manage'],
+            self::LeadModerator->value => ['admin.access', ...$account, 'support.manage', 'rooms.moderate', 'ipbans.manage', 'devicebans.manage'],
             self::Moderator->value => ['rooms.moderate'],
-            self::SiteModerator->value => ['rooms.moderate', 'ipbans.manage'],
+            self::SiteModerator->value => ['rooms.moderate', 'ipbans.manage', 'devicebans.manage'],
             self::Promoter->value => ['events.manage'],
         ];
     }

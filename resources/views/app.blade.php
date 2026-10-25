@@ -28,9 +28,11 @@
 
         <title data-inertia>{{ config('app.name', 'Laravel') }}</title>
 
-        <!-- Fonts -->
+        <!-- Fonts (not in a Discord Activity: its CSP only allows the Activity's own address, the page uses the system font there) -->
+        @unless (\App\Support\DiscordActivity::request(request()))
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800,900&display=swap" rel="stylesheet" />
+        @endunless
 
         <!-- Scripts -->
         @routes

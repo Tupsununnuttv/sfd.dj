@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.22000.0</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>SFD-DJ-Desktop</AssemblyName>
+    <RootNamespace>SfdDj.Desktop</RootNamespace>
+    <Version>1.2.0</Version>
+    <Company>SFD-DJ.EU</Company>
+    <Product>SFD DJ Desktop</Product>
+    <Description>SFD DJ music rooms for Windows 11</Description>
+    <ApplicationIcon>Assets/app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <PublishSingleFile>false</PublishSingleFile>
+    <SelfContained>false</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <BootstrapperPath Condition="'$(BootstrapperPath)' == ''">$(LocalAppData)/SFD-DJ/build-tools/MicrosoftEdgeWebView2Setup.exe</BootstrapperPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
+    <EmbeddedResource Include="Assets/app.ico" LogicalName="AppIcon" />
+    <EmbeddedResource Include="$(BootstrapperPath)" LogicalName="WebView2Setup" />
+  </ItemGroup>
+  <Target Name="RemoveUnusedWpfWrapper" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Reference.Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
+</Project>

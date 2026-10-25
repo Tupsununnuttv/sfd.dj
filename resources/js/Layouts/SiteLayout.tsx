@@ -46,6 +46,7 @@ const menu = (): (Group | Item)[] => [
             { label: 'Contact us', href: route('site.contact') },
         ],
     },
+    { label: 'Downloads', href: route('site.downloads') },
 ];
 
 const isGroup = (i: Group | Item): i is Group => 'items' in i;

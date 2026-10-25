@@ -100,7 +100,8 @@ class AdminController extends Controller
                 'editable' => $this->isOwner($actor),
             ],
             'announcements' => fn () => Announcement::latest()->limit(10)->get(['id', 'message', 'level', 'created_at']),
-            'ipBans' => fn () => IpBan::latest()->get(['id', 'ip', 'reason', 'created_at']),
+            'ipBans' => fn () => $actor->hasPermission('ipbans.manage') ? IpBan::latest()->get(['id', 'ip', 'reason', 'created_at']) : [],
+            'deviceBans' => fn () => $actor->hasPermission('devicebans.manage') ? \App\Models\DeviceBan::query()->leftJoin('users', 'users.id', '=', 'device_bans.user_id')->latest('device_bans.id')->limit(200)->get(['device_bans.id', 'device_bans.kind', 'device_bans.reason', 'device_bans.created_at', 'users.name as user_name']) : [],
             'maintenance' => fn () => Setting::get('maintenance') === '1',
             // the mail setup (server, from address) goes only to those who may open the Email tab
             'email' => fn () => $actor->hasPermission('email.manage') ? MailStatus::describe() + [
@@ -480,13 +481,15 @@ class AdminController extends Controller
         return back();
     }
 
-    public function unbanIp(Request $request, IpBan $ipBan): RedirectResponse
+    public function unbanIp(Request $request, IpBan $ipBan): RedirectResponse|\Illuminate\Http\JsonResponse
     {
-        $this->allow($request, 'ipbans.manage');
+        $actor = $this->allow($request, 'ipbans.manage');
+        DB::transaction(function () use ($actor, $ipBan) {
+            DB::table('access_ban_logs')->insert(['actor_id' => $actor->id, 'target_id' => null, 'action' => 'ip_unban', 'reason' => $ipBan->reason, 'created_at' => now(), 'updated_at' => now()]);
+            $ipBan->delete();
+        });
 
-        $ipBan->delete();
-
-        return back();
+        return $request->expectsJson() ? response()->json(['saved' => true]) : back();
     }
 
     public function maintenance(Request $request): RedirectResponse

@@ -22,7 +22,7 @@ interface Achievement {
 }
 
 interface Props {
-    stats: { xp: number; level: number; songs_played: number; woots: number; grabs: number; friends: number; referrals: number; messages: number };
+    stats: { xp: number; level: number; songs_played: number; rooms_played: number; woots: number; grabs: number; woots_given: number; grabs_given: number; friends: number; referrals: number; messages: number };
     rooms: { id: number; name: string; slug: string; genre: string | null; is_private: boolean; badges: string[] | null; items_count: number; created_at: string }[];
     playlists: { id: number; name: string; kind: string; songs_count: number }[];
     recent: { id: number; title: string; thumbnail: string | null; played_at: string; room: { name: string; slug: string } }[];

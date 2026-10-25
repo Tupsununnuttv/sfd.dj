@@ -29,6 +29,8 @@
 /bot/node_modules
 /bot/data
 /vendor
+/apps/desktop/bin/
+/apps/desktop/obj/
 _ide_helper.php
 Homestead.json
 Homestead.yaml

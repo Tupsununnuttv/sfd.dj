@@ -2,6 +2,9 @@
 
 use App\Http\Middleware\AllowSameOriginFrames;
 use App\Http\Middleware\BlockBannedIps;
+use App\Http\Middleware\CheckDeviceBans;
+use App\Http\Middleware\CheckWindowsDeviceBans;
+use App\Http\Middleware\DiscordActivityCookies;
 use App\Http\Middleware\EnsureCurrentSession;
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -27,15 +30,21 @@ return Application::configure(basePath: dirname(__DIR__))
         // SDP is a wire format: its trailing CRLF must survive request processing.
         $middleware->trimStrings(except: ['offer', 'answer']);
 
+        // before the session starts: a Discord Activity needs different cookie attributes
+        $middleware->web(prepend: [DiscordActivityCookies::class]);
+
         $middleware->web(append: [
             EnsureCurrentSession::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             BlockBannedIps::class,
+            CheckDeviceBans::class,
             MaintenanceMode::class,
             TrackLastSeen::class,
             AllowSameOriginFrames::class,
         ]);
+
+        $middleware->api(append: [BlockBannedIps::class, CheckWindowsDeviceBans::class]);
 
         // Stripe calls the webhook from its own servers: it signs the call instead (SubscriptionController::webhook)
         $middleware->validateCsrfTokens(except: ['stripe/webhook']);

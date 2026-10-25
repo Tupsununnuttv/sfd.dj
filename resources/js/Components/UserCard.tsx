@@ -4,6 +4,7 @@ import { perk, profileVars } from '@/lib/subscriptionStyle';
 import { formatDate, formatDateTime } from '@/lib/regional';
 import Avatar from '@/Components/Avatar';
 import UserRestrictionActions from '@/Components/UserRestrictionActions';
+import SiteBanActions from '@/Components/SiteBanActions';
 import { useUserRestrictions } from '@/lib/userRestrictions';
 import Badges from '@/Components/Badges';
 import Flag, { FlagInfo } from '@/Components/Flag';
@@ -226,6 +227,7 @@ export default function UserCard({ user, viewerId, guest, room, anchor, onClose 
                         </div>
                     )}
                     <UserRestrictionActions userId={user.id} name={user.name} />
+                    <SiteBanActions key={user.id} userId={user.id} />
                     <button onClick={() => { room.onProfile(); onClose(); }} className="flex w-full items-center justify-center gap-2 rounded-xl bg-white/10 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-white/15">
                         <ExternalLink size={14} /> View full profile
                     </button>

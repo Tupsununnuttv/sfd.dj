@@ -1,0 +1,13 @@
+# Site access moderation
+
+IP Ban and HWBAN in quick/full profiles are global site controls. They do not use room roles or the room feature rollout. `ipbans.manage` and `devicebans.manage` are separate site permissions. Targets must rank below the actor. Self bans, the actor's current address/device and identifiers observed on protected accounts are rejected. A reason is required; clients cannot submit arbitrary addresses or devices that have not been observed on the target.
+
+`user_devices` records authenticated visits, keeping the latest address and activity for each browser/Windows signal. Writes occur when the address changes or at most every two minutes. Browser identity is a random, encrypted HttpOnly SameSite=Lax cookie, retained for a year. Clearing that cookie evades a browser ban. Guest requests with a banned cookie are still rejected after logout or an IP change.
+
+Desktop 1.2.0 uses Windows SystemIdentification (TPM/UEFI/registry), hashes the identifier with an SFD-specific purpose, and sends it only to the exact HTTPS SFD origins. The server applies an additional HMAC before storing it. No raw hardware IDs are stored or exposed through public profiles. Windows device bans apply to this app, including fresh browser profiles, and requests supplying the same Windows signal. A separate browser with no matching cookie cannot be identified as the same machine. Clients can be modified, and registry-backed identifiers can change after Windows reinstallation; this is abuse control, never authentication or attestation.
+
+Staff review the selected IP/device before confirmation. Active device bans can be removed from the same profile or Admin → Device bans. IP bans can also be managed in the existing admin tab. Ban changes are recorded in `access_ban_logs`, including actor, target where known, action and reason. Removing an account removes its observed device records; active device bans remain until explicitly removed. Identifiers and IP addresses are not added to public profile JSON.
+
+Deploy the website and run `php artisan migrate --force`, then deploy the desktop 1.2.0 installer and release metadata together. Existing desktop users need the new installer for Windows HWID support. The standard website build does not restore test folders or rebuild the installer.
+
+Validation uses the archived PHP `UserAccessTest`, isolated browser fixtures in `access-bans.spec.mjs`, and the native device identity/smoke tests. Native checks compare identifiers without printing them, verify stability across processes/profiles, and inspect actual request headers to ensure third-party requests do not receive identifiers.

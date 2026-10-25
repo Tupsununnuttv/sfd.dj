@@ -16,7 +16,8 @@
         "dev": "concurrently --names web,bot \"vite\" \"npm:bot:dev\"",
         "bot:install": "npm --prefix bot install",
         "bot:dev": "npm --prefix bot run dev",
-        "bot:start": "npm --prefix bot start"
+        "bot:start": "npm --prefix bot start",
+        "desktop:build": "node scripts/build-desktop.mjs"
     },
     "devDependencies": {
         "@headlessui/react": "^2.2.10",
@@ -41,6 +42,7 @@
         "vite": "^8.3.4"
     },
     "dependencies": {
+        "@discord/embedded-app-sdk": "^2.5.0",
         "@laravel/echo-react": "^2.6.1",
         "laravel-echo": "^2.6.1",
         "lucide-react": "^1.57.0",

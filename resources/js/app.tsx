@@ -10,6 +10,7 @@ import { syncCompactPreferences } from '@/lib/compactPreferences';
 import { syncSystemPreferences } from '@/lib/systemPreferences';
 import SystemPreferenceNotice from '@/Components/SystemPreferenceNotice';
 import { listenForAppearanceChanges } from '@/lib/appearanceChanges';
+import { discordActivity } from '@/lib/discordActivity';
 import { embedded } from '@/lib/embed';
 import { applyMotion } from '@/lib/motion';
 import { PageProps } from '@/types';
@@ -20,7 +21,8 @@ import { createRoot } from 'react-dom/client';
 import { configureEcho } from '@laravel/echo-react';
 
 // live updates: Reverb on this computer, Pusher on the live site (VITE_BROADCASTER=pusher when it is built); the keys come from the VITE_REVERB_ / VITE_PUSHER_ variables
-configureEcho(import.meta.env.VITE_BROADCASTER === 'pusher' ? { broadcaster: 'pusher' } : { broadcaster: 'reverb' });
+// (not inside a Discord Activity: its page is polled, and Discord's proxy only lets a socket through that has a URL mapping)
+if (!discordActivity) configureEcho(import.meta.env.VITE_BROADCASTER === 'pusher' ? { broadcaster: 'pusher' } : { broadcaster: 'reverb' });
 
 // A room clicked inside a room's page overlay opens in the whole window, not inside the overlay.
 if (embedded) {

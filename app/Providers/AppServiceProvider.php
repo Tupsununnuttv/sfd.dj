@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Models\Room;
+use App\Support\DiscordActivity;
 use App\Support\ForgivingBroadcaster;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\RateLimiter;
@@ -36,6 +38,10 @@ class AppServiceProvider extends ServiceProvider
         foreach (['reverb', 'pusher'] as $driver) {
             Broadcast::extend($driver, fn ($app, array $config) => new ForgivingBroadcaster(Broadcast::pusher($config), $config['jsonp'] ?? false));
         }
+
+        // Inside Discord the page lives at <application id>.discordsays.com and its CSP only allows that host, so a script or style link
+        // must not point at the site's own address (which is what asset() builds): there they are root-relative and go through the proxy
+        Vite::createAssetPathsUsing(fn (string $path, ?bool $secure = null) => DiscordActivity::request(request()) ? '/'.ltrim($path, '/') : asset($path, $secure));
 
         // every {room} route (chat, queue, ...) refuses people who may not enter a private room. A room's old addresses find it too (it was renamed)
         Route::bind('room', function (string $slug) {

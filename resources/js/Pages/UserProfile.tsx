@@ -4,6 +4,7 @@ import { perk, profileVars } from '@/lib/subscriptionStyle';
 import { formatDate } from '@/lib/regional';
 import Avatar from '@/Components/Avatar';
 import UserRestrictionActions from '@/Components/UserRestrictionActions';
+import SiteBanActions from '@/Components/SiteBanActions';
 import { useUserRestrictions } from '@/lib/userRestrictions';
 import Badges from '@/Components/Badges';
 import Flag from '@/Components/Flag';
@@ -87,6 +88,7 @@ export default function UserProfile({ profile: p }: Props) {
             </section>
 
             <SubscriptionShowcase cosmetics={p.cosmetics} badges={p.badges} />
+            <SiteBanActions key={p.id} userId={p.id} />
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 {tiles.map(([label, value]) => (
                     <div key={label} className="rounded-2xl border border-white/10 bg-white/4 p-4">

@@ -6,6 +6,7 @@ use App\Http\Controllers\AutoHostController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\DeveloperController;
+use App\Http\Controllers\DiscordActivityController;
 use App\Http\Controllers\DiscordController;
 use App\Http\Controllers\DonationController;
 use App\Http\Controllers\EmoteController;
@@ -54,8 +55,13 @@ Route::name('site.')->group(function () {
     Route::get('/pricing', fn () => Inertia::render('Site/Pricing', ['plans' => Plans::catalog()]))->name('pricing');
     Route::get('/developers', fn () => Inertia::render('Site/Developers'))->name('developers');
     Route::get('/contact', fn () => Inertia::render('Site/Contact'))->name('contact');
+    Route::get('/download', fn () => Inertia::render('Site/Downloads'))->name('downloads');
     Route::get('/legal/{doc}', fn (string $doc) => Inertia::render('Site/Legal', ['slug' => $doc]))->whereIn('doc', ['rules', 'terms', 'privacy'])->name('legal');
 });
+
+// The Discord Activity: a light version of the website that Discord opens inside the app (docs/discord-activity.md)
+Route::get('/discord', [DiscordActivityController::class, 'show'])->name('discord-activity.show');
+Route::post('/discord/token', [DiscordActivityController::class, 'token'])->middleware('throttle:10,1')->name('discord-activity.token');
 
 // Stripe tells the site about paid plans here (signed with STRIPE_WEBHOOK_SECRET; no session, no CSRF token)
 Route::post('/stripe/webhook', [SubscriptionController::class, 'webhook'])->name('stripe.webhook');
@@ -110,6 +116,13 @@ Route::middleware(VerifiedIfLoggedIn::class)->group(function () {
     Route::get('/faq', fn () => Inertia::render('Faq'))->name('faq');
     Route::get('/patch-notes', fn () => Inertia::render('PatchNotes'))->name('patch-notes');
     Route::get('/docs', fn () => Inertia::render('Docs'))->name('docs');
+});
+
+Route::middleware(['auth', 'verified', 'throttle:30,1'])->group(function () {
+    Route::get('/moderation/users/{user}/access', [\App\Http\Controllers\UserAccessController::class, 'show'])->name('moderation.access');
+    Route::post('/moderation/users/{user}/ip-ban', [\App\Http\Controllers\UserAccessController::class, 'banIp'])->name('moderation.ip-ban');
+    Route::post('/moderation/users/{user}/device-ban', [\App\Http\Controllers\UserAccessController::class, 'banDevice'])->name('moderation.device-ban');
+    Route::delete('/moderation/device-bans/{deviceBan}', [\App\Http\Controllers\UserAccessController::class, 'unbanDevice'])->name('moderation.device-unban');
 });
 
 // Everything else needs a verified email address.

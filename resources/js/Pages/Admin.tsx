@@ -9,6 +9,7 @@ import RoomReleasesPanel from '@/Components/admin/RoomReleasesPanel';
 import { AdminProps } from '@/Components/admin/types';
 import UsersTab from '@/Components/admin/UsersTab';
 import SupportInbox from '@/Components/SupportInbox';
+import DeviceBansTab from '@/Components/admin/DeviceBansTab';
 import { Tabs } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { PageProps } from '@/types';
@@ -16,7 +17,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { Ban, Disc3, KeyRound, LayoutDashboard, LifeBuoy, Mail, Megaphone, UserRound, Users, Wrench } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-type Tab = 'Overview' | 'Users' | 'Accounts' | 'Rooms' | 'Room updates' | 'Support' | 'Permissions' | 'Broadcast' | 'Email' | 'IP bans' | 'Maintenance';
+type Tab = 'Overview' | 'Users' | 'Accounts' | 'Rooms' | 'Room updates' | 'Support' | 'Permissions' | 'Broadcast' | 'Email' | 'IP bans' | 'Device bans' | 'Maintenance';
 
 // each tab needs its own permission; the ones you may not use stay hidden
 const needs: Record<Tab, string> = {
@@ -30,6 +31,7 @@ const needs: Record<Tab, string> = {
     Broadcast: 'broadcast.send',
     Email: 'email.manage',
     'IP bans': 'ipbans.manage',
+    'Device bans': 'devicebans.manage',
     Maintenance: 'maintenance.toggle',
 };
 
@@ -48,6 +50,7 @@ export default function Admin(props: AdminProps) {
         { key: 'Broadcast', label: 'Broadcast', icon: Megaphone },
         { key: 'Email', label: 'Email', icon: Mail },
         { key: 'IP bans', label: 'IP bans', icon: Ban, count: props.ipBans.length },
+        { key: 'Device bans', label: 'Device bans', icon: Ban, count: props.deviceBans?.length ?? 0 },
         { key: 'Maintenance', label: props.maintenance ? 'Maintenance ON' : 'Maintenance', icon: Wrench, alert: props.maintenance ? 1 : undefined },
     ] as const).filter((t) => perms.includes(needs[t.key]));
 
@@ -96,6 +99,7 @@ export default function Admin(props: AdminProps) {
             {tab === 'Broadcast' && <BroadcastTab announcements={props.announcements} />}
             {tab === 'Email' && props.email && <EmailTab email={props.email} gotoTab={setTab} />}
             {tab === 'IP bans' && <IpBansTab ipBans={props.ipBans} myIp={props.myIp} />}
+            {tab === 'Device bans' && <DeviceBansTab bans={props.deviceBans ?? []} />}
             {tab === 'Maintenance' && <MaintenanceTab maintenance={props.maintenance} />}
         </AppLayout>
     );

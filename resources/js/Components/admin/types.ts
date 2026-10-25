@@ -70,6 +70,7 @@ export interface AdminProps {
     matrix: { roles: RoleMeta[]; permissions: Record<string, string>; granted: Record<string, string[]>; editable: boolean };
     announcements: { id: number; message: string; level: string; created_at: string }[];
     ipBans: { id: number; ip: string; reason: string | null; created_at: string }[];
+    deviceBans: { id: number; kind: string; reason: string; created_at: string; user_name: string | null }[];
     maintenance: boolean;
     email: {
         mailer: string;

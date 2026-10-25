@@ -167,7 +167,7 @@ class DiscordController extends Controller
         return $this->back($roleSyncError ? "Discord unlinked, but server roles could not be removed: {$roleSyncError}" : 'Discord unlinked and SFD-DJ.EU roles removed.');
     }
 
-    private function revokeAccessToken(string $accessToken): void
+    protected function revokeAccessToken(string $accessToken): void
     {
         try {
             Http::asForm()->timeout(5)->post('https://discord.com/api/oauth2/token/revoke', [
