@@ -1,4 +1,12 @@
 {
+  "Desktop 1.4.0: Discord presence and updates": "Desktop 1.4.0: Discord statuss un atjauninājumi",
+  "Desktop 1.4.0 adds Discord Rich Presence with the SFD logo, app name and elapsed time. Discord activity sharing must be enabled.": "Desktop 1.4.0 pievieno Discord Rich Presence ar SFD logotipu, lietotnes nosaukumu un lietošanas laiku. Discord jābūt iespējotai aktivitātes kopīgošanai.",
+  "Discord presence reconnects automatically and clears when the desktop app closes.": "Discord statusa savienojums tiek atjaunots automātiski, un statuss tiek noņemts, aizverot darbvirsmas lietotni.",
+  "Check for updates includes startup and six-hour checks, update notices and the official download page.": "Check for updates pārbauda atjauninājumus palaišanas laikā un ik pēc sešām stundām, rāda paziņojumus un atver oficiālo lejupielādes lapu.",
+  "Firefox on Windows can download Desktop when the Windows version cannot be confirmed. Setup still requires Windows 11.": "Firefox sistēmā Windows ļauj lejupielādēt Desktop arī tad, ja nevar apstiprināt Windows versiju. Instalētājam joprojām nepieciešama Windows 11.",
+  "Install Desktop 1.4.0 once to enable these features. Your saved login and preferences stay in place.": "Vienreiz instalē Desktop 1.4.0, lai iespējotu šīs funkcijas. Saglabātā pieteikšanās un iestatījumi paliek spēkā.",
+  "Your browser cannot confirm the Windows version. You can still download; Setup checks that your PC runs Windows 11.": "Pārlūks nevar apstiprināt Windows versiju. Failu joprojām var lejupielādēt; instalētājs pārbaudīs, vai datorā darbojas Windows 11.",
+  "This installer is digitally signed. Windows may still display a SmartScreen warning while the app builds reputation.": "Šis instalētājs ir digitāli parakstīts. Windows joprojām var parādīt SmartScreen brīdinājumu, kamēr lietotne iegūst reputāciju.",
   " (Spotify answered ": "(Spotify atbildēja",
   " (UTC), from IP ": "(UTC), no IP",
   " (fine for development).": "(attīstības mērķis).",

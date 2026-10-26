@@ -13,6 +13,13 @@ internal sealed class DesktopWindow : Form
     private readonly ToolStrip toolbar = new() { GripStyle = ToolStripGripStyle.Hidden, BackColor = Color.FromArgb(20, 17, 26), ForeColor = Color.White, Padding = new Padding(4) };
     private readonly ToolStripButton back = new("Back"), forward = new("Forward"), reload = new("Reload");
     private readonly ToolStripLabel status = new("Connecting to SFD DJ...");
+    private readonly ToolStripButton updates = new("Check for updates") { Alignment = ToolStripItemAlignment.Right };
+    private readonly System.Windows.Forms.Timer updateTimer = new() { Interval = 6 * 60 * 60 * 1000 };
+    private readonly CancellationTokenSource lifetime = new();
+    private readonly System.Net.Http.HttpClient updateClient = DesktopUpdates.CreateClient();
+    private readonly DiscordPresence discordPresence = new();
+    private DesktopRelease? availableUpdate;
+    private bool checkingUpdates;
     private readonly Panel notice = new() { Dock = DockStyle.Fill, BackColor = Color.FromArgb(10, 10, 10) };
     private readonly Label noticeText = new() { AutoSize = false, ForeColor = Color.White, Font = new Font("Segoe UI", 12), TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill };
     private readonly Button retry = new() { Text = "Try again", AutoSize = true, BackColor = Color.FromArgb(109, 40, 217), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Padding = new Padding(12, 8, 12, 8) };
@@ -42,7 +49,10 @@ internal sealed class DesktopWindow : Form
         home.Click += (_, _) => view.CoreWebView2?.Navigate(NavigationPolicy.Home.AbsoluteUri);
         var browser = new ToolStripButton("Open in browser") { Alignment = ToolStripItemAlignment.Right };
         browser.Click += (_, _) => OpenExternal(view.Source is { } uri && NavigationPolicy.IsInApp(uri) ? uri : NavigationPolicy.Home);
-        toolbar.Items.AddRange([back, forward, reload, home, new ToolStripSeparator(), status, browser]);
+        updates.ToolTipText = "Installed version: " + DesktopUpdates.CurrentVersion;
+        updates.Click += async (_, _) => await CheckForUpdatesAsync(manual: true);
+        updateTimer.Tick += async (_, _) => await CheckForUpdatesAsync(manual: false);
+        toolbar.Items.AddRange([back, forward, reload, home, new ToolStripSeparator(), status, browser, updates]);
         toolbar.Dock = DockStyle.Top;
         back.Enabled = forward.Enabled = false;
         view.KeyDown += (_, args) =>
@@ -66,9 +76,67 @@ internal sealed class DesktopWindow : Form
             catch (Exception error) { ShowNotice(error.Message, "Try again"); }
             finally { retry.Enabled = true; }
         };
-        Shown += async (_, _) => await InitializeAsync();
+        Shown += async (_, _) =>
+        {
+            discordPresence.Start();
+            updateTimer.Start();
+            await Task.WhenAll(InitializeAsync(), CheckForUpdatesAsync(manual: false));
+        };
         FormClosing += (_, _) => SaveWindow();
-        FormClosed += (_, _) => view.Dispose();
+        FormClosed += (_, _) =>
+        {
+            discordPresence.Dispose();
+            updateTimer.Stop();
+            updateTimer.Dispose();
+            lifetime.Cancel();
+            updateClient.Dispose();
+            lifetime.Dispose();
+            view.Dispose();
+        };
+    }
+
+    private async Task CheckForUpdatesAsync(bool manual)
+    {
+        if (checkingUpdates || IsDisposed || Disposing) return;
+        checkingUpdates = true;
+        updates.Enabled = false;
+        updates.Text = "Checking for updates...";
+        try
+        {
+            var release = await DesktopUpdates.CheckAsync(updateClient, lifetime.Token);
+            if (IsDisposed || Disposing || lifetime.IsCancellationRequested) return;
+            availableUpdate = release.Version > DesktopUpdates.CurrentVersion ? release : null;
+            updates.ToolTipText = "Installed: " + DesktopUpdates.CurrentVersion + " · Last checked: " + DateTime.Now.ToString("g");
+            if (manual)
+            {
+                if (availableUpdate is not null)
+                {
+                    if (MessageBox.Show(this,
+                        $"SFD DJ Desktop {availableUpdate.DisplayVersion} is available.\nInstalled version: {DesktopUpdates.CurrentVersion}\n\nOpen the official download page? Close SFD DJ Desktop before running Setup.",
+                        "Update available", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                        OpenExternal(DesktopUpdates.DownloadPage);
+                }
+                else MessageBox.Show(this, $"You're up to date.\nInstalled version: {DesktopUpdates.CurrentVersion}",
+                    "Check for updates", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+        catch (Exception error) when (error is System.Net.Http.HttpRequestException or OperationCanceledException or IOException or InvalidDataException or JsonException)
+        {
+            if (IsDisposed || Disposing || lifetime.IsCancellationRequested) return;
+            updates.ToolTipText = "Update check failed. Click to try again. Installed: " + DesktopUpdates.CurrentVersion;
+            if (manual) MessageBox.Show(this, "Could not check for updates. Check your internet connection and try again.\n\nYour app can still be used.",
+                "Check for updates", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        finally
+        {
+            checkingUpdates = false;
+            if (!IsDisposed && !Disposing)
+            {
+                updates.Enabled = true;
+                updates.Text = availableUpdate is { } release ? "Update available: " + release.DisplayVersion : "Check for updates";
+                updates.ForeColor = availableUpdate is null ? Color.White : Color.Gold;
+            }
+        }
     }
 
     protected override void OnHandleCreated(EventArgs e)

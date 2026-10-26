@@ -11,6 +11,11 @@ interface Agent {
 /** Windows 10 and 11 share the legacy UA; UA-CH platformVersion 13+ identifies Windows 11. */
 export async function windows11DownloadSupport(agent: Agent, timeoutMs = 3000): Promise<DesktopSupport> {
     const hints = agent.userAgentData;
+    // Firefox cannot distinguish Windows 10 from 11. Keep that result unknown;
+    // the download page allows it and Setup enforces the actual minimum build.
+    if (/Windows Phone/i.test(agent.userAgent)) return 'unsupported';
+    const legacyVersion = agent.userAgent.match(/Windows NT (\d+(?:\.\d+)?)/i)?.[1];
+    if (legacyVersion && Number(legacyVersion) < 10) return 'unsupported';
     if (hints?.platform && hints.platform !== 'Windows') return 'unsupported';
     if (!hints && !/Windows/i.test(agent.userAgent)) return agent.userAgent ? 'unsupported' : 'unknown';
     if (!hints?.getHighEntropyValues || hints.platform !== 'Windows') return 'unknown';

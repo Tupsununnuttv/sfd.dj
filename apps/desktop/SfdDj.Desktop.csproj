@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>SFD-DJ-Desktop</AssemblyName>
     <RootNamespace>SfdDj.Desktop</RootNamespace>
-    <Version>1.2.0</Version>
+    <Version>1.4.0</Version>
     <Company>SFD-DJ.EU</Company>
     <Product>SFD DJ Desktop</Product>
     <Description>SFD DJ music rooms for Windows 11</Description>

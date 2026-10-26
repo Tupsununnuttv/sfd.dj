@@ -27,16 +27,16 @@ export default function Downloads() {
                         </div>
                         <p className="mt-5 text-neutral-300">Your rooms, music and chat in a dedicated desktop window.</p>
                         <p className="mt-2 text-sm text-neutral-400">Windows 11 · 64-bit (x64) · v{desktopRelease.version} · {(desktopRelease.bytes / 1048576).toFixed(1)} MB</p>
-                        {support === 'supported' ? (
+                        {support !== 'unsupported' ? (
                             <a href={desktopRelease.file} download={desktopRelease.download_name} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-fuchsia-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90">
                                 <Download size={18} /> Download for Windows 11
                             </a>
                         ) : (
                             <button disabled className="mt-6 inline-flex cursor-not-allowed items-center gap-2 rounded-xl bg-white/10 px-5 py-3 text-sm font-semibold text-neutral-400">
-                                <Download size={18} /> {support === 'checking' ? 'Checking Windows version...' : 'Windows 11 only'}
+                                <Download size={18} /> Windows 11 only
                             </button>
                         )}
-                        {support !== 'supported' && <p role="status" className="mt-3 text-xs text-neutral-400">{support === 'unknown' ? 'Windows version could not be verified. Open this page in Microsoft Edge or Chrome on Windows 11.' : support === 'unsupported' ? 'This desktop app is available only for Windows 11.' : 'Checking Windows version...'}</p>}
+                        {support !== 'supported' && <p role="status" className="mt-3 text-xs text-neutral-400">{support === 'unknown' ? 'Your browser cannot confirm the Windows version. You can still download; Setup checks that your PC runs Windows 11.' : support === 'unsupported' ? 'This desktop app is available only for Windows 11.' : 'Checking Windows version...'}</p>}
                         <p className="mt-3 text-xs text-neutral-400">Open SFD-DJ-Setup.exe and choose where to install the app.</p>
                         <div className="mt-3 flex flex-wrap gap-4 text-xs text-violet-300">
                             <a href={`${desktopRelease.file}.sha256`} className="hover:underline">SHA-256</a>
@@ -54,7 +54,7 @@ export default function Downloads() {
                             ].map(text => <li key={text} className="flex items-start gap-2"><Check size={16} className="mt-0.5 shrink-0 text-violet-300" /><span>{text}</span></li>)}
                         </ul>
                         <p className="mt-5 border-t border-white/10 pt-4 text-xs leading-relaxed text-neutral-400">Setup automatically installs missing or outdated .NET Desktop Runtime, Visual C++ Redistributable and WebView2 components. Internet access and administrator permission may be required.</p>
-                        <p className="mt-3 text-xs leading-relaxed text-neutral-400">This installer is not digitally signed, so Windows may ask you to confirm the publisher.</p>
+                        <p className="mt-3 text-xs leading-relaxed text-neutral-400">{desktopRelease.signing.status === 'signed' ? 'This installer is digitally signed. Windows may still display a SmartScreen warning while the app builds reputation.' : 'This installer is not digitally signed, so Windows may ask you to confirm the publisher.'}</p>
                     </div>
                 </div>
                 <div className="flex flex-col gap-6 rounded-3xl border border-white/10 bg-linear-to-br from-violet-500/10 via-white/5 to-fuchsia-500/10 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">

@@ -1,4 +1,12 @@
 {
+  "Desktop 1.4.0: Discord presence and updates": "Desktop 1.4.0: presença no Discord e atualizações",
+  "Desktop 1.4.0 adds Discord Rich Presence with the SFD logo, app name and elapsed time. Discord activity sharing must be enabled.": "Desktop 1.4.0 adiciona Discord Rich Presence com o logotipo SFD, o nome do aplicativo e o tempo de uso. O compartilhamento de atividade deve estar ativado no Discord.",
+  "Discord presence reconnects automatically and clears when the desktop app closes.": "A presença no Discord se reconecta automaticamente e é removida quando o aplicativo é fechado.",
+  "Check for updates includes startup and six-hour checks, update notices and the official download page.": "Check for updates verifica atualizações ao iniciar e a cada seis horas, mostra avisos e abre a página oficial de downloads.",
+  "Firefox on Windows can download Desktop when the Windows version cannot be confirmed. Setup still requires Windows 11.": "O Firefox no Windows permite baixar o Desktop mesmo quando não consegue confirmar a versão do Windows. O instalador ainda exige o Windows 11.",
+  "Install Desktop 1.4.0 once to enable these features. Your saved login and preferences stay in place.": "Instale o Desktop 1.4.0 uma vez para ativar essas funções. Seu login salvo e suas preferências são mantidos.",
+  "Your browser cannot confirm the Windows version. You can still download; Setup checks that your PC runs Windows 11.": "Seu navegador não pode confirmar a versão do Windows. Você ainda pode baixar o arquivo; o instalador verifica se seu PC usa o Windows 11.",
+  "This installer is digitally signed. Windows may still display a SmartScreen warning while the app builds reputation.": "Este instalador tem assinatura digital. O Windows ainda pode exibir um aviso do SmartScreen enquanto o aplicativo adquire reputação.",
   " (Spotify answered ": "(Spotify responderam)",
   " (UTC), from IP ": "(UTC), a partir do PI",
   " (fine for development).": "(bom para o desenvolvimento).",

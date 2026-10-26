@@ -1,4 +1,12 @@
 {
+  "Desktop 1.4.0: Discord presence and updates": "Desktop 1.4.0: Discord būsena ir atnaujinimai",
+  "Desktop 1.4.0 adds Discord Rich Presence with the SFD logo, app name and elapsed time. Discord activity sharing must be enabled.": "Desktop 1.4.0 prideda Discord Rich Presence su SFD logotipu, programos pavadinimu ir naudojimo laiku. Discord turi būti įjungtas veiklos bendrinimas.",
+  "Discord presence reconnects automatically and clears when the desktop app closes.": "Discord būsenos ryšys atkuriamas automatiškai, o uždarius darbalaukio programą būsena pašalinama.",
+  "Check for updates includes startup and six-hour checks, update notices and the official download page.": "Check for updates tikrina atnaujinimus paleidžiant ir kas šešias valandas, rodo pranešimus ir atidaro oficialų atsisiuntimo puslapį.",
+  "Firefox on Windows can download Desktop when the Windows version cannot be confirmed. Setup still requires Windows 11.": "Firefox sistemoje Windows leidžia atsisiųsti Desktop net tada, kai negalima patvirtinti Windows versijos. Diegimo programai vis tiek reikia Windows 11.",
+  "Install Desktop 1.4.0 once to enable these features. Your saved login and preferences stay in place.": "Vieną kartą įdiek Desktop 1.4.0, kad įjungtum šias funkcijas. Išsaugotas prisijungimas ir nuostatos išlieka.",
+  "Your browser cannot confirm the Windows version. You can still download; Setup checks that your PC runs Windows 11.": "Naršyklė negali patvirtinti Windows versijos. Failą vis tiek galima atsisiųsti; diegimo programa patikrins, ar kompiuteryje veikia Windows 11.",
+  "This installer is digitally signed. Windows may still display a SmartScreen warning while the app builds reputation.": "Ši diegimo programa pasirašyta skaitmeniniu parašu. Windows vis tiek gali rodyti SmartScreen įspėjimą, kol programa įgis reputaciją.",
   " (Spotify answered ": "(Spotify atsakė",
   " (UTC), from IP ": "(UTC), nuo TL,",
   " (fine for development).": "(bauda vystymuisi).",

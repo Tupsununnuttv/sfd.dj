@@ -51,6 +51,10 @@ CloseApplications=yes
 RestartApplications=no
 Uninstallable=yes
 ShowLanguageDialog=yes
+#ifdef SignedRelease
+SignTool=sfd_release
+SignedUninstaller=yes
+#endif
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

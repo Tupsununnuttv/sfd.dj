@@ -1,4 +1,12 @@
 {
+  "Desktop 1.4.0: Discord presence and updates": "Desktop 1.4.0 : présence Discord et mises à jour",
+  "Desktop 1.4.0 adds Discord Rich Presence with the SFD logo, app name and elapsed time. Discord activity sharing must be enabled.": "Desktop 1.4.0 ajoute Discord Rich Presence avec le logo SFD, le nom de l’application et la durée d’utilisation. Le partage d’activité doit être activé dans Discord.",
+  "Discord presence reconnects automatically and clears when the desktop app closes.": "La présence Discord se reconnecte automatiquement et disparaît à la fermeture de l’application de bureau.",
+  "Check for updates includes startup and six-hour checks, update notices and the official download page.": "Check for updates vérifie les mises à jour au démarrage et toutes les six heures, affiche des notifications et ouvre la page officielle de téléchargement.",
+  "Firefox on Windows can download Desktop when the Windows version cannot be confirmed. Setup still requires Windows 11.": "Firefox sous Windows permet de télécharger Desktop même si la version de Windows ne peut pas être confirmée. Le programme d’installation nécessite toujours Windows 11.",
+  "Install Desktop 1.4.0 once to enable these features. Your saved login and preferences stay in place.": "Installe Desktop 1.4.0 une fois pour activer ces fonctions. Ta connexion enregistrée et tes préférences sont conservées.",
+  "Your browser cannot confirm the Windows version. You can still download; Setup checks that your PC runs Windows 11.": "Ton navigateur ne peut pas confirmer la version de Windows. Tu peux quand même télécharger le fichier ; le programme d’installation vérifie que ton PC utilise Windows 11.",
+  "This installer is digitally signed. Windows may still display a SmartScreen warning while the app builds reputation.": "Ce programme d’installation est signé numériquement. Windows peut encore afficher un avertissement SmartScreen pendant que l’application acquiert une réputation.",
   " (Spotify answered ": "(Spotify répondu",
   " (UTC), from IP ": "(UTC), de la PI",
   " (fine for development).": "(Bien pour le développement).",

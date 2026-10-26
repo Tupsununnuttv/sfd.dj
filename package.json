@@ -17,7 +17,8 @@
         "bot:install": "npm --prefix bot install",
         "bot:dev": "npm --prefix bot run dev",
         "bot:start": "npm --prefix bot start",
-        "desktop:build": "node scripts/build-desktop.mjs"
+        "desktop:build": "node scripts/build-desktop.mjs",
+        "desktop:build:release": "node scripts/build-desktop.mjs --require-signing"
     },
     "devDependencies": {
         "@headlessui/react": "^2.2.10",

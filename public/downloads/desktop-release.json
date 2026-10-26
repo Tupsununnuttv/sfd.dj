@@ -1,18 +1,21 @@
 {
-  "version": "1.2.0",
+  "version": "1.4.0",
   "kind": "installer",
   "platform": "windows11-x64",
   "minimum_os": "Windows 11",
   "minimum_windows_build": 22000,
+  "signing": {
+    "status": "unsigned"
+  },
   "file": "/downloads/SFD-DJ-Setup.exe",
   "download_name": "SFD-DJ-Setup.exe",
-  "bytes": 8525114,
-  "sha256": "186e8082541ecfb73bcdec3b9686949266f22e4a54a4bf35a644f60997144967",
+  "bytes": 8534505,
+  "sha256": "4069a04ad1048b11cf38765bade524bdce58941d22d47ea53b2a15a0f07a2dfa",
   "dependencies": {
-    "dotnet_desktop": "10.0.13",
+    "dotnet_desktop": "10.0.14",
     "visual_cpp": "14.51.36247.0",
     "webview2": "Evergreen"
   },
   "site": "https://sfd-dj.eu/",
-  "built_at": "2026-10-24T22:51:18.229Z"
+  "built_at": "2026-10-26T12:14:36.141Z"
 }

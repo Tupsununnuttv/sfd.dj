@@ -8,6 +8,12 @@ import { desktopAssets } from './desktop-assets.mjs';
 if (process.platform !== 'win32') throw new Error('Build the Windows installer on Windows with the .NET 10 SDK.');
 const root = fileURLToPath(new URL('../', import.meta.url));
 process.chdir(root);
+const signed = Boolean(process.env.SFD_SIGN_CERT_THUMBPRINT);
+if (process.argv.includes('--require-signing') && !signed) throw new Error('A signed release requires SFD_SIGN_CERT_THUMBPRINT. See docs/desktop-signing.md.');
+const signingScript = join(root, 'scripts/sign-desktop.ps1');
+const sign = file => run('powershell.exe', ['-NoProfile', '-NonInteractive', '-File', signingScript, ...(file ? ['-FilePath', file] : ['-CheckOnly'])]);
+if (signed) sign();
+else console.warn('Building an unsigned installer. SmartScreen warnings may appear. Use npm run desktop:build:release for a signed release.');
 const version = readFileSync(join(root, 'apps/desktop/SfdDj.Desktop.csproj'), 'utf8').match(/<Version>([^<]+)<\/Version>/)?.[1];
 if (!version) throw new Error('Desktop project version is missing.');
 const tools = await prepareInstallerTools();
@@ -27,6 +33,7 @@ for (const framework of runtimeConfig.runtimeOptions.frameworks) {
     if (['Microsoft.NETCore.App', 'Microsoft.WindowsDesktop.App'].includes(framework.name)) framework.version = tools.runtimeVersion;
 }
 writeFileSync(runtimeConfigPath, JSON.stringify(runtimeConfig, null, 2) + '\n');
+if (signed) sign(join(appDirectory, 'SFD-DJ-Desktop.exe'));
 const notices = ['SFD DJ Desktop — third-party notices\n\nSFD DJ Desktop uses the Microsoft WebView2 SDK and contains a Microsoft-signed Evergreen WebView2 bootstrapper. Setup is built with Inno Setup. Microsoft .NET Desktop Runtime and Visual C++ Redistributable are downloaded from Microsoft only when needed, under their respective Microsoft license terms.\n'];
 notices.push('\nWindows SDK for .NET / Microsoft.Windows.SDK.NET.dll and WinRT.Runtime.dll\nCopyright Microsoft Corporation. All rights reserved.\nWindows SDK license: https://aka.ms/WinSDKLicenseURL\nC#/WinRT source and license: https://github.com/microsoft/CsWinRT/blob/master/LICENSE\n');
 const assets = JSON.parse(readFileSync(join(artifacts, 'obj/SfdDj.Desktop/project.assets.json'), 'utf8'));
@@ -49,7 +56,8 @@ const definitions = {
 for (const value of Object.values(definitions)) if (/["\r\n]/.test(value)) throw new Error('Invalid installer definition.');
 writeFileSync(include, Object.entries(definitions).map(([key, value]) => `#define ${key} "${value}"`).join('\n') + '\n');
 const outputDirectory = join(buildTools, 'desktop-setup');
-run(tools.compiler, [`/DAppVersion=${version}`, `/DPayloadDir=${appDirectory}`, `/DPrerequisiteInclude=${include}`, `/DOutputDir=${outputDirectory}`, 'apps/desktop/Installer/Setup.iss']);
+const signingArguments = signed ? ['/DSignedRelease', `--signtool=sfd_release=powershell.exe -NoProfile -NonInteractive -File $q${signingScript.replaceAll('$', '$$')}$q -FilePath $f`] : [];
+run(tools.compiler, [`/DAppVersion=${version}`, `/DPayloadDir=${appDirectory}`, `/DPrerequisiteInclude=${include}`, `/DOutputDir=${outputDirectory}`, ...signingArguments, 'apps/desktop/Installer/Setup.iss']);
 const executable = join(outputDirectory, 'SFD-DJ-Setup.exe');
 const bytes = readFileSync(executable);
 if (bytes.toString('ascii', 0, 2) !== 'MZ') throw new Error('Desktop build did not produce a Windows installer.');
@@ -61,6 +69,7 @@ renameSync(`${target}.next`, target);
 copyFileSync(target, join(root, 'public/downloads/SFD-DJ-Desktop.exe'));
 const release = {
     version, kind: 'installer', platform: 'windows11-x64', minimum_os: 'Windows 11', minimum_windows_build: 22000,
+    signing: { status: signed ? 'signed' : 'unsigned' },
     file: '/downloads/SFD-DJ-Setup.exe', download_name: 'SFD-DJ-Setup.exe',
     bytes: statSync(target).size, sha256: createHash('sha256').update(bytes).digest('hex'),
     dependencies: { dotnet_desktop: tools.runtimeVersion, visual_cpp: tools.vcVersion, webview2: 'Evergreen' },

@@ -1,4 +1,12 @@
 {
+  "Desktop 1.4.0: Discord presence and updates": "Desktop 1.4.0: Discord-Status und Updates",
+  "Desktop 1.4.0 adds Discord Rich Presence with the SFD logo, app name and elapsed time. Discord activity sharing must be enabled.": "Desktop 1.4.0 ergänzt Discord Rich Presence mit SFD-Logo, App-Namen und Nutzungsdauer. Das Teilen deiner Aktivität muss in Discord aktiviert sein.",
+  "Discord presence reconnects automatically and clears when the desktop app closes.": "Der Discord-Status verbindet sich automatisch erneut und wird beim Schließen der Desktop-App entfernt.",
+  "Check for updates includes startup and six-hour checks, update notices and the official download page.": "Check for updates prüft beim Start und alle sechs Stunden auf Updates, zeigt Hinweise und öffnet die offizielle Downloadseite.",
+  "Firefox on Windows can download Desktop when the Windows version cannot be confirmed. Setup still requires Windows 11.": "Firefox unter Windows erlaubt den Desktop-Download auch dann, wenn die Windows-Version nicht bestätigt werden kann. Das Setup benötigt weiterhin Windows 11.",
+  "Install Desktop 1.4.0 once to enable these features. Your saved login and preferences stay in place.": "Installiere Desktop 1.4.0 einmal, um diese Funktionen zu nutzen. Deine gespeicherte Anmeldung und Einstellungen bleiben erhalten.",
+  "Your browser cannot confirm the Windows version. You can still download; Setup checks that your PC runs Windows 11.": "Dein Browser kann die Windows-Version nicht bestätigen. Du kannst die Datei trotzdem herunterladen; das Setup prüft, ob dein PC Windows 11 verwendet.",
+  "This installer is digitally signed. Windows may still display a SmartScreen warning while the app builds reputation.": "Dieses Installationsprogramm ist digital signiert. Windows kann weiterhin eine SmartScreen-Warnung anzeigen, während die App Reputation aufbaut.",
   " (Spotify answered ": "(Spotify beantwortet)",
   " (UTC), from IP ": "(UTC), ab IP",
   " (fine for development).": "(für die Entwicklung fein).",
