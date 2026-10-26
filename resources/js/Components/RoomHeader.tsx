@@ -6,7 +6,8 @@ import { Equalizer } from '@/Components/ui';
 import { Cosmetics } from '@/lib/cosmetics';
 import { LIVE_SITES, LiveInfo } from '@/lib/live';
 import { mmss } from '@/lib/playlists';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
+import type { PageProps } from '@/types';
 import SocialIcon, { socialLabels } from '@/Components/SocialIcon';
 import { ArrowLeft, Music2, Users, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -35,6 +36,7 @@ export default function RoomHeader({ room, host, listening, dj, title, live, pla
     onDj: (user: Dancer, anchor: DOMRect) => void;
 }) {
     const [now, setNow] = useState(Date.now);
+    const activityGuest = usePage<PageProps>().props.discordActivity?.guestOnly === true;
     useEffect(() => {
         if (!title) return;
         const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -50,7 +52,7 @@ export default function RoomHeader({ room, host, listening, dj, title, live, pla
     return (
         <header className="sfd-navbar relative z-30 flex h-14 shrink-0 items-center gap-3 border-b border-white/10 bg-black/40 px-3 backdrop-blur sm:px-4 md:grid md:grid-cols-[minmax(11rem,1fr)_minmax(0,30rem)_minmax(11rem,1fr)]">
             <div className="flex min-w-0 shrink-0 items-center gap-3 md:shrink md:overflow-hidden">
-                <Link href={route('dashboard')} title="Leave the room" aria-label="Leave the room" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-neutral-300 transition hover:bg-white/10 hover:text-white">
+                <Link href={route(activityGuest ? 'discord-activity.rooms' : 'dashboard')} title={activityGuest ? 'Change room' : 'Leave the room'} aria-label={activityGuest ? 'Change room' : 'Leave the room'} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-neutral-300 transition hover:bg-white/10 hover:text-white">
                     <ArrowLeft size={18} />
                 </Link>
                 <div className="min-w-0 max-w-60 sm:max-w-76">

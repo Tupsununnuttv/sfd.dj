@@ -59,8 +59,9 @@ Route::name('site.')->group(function () {
     Route::get('/legal/{doc}', fn (string $doc) => Inertia::render('Site/Legal', ['slug' => $doc]))->whereIn('doc', ['rules', 'terms', 'privacy'])->name('legal');
 });
 
-// The Discord Activity: a light version of the website that Discord opens inside the app (docs/discord-activity.md)
+// Alternate entry to the same homepage in Discord, plus the existing Activity OAuth endpoint.
 Route::get('/discord', [DiscordActivityController::class, 'show'])->name('discord-activity.show');
+Route::get('/discord/rooms', [DiscordActivityController::class, 'rooms'])->name('discord-activity.rooms');
 Route::post('/discord/token', [DiscordActivityController::class, 'token'])->middleware('throttle:10,1')->name('discord-activity.token');
 
 // Stripe tells the site about paid plans here (signed with STRIPE_WEBHOOK_SECRET; no session, no CSRF token)

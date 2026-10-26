@@ -56,6 +56,7 @@ export interface Announcement {
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
+    discordActivity?: import('@/lib/discordSdk').DiscordSettings | null;
     auth: {
         user: User; // guests get a placeholder user (id 0)
         guest: boolean;

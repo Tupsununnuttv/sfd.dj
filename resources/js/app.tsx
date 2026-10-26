@@ -10,7 +10,9 @@ import { syncCompactPreferences } from '@/lib/compactPreferences';
 import { syncSystemPreferences } from '@/lib/systemPreferences';
 import SystemPreferenceNotice from '@/Components/SystemPreferenceNotice';
 import { listenForAppearanceChanges } from '@/lib/appearanceChanges';
-import { discordActivity } from '@/lib/discordActivity';
+import { discordActivity, discordProxy } from '@/lib/discordActivity';
+import { configureDiscordNetworking, installDiscordLinks } from '@/lib/discordSdk';
+import DiscordActivityBridge from '@/Components/DiscordActivityBridge';
 import { embedded } from '@/lib/embed';
 import { applyMotion } from '@/lib/motion';
 import { PageProps } from '@/types';
@@ -21,15 +23,17 @@ import { createRoot } from 'react-dom/client';
 import { configureEcho } from '@laravel/echo-react';
 
 // live updates: Reverb on this computer, Pusher on the live site (VITE_BROADCASTER=pusher when it is built); the keys come from the VITE_REVERB_ / VITE_PUSHER_ variables
-// (not inside a Discord Activity: its page is polled, and Discord's proxy only lets a socket through that has a URL mapping)
-if (!discordActivity) configureEcho(import.meta.env.VITE_BROADCASTER === 'pusher' ? { broadcaster: 'pusher' } : { broadcaster: 'reverb' });
+// Discord uses the existing HTTP room snapshots; the null connector keeps other components from opening unmapped sockets.
+if (discordProxy) configureEcho({ broadcaster: 'null' });
+else configureEcho(import.meta.env.VITE_BROADCASTER === 'pusher' ? { broadcaster: 'pusher' } : { broadcaster: 'reverb' });
+installDiscordLinks();
 
 // A room clicked inside a room's page overlay opens in the whole window, not inside the overlay.
 if (embedded) {
     router.on('before', (event) => {
         const target = new URL(event.detail.visit.url, window.location.href);
         if (target.pathname.startsWith('/rooms/')) {
-            window.top!.location.href = target.href;
+            window.parent.location.href = target.href;
             return false;
         }
     });
@@ -99,8 +103,9 @@ createInertiaApp({
             window.clearTimeout(appearanceTimer);
             appearanceTimer = window.setTimeout(() => router.reload({ only: ['auth', 'profile', 'host', 'catalog', 'coins', 'daily', 'history'] }), 80);
         });
-        void loadRegionalLanguage(getLanguage()).catch(() => {}).then(() => {
-            root.render(<><App {...props} /><RoomLoading /><CompactPreferenceNotice /><SystemPreferenceNotice />{!embedded && <WhisperCalls initialUser={auth?.guest ? null : auth?.user?.id ?? null} />}</>);
+        const discordSettings = (props.initialPage.props as PageProps).discordActivity;
+        void Promise.all([loadRegionalLanguage(getLanguage()).catch(() => {}), configureDiscordNetworking(discordSettings).catch(() => {})]).then(() => {
+            root.render(<><App {...props} /><DiscordActivityBridge applicationId={discordSettings?.applicationId} /><RoomLoading /><CompactPreferenceNotice /><SystemPreferenceNotice />{!embedded && !discordProxy && <WhisperCalls initialUser={auth?.guest ? null : auth?.user?.id ?? null} />}</>);
         });
     },
     progress: {

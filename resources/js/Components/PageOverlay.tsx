@@ -1,10 +1,12 @@
 import { ExternalLink, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { discordActivity } from '@/lib/discordActivity';
 
 /** A big window on top of the room that shows any site page, so you never have to leave the room (the music keeps playing). */
 export default function PageOverlay({ url, title, onClose }: { url: string; title: string; onClose: () => void }) {
     const [loading, setLoading] = useState(true);
     const pageUrl = new URL(url, window.location.href);
+    if (discordActivity) pageUrl.searchParams.set('sfd_overlay', '1');
     const sameOriginUrl = `${pageUrl.pathname}${pageUrl.search}${pageUrl.hash}`;
 
     // it can open over a panel (Room settings → Developers): Esc closes only this, the panel underneath stays

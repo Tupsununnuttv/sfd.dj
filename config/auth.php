@@ -38,6 +38,8 @@ return [
     */
 
     'guards' => [
+        // Activity requests always observe rooms anonymously; the web session is untouched.
+        'discord_guest' => ['driver' => 'discord_guest'],
         'web' => [
             'driver' => 'session',
             'provider' => 'users',

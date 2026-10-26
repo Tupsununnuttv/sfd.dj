@@ -1,5 +1,7 @@
 import { isSoundCloud } from '@/lib/soundcloud';
 import SoundCloudPlayer from '@/lib/soundcloudPlayer';
+import { discordResourceUrl } from '@/lib/discordSdk';
+import { discordProxy } from '@/lib/discordActivity';
 
 declare global {
     interface Window {
@@ -28,6 +30,7 @@ export default class RoomPlayer {
     private volume = 100;
     private muted = false;
     private dead = false;
+    private wantedSong: { songId: string; startSeconds: number } | null = null;
 
     constructor(host: HTMLElement, private events: RoomPlayerEvents, private target: () => number) {
         const fill = 'position:absolute;inset:0';
@@ -41,6 +44,7 @@ export default class RoomPlayer {
         const init = () => {
             if (this.dead) return;
             this.youtube = new window.YT.Player(mount, {
+                ...(discordProxy ? { host: discordResourceUrl('https://www.youtube.com').replace(/\/$/, '') } : {}),
                 width: '100%',
                 height: '100%',
                 playerVars: { autoplay: 1, controls: 1, fs: 1, disablekb: 0, rel: 0, playsinline: 1, origin: window.location.origin },
@@ -50,6 +54,9 @@ export default class RoomPlayer {
                         const frame = this.youtube?.getIframe?.() as HTMLIFrameElement | undefined;
                         if (frame) { frame.allowFullscreen = true; frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; }
                         this.applyYouTubeAudio();
+                        if (discordProxy && this.wantedSong && this.active === 'youtube') {
+                            this.youtube?.loadVideoById?.({ videoId: this.wantedSong.songId, startSeconds: this.target() });
+                        }
                         events.onReady();
                     },
                     onAutoplayBlocked: () => events.onAutoplayBlocked(),
@@ -68,13 +75,16 @@ export default class RoomPlayer {
         } else {
             window.onYouTubeIframeAPIReady = init;
             const script = document.createElement('script');
-            script.src = 'https://www.youtube.com/iframe_api';
+            script.src = discordResourceUrl('https://www.youtube.com/iframe_api');
             document.head.appendChild(script);
         }
+        // SoundCloud must not wait for YouTube's independent iframe to initialize.
+        if (discordProxy) queueMicrotask(() => { if (!this.dead) events.onReady(); });
     }
 
     /** Play a song from `startSeconds` (YouTube starts there itself; SoundCloud goes to the room's place when its sound starts). */
     load(songId: string, startSeconds: number) {
+        this.wantedSong = { songId, startSeconds };
         if (isSoundCloud(songId)) {
             this.youtube?.stopVideo?.();
             this.show('soundcloud');

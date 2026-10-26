@@ -12,6 +12,7 @@ use App\Models\Whisper;
 use App\Models\WhisperGroup;
 use App\Support\MailStatus;
 use App\Support\Plans;
+use App\Support\DiscordActivity;
 use App\Support\PublicStats;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -51,6 +52,7 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'discordActivity' => DiscordActivity::request($request) ? DiscordActivity::settings() : null,
             // Guests get a placeholder user so pages that anyone may open never see null.
             'auth' => [
                 'user' => $request->user() ?? $this->guest(),

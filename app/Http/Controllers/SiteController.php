@@ -10,6 +10,8 @@ use App\Support\PublicStats;
 use App\Support\RoomPresence;
 use App\Support\RoomGuests;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
+use App\Support\DiscordActivity;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -36,13 +38,9 @@ class SiteController extends Controller
         ]);
     }
 
-    public function home(Request $request): Response
+    public function home(Request $request): Response|RedirectResponse
     {
-        // Discord opens an Activity at the site's root and adds frame_id: that visitor gets the Activity page
-        if ($request->query->has('frame_id')) {
-            return app(DiscordActivityController::class)->show($request);
-        }
-
+        if (DiscordActivity::request($request)) return app(DiscordActivityController::class)->show($request);
         $me = $request->user();
 
         return Inertia::render('Welcome', [

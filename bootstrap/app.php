@@ -44,7 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
             AllowSameOriginFrames::class,
         ]);
 
-        $middleware->api(append: [BlockBannedIps::class, CheckWindowsDeviceBans::class]);
+        $middleware->api(prepend: [DiscordActivityCookies::class], append: [BlockBannedIps::class, CheckWindowsDeviceBans::class]);
 
         // Stripe calls the webhook from its own servers: it signs the call instead (SubscriptionController::webhook)
         $middleware->validateCsrfTokens(except: ['stripe/webhook']);

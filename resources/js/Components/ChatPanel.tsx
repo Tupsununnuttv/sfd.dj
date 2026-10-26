@@ -235,6 +235,7 @@ export default function ChatPanel({
     onCompactChat,
     showAvatars,
     readOnly = false,
+    guestOnly = false,
     myName,
     onUser,
     onWhisper,
@@ -262,6 +263,7 @@ export default function ChatPanel({
     onCompactChat?: (compact: boolean) => void;
     showAvatars: boolean;
     readOnly?: boolean; // guests can read but not write
+    guestOnly?: boolean; // Discord's room-only view has no account links
     myName: string;
     onUser: (user: CardUser, anchor: DOMRect) => void; // open the quick-profile menu of a message's author
     onWhisper?: (userId: number) => void; // open the whisper box with that person
@@ -555,10 +557,10 @@ export default function ChatPanel({
             {readOnly ? (
                 <div className="shrink-0 space-y-2 border-t border-neutral-800 p-4 text-center text-sm">
                     <p className="text-neutral-400">You are watching as a guest.</p>
-                    <div className="flex justify-center gap-2">
+                    {!guestOnly && <div className="flex justify-center gap-2">
                         <Link href={route('login')} className="rounded bg-violet-600 px-4 py-1.5 text-xs font-semibold hover:bg-violet-500">Log in</Link>
                         <Link href={route('register')} className="rounded bg-white/10 px-4 py-1.5 text-xs font-semibold hover:bg-white/20">Register</Link>
-                    </div>
+                    </div>}
                 </div>
             ) : (
             <div className="sfd-chatcomposer relative m-2 mt-1 shrink-0 rounded-[14px] border border-[#382c46] bg-[#070609] p-3">

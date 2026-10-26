@@ -39,6 +39,9 @@ import { EMPTY_ROOM_RELEASES, type RoomReleaseState } from '@/lib/roomReleases';
 import { saveCompactPreference, useCompactPreferences } from '@/lib/compactPreferences';
 import RoomPlayer from '@/lib/roomPlayer';
 import { isSoundCloud } from '@/lib/soundcloud';
+import { discordProxy } from '@/lib/discordActivity';
+import { openDiscordExternal } from '@/lib/discordSdk';
+import { poll } from '@/lib/polling';
 import { PageProps, RoleInfo } from '@/types';
 import { roomUserWeight, sortRoomUsersByWeight } from '@/lib/roomUserSort';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -227,7 +230,8 @@ export default function Room({
     messages: ChatMessageData[];
     playback: Playback;
 }>) {
-    const { auth: { user, guest }, community } = usePage<PageProps>().props;
+    const { auth: { user, guest }, community, discordActivity: activitySettings } = usePage<PageProps>().props;
+    const activityGuest = activitySettings?.guestOnly === true;
     const { hiddenAuthors } = useUserRestrictions();
     const touchRendering = useTouchRendering();
     const [watchers, updateWatchers] = useRoomGuests(room.slug, guestMembers, guest);
@@ -264,6 +268,8 @@ export default function Room({
     const [playback, setPlayback] = useState(() => stamp(initialPlayback));
     const [mine, setMine] = useState<MyVotes>(myVotes);
     const [users, setUsers] = useState<Member[]>(botMembers);
+    const botMembersRef = useRef(botMembers);
+    botMembersRef.current = botMembers;
     // Saves in a same-origin shop overlay refresh auth even if the live socket is unavailable.
     useEffect(() => {
         if (guest) return;
@@ -490,6 +496,38 @@ export default function Room({
 
     // Presence channel: chat, playback, who is here, who is typing, role changes, kicks.
     useEffect(() => {
+        if (discordProxy) {
+            // Discord can browse the same room without an external websocket.
+            // All data still passes through the existing room/privacy middleware.
+            const job = poll(signal => new Promise<void>((resolve, reject) => {
+                let failed = false;
+                let cancel = () => {};
+                const abort = () => cancel();
+                signal.addEventListener('abort', abort, { once: true });
+                router.reload({
+                    only: ['playback', 'messages', 'myVotes', 'guestMembers', 'botMembers', 'room', 'host', 'roles', 'members', 'can', 'roomReleases'],
+                    showProgress: false,
+                    onCancelToken: token => { cancel = () => token.cancel(); if (signal.aborted) cancel(); },
+                    onHttpException: () => { failed = true; return false; },
+                    onNetworkError: () => { failed = true; return false; },
+                    onSuccess: page => {
+                        const fresh = page.props;
+                        if (fresh.playback) setPlayback(stamp(fresh.playback as Playback));
+                        if (Array.isArray(fresh.messages)) setMessages(fresh.messages as ChatMessageData[]);
+                        if (fresh.myVotes) setMine(fresh.myVotes as MyVotes);
+                        if (Array.isArray(fresh.guestMembers)) updateWatchers(fresh.guestMembers as RoomGuest[]);
+                        if (Array.isArray(fresh.botMembers)) setUsers(previous => [...previous.filter(member => !member.is_bot), ...fresh.botMembers as Member[]]);
+                    },
+                    onFinish: () => { signal.removeEventListener('abort', abort); failed || signal.aborted ? reject(new Error('Room refresh interrupted')) : resolve(); },
+                });
+            }), { interval: 5000, immediate: false });
+            const roster = poll(async signal => {
+                const list = await getJson<Member[]>(route('rooms.members', room.slug), { signal });
+                if (!signal.aborted) setUsers([...new Map([...list, ...botMembersRef.current].map(member => [member.id, member])).values()]);
+            }, { interval: 15000 });
+            if (guest) say('join', `You are watching ${room.name} as a guest. Log in to chat, vote and play songs.`);
+            return () => { job.stop(); roster.stop(); };
+        }
         if (guest) {
             // Guests cannot join Presence, so poll only the privacy-filtered roster of a public room.
             const name = `room-view.${room.id}`;
@@ -607,6 +645,7 @@ export default function Room({
 
     // Site-wide broadcasts also show up in this room's chat as system lines (not stored).
     useEffect(() => {
+        if (discordProxy) return;
         const ch = echo<'reverb'>().channel('site');
         const onBroadcast = (a: { message: string }) => say('broadcast', `System broadcast: ${a.message}`);
         ch.listen('.announcement', onBroadcast);
@@ -907,8 +946,8 @@ export default function Room({
         <>
             <Head title={room.name} />
             {room.css && <style data-room-css>{room.css}</style>}
-            <div className="sfd-room isolate flex h-dvh overflow-hidden bg-black text-white" data-room-layout={prefs.room.compact_layout ? 'compact' : 'normal'} data-rendering={touchRendering ? 'touch' : 'full'}>
-                <Sidebar
+            <div className="sfd-room isolate flex h-dvh overflow-hidden bg-black text-white" data-activity-guest={activityGuest || undefined} data-room-layout={prefs.room.compact_layout ? 'compact' : 'normal'} data-rendering={touchRendering ? 'touch' : 'full'}>
+                {!activityGuest && <Sidebar
                     room={{
                         slug: room.slug,
                         name: room.name,
@@ -920,10 +959,10 @@ export default function Room({
                         onLive: () => setPanel('live'),
                         onOpenPage: (url, title) => setPage({ url, title }),
                     }}
-                />
+                />}
 
                 <main style={subscriptionVars(host.cosmetics?.subscription)} data-sub-theme={perk(host.cosmetics?.subscription, 'theme') || undefined} className={`sfd-main relative ${tab === 'room' ? 'flex' : 'hidden md:flex'} min-w-0 flex-1 flex-col ${backgroundClass(room.background)}`}>
-                    <Live />
+                    {!activityGuest && <Live />}
                     <SubscriptionRoomEffects host={host.cosmetics} dj={dj?.cosmetics} songId={current?.id} entranceSounds={prefs.audio.entrance_sounds} />
 
                     <RoomHeader
@@ -941,7 +980,7 @@ export default function Room({
                         muted={muted}
                         onVolume={(v) => { setVolume(v); setMuted(false); }}
                         onMute={() => setMuted(!muted)}
-                        social={community.social}
+                        social={activityGuest ? {} : community.social}
                         onDj={(u, anchor) => setCard({ user: u, anchor })}
                     />
 
@@ -956,9 +995,9 @@ export default function Room({
                         playing={(!!current || !!live) && playbackOn}
                         myId={user.id}
                         onUser={(u, anchor) => setCard({ user: u, anchor })}
-                        waitlist={<WaitlistCard inList={inList} etaSeconds={etaSeconds} etaSince={etaSince} locked={closed} full={waitlist.length >= playback.max} busy={leaving} onClick={joinOrLeave} />}
-                        seat={<SeatButton locked={closed} onClick={joinOrLeave} />}
-                        votes={<VoteBar votes={playback.votes} mine={mine} disabled={!current || !!live || current.user_id === user.id} ownSong={!!current && current.user_id === user.id} onVote={vote} autowoot={autowoot} onAutowoot={guest ? undefined : setAutowoot} />}
+                        waitlist={activityGuest ? null : <WaitlistCard inList={inList} etaSeconds={etaSeconds} etaSince={etaSince} locked={closed} full={waitlist.length >= playback.max} busy={leaving} onClick={joinOrLeave} />}
+                        seat={activityGuest ? null : <SeatButton locked={closed} onClick={joinOrLeave} />}
+                        votes={activityGuest ? null : <VoteBar votes={playback.votes} mine={mine} disabled={!current || !!live || current.user_id === user.id} ownSong={!!current && current.user_id === user.id} onVote={vote} autowoot={autowoot} onAutowoot={guest ? undefined : setAutowoot} />}
                         playbackSource={playbackOn ? live ? { key: `live:${live.kind}:${live.ref}`, title: live.title, live, position: () => 0 } : current && !isSoundCloud(current.youtube_id) ? { key: String(current.id), title: current.title, youtubeId: current.youtube_id, position: roomPosition } : null : null}
                         screen={
                             <>
@@ -970,7 +1009,11 @@ export default function Room({
                                         {isSoundCloud(current.youtube_id) ? (
                                             <button
                                                 type="button"
-                                                onClick={() => window.open(player.current?.openUrl?.(roomPosition()) ?? `https://soundcloud.com/search?q=${encodeURIComponent(current.title)}`, '_blank', 'noopener,noreferrer')}
+                                                onClick={() => {
+                                                    const url = player.current?.openUrl?.(roomPosition()) ?? `https://soundcloud.com/search?q=${encodeURIComponent(current.title)}`;
+                                                    if (discordProxy) void openDiscordExternal(url).catch(() => setNotice('The link could not be opened.'));
+                                                    else window.open(url, '_blank', 'noopener,noreferrer');
+                                                }}
                                                 title="Open this track on SoundCloud, at the place it is at now"
                                                 className="unscale pointer-events-auto absolute right-3 top-12 flex origin-top-right items-center gap-1.5 rounded-lg bg-black/75 px-3 py-1.5 text-xs font-bold text-white opacity-0 shadow-lg ring-1 ring-white/25 transition hover:bg-orange-600 focus-visible:opacity-100 group-hover/playback:opacity-100"
                                             >
@@ -1006,7 +1049,7 @@ export default function Room({
                                         <div className="absolute inset-0 flex items-center justify-center bg-neutral-900/90">
                                             <div className="unscale flex flex-col items-center gap-3 text-center">
                                                 <span className="text-lg font-semibold text-neutral-200">Waiting for the next DJ…</span>
-                                                {guest ? (
+                                                {activityGuest ? null : guest ? (
                                                     <Link href={route('login')} className="rounded-md bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Log in to be the next DJ</Link>
                                                 ) : (
                                                     <button onClick={() => setPanel('playlists')} className="rounded-md bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500">Open playlists</button>
@@ -1019,7 +1062,13 @@ export default function Room({
                         }
                     />
 
-                    <RoomFootbar
+                    {activityGuest ? <div className="flex h-17 shrink-0 items-center justify-between gap-3 border-t border-white/10 bg-neutral-950 px-4 text-xs text-neutral-400">
+                        <span>Watching as guest</span>
+                        <div className="flex gap-2">
+                            <button type="button" onClick={() => setPlaybackOn(!playbackOn)} className="rounded-lg bg-white/10 px-3 py-2 text-white">{playbackOn ? 'Pause playback' : 'Resume playback'}</button>
+                            <button type="button" onClick={() => setPanel('info')} className="rounded-lg bg-white/10 px-3 py-2 text-white">Room info</button>
+                        </div>
+                    </div> : <RoomFootbar
                         guest={guest}
                         slug={room.slug}
                         onOpenPage={(url, title) => setPage({ url, title })}
@@ -1034,10 +1083,10 @@ export default function Room({
                         onModeration={() => setPanel('moderation')}
                         community={community}
                         refreshKey={`${current?.id ?? 0}-${deckKey}`}
-                    />
+                    />}
                 </main>
 
-                <aside className={`sfd-panel ${tab === 'room' ? 'fixed bottom-17 left-14 right-0 z-20 flex h-14 md:static md:z-auto md:h-auto' : 'flex'} min-w-0 flex-1 flex-col border-t border-neutral-800 bg-black md:w-80 md:flex-none md:border-l md:border-t-0`}>
+                <aside className={`sfd-panel ${tab === 'room' ? `fixed bottom-17 ${activityGuest ? 'left-0' : 'left-14'} right-0 z-20 flex h-14 md:static md:z-auto md:h-auto` : 'flex'} min-w-0 flex-1 flex-col border-t border-neutral-800 bg-black md:w-80 md:flex-none md:border-l md:border-t-0`}>
                     <div className="sfd-tabs flex h-14 shrink-0 border-b border-neutral-800">
                         {tabs.map(([key, label, cssClass]) => (
                             <button
@@ -1070,6 +1119,7 @@ export default function Room({
                             onCompactChat={guest ? undefined : (on) => saveCompactPreference('compact_chat', on)}
                             showAvatars={prefs.appearance.show_avatars}
                             readOnly={guest}
+                            guestOnly={activityGuest}
                             myName={user.name}
                             onUser={(u, anchor) => setCard({ user: u, anchor })}
                             onWhisper={(id) => { setWhisperTo(id); setPanel('whispers'); }}
@@ -1077,7 +1127,7 @@ export default function Room({
                             onMentionConsumed={() => setMention(null)}
                             showBadges={prefs.appearance.show_badges}
                             highlightMentions={prefs.notifications.mentions}
-                            onPatchNotes={() => setPage({ url: route('patch-notes'), title: 'Patch notes' })}
+                            onPatchNotes={activityGuest ? undefined : () => setPage({ url: route('patch-notes'), title: 'Patch notes' })}
                         />
                     )}
 
@@ -1209,7 +1259,7 @@ export default function Room({
             )}
 
             {page && <Suspense fallback={null}><PageOverlay url={page.url} title={page.title} onClose={() => { setPage(null); refreshCounts(); }} /></Suspense>}
-            <Suspense fallback={null}><SupportWidget launcher={false} /></Suspense>{/* no bubble in the room: More → Contact support opens it */}
+            {!activityGuest && <Suspense fallback={null}><SupportWidget launcher={false} /></Suspense>}{/* no bubble in the room: More → Contact support opens it */}
 
             {grabbing && current && (
                 <Suspense fallback={null}>

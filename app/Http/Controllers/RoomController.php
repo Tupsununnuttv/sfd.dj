@@ -63,8 +63,9 @@ class RoomController extends Controller
     /** Big-emoji "stickers" for chat. */
     public const STICKERS = ['🎉', '🔥', '💃', '🕺', '🤘', '😎', '🥳', '😂', '😍', '🤯', '👏', '🙌', '💯', '❤️', '💜', '🎧', '🎸', '🥁', '🎤', '🎶', '🚀', '👑', '😴', '🙈'];
 
-    public function index(Request $request): InertiaResponse
+    public function index(Request $request): InertiaResponse|RedirectResponse
     {
+        if (\App\Support\DiscordActivity::request($request)) return app(DiscordActivityController::class)->show($request);
         $me = $request->user();
         $roomList = null;
         // Resolve once, and only when a requested prop needs the room catalogue.

@@ -1,6 +1,7 @@
 import { LIVE_SITES, LiveInfo, liveEmbed } from '@/lib/live';
 import { ExternalLink } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
+import { discordResourceUrl } from '@/lib/discordSdk';
 
 /**
  * A live stream on the room's big screen: the player of YouTube, Twitch or Kick fills it, with a red Live mark and (when the mouse is over it) a button that opens the
@@ -11,11 +12,14 @@ export default function LiveScreen({ live, volume, muted }: { live: LiveInfo; vo
     const mutedAtStart = useRef(muted).current;
     const site = LIVE_SITES[live.kind];
     // made once per stream: a new title must not restart it, and later volume changes go through the player's own commands
-    const src = useMemo(() => liveEmbed(live, window.location.hostname, window.location.origin, mutedAtStart), [live.kind, live.ref]); // eslint-disable-line react-hooks/exhaustive-deps
+    const src = useMemo(() => {
+        const url = liveEmbed(live, window.location.hostname, window.location.origin, mutedAtStart);
+        return url ? discordResourceUrl(url) : undefined;
+    }, [live.kind, live.ref]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         if (live.kind !== 'youtube') return;
-        const command = (func: string, args: unknown[] = []) => frame.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), 'https://www.youtube-nocookie.com');
+        const command = (func: string, args: unknown[] = []) => frame.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), new URL(discordResourceUrl('https://www.youtube-nocookie.com')).origin);
         const apply = () => { command(muted ? 'mute' : 'unMute'); command('setVolume', [volume]); };
         apply();
         const again = window.setTimeout(apply, 2000); // the player may not have been ready the first time

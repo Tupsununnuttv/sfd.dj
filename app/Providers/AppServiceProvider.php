@@ -6,6 +6,7 @@ use App\Models\Room;
 use App\Support\DiscordActivity;
 use App\Support\ForgivingBroadcaster;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -28,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Auth::viaRequest('discord_guest', fn () => null);
         RateLimiter::for('room-watchers', fn (Request $request) => [
             Limit::perMinute(8)->by('watcher:'.hash('sha256', $request->session()->getId())),
             Limit::perMinute(240)->by('watcher-ip:'.$request->ip()),

@@ -1,4 +1,5 @@
 import { soundcloudApiUrl, soundcloudEmbedUrl, WIDGET_OPTIONS } from '@/lib/soundcloud';
+import { discordResourceUrl } from '@/lib/discordSdk';
 
 declare global {
     interface Window {
@@ -22,7 +23,7 @@ let widgetApi: Promise<any> | null = null;
 const loadWidgetApi = (): Promise<any> => (widgetApi ??= new Promise((resolve, reject) => {
     if (window.SC?.Widget) return resolve(window.SC);
     const script = document.createElement('script');
-    script.src = 'https://w.soundcloud.com/player/api.js';
+    script.src = discordResourceUrl('https://w.soundcloud.com/player/api.js');
     script.onload = () => (window.SC?.Widget ? resolve(window.SC) : reject(new Error('The SoundCloud player did not start.')));
     script.onerror = () => reject(new Error('The SoundCloud player could not be loaded.'));
     document.head.appendChild(script);
@@ -90,7 +91,7 @@ export default class SoundCloudPlayer {
             frame.allow = 'autoplay'; // without it a browser never lets a frame from another site start the sound
             frame.title = 'SoundCloud';
             frame.style.cssText = 'width:100%;height:100%;border:0';
-            frame.src = soundcloudEmbedUrl(this.wanted, false);
+            frame.src = discordResourceUrl(soundcloudEmbedUrl(this.wanted, false));
             this.mount.appendChild(frame);
             this.frame = frame;
 
