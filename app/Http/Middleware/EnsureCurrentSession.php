@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\DiscordActivity;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,6 +12,12 @@ class EnsureCurrentSession
 {
     public function handle(Request $request, Closure $next): Response
     {
+        // Activity always uses the anonymous request guard. A legacy website login
+        // must neither redirect this guest view to /login nor be invalidated here.
+        if (DiscordActivity::request($request)) {
+            return $next($request);
+        }
+
         // Token-authenticated API requests use Sanctum's RequestGuard, not browser sessions.
         $guard = Auth::guard('web');
         if ($user = $guard->user()) {

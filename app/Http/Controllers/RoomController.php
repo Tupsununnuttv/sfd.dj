@@ -28,6 +28,7 @@ use App\Rules\NoOtherSites;
 use App\Services\Music;
 use App\Services\YouTube;
 use App\Support\Automod;
+use App\Support\DiscordActivity;
 use App\Support\LinkGuard;
 use App\Support\LiveStream;
 use App\Support\Presence;
@@ -257,7 +258,12 @@ class RoomController extends Controller
     public function show(Request $request, Room $room): InertiaResponse|RedirectResponse
     {
         // an old address (the room was renamed): on to the current one. Not a 301, which a browser keeps for good: the room may take that address back
-        if ($request->route()->originalParameter('room') !== $room->slug) {
+        if ($request->routeIs('rooms.show') && $request->route()->originalParameter('room') !== $room->slug) {
+            if (DiscordActivity::request($request)) {
+                // Keep renamed room links inside the proxy, including SDK and
+                // overlay context; never redirect back to its absolute host.
+                return new RedirectResponse(route('rooms.show', ['room' => $room->slug] + $request->query(), false));
+            }
             return to_route('rooms.show', $room);
         }
 

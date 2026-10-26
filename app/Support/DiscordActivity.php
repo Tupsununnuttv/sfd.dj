@@ -19,7 +19,7 @@ class DiscordActivity
     {
         return $request->attributes->get(self::ATTRIBUTE) === true
             || $request->cookies->get(self::COOKIE) === '1'
-            || $request->is('discord/*')
+            || $request->is('discord', 'discord/*')
             || filled($request->query('frame_id'));
     }
 

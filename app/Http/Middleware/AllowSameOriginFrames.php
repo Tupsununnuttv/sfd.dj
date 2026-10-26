@@ -26,7 +26,7 @@ class AllowSameOriginFrames
         if ($request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=15552000');
         }
-        if ($request->user() || $request->is('api/whispers*', 'api/whisper-groups*', 'two-factor*', 'reset-password*', 'confirm-password*', 'forgot-password*', 'login')) {
+        if ($activity || $request->user() || $request->is('api/whispers*', 'api/whisper-groups*', 'two-factor*', 'reset-password*', 'confirm-password*', 'forgot-password*', 'login')) {
             $response->headers->set('Cache-Control', 'private, no-store');
         }
 

@@ -17,8 +17,9 @@ class DiscordActivityController extends Controller
         $slug = trim((string) config('discord-activity.room', ''));
         $room = $slug !== '' ? Room::atAddress($slug)->where('is_private', false)->first() : null;
         if ($room) {
-            // Carry the initial SDK parameters through a redirect before JS has stored them.
-            return to_route('rooms.show', ['room' => $room->slug] + $request->query());
+            // Discord's proxy can follow a redirect back into itself. Render in
+            // place so the original launch URL and SDK parameters stay intact.
+            return app(RoomController::class)->show($request, $room);
         }
 
         return $this->rooms($request);
