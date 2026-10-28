@@ -1,0 +1,184 @@
+{
+    "sections": {
+        "personal": "Personal information",
+        "experience": "Experience & motivation",
+        "situations": "Situational questions",
+        "confirmation": "Final confirmation"
+    },
+    "fields": [
+        {
+            "key": "discord_username",
+            "section": "personal",
+            "type": "text",
+            "short": "Discord username",
+            "label": "What is your Discord username?",
+            "required": true,
+            "min": 2,
+            "max": 40
+        },
+        {
+            "key": "age_group",
+            "section": "personal",
+            "type": "select",
+            "short": "Age group",
+            "label": "What is your age group?",
+            "required": true,
+            "options": [
+                "Under 18",
+                "18–20",
+                "21+"
+            ],
+            "other": true,
+            "max": 60
+        },
+        {
+            "key": "server_time",
+            "section": "personal",
+            "type": "select",
+            "short": "Time in the SFD Discord",
+            "label": "How long have you been a member of the SFD Discord server?",
+            "required": true,
+            "options": [
+                "Less than 7 days",
+                "7–13 days",
+                "14–30 days",
+                "More than 30 days"
+            ],
+            "other": true,
+            "max": 60
+        },
+        {
+            "key": "position",
+            "section": "personal",
+            "type": "select",
+            "short": "Staff position",
+            "label": "Which staff position are you applying for?",
+            "required": true,
+            "options": [
+                "Developer",
+                "Mobile Dev",
+                "Admin",
+                "Brand Ambassador",
+                "Site Moderator"
+            ]
+        },
+        {
+            "key": "motivation",
+            "section": "experience",
+            "type": "textarea",
+            "short": "Why SFD staff?",
+            "label": "Why do you want to become a staff member at SFD?",
+            "required": true,
+            "min": 10,
+            "max": 1000
+        },
+        {
+            "key": "experience",
+            "section": "experience",
+            "type": "textarea",
+            "short": "Previous experience",
+            "label": "Do you have any previous staff or moderation experience? If yes, please explain.",
+            "required": true,
+            "min": 2,
+            "max": 1000
+        },
+        {
+            "key": "why_you",
+            "section": "experience",
+            "type": "textarea",
+            "short": "Why you?",
+            "label": "Why should we choose you over other applicants?",
+            "required": true,
+            "min": 10,
+            "max": 1000
+        },
+        {
+            "key": "hours",
+            "section": "experience",
+            "type": "select",
+            "short": "Weekly time",
+            "label": "How many hours per week can you dedicate to SFD?",
+            "required": true,
+            "options": [
+                "1–3 hours",
+                "4–7 hours",
+                "8–14 hours",
+                "15+ hours"
+            ]
+        },
+        {
+            "key": "handle_spam",
+            "section": "situations",
+            "type": "textarea",
+            "short": "Spam or rule-breaking",
+            "label": "What would you do if a member started spamming or breaking server rules?",
+            "required": true,
+            "min": 10,
+            "max": 1000
+        },
+        {
+            "key": "handle_argument",
+            "section": "situations",
+            "type": "textarea",
+            "short": "Argument between members",
+            "label": "How would you handle an argument between two community members?",
+            "required": true,
+            "min": 10,
+            "max": 1000
+        },
+        {
+            "key": "handle_abuse",
+            "section": "situations",
+            "type": "textarea",
+            "short": "Staff abusing permissions",
+            "label": "What would you do if another staff member was abusing their permissions?",
+            "required": true,
+            "min": 10,
+            "max": 1000
+        },
+        {
+            "key": "handle_disrespect",
+            "section": "situations",
+            "type": "textarea",
+            "short": "Disrespect towards you",
+            "label": "How would you react if someone was disrespectful towards you?",
+            "required": true,
+            "min": 10,
+            "max": 1000
+        },
+        {
+            "key": "read_rules",
+            "section": "confirmation",
+            "type": "radio",
+            "short": "Requirements and rules read",
+            "label": "Have you read and understood the SFD Staff Requirements and Server Rules?",
+            "required": true,
+            "options": [
+                "Yes",
+                "No"
+            ]
+        },
+        {
+            "key": "trial",
+            "section": "confirmation",
+            "type": "radio",
+            "short": "14-day trial period",
+            "label": "Are you willing to complete a 14-day trial period if accepted?",
+            "required": true,
+            "options": [
+                "Yes",
+                "No"
+            ]
+        },
+        {
+            "key": "extra",
+            "section": "confirmation",
+            "type": "textarea",
+            "short": "Anything else?",
+            "label": "Is there anything else you would like us to know?",
+            "required": false,
+            "min": 0,
+            "max": 1000
+        }
+    ]
+}

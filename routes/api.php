@@ -26,6 +26,11 @@ Route::get('/discord/members/{discordId}', [DiscordBotController::class, 'member
 Route::get('/discord/announcements', [DiscordBotController::class, 'announcements'])
     ->middleware('throttle:60,1')
     ->name('api.discord.announcements');
+// staff applications: the bot's /apply forms, and the buttons under an application in the staff channel
+Route::get('/discord/staff-application-form', [DiscordBotController::class, 'staffApplicationForm'])->middleware('throttle:60,1')->name('api.discord.staff-applications.form');
+Route::post('/discord/staff-applications', [DiscordBotController::class, 'submitStaffApplication'])->middleware('throttle:30,1')->name('api.discord.staff-applications.store');
+Route::get('/discord/staff-applications/{id}', [DiscordBotController::class, 'showStaffApplication'])->whereNumber('id')->middleware('throttle:60,1')->name('api.discord.staff-applications.show');
+Route::patch('/discord/staff-applications/{id}', [DiscordBotController::class, 'decideStaffApplication'])->whereNumber('id')->middleware('throttle:60,1')->name('api.discord.staff-applications.decide');
 
 // The front door and the price list need no token: a tool can check the address, the version and the limits, and show the plans.
 Route::get('/v1', [ApiController::class, 'root'])->middleware('throttle:60,1')->name('api.v1.root');

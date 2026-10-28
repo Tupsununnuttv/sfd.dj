@@ -8,16 +8,17 @@ import RoomsTab from '@/Components/admin/RoomsTab';
 import RoomReleasesPanel from '@/Components/admin/RoomReleasesPanel';
 import { AdminProps } from '@/Components/admin/types';
 import UsersTab from '@/Components/admin/UsersTab';
+import ApplicationsPanel from '@/Components/admin/ApplicationsPanel';
 import SupportInbox from '@/Components/SupportInbox';
 import DeviceBansTab from '@/Components/admin/DeviceBansTab';
 import { Tabs } from '@/Components/ui';
 import AppLayout from '@/Layouts/AppLayout';
 import { PageProps } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Ban, Disc3, KeyRound, LayoutDashboard, LifeBuoy, Mail, Megaphone, UserRound, Users, Wrench } from 'lucide-react';
+import { Ban, ClipboardList, Disc3, KeyRound, LayoutDashboard, LifeBuoy, Mail, Megaphone, UserRound, Users, Wrench } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-type Tab = 'Overview' | 'Users' | 'Accounts' | 'Rooms' | 'Room updates' | 'Support' | 'Permissions' | 'Broadcast' | 'Email' | 'IP bans' | 'Device bans' | 'Maintenance';
+type Tab = 'Overview' | 'Users' | 'Accounts' | 'Rooms' | 'Room updates' | 'Support' | 'Applications' | 'Permissions' | 'Broadcast' | 'Email' | 'IP bans' | 'Device bans' | 'Maintenance';
 
 // each tab needs its own permission; the ones you may not use stay hidden
 const needs: Record<Tab, string> = {
@@ -27,6 +28,7 @@ const needs: Record<Tab, string> = {
     Rooms: 'rooms.manage',
     'Room updates': 'releases.manage',
     Support: 'support.manage',
+    Applications: 'applications.manage',
     Permissions: 'admin.access',
     Broadcast: 'broadcast.send',
     Email: 'email.manage',
@@ -46,6 +48,7 @@ export default function Admin(props: AdminProps) {
         { key: 'Rooms', label: 'Rooms', icon: Disc3, count: props.stats.rooms },
         { key: 'Room updates', label: 'Room updates', icon: Disc3 },
         { key: 'Support', label: 'Support', icon: LifeBuoy, alert: props.openTickets || undefined },
+        { key: 'Applications', label: 'Applications', icon: ClipboardList, alert: props.pendingApplications || undefined },
         { key: 'Permissions', label: 'Permissions', icon: KeyRound },
         { key: 'Broadcast', label: 'Broadcast', icon: Megaphone },
         { key: 'Email', label: 'Email', icon: Mail },
@@ -66,7 +69,7 @@ export default function Admin(props: AdminProps) {
             if (document.hidden || pending) return;
             pending = true; setRefreshing(true);
             const editing = document.activeElement?.matches('input, select, textarea, [contenteditable="true"]');
-            router.reload({ only: ['stats', 'openTickets', ...(tab === 'Overview' ? ['overview'] : []), ...((tab === 'Users' || tab === 'Accounts') && !editing ? ['users'] : [])],
+            router.reload({ only: ['stats', 'openTickets', 'pendingApplications', ...(tab === 'Overview' ? ['overview'] : []), ...((tab === 'Users' || tab === 'Accounts') && !editing ? ['users'] : [])],
                 onSuccess: () => setRefreshError(false),
                 onHttpException: () => { setRefreshError(true); return false; },
                 onNetworkError: () => { setRefreshError(true); return false; },
@@ -95,6 +98,7 @@ export default function Admin(props: AdminProps) {
             {tab === 'Rooms' && <RoomsTab rooms={props.rooms} counts={props.counts} />}
             {tab === 'Room updates' && <RoomReleasesPanel releases={props.roomReleases} />}
             {tab === 'Support' && <SupportInbox />}
+            {tab === 'Applications' && <ApplicationsPanel />}
             {tab === 'Permissions' && <MatrixTab matrix={props.matrix} groups={props.roleGroups} />}
             {tab === 'Broadcast' && <BroadcastTab announcements={props.announcements} />}
             {tab === 'Email' && props.email && <EmailTab email={props.email} gotoTab={setTab} />}

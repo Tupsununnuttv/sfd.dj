@@ -6,6 +6,29 @@ export { VERSION } from './latestRelease';
 export const releases: { version: string; title: string; notes: [Kind, string][] }[] = [
     latestRelease,
     {
+        version: '1.80',
+        title: 'Staff applications: 15 questions, review tools and Discord',
+        notes: [
+            ['new', 'The Staff application page now has 15 questions in four sections, a live progress bar, clear messages for missing answers and a jump to the first one. Your answers stay in the form if sending fails.'],
+            ['new', 'Applications are saved on the website. The same page shows your application and its status: Pending, Under Review, Accepted or Rejected. One application can wait for a decision at a time.'],
+            ['new', 'Admin > Applications lets authorized staff read all 15 answers, filter by status and position, mark Under Review, accept or reject, and keep private notes. The Permissions Matrix has a new Review staff applications permission.'],
+            ['improved', 'Every application is posted to the private staff channel in Discord with a preview of the answers and the buttons Approve, Under review, Reject and Full answers. Decisions on the website and in Discord stay in sync, and an accepted applicant with a linked Discord account gets the staff role.'],
+            ['new', 'The Discord command /apply asks the same questions in four short forms and saves the application on the website, so applying works with or without an SFD-DJ.EU account.'],
+            ['improved', 'Age group and time in the Discord server can also be answered in your own words: choose Other and write it in the box.'],
+        ],
+    },
+    {
+        version: '1.79',
+        title: 'Desktop 1.4.0: Discord presence and updates',
+        notes: [
+            ['new', 'Desktop 1.4.0 adds Discord Rich Presence with the SFD logo, app name and elapsed time. Discord activity sharing must be enabled.'],
+            ['improved', 'Discord presence reconnects automatically and clears when the desktop app closes.'],
+            ['new', 'Check for updates includes startup and six-hour checks, update notices and the official download page.'],
+            ['fixed', 'Firefox on Windows can download Desktop when the Windows version cannot be confirmed. Setup still requires Windows 11.'],
+            ['improved', 'Install Desktop 1.4.0 once to enable these features. Your saved login and preferences stay in place.'],
+        ],
+    },
+    {
         version: '1.78',
         title: 'Desktop setup, clearer controls and site moderation',
         notes: [

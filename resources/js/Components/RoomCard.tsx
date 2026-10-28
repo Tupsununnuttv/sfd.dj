@@ -8,6 +8,10 @@ export interface NowPlaying {
     title: string;
     thumbnail: string | null;
     dj: string;
+    dj_avatar?: string | null;
+    duration?: number; // seconds; 0 when unknown
+    elapsed?: number | null; // seconds into the song when the page got it; null while a live stream holds the queue
+    woots?: number;
 }
 
 export interface RoomSummary {

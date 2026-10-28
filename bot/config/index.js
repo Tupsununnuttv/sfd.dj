@@ -37,19 +37,13 @@ export const presenceText = `${siteUrl}/`;
 export const token = env.DISCORD_BOT_TOKEN;
 export const guildId = env.DISCORD_GUILD_ID;
 export const memberRoleId = env.DISCORD_MEMBER_ROLE_ID;
-export const applicationsChannelId = env.DISCORD_STAFF_APPLICATIONS_CHANNEL_ID;
 export const staffRoleId = env.DISCORD_STAFF_ROLE_ID;
-export const approvedStaffRoleId = env.DISCORD_APPROVED_STAFF_ROLE_ID;
 export const modLogChannelId = env.DISCORD_MOD_LOG_CHANNEL_ID;
 
 // What an applicant reads first: #staff-requirements and #staff-application-questions (a channel mention shows as the channel's name and opens it).
-// The website's staff application page links to the same two (staff_application_links in config/services.php).
+// The website's staff application page links to the same two (staff_application_links in config/services.php). The questions come from the website too (/api/discord/staff-application-form),
+// and the website posts the applications to DISCORD_STAFF_APPLICATIONS_CHANNEL_ID and gives DISCORD_APPROVED_STAFF_ROLE_ID, so the bot does not read those two.
 export const staffApplicationRequirements = ['827776116851736628', '827776072551759912'].map((channelId) => `<#${channelId}>`);
-export const staffApplicationQuestions = {
-    motivation: env.DISCORD_STAFF_QUESTION_MOTIVATION || 'Why do you want to join the staff team?',
-    experience: env.DISCORD_STAFF_QUESTION_EXPERIENCE || 'What relevant experience do you have?',
-    availability: env.DISCORD_STAFF_QUESTION_AVAILABILITY || 'When are you usually available?',
-};
 
 /** Where the bot keeps what the servers set up (tickets, welcome messages, giveaways, birthdays ...). Not in git. */
 export const settingsPath = env.DISCORD_BOT_SETTINGS_PATH || fileURLToPath(new URL('../data/settings.json', import.meta.url));

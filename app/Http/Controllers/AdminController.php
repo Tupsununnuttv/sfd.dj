@@ -12,6 +12,7 @@ use App\Models\RoomFeatureRelease;
 use App\Models\RoomLog;
 use App\Models\Setting;
 use App\Models\SitePermission;
+use App\Models\StaffApplication;
 use App\Models\SupportTicket;
 use App\Models\User;
 use App\Models\Violation;
@@ -92,6 +93,7 @@ class AdminController extends Controller
             'roomReleases' => fn () => $actor->hasPermission('releases.manage') ? RoomReleases::adminCatalog() : [],
             'counts' => fn () => (object) RoomPresence::counts(),
             'openTickets' => fn () => SupportTicket::where('status', 'open')->count(),
+            'pendingApplications' => fn () => $actor->hasPermission('applications.manage') ? StaffApplication::where('status', 'pending')->count() : 0,
             'assignable' => array_values(array_map(fn (Role $r) => $r->info(), $this->grantable($actor))),
             'matrix' => fn () => [
                 'roles' => Role::meta(), // every role in rank order, the plain User last (it shows what everybody has: nothing extra)

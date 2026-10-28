@@ -1,22 +1,21 @@
-import { formatDate, formatTime, translate } from '@/lib/regional';
+import { formatDate, formatTime } from '@/lib/regional';
 import DiscordInvite from '@/Components/DiscordInvite';
 import CreateRoom from '@/Components/CreateRoom';
 import SiteCounters from '@/Components/SiteCounters';
+import { LiveWall, motionAllowed, OnAirRoom, OnAirStage } from '@/Components/dashboard/OnAir';
+import { FriendOnline, FriendsRail, Goal, YourDay } from '@/Components/dashboard/YourDay';
 import { poll } from '@/lib/polling';
 import type { LucideIcon } from 'lucide-react';
-import { levelPercent, toNextText } from '@/lib/level';
 import Avatar from '@/Components/Avatar';
-import { CoinIcon } from '@/Components/CoinIcon';
-import RoleBadge from '@/Components/RoleBadge';
 import RoomCard, { NowPlaying, RoomSummary } from '@/Components/RoomCard';
 import SocialIcon from '@/Components/SocialIcon';
-import { Card, chip, Equalizer, OnlineDot, ProgressBar, SectionTitle, StatTile } from '@/Components/ui';
+import { Card, chip, SectionTitle, StatTile } from '@/Components/ui';
 import { latestRelease } from '@/lib/latestRelease';
 import AppLayout from '@/Layouts/AppLayout';
 import { PageProps } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { CalendarDays, CheckCircle2, Circle, Gift, Heart, ListMusic, Music, Plus, Radio, Search, ShoppingBag, Shuffle, ThumbsUp, Trophy, Users, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { CalendarDays, Gift, Heart, ListMusic, Music, Plus, Radio, Search, ShoppingBag, Trophy, Users } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface Activity {
     at: string;
@@ -37,9 +36,9 @@ interface Props {
     stats: { xp: number; level: number; from: number; to: number; rank: number; songs_played: number; woots: number; friends: number } | null;
     daily: { amount: number; claimable: boolean } | null;
     friendIds: number[];
-    goals: { key: string; title: string; have: number; goal: number; href: string | null }[];
+    goals: Goal[];
     continue: { name: string; slug: string; genre: string | null; at: string } | null;
-    friendsOnline: { id: number; name: string; avatar: string | null; online: boolean; status?: string; room: { name: string; slug: string } | null }[];
+    friendsOnline: FriendOnline[];
     recommended: { reason: string; rooms: { id: number; name: string; slug: string; genre: string | null; badges: string[] | null; listening: number }[] };
     events: { id: number; title: string; starts_at: string; going_count: number; room: { name: string; slug: string } | null }[];
     topDjs: { id: number; name: string; avatar: string | null; plays: number }[];
@@ -58,7 +57,7 @@ const ago = (iso: string) => {
 
 const greeting = () => {
     const h = new Date().getHours();
-    return h < 5 ? 'Still up' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    return h < 5 ? ['Still up', '🦉'] : h < 12 ? ['Good morning', '☀️'] : h < 18 ? ['Good afternoon', '🎧'] : ['Good evening', '🌙'];
 };
 
 const when = (iso: string) => {
@@ -83,8 +82,11 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
     const [streamsOnly, setStreamsOnly] = useState(false);
     const [refreshFailed, setRefreshFailed] = useState(false);
     const [feed, setFeed] = useState<'all' | 'friends'>('all');
+    const [rolling, setRolling] = useState<{ name: string } | null>(null);
+    const spinning = useRef<number | undefined>(undefined);
+    const search = useRef<HTMLInputElement>(null);
 
-    // One background request updates both the dashboard and its site counters.
+    // One background request updates the dashboard and its site counters (and today's goals, so the rings close while you play elsewhere).
     useEffect(() => {
         let mounted = true;
         const updates = poll((signal) => new Promise<void>((resolve, reject) => {
@@ -93,7 +95,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
             let cancel = () => {};
             const abort = () => cancel();
             signal.addEventListener('abort', abort, { once: true });
-            router.reload({ only: ['rooms', 'mine', 'featured', 'counts', 'nowPlaying', 'activity', 'friendsOnline', 'siteStats'],
+            router.reload({ only: ['rooms', 'mine', 'featured', 'counts', 'nowPlaying', 'activity', 'friendsOnline', 'siteStats', 'goals'],
                 showProgress: false,
                 onCancelToken: (token) => { cancel = () => token.cancel(); if (signal.aborted) cancel(); },
                 onSuccess: () => { if (mounted) setRefreshFailed(false); },
@@ -102,11 +104,36 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                 onFinish: () => { signal.removeEventListener('abort', abort); failed || signal.aborted ? reject(new Error('Dashboard refresh interrupted')) : resolve(); },
             });
         }), { interval: 15000, immediate: false });
-        return () => { mounted = false; updates.stop(); };
+        return () => { mounted = false; updates.stop(); window.clearInterval(spinning.current); };
+    }, []);
+
+    // "/" anywhere on the page (outside a text box) jumps to the room search
+    useEffect(() => {
+        const jump = (event: KeyboardEvent) => {
+            if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey || (event.target as HTMLElement | null)?.closest('input, textarea, select, [contenteditable="true"]')) return;
+            event.preventDefault();
+            search.current?.focus();
+        };
+        window.addEventListener('keydown', jump);
+        return () => window.removeEventListener('keydown', jump);
     }, []);
 
     const online = siteStats?.listening ?? null;
-    const live = useMemo(() => rooms.filter((r) => (counts[r.id] ?? 0) > 0 || nowPlaying[r.id] || r.live).sort((a, b) => Number(!!b.live) - Number(!!a.live) || (counts[b.id] ?? 0) - (counts[a.id] ?? 0)).slice(0, 4), [rooms, counts, nowPlaying]); // rooms with a live stream first
+    // when the song times came: they count on from here until the next refresh
+    const received = useMemo(() => Date.now(), [nowPlaying]);
+
+    // rooms on air: something to show first (a live stream, then a song), then the busiest
+    const onAir: OnAirRoom[] = useMemo(() => rooms
+        .map((room) => ({ room, song: nowPlaying[room.id] ?? null, listening: counts[room.id] ?? 0 }))
+        .filter((entry) => entry.song || entry.room.live || entry.listening > 0)
+        .sort((a, b) => Number(Boolean(b.room.live)) - Number(Boolean(a.room.live)) || Number(Boolean(b.song)) - Number(Boolean(a.song)) || b.listening - a.listening), [rooms, counts, nowPlaying]);
+
+    // the genre most people are in right now
+    const vibe = useMemo(() => {
+        const score = new Map<string, number>();
+        onAir.forEach(({ room, listening }) => { if (room.genre) score.set(room.genre, (score.get(room.genre) ?? 0) + 1 + listening); });
+        return [...score].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    }, [onAir]);
 
     const source = tab === 'featured' ? featured : tab === 'mine' ? mine : rooms;
     const shown = useMemo(() => {
@@ -119,12 +146,29 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
 
     const usedGenres = useMemo(() => [...new Set(rooms.map((r) => r.genre).filter(Boolean))] as string[], [rooms]);
     const feedItems = feed === 'friends' ? activity.filter((a) => friendIds.includes(a.user.id) || a.user.id === user.id) : activity;
-    const progress = stats ? levelPercent(stats.xp, stats.level) : 0;
 
-    // a random room: a live one if there is one
+    // Surprise me: a room on air if there is one. The names roll like a slot machine first (at once where motion is reduced).
     const surprise = () => {
-        const pool = live.length ? live : rooms;
-        if (pool.length) router.visit(route('rooms.show', pool[Math.floor(Math.random() * pool.length)].slug));
+        const pool = onAir.length ? onAir.map((entry) => entry.room) : rooms;
+        if (!pool.length || rolling) return;
+        const target = pool[Math.floor(Math.random() * pool.length)];
+        const go = () => router.visit(route('rooms.show', target.slug), { onCancel: () => setRolling(null), onError: () => setRolling(null) });
+        if (!motionAllowed()) {
+            setRolling({ name: target.name });
+            go();
+            return;
+        }
+        let spins = 0;
+        spinning.current = window.setInterval(() => {
+            spins += 1;
+            if (spins < 14) {
+                setRolling({ name: rooms[Math.floor(Math.random() * rooms.length)].name });
+                return;
+            }
+            window.clearInterval(spinning.current);
+            setRolling({ name: target.name });
+            window.setTimeout(go, 500);
+        }, 90);
     };
 
     const quick: [LucideIcon, string, string, string][] = [
@@ -135,67 +179,36 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
         [CalendarDays, 'Events', route('events'), 'text-emerald-300'],
         [Trophy, 'Leaderboard', route('community'), 'text-rose-300'],
     ];
+    const [hello, emoji] = greeting();
 
     return (
-        <AppLayout title="Discover" subtitle="Good music starts with good company." actions={<div className="flex flex-wrap gap-2"><DiscordInvite /><a href="#discover-rooms" className="rounded-xl border border-white/15 px-4 py-2 text-sm text-neutral-300 hover:bg-white/5">Browse rooms</a></div>}>
+        <AppLayout
+            title={guest ? 'Discover' : <>{hello}, {user.name} <span aria-hidden>{emoji}</span></>}
+            subtitle={onAir.length > 0
+                ? <span className="flex flex-wrap items-center gap-x-2">{(online ?? 0) > 0 && <><span>🎧 <b className="tabular-nums text-neutral-200">{online}</b> listening</span><span aria-hidden>·</span></>}<span><b className="tabular-nums text-neutral-200">{onAir.length}</b> {onAir.length === 1 ? 'room on air' : 'rooms on air'}</span></span>
+                : 'Good music starts with good company.'}
+            actions={<div className="flex flex-wrap gap-2"><DiscordInvite /><a href="#discover-rooms" className="rounded-xl border border-white/15 px-4 py-2 text-sm text-neutral-300 hover:bg-white/5">Browse rooms</a></div>}
+        >
             <Head title="Dashboard" />
 
-            <section className="relative isolate overflow-hidden rounded-3xl border border-violet-300/20 bg-neutral-900 p-6 shadow-2xl shadow-violet-950/20 sm:p-8">
-                <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,rgba(139,92,246,0.35),transparent_65%)]" />
-                <div className="grid items-center gap-8 md:grid-cols-[1.3fr_1fr]">
-                    <div>
-                        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300"><Radio size={13} /> Your music. Your people.</span>
-                        <h2 className="mt-5 text-4xl font-black leading-tight tracking-tight sm:text-5xl">Find your next<br /><span className="bg-linear-to-r from-violet-300 via-fuchsia-300 to-sky-300 bg-clip-text text-transparent">favourite room.</span></h2>
-                        <p className="mt-4 max-w-md text-sm leading-relaxed text-neutral-300">{guest ? 'Discover live music, meet the community and find a sound that feels like home.' : `${translate(greeting())}, ${user.name}. Take the decks, tune into a stream or bring your friends together.`}</p>
-                        <div className="mt-6 flex flex-wrap gap-3">
-                            <a href="#discover-rooms" className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-neutral-950 hover:bg-violet-100"><Search size={16} /> Explore rooms</a>
-                            {guest ? <Link href={route('register')} className="rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold hover:bg-white/10">Join the community</Link> : <button onClick={() => setCreating(true)} className="flex items-center gap-2 rounded-xl border border-violet-300/30 bg-violet-500/20 px-5 py-3 text-sm font-semibold text-violet-100 hover:bg-violet-500/30"><Plus size={17} /> Create a room</button>}
-                            {rooms.length > 0 && <button onClick={surprise} className="flex items-center gap-2 px-2 py-3 text-sm text-neutral-300 hover:text-white"><Shuffle size={15} /> Surprise me</button>}
-                        </div>
-                    </div>
-                    <div className="rounded-2xl border border-white/15 bg-black/30 p-5 backdrop-blur-sm">
-                        <div className="mb-4 flex items-center justify-between gap-3"><span className="text-xs font-bold uppercase tracking-widest text-violet-200">On air now</span><Equalizer /></div>
-                        {live[0] ? <><h3 className="truncate text-xl font-bold">{live[0].name}</h3><p className="mt-2 line-clamp-2 text-sm text-neutral-300">{live[0].live?.title ?? nowPlaying[live[0].id]?.title ?? live[0].description ?? 'Join the conversation and share your music.'}</p><div className="mt-5 flex items-center justify-between gap-3"><span className="text-xs text-emerald-300">{counts[live[0].id] ?? 0} listening in this room</span><Link href={route('rooms.show', live[0].slug)} data-room-name={live[0].name} className="rounded-xl bg-violet-500 px-4 py-2 text-sm font-bold text-white hover:bg-violet-400">Tune in</Link></div></> : <><h3 className="text-xl font-bold">Be the first on the decks</h3><p className="mt-2 text-sm leading-relaxed text-neutral-400">A great session starts with one song. Open a room and set the mood.</p></>}
-                        {!guest && stats && <div className="mt-5 border-t border-white/10 pt-4"><div className="mb-2 flex justify-between text-xs text-neutral-300"><span>Level {stats.level}</span><span>{toNextText(stats.xp, stats.level)}</span></div><ProgressBar value={progress} /></div>}
-                        {!guest && daily?.claimable && <button onClick={() => router.post(route('shop.daily'), {}, { preserveScroll: true })} data-daily className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2.5 text-sm font-semibold text-amber-200 hover:bg-amber-400/20"><CoinIcon className="h-4 w-4" /> Claim {daily.amount} daily coins</button>}
-                    </div>
+            <OnAirStage rooms={onAir} received={received} guest={guest} vibe={vibe} rolling={rolling} onSurprise={surprise} onCreate={() => setCreating(true)} canSurprise={rooms.length > 0} />
+
+            {!guest && <FriendsRail friends={friendsOnline} pendingFriends={pendingFriends} unreadWhispers={unreadWhispers} />}
+
+            {!guest && stats ? (
+                <YourDay user={user} stats={stats} goals={goals} daily={daily} resume={resume} ago={ago} />
+            ) : (
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <StatTile icon={Radio} tone="emerald" label="Listening now" value={online ?? '?'} />
+                    <StatTile icon={Music} tone="violet" label="Rooms" value={rooms.length} />
+                    <StatTile icon={Trophy} tone="amber" label="Top DJ plays" value={topDjs[0]?.plays ?? 0} />
+                    <StatTile icon={CalendarDays} tone="sky" label="Upcoming events" value={events.length} />
                 </div>
-            </section>
+            )}
+
             <SiteCounters stats={siteStats} stale={refreshFailed} />
-            {/* things that need you */}
-            {!guest && (pendingFriends > 0 || unreadWhispers > 0) && (
-                <div className="flex flex-wrap gap-3">
-                    {pendingFriends > 0 && <Link href={route('friends')} className="flex items-center gap-2 rounded-xl border border-sky-400/30 bg-sky-500/10 px-4 py-2.5 text-sm text-sky-200 hover:bg-sky-500/20">👋 {pendingFriends} friend {pendingFriends === 1 ? 'request is' : 'requests are'} waiting</Link>}
-                    {unreadWhispers > 0 && <Link href={route('whispers')} className="flex items-center gap-2 rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 py-2.5 text-sm text-violet-200 hover:bg-violet-500/20">💬 {unreadWhispers} unread {unreadWhispers === 1 ? 'whisper' : 'whispers'}</Link>}
-                </div>
-            )}
 
-            {!guest && resume && (
-                <Link href={route('rooms.show', resume.slug)} data-room-name={resume.name} className="group flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/4 px-5 py-4 transition hover:border-violet-400/60">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-fuchsia-500/30 to-violet-500/30 text-violet-200"><Radio size={19} /></span>
-                    <span className="min-w-0 flex-1"><span className="block text-xs font-bold uppercase tracking-wider text-neutral-500">Pick up where you left off</span><span className="block truncate font-semibold">{resume.name}{resume.genre && <span className="font-normal text-neutral-500"> · {resume.genre}</span>} <span className="font-normal text-neutral-500">· you were there {ago(resume.at)}</span></span></span>
-                    <span className="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold group-hover:bg-white/20">Rejoin →</span>
-                </Link>
-            )}
-
-            {/* numbers */}
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                {stats ? (
-                    <>
-                        <StatTile icon={Trophy} tone="amber" label="Rank" value={`#${stats.rank}`} hint={`Level ${stats.level}`} />
-                        <StatTile icon={Music} tone="violet" label="Songs played" value={stats.songs_played} />
-                        <StatTile icon={ThumbsUp} tone="emerald" label="Woots received" value={stats.woots} />
-                        <StatTile icon={Users} tone="sky" label="Friends" value={stats.friends} />
-                    </>
-                ) : (
-                    <>
-                        <StatTile icon={Radio} tone="emerald" label="Listening now" value={online ?? '?'} />
-                        <StatTile icon={Music} tone="violet" label="Rooms" value={rooms.length} />
-                        <StatTile icon={Trophy} tone="amber" label="Top DJ plays" value={topDjs[0]?.plays ?? 0} />
-                        <StatTile icon={CalendarDays} tone="sky" label="Upcoming events" value={events.length} />
-                    </>
-                )}
-            </div>
+            {onAir.length >= 3 && <LiveWall rooms={onAir} received={received} />}
 
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                 <div className="space-y-8 lg:col-span-2">
@@ -215,7 +228,8 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                             <div className="flex flex-wrap items-center gap-2">
                                 <div className="relative min-w-48 flex-1">
                                     <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                    <input value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search rooms, genres or hosts" placeholder="Search rooms, genres, hosts" className={`${input} pl-9`} />
+                                    <input ref={search} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search rooms, genres or hosts" aria-keyshortcuts="/" placeholder="Search rooms, genres, hosts" className={`${input} pl-9 sm:pr-9`} />
+                                    <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-white/15 px-1.5 text-[10px] text-neutral-500 sm:block" title="Press / to search">/</kbd>
                                 </div>
                                 <select aria-label="Sort rooms" value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={input.replace('w-full', 'w-auto')}>
                                     <option value="listeners">Most listeners</option>
@@ -233,7 +247,7 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                             )}
                         </div>
 
-                        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-400"><span role="status">{shown.length} {shown.length === 1 ? 'room' : 'rooms'} found</span><span className={refreshFailed ? 'text-amber-300' : 'text-emerald-300'}>{refreshFailed ? 'Connection interrupted · retrying' : 'Refreshes every 5 seconds'}</span>{(q || genre || liveOnly || streamsOnly) && <button onClick={() => { setQ(''); setGenre(''); setLiveOnly(false); setStreamsOnly(false); }} className="rounded-lg bg-white/10 px-3 py-1.5 text-white hover:bg-white/20">Clear filters</button>}</div>
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-400"><span role="status">{shown.length} {shown.length === 1 ? 'room' : 'rooms'} found</span><span className={refreshFailed ? 'text-amber-300' : 'text-emerald-300'}>{refreshFailed ? 'Connection interrupted · retrying' : 'Updates every 15 seconds'}</span>{(q || genre || liveOnly || streamsOnly) && <button onClick={() => { setQ(''); setGenre(''); setLiveOnly(false); setStreamsOnly(false); }} className="rounded-lg bg-white/10 px-3 py-1.5 text-white hover:bg-white/20">Clear filters</button>}</div>
                         {shown.length === 0 ? (
                             <Card className="mt-4 p-8 text-center">
                                 <p className="text-3xl">🎶</p>
@@ -247,16 +261,6 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                             </div>
                         )}
                     </section>
-
-                    {/* live now */}
-                    {live.length > 0 && (
-                        <section>
-                            <SectionTitle title="🔴 Live now" hint="Rooms with people listening or a song playing" />
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                {live.slice(0, 2).map((r) => <RoomCard key={r.id} room={r} listening={counts[r.id] ?? 0} playing={nowPlaying[r.id]} />)}
-                            </div>
-                        </section>
-                    )}
 
                     {/* picked for you */}
                     {!guest && recommended.rooms.length > 0 && (
@@ -273,8 +277,6 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                             </div>
                         </section>
                     )}
-
-
                 </div>
 
                 <aside className="space-y-6">
@@ -291,49 +293,21 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                         </section>
                     )}
 
-                    {!guest && goals.length > 0 && (
-                        <section>
-                            <SectionTitle title="Today's goals" hint={`${goals.filter((g) => g.have >= g.goal).length} of ${goals.length} done`} />
-                            <Card className="divide-y divide-white/5">
-                                {goals.map((g) => (
-                                    <div key={g.key} className="p-4">
-                                        <div className="flex items-center gap-3">
-                                            {g.have >= g.goal ? <CheckCircle2 size={18} className="shrink-0 text-green-400" /> : <Circle size={18} className="shrink-0 text-neutral-600" />}
-                                            <span className={`flex-1 text-sm font-semibold ${g.have >= g.goal ? 'text-neutral-400 line-through' : ''}`}>{g.title}</span>
-                                            <span className="text-xs tabular-nums text-neutral-500">{g.have}/{g.goal}</span>
-                                        </div>
-                                        <ProgressBar className="mt-2 h-1.5" value={(g.have / g.goal) * 100} />
-                                    </div>
-                                ))}
-                            </Card>
-                        </section>
-                    )}
-
-                    {!guest && (
-                        <section>
-                            <SectionTitle title="Friends online" action={<Link href={route('friends')} className="text-xs text-violet-400 hover:underline">All →</Link>} />
-                            <Card className="divide-y divide-white/5">
-                                {friendsOnline.length === 0 && <p className="p-4 text-sm text-neutral-500">None of your friends is around right now.</p>}
-                                {friendsOnline.map((f) => (
-                                    <div key={f.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
-                                        <span className="relative"><Avatar name={f.name} avatar={f.avatar} className="h-8 w-8 text-sm" /><OnlineDot online status={f.status} className="absolute -bottom-0.5 -right-0.5" /></span>
-                                        <span className="min-w-0 flex-1"><Link href={route('users.show', f.id)} className="block truncate font-semibold hover:underline">{f.name}</Link><span className="block truncate text-xs text-neutral-500">{f.room ? `in ${f.room.name}` : 'online'}</span></span>
-                                        {f.room && <Link href={route('rooms.show', f.room.slug)} className="rounded-lg bg-green-500/20 px-3 py-1 text-xs font-semibold text-green-300 hover:bg-green-500/30">Join</Link>}
-                                    </div>
-                                ))}
-                            </Card>
-                        </section>
-                    )}
-
                     <section>
                         <SectionTitle title="Upcoming events" action={<Link href={route('events')} className="text-xs text-violet-400 hover:underline">All →</Link>} />
                         <Card className="divide-y divide-white/5">
                             {events.length === 0 && <p className="p-4 text-sm text-neutral-500">No events planned yet.</p>}
                             {events.map((e) => (
-                                <Link key={e.id} href={e.room ? route('rooms.show', e.room.slug) : route('events')} className="block p-4 hover:bg-white/3">
-                                    <p className="font-semibold">{e.title}</p>
-                                    <p className="mt-0.5 text-xs text-violet-300">{when(e.starts_at)}</p>
-                                    <p className="mt-0.5 text-xs text-neutral-500">{e.room ? `in ${e.room.name} · ` : ''}{e.going_count} going</p>
+                                <Link key={e.id} href={e.room ? route('rooms.show', e.room.slug) : route('events')} className="flex gap-3 p-4 hover:bg-white/3">
+                                    <span className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-violet-500/15 text-violet-200" aria-hidden>
+                                        <span className="text-[10px] font-bold uppercase">{formatDate(e.starts_at, { month: 'short' })}</span>
+                                        <span className="text-lg font-black leading-none">{formatDate(e.starts_at, { day: 'numeric' })}</span>
+                                    </span>
+                                    <span className="min-w-0">
+                                        <span className="block font-semibold">{e.title}</span>
+                                        <span className="mt-0.5 block text-xs text-violet-300">{when(e.starts_at)}</span>
+                                        <span className="mt-0.5 block text-xs text-neutral-500">{e.room ? `in ${e.room.name} · ` : ''}{e.going_count} going</span>
+                                    </span>
                                 </Link>
                             ))}
                         </Card>
@@ -371,15 +345,34 @@ export default function Dashboard({ rooms, mine, featured, genres, counts, nowPl
                     {topDjs.length > 0 && (
                         <section>
                             <SectionTitle title="Top DJs" action={<Link href={route('community')} className="text-xs text-violet-400 hover:underline">Leaderboard →</Link>} />
-                            <Card className="divide-y divide-white/5">
-                                {topDjs.map((d, i) => (
-                                    <Link key={d.id} href={route('users.show', d.id)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-white/3">
-                                        <span className="w-5 text-center text-base">{['🥇', '🥈', '🥉'][i] ?? <span className="text-xs text-neutral-500">{i + 1}</span>}</span>
-                                        <Avatar name={d.name} avatar={d.avatar} className="h-7 w-7 text-sm" />
-                                        <span className="min-w-0 flex-1 truncate">{d.name}</span>
-                                        <span className="text-xs text-neutral-500">{d.plays} songs</span>
-                                    </Link>
-                                ))}
+                            <Card className="px-4 pt-5">
+                                {/* the podium: second, first, third */}
+                                <div className="flex items-end justify-center gap-2">
+                                    {[1, 0, 2].map((place) => {
+                                        const dj = topDjs[place];
+                                        if (!dj) return <span key={place} className="w-1/3" />;
+                                        return (
+                                            <Link key={dj.id} href={route('users.show', dj.id)} className="group flex w-1/3 min-w-0 flex-col items-center">
+                                                <Avatar name={dj.name} avatar={dj.avatar} className={`${place === 0 ? 'h-14 w-14 text-xl ring-2 ring-amber-300/70' : 'h-11 w-11 text-base'} transition group-hover:scale-105`} />
+                                                <span className="mt-1.5 max-w-full truncate text-xs font-semibold group-hover:underline">{dj.name}</span>
+                                                <span className="text-[10px] text-neutral-500"><b className="tabular-nums">{dj.plays}</b> songs</span>
+                                                <span className={`mt-2 flex w-full justify-center rounded-t-lg pt-1.5 text-lg ${place === 0 ? 'h-16 bg-amber-400/20' : place === 1 ? 'h-12 bg-neutral-300/15' : 'h-9 bg-orange-700/25'}`} aria-hidden>{['🥇', '🥈', '🥉'][place]}</span>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                                {topDjs.length > 3 && (
+                                    <div className="-mx-4 divide-y divide-white/5 border-t border-white/5">
+                                        {topDjs.slice(3).map((dj, i) => (
+                                            <Link key={dj.id} href={route('users.show', dj.id)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-white/3">
+                                                <span className="w-5 text-center text-xs text-neutral-500">{i + 4}</span>
+                                                <Avatar name={dj.name} avatar={dj.avatar} className="h-7 w-7 text-sm" />
+                                                <span className="min-w-0 flex-1 truncate">{dj.name}</span>
+                                                <span className="text-xs text-neutral-500"><span className="tabular-nums">{dj.plays}</span> songs</span>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
                             </Card>
                         </section>
                     )}

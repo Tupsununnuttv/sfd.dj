@@ -71,7 +71,7 @@ class RoomController extends Controller
         $roomList = null;
         // Resolve once, and only when a requested prop needs the room catalogue.
         $rooms = function () use ($me, &$roomList) {
-            return $roomList ??= Room::visibleTo($me)->select(['id', 'user_id', 'name', 'slug', 'description', 'badges', 'genre', 'is_private', 'is_featured', 'live', 'current_item_id', 'auto_host_bot_id', 'created_at'])->withCount('items')->with(['user:id,name', 'autoHostBot:id,name'])->latest()->get();
+            return $roomList ??= Room::visibleTo($me)->select(['id', 'user_id', 'name', 'slug', 'description', 'badges', 'genre', 'is_private', 'is_featured', 'live', 'current_item_id', 'current_started_at', 'auto_host_bot_id', 'created_at'])->withCount('items')->with(['user:id,name', 'autoHostBot:id,name'])->latest()->get();
         };
         $mineId = $me?->id;
 
@@ -151,14 +151,28 @@ class RoomController extends Controller
         ];
     }
 
-    /** What is playing in each room right now: room id => song, DJ and votes. */
+    /**
+     * What is playing in each room right now: room id => song, DJ and woots. `elapsed` is how far the song is (in seconds, when the page got it),
+     * null while a live stream holds the queue's clock; the Dashboard counts on from there.
+     */
     private function nowPlaying($rooms): array
     {
-        $items = PlaylistItem::with('user:id,name')->whereIn('id', $rooms->pluck('current_item_id')->filter())->get()->keyBy('id');
+        $items = PlaylistItem::with('user:id,name,avatar')->whereIn('id', $rooms->pluck('current_item_id')->filter())->get()->keyBy('id');
+        $woots = Vote::whereIn('playlist_item_id', $items->keys())->where('type', 'woot')->selectRaw('playlist_item_id, count(*) as n')->groupBy('playlist_item_id')->pluck('n', 'playlist_item_id');
 
-        return $rooms->filter(fn (Room $r) => $items->has($r->current_item_id))->mapWithKeys(fn (Room $r) => [
-            $r->id => ['title' => $items[$r->current_item_id]->title, 'thumbnail' => $items[$r->current_item_id]->thumbnail, 'dj' => $items[$r->current_item_id]->user->name],
-        ])->all();
+        return $rooms->filter(fn (Room $r) => $items->has($r->current_item_id))->mapWithKeys(function (Room $r) use ($items, $woots) {
+            $item = $items[$r->current_item_id];
+
+            return [$r->id => [
+                'title' => $item->title,
+                'thumbnail' => $item->thumbnail,
+                'dj' => $item->user->name,
+                'dj_avatar' => $item->user->avatar,
+                'duration' => (int) $item->duration,
+                'elapsed' => $r->current_started_at && ! $r->live ? max(0, (int) $r->current_started_at->diffInSeconds(now(), true)) : null,
+                'woots' => (int) ($woots[$item->id] ?? 0),
+            ]];
+        })->all();
     }
 
     private function listenerCounts($rooms): array

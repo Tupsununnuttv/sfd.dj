@@ -41,14 +41,17 @@ test('every slash command has a name, a valid definition and a handler', () => {
 
 test('a button or form goes to the handler of its id, and an exact id beats a prefix', () => {
     const start = handlerFor(buttons, 'staff-application:start');
-    const review = handlerFor(buttons, 'staff-application:approve:123:456');
+    const review = handlerFor(buttons, 'staff-application:approve:123');
     assert.ok(start && review && start !== review);
-    assert.equal(handlerFor(buttons, 'staff-application:reject:123:none'), review);
+    assert.equal(handlerFor(buttons, 'staff-application:reject:123'), review);
+    assert.equal(handlerFor(buttons, 'staff-application:full:123'), review);
+    assert.ok(handlerFor(buttons, 'staff-application:next:1') !== review);
+    assert.ok(handlerFor(buttons, 'staff-application:retry') !== review);
     assert.ok(handlerFor(buttons, 'ticket:open'));
     assert.ok(handlerFor(buttons, 'ticket:close:123456789012345678'));
     assert.ok(handlerFor(buttons, 'giveaway:enter'));
     assert.ok(handlerFor(modals, 'ticket:submit'));
-    assert.ok(handlerFor(modals, 'staff-application:submit'));
+    assert.ok(handlerFor(modals, 'staff-application:step:2'));
     assert.ok(handlerFor(modals, 'info:save:add:rules:123'));
     assert.equal(handlerFor(buttons, 'something:else'), undefined);
 });

@@ -28,6 +28,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\SpotifyController;
 use App\Http\Controllers\StaffApplicationController;
+use App\Http\Controllers\StaffApplicationReviewController;
 use App\Http\Controllers\StreamConnectionController;
 use App\Http\Controllers\SocialConnectionController;
 use App\Http\Controllers\SubscriptionController;
@@ -135,7 +136,7 @@ Route::middleware(['auth', 'verified', 'throttle:30,1'])->group(function () {
 // Everything else needs a verified email address.
 Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function () {
     Route::get('/staff/apply', [StaffApplicationController::class, 'create'])->name('staff-application.create');
-    Route::post('/staff/apply', [StaffApplicationController::class, 'store'])->middleware('throttle:3,60')->name('staff-application.store');
+    Route::post('/staff/apply', [StaffApplicationController::class, 'store'])->middleware('throttle:10,60')->name('staff-application.store');
 
     Route::get('/playlists', [PlaylistController::class, 'index'])->name('playlists');
     Route::get('/selfbots', [SelfDjBotController::class, 'index'])->name('selfbots');
@@ -231,6 +232,9 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::get('/admin/support/tickets/{ticket}', [SupportController::class, 'conversation'])->name('admin.support.show');
     Route::post('/admin/support/tickets/{ticket}/reply', [SupportController::class, 'reply'])->middleware('throttle:60,1')->name('admin.support.reply');
     Route::patch('/admin/support/tickets/{ticket}', [SupportController::class, 'status'])->name('admin.support.status');
+    Route::get('/admin/applications', [StaffApplicationReviewController::class, 'index'])->name('admin.applications.index');
+    Route::get('/admin/applications/{application}', [StaffApplicationReviewController::class, 'show'])->whereNumber('application')->name('admin.applications.show');
+    Route::patch('/admin/applications/{application}', [StaffApplicationReviewController::class, 'update'])->whereNumber('application')->middleware('throttle:60,1')->name('admin.applications.update');
     Route::get('/admin', [AdminController::class, 'index'])->name('admin');
     Route::patch('/admin/users/{user}/roles', [AdminController::class, 'updateRoles'])->name('admin.roles');
     Route::patch('/admin/users/{user}/awards', [AdminController::class, 'updateAwards'])->name('admin.awards');

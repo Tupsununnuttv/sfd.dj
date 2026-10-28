@@ -43,6 +43,19 @@ bot/
 To add a command: make a file in `commands/` that exports `commands = [{ data: new SlashCommandBuilder()…, async execute(interaction) {…} }]` and list it in `commands/index.js`.
 It is registered in the server when the bot starts. A button or form is the same in `components/` (`{ id, execute }`, or `{ prefix, execute }` for ids that start the same).
 
+## Staff applications
+
+An application lives on the website (database, Admin → Applications), whether it was sent there or with `/apply`. The bot only carries the Discord side:
+
+- `/apply` asks the website for the 15 questions (`GET /api/discord/staff-application-form`), so the forms here always match the page. Discord forms hold five questions, so it is four forms in a row
+  with a Continue button between them; the Discord username is not asked. Questions that allow the person's own words (age group, time in the server) get an Other choice and an optional box under the select. The answers are kept in memory until the last form (an hour), then sent to the website (`POST /api/discord/staff-applications`).
+  If the website does not answer, a Try sending again button keeps them.
+- The website posts each application to `DISCORD_STAFF_APPLICATIONS_CHANNEL_ID` and keeps the message current. Under it the bot answers **Approve**, **Under review**, **Reject** (staff role or Manage Server
+  only; they go to `PATCH /api/discord/staff-applications/<id>`, and the website gives the accepted applicant `DISCORD_APPROVED_STAFF_ROLE_ID` if their Discord is linked) and **Full answers**
+  (all questions and answers as a text file). A decision made on the website updates the same message.
+- The bot calls the live site (see above), with its token as the key. The website needs `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_STAFF_APPLICATIONS_CHANNEL_ID` and `DISCORD_APPROVED_STAFF_ROLE_ID`
+  in its own `.env`; the bot itself no longer reads the channel and role settings.
+
 ## Commands
 
 `/apply`, `/ticket`, `/ticket-setup`, `/ticket-panel`, `/ticket-close`, `/info` (add, edit, delete, post, list), `/welcome-set`, `/welcome-clear`, `/leave-set`, `/leave-clear`,

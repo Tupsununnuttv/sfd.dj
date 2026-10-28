@@ -51,14 +51,10 @@ return [
         'staff_role_id' => env('DISCORD_STAFF_ROLE_ID'),
         'approved_staff_role_id' => env('DISCORD_APPROVED_STAFF_ROLE_ID'),
         // The Discord channels an applicant reads first: blue links on the staff application page, and in the message to the staff. The label is the channel's name.
+        // The questions themselves are in App\Support\StaffApplicationForm.
         'staff_application_links' => [
             ['label' => '#staff-requirements', 'url' => 'https://discord.com/channels/827767815452753950/827776116851736628'],
             ['label' => '#staff-application-questions', 'url' => 'https://discord.com/channels/827767815452753950/827776072551759912'],
-        ],
-        'staff_application_questions' => [
-            'motivation' => env('DISCORD_STAFF_QUESTION_MOTIVATION', 'Why do you want to join the staff team?'),
-            'experience' => env('DISCORD_STAFF_QUESTION_EXPERIENCE', 'What relevant experience do you have?'),
-            'availability' => env('DISCORD_STAFF_QUESTION_AVAILABILITY', 'When are you usually available?'),
         ],
     ],
 

@@ -66,6 +66,7 @@ export interface AdminProps {
     roomReleases: import('@/lib/roomReleases').RoomFeatureRelease[];
     counts: Record<number, number>;
     openTickets: number;
+    pendingApplications: number;
     assignable: RoleMeta[];
     matrix: { roles: RoleMeta[]; permissions: Record<string, string>; granted: Record<string, string[]>; editable: boolean };
     announcements: { id: number; message: string; level: string; created_at: string }[];

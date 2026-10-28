@@ -634,3 +634,24 @@ input[type='range'].vol:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px 
     outline: 2px solid #c4b5fd !important;
     outline-offset: 2px !important;
 }
+
+/* Dashboard, On air: the record half out of the song's sleeve. Grooves and a sheen; it turns while a song plays, and stands still where motion is reduced. */
+.vinyl-grooves {
+    background: repeating-radial-gradient(circle at center, #0a0a0a 0 1.6px, #1b1b1b 1.6px 3.2px);
+}
+
+.vinyl-sheen {
+    background: conic-gradient(from 20deg, transparent 0 18%, rgba(255, 255, 255, 0.14) 24%, transparent 31% 68%, rgba(255, 255, 255, 0.09) 74%, transparent 81%);
+}
+
+@keyframes vinyl {
+    to { transform: rotate(360deg); }
+}
+
+@layer utilities {
+    .animate-vinyl { animation: vinyl 5s linear infinite; }
+
+    @media (prefers-reduced-motion: reduce) {
+        :root:not([data-motion='always']) .animate-vinyl { animation: none; }
+    }
+}
