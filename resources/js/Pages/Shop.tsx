@@ -41,7 +41,7 @@ const rarities: Record<Rarity, { label: string; levels: string; card: string; te
     owner: { label: 'Owner', levels: 'The Owner\'s own characters: nobody else can wear them', card: 'border-rose-400/45 bg-linear-to-br from-rose-500/18 via-amber-500/8 to-transparent hover:border-rose-300/80', text: 'text-rose-300' },
 };
 
-const reasons: Record<string, string> = { level: 'New level', song: 'Song played', grab: 'Grab', daily: 'Daily reward', referral: 'Friend joined', shop: 'Shop', welcome: 'Welcome' };
+const reasons: Record<string, string> = { level: 'New level', song: 'Song played', grab: 'Grab', daily: 'Daily reward', referral: 'Friend joined', shop: 'Shop', welcome: 'Welcome', pumpkin_hunt: 'Pumpkin found', pumpkin_bonus: 'Pumpkin hunt completed' };
 
 const isPhoto = (avatar: string | null) => !!avatar?.startsWith('img:');
 const isAnimated = (avatar: string | null) => !!avatar && (avatar.startsWith('anim:') || avatar.startsWith('char:'));

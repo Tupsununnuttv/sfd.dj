@@ -31,6 +31,7 @@ class UserAchievements
             'friends' => Friendship::where('status', 'accepted')->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('friend_id', $user->id))->count(),
             'referrals' => $user->referrals()->count(),
             'messages' => ChatMessage::where('user_id', $user->id)->where('type', 'user')->count(),
+            'pumpkins' => PumpkinHunt::bestProgress($user),
         ];
         $roomCount ??= $user->rooms()->count();
         $customPlaylistCount ??= $user->playlists()->where('kind', 'custom')->count();
@@ -44,6 +45,7 @@ class UserAchievements
     private static function build(array $stats, int $rooms, int $playlists): array
     {
         $list = [
+            ['pumpkin-hunter', 'Pumpkin hunter', 'Find all 20 pumpkins in one Halloween hunt', '🎃', $stats['pumpkins'], PumpkinHunt::TOTAL],
             ['first-play', 'First play', 'Have a song played in a room', '🎧', $stats['songs_played'], 1],
             ['dj-10', 'Regular DJ', 'Have 10 songs played', '🎚️', $stats['songs_played'], 10],
             ['dj-25', 'Finding the groove', 'Have 25 songs played', '🎶', $stats['songs_played'], 25],

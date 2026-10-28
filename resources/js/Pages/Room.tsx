@@ -37,7 +37,8 @@ import { invalidateProfile } from '@/lib/profileCache';
 import { withDefaults } from '@/lib/prefs';
 import { EMPTY_ROOM_RELEASES, type RoomReleaseState } from '@/lib/roomReleases';
 import { saveCompactPreference, useCompactPreferences } from '@/lib/compactPreferences';
-import RoomPlayer from '@/lib/roomPlayer';
+import RoomPlayer, { type RoomPlayerProblem } from '@/lib/roomPlayer';
+import { PumpkinPerch } from '@/Components/PumpkinHunt';
 import { isSoundCloud } from '@/lib/soundcloud';
 import { discordProxy } from '@/lib/discordActivity';
 import { openDiscordExternal } from '@/lib/discordSdk';
@@ -46,7 +47,7 @@ import { PageProps, RoleInfo } from '@/types';
 import { roomUserWeight, sortRoomUsersByWeight } from '@/lib/roomUserSort';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { echo } from '@laravel/echo-react';
-import { Disc3, Ellipsis, Search, ExternalLink, Footprints, Gavel, MessageCircle, ShieldCheck, UserCheck, VolumeX, X } from 'lucide-react';
+import { Disc3, Ellipsis, Search, ExternalLink, Footprints, Gavel, MessageCircle, ShieldCheck, UserCheck, X } from 'lucide-react';
 import { FormEvent, lazy, ReactNode, Suspense, useEffect, useRef, useState } from 'react';
 
 const GrabDialog = lazy(() => import('@/Components/GrabDialog'));
@@ -290,7 +291,12 @@ export default function Room({
     const [mention, setMention] = useState<{ name: string; n: number } | null>(null);
     // The music starts as soon as you are in the room. A browser that keeps the sound back until you have clicked on the page plays the video muted
     // meanwhile: then this is true, and the first click or key anywhere turns the sound on.
-    const [silenced, setSilenced] = useState(false);
+    const [silenced, updateSilenced] = useState(false);
+    const silencedRef = useRef(false);
+    const setSilenced = (value: boolean) => {
+        silencedRef.current = value;
+        updateSilenced(value);
+    };
     const [playbackOn, setPlaybackOn] = useState(true);
     const playbackOnRef = useRef(playbackOn);
     playbackOnRef.current = playbackOn;
@@ -316,6 +322,10 @@ export default function Room({
     const box = useRef<HTMLDivElement>(null);
     const player = useRef<RoomPlayer | null>(null);
     const [ready, setReady] = useState(false);
+    const [playerAttempt, setPlayerAttempt] = useState(0);
+    const [playerProblem, setPlayerProblem] = useState<RoomPlayerProblem | null>(null);
+    const playerProblemRef = useRef(playerProblem);
+    playerProblemRef.current = playerProblem;
     const [discoveredDuration, setDiscoveredDuration] = useState<{ itemId: number; seconds: number } | null>(null);
     const reportedDuration = useRef<number | null>(null);
     const current = playback.current;
@@ -334,17 +344,26 @@ export default function Room({
     };
     const playbackSync = useRef({ songId: current?.id ?? null, receivedAt: playback.receivedAt, lastSeekAt: 0 });
     const lastResumeAttempt = useRef<{ songId: number; at: number } | null>(null);
-    const resumePlaybackMuted = () => {
+    const resumePlayback = () => {
         const song = currentRef.current;
         const activePlayer = player.current;
-        if (!playbackOnRef.current || !song || !activePlayer || liveRef.current) return;
+        if (!playbackOnRef.current || !song || !activePlayer || liveRef.current || playerProblemRef.current) return;
 
         const now = Date.now();
         if (lastResumeAttempt.current?.songId === song.id && now - lastResumeAttempt.current.at < 2000) return;
         lastResumeAttempt.current = { songId: song.id, at: now };
-        activePlayer.mute?.();
-        activePlayer.playVideo?.();
+        setSilenced(false);
+        activePlayer.setVolume(effectiveVolumeRef.current);
+        activePlayer.unMute();
+        activePlayer.playVideo();
+    };
+    // Only a provider's blocked-playback signal should silence otherwise audible music.
+    const resumePlaybackMuted = () => {
+        const activePlayer = player.current;
+        if (!playbackOnRef.current || !currentRef.current || !activePlayer || liveRef.current || playerProblemRef.current || effectiveVolumeRef.current === 0 || silencedRef.current) return;
         setSilenced(true);
+        activePlayer.mute();
+        activePlayer.playVideo?.();
     };
     const applyBotPresence = (presence: Member & { online: boolean }) => {
         setUsers((currentUsers) => presence.online
@@ -696,7 +715,17 @@ export default function Room({
         player.current = new RoomPlayer(box.current, {
             onReady: () => setReady(true),
             onAutoplayBlocked: resumePlaybackMuted,
+            onError: (problem) => {
+                playerProblemRef.current = problem;
+                setPlayerProblem(problem);
+                setSilenced(false);
+            },
             onStateChange: (e: { data: number }) => {
+                if (e.data === 1) {
+                    playerProblemRef.current = null;
+                    setPlayerProblem(null);
+                    if (effectiveVolumeRef.current === 0 || !player.current?.isMuted()) setSilenced(false);
+                }
                 // 0 = ended. Every client reports it; the server ignores duplicates.
                 if (e.data === 0 && currentRef.current && !guest) {
                     post(route('rooms.skip', room.slug), { item_id: currentRef.current.id, ended: true }).catch(() => {});
@@ -706,7 +735,7 @@ export default function Room({
                     window.setTimeout(() => {
                         const activePlayer = player.current;
                         if (document.visibilityState !== 'visible' || !playbackOnRef.current || currentRef.current?.id !== songId || activePlayer?.getPlayerState?.() !== 2) return;
-                        resumePlaybackMuted();
+                        resumePlayback();
                     }, 750);
                 }
             },
@@ -719,28 +748,37 @@ export default function Room({
             player.current = null;
             setReady(false);
         };
-    }, [room.id]); // eslint-disable-line react-hooks/exhaustive-deps -- by room, not by address: a rename must not restart the player
+    }, [room.id, playerAttempt]); // eslint-disable-line react-hooks/exhaustive-deps -- by room, not by address: a rename must not restart the player
 
     useEffect(() => {
-        if (ready) player.current?.setVolume(effectiveVolume);
+        if (!ready) return;
+        player.current?.setVolume(effectiveVolume);
+        if (effectiveVolume === 0) {
+            player.current?.unMute(); // volume zero already keeps intentional silence
+            setSilenced(false);
+        }
     }, [ready, effectiveVolume, current?.id, playbackOn]);
 
     // Start/stop the video when the song changes, when the player is ready, or when playback is switched on/off.
     useEffect(() => {
         if (!ready || !player.current) return;
+        playerProblemRef.current = null;
+        setPlayerProblem(null);
+        setSilenced(false);
         if (current && playbackOn && !live) {
             const at = () => playback.elapsed + (Date.now() - playback.receivedAt) / 1000;
+            // A muted fallback belongs to one blocked attempt, never to the next song.
+            player.current.setVolume(effectiveVolumeRef.current);
+            player.current.unMute();
             player.current.load(current.youtube_id, at());
 
-            // Not playing after a moment (or playing without sound): the browser wants a click first. Muted it may always play, so it does, from the right second.
+            // Slow loading is not evidence that sound was blocked. Retry without changing audio.
             const t = setTimeout(() => {
+                if (playerProblemRef.current || silencedRef.current) return;
                 const p = player.current;
                 const state = p?.getPlayerState?.();
-                if ((state === 1 || state === 3) && (!p?.isMuted?.() || effectiveVolumeRef.current === 0)) return;
-                p?.mute?.();
-                (state === 1 || state === 3) || p?.load?.(current.youtube_id, at());
-                p?.playVideo?.();
-                setSilenced(true);
+                if (state === 0 || state === 1 || state === 3) return;
+                resumePlayback();
             }, 2500);
             return () => clearTimeout(t);
         } else {
@@ -779,7 +817,7 @@ export default function Room({
             if (document.visibilityState !== 'visible' || !playbackOnRef.current || !currentRef.current) return;
             const state = player.current?.getPlayerState?.();
             if (state === 0 || state === 1 || state === 3) return;
-            resumePlaybackMuted();
+            resumePlayback();
         };
 
         document.addEventListener('visibilitychange', resumeWhenVisible);
@@ -797,7 +835,7 @@ export default function Room({
         if (!returnedToRoom || !ready || !current || !playbackOn) return;
 
         const state = player.current?.getPlayerState?.();
-        if (state !== 0 && state !== 1 && state !== 3) resumePlaybackMuted();
+        if (state !== 0 && state !== 1 && state !== 3) resumePlayback();
     }, [tab, ready, current?.id, playbackOn]);
 
     useEffect(() => {
@@ -826,19 +864,51 @@ export default function Room({
         };
     }, [current?.id, current?.duration, discoveredDuration?.itemId, guest, ready, room.slug]);
 
-    // the first click or key anywhere on the page lets the browser play sound: turn it on
+    // Listen before a blocked event too: the entry click can happen while the API is loading.
     useEffect(() => {
-        if (!silenced) return;
-        const events = ['pointerup', 'keydown', 'touchend'] as const;
+        const events = ['click', 'keydown', 'touchend'] as const;
         const unmute = (e: Event) => {
-            if (navigator.userActivation ? !navigator.userActivation.hasBeenActive : (e as KeyboardEvent).key === 'Escape') return; // Esc does not count as a click
-            player.current?.unMute?.();
-            player.current?.playVideo?.();
-            setSilenced(false);
+            // Keep the explicit button mounted until its click handler can also restore zero volume.
+            if ((e.target as Element | null)?.closest?.('[data-enable-sound], [data-volume]')) return;
+            if (!e.isTrusted || (e as KeyboardEvent).key === 'Escape' || (navigator.userActivation && !navigator.userActivation.isActive)) return;
+            const p = player.current;
+            if (!p || effectiveVolumeRef.current === 0) return;
+            if (!silencedRef.current && p.getPlayerState() === 1) return;
+            // A real gesture must not be throttled by an earlier automatic retry.
+            lastResumeAttempt.current = null;
+            resumePlayback();
         };
         events.forEach((e) => window.addEventListener(e, unmute, true));
         return () => events.forEach((e) => window.removeEventListener(e, unmute, true));
-    }, [silenced]);
+    }, []);
+
+    const changeVolume = (value: number, quiet = false) => {
+        setVolume(value);
+        setMuted(quiet);
+        const level = quiet || previewing ? 0 : value;
+        effectiveVolumeRef.current = level;
+        player.current?.setVolume(level);
+        player.current?.unMute();
+        setSilenced(false);
+        if (level > 0) {
+            lastResumeAttempt.current = null;
+            resumePlayback();
+        }
+    };
+
+    const enableSound = () => {
+        changeVolume(volume > 0 ? volume : 100);
+    };
+    const retryPlayer = () => {
+        playerProblemRef.current = null;
+        setPlayerProblem(null);
+        setSilenced(false);
+        setReady(false);
+        setPlayerAttempt(attempt => attempt + 1);
+    };
+    const playerProblemText = playerProblem?.kind === 'track'
+        ? 'This track could not be played. It may be unavailable or restricted by the music provider.'
+        : playerProblem?.provider === 'soundcloud' ? 'The SoundCloud player could not be loaded.' : 'The YouTube player could not be loaded.';
 
     const typing = Object.entries(typers).filter(([id]) => +id !== user.id && !hiddenAuthors.has(+id)).map(([, n]) => n);
     const typingText =
@@ -961,7 +1031,7 @@ export default function Room({
                     }}
                 />}
 
-                <main style={subscriptionVars(host.cosmetics?.subscription)} data-sub-theme={perk(host.cosmetics?.subscription, 'theme') || undefined} className={`sfd-main relative ${tab === 'room' ? 'flex' : 'hidden md:flex'} min-w-0 flex-1 flex-col ${backgroundClass(room.background)}`}>
+                <main data-pumpkin-room-context style={subscriptionVars(host.cosmetics?.subscription)} data-sub-theme={perk(host.cosmetics?.subscription, 'theme') || undefined} className={`sfd-main relative ${tab === 'room' ? 'flex' : 'hidden md:flex'} min-w-0 flex-1 flex-col ${backgroundClass(room.background)}`}>
                     {!activityGuest && <Live />}
                     <SubscriptionRoomEffects host={host.cosmetics} dj={dj?.cosmetics} songId={current?.id} entranceSounds={prefs.audio.entrance_sounds} />
 
@@ -978,11 +1048,26 @@ export default function Room({
                         duration={current?.duration || (current && discoveredDuration?.itemId === current.id ? discoveredDuration.seconds : 0)}
                         volume={volume}
                         muted={muted}
-                        onVolume={(v) => { setVolume(v); setMuted(false); }}
-                        onMute={() => setMuted(!muted)}
+                        onVolume={(v) => changeVolume(v)}
+                        onMute={() => changeVolume(volume, !muted)}
                         social={activityGuest ? {} : community.social}
                         onDj={(u, anchor) => setCard({ user: u, anchor })}
                     />
+
+                    {!activityGuest && roomReleases.features.includes('pumpkin_hunt') && <div data-pumpkin-room>
+                        <div data-pumpkin-panel />
+                        {[0, 1, 2, 3].map(spot => <PumpkinPerch key={spot} spot={spot} />)}
+                    </div>}
+
+                    {playbackOn && current && !live && (playerProblem || (activityGuest && silenced)) && (
+                        <div role={playerProblem ? 'alert' : 'status'} className="flex shrink-0 flex-wrap items-center justify-center gap-3 border-b border-amber-400/25 bg-amber-500/10 px-4 py-2 text-sm text-amber-100" data-playback-notice>
+                            <p>{playerProblem ? playerProblemText : 'Click to enable sound in Discord.'}</p>
+                            {playerProblem && <span className="text-xs text-amber-200/80">{playerProblem.provider === 'soundcloud' ? 'SoundCloud' : 'YouTube'}{playerProblem.code === undefined ? '' : `: ${playerProblem.code}`}</span>}
+                            <button type="button" data-enable-sound={playerProblem ? undefined : true} onClick={playerProblem ? retryPlayer : enableSound} className="rounded-lg bg-white/15 px-3 py-1.5 font-semibold text-white hover:bg-white/25">
+                                {playerProblem ? 'Retry playback' : 'Enable sound'}
+                            </button>
+                        </div>
+                    )}
 
                     {/* the room: the video on the big screen, the DJ in front of the booth, Woot / Grab / Meh on one side of it and Join Waitlist on the other, everybody else standing until they press Woot or Grab */}
                     <RoomScene
@@ -1030,14 +1115,6 @@ export default function Room({
                                                 <SocialIcon name="youtube" size={15} /> Open on YouTube
                                             </a>
                                         )}
-                                    </div>
-                                )}
-                                {silenced && playbackOn && current && !live && (
-                                    // the browser keeps the sound back until a click: any click does, this one says so
-                                    <div className="absolute inset-x-0 bottom-3 flex justify-center">
-                                            <button onClick={() => { player.current?.unMute?.(); player.current?.playVideo?.(); setMuted(false); setSilenced(false); }} className="unscale flex origin-bottom items-center gap-2 rounded-full bg-black/80 px-4 py-2 text-sm font-semibold text-white shadow-lg ring-1 ring-white/25 hover:bg-violet-600">
-                                                <VolumeX size={16} /> Tap to start playback with sound
-                                        </button>
                                     </div>
                                 )}
                                 {!playbackOn ? (

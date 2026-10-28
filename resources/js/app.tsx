@@ -4,6 +4,7 @@ import { applyRegional, getLanguage, getRegionalSnapshot, loadRegionalLanguage, 
 import { isLanguage } from '@/lib/languages';
 
 import RoomLoading from '@/Components/RoomLoading';
+import PumpkinHunt from '@/Components/PumpkinHunt';
 import WhisperCalls from '@/Components/WhisperCalls';
 import CompactPreferenceNotice from '@/Components/CompactPreferenceNotice';
 import { syncCompactPreferences } from '@/lib/compactPreferences';
@@ -81,7 +82,7 @@ createInertiaApp({
             function LocalizedPage(props: Record<string, unknown>) {
                 useSyncExternalStore(subscribeLanguage, getRegionalSnapshot, () => 'en:0');
                 applyRegional((props as PageProps).auth?.user?.preferences);
-                return <Component {...props} />;
+                return <><Component {...props} /><PumpkinHunt /></>;
             }
             localizedPages.set(name, LocalizedPage);
             return LocalizedPage;

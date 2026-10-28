@@ -33,13 +33,15 @@ Keep **Enable Activities** on and confirm the supported platforms. Enabling Acti
 
 ## Discord Developer Portal: URL Mappings
 
-In application **1563979983582535841**, keep Activities enabled and keep the root mapping:
+For the current no-audio investigation and Estonian setup steps, see [Discord Activity audio](discord-activity-audio-et.md). On 2026-10-27 the deployed room entry passed origin/proxy HTTP checks, while both provider API paths below still returned HTML 404 responses. Player mappings must work before actual playback can be tested.
+
+In application **1563979983582535841**, keep Activities enabled. In **Activities > URL Mappings > Root Mapping**, keep the single root mapping:
 
 | Prefix | Target |
 | - | - |
 | `/` | `sfd-dj.eu` |
 
-For provider scripts, players and artwork, add these exact mappings. The source of truth is `config/discord-activity.php`; the same public mapping list is sent to the frontend.
+On the same page, add these exact mappings under **Proxy Path Mappings** for provider scripts, players and artwork. Do not replace Root Mapping with a provider target. The source of truth is `config/discord-activity.php`; the same public mapping list is sent to the frontend.
 
 | Prefix | Target |
 | - | - |
@@ -53,6 +55,8 @@ For provider scripts, players and artwork, add these exact mappings. The source 
 | `/_discord/discord-cdn` | `cdn.discordapp.com` |
 
 Targets have no `https://` prefix. These are named subdomain substitutions, not literal asterisks. No arbitrary reverse-proxy endpoint is added to the Laravel server.
+
+The audio correction creates the mapped YouTube iframe explicitly and passes only the proxy origin as the player API `host`. A host containing the `/_discord/youtube` path fails the API's `postMessage` origin checks. The room also exposes **Enable sound**, provider error messages and **Retry playback** to rebuild a failed player. These changes still require the Proxy Path Mappings above and real-client playback validation.
 
 **Media validation limit:** these mappings prepare the requests made by this app and its player APIs. An external provider's nested document can use additional endpoints or reject a proxied embed. The application does not rewrite provider HTML, strip provider protections, download tracks or extract media URLs. Actual YouTube/SoundCloud/Twitch playback must be tested in the real Discord client after the mappings are configured; it has not been verified there. A provider-side restriction cannot be fixed by changing Laravel Cloud's X-Content-Type-Options. Browser autoplay may require a click to enable sound.
 
@@ -92,6 +96,8 @@ The real proxy paths `/_discord/youtube/iframe_api` and `/_discord/soundcloud/pl
 Twelve focused Laravel tests cover direct HTTP-200 entry at root, `/discord` and `/dashboard`, exact `/discord` without cookies, safe relative renamed-room redirects with SDK parameters, forced guest mode even for a logged-in owner, stale website-session isolation, unchanged normal stale-session rejection, private-room denial, blocked write/login/token/API actions, normal website session preservation, guest heartbeats, the public-room fallback and unchanged ordinary homepage behavior.
 
 An isolated Chromium test exercises the production bundle in a stand-in Discord parent: direct room entry, no sidebar/account/DJ controls, rejected message submission, guest heartbeat and HTTP snapshots, changing rooms inside the same iframe, mobile sizing and SDK reconnection after refresh. Provider scripts/iframes are stand-ins; real provider sound and the real Discord client remain unverified.
+
+The 2026-10-27 audio checks also cover provider-script 404 detection, retrying both players, track error feedback, an explicit sound-enabling click including restoration from zero volume, and ignoring errors/autoplay events from an inactive YouTube player. A separate test uses the actual RoomPlayer source and official YouTube loader/widget API with a protocol stand-in for the provider iframe: the mapped embed URL is preserved, the API accepts `onReady`, and volume/current-position playback commands reach that iframe. These checks do not prove streaming or audio decoding in Discord. Production frontend build and TypeScript checks pass.
 
 The complete test archive remains unavailable after the earlier archive incident. Focused test sources and captures are kept separately outside the project and do not replace that archive. The website's `tests`, `tmp` and `test-results` directories remain absent after verification.
 

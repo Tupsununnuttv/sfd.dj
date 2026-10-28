@@ -46,7 +46,7 @@ Pelgalt päiste muutmine ei paigalda uut koodi. Pelgalt vana commiti uus deploy 
 1. Ava [rakendus 1563979983582535841](https://discord.com/developers/applications/1563979983582535841).
 2. Ava **Activities → Settings** ja kontrolli, et **Enable Activities** oleks sees.
 3. Kontrolli lubatud platvorme. Kui soovid telefoni tuge, peab vastav mobiiliplatvorm olema samuti lubatud.
-4. Ava **Activities → URL Mappings**. Põhikirje peab olema:
+4. Ava **Activities → URL Mappings**. Jaotises **Root Mapping** peab ainus põhikirje olema:
 
    | Prefix | Target |
    | - | - |
@@ -54,7 +54,7 @@ Pelgalt päiste muutmine ei paigalda uut koodi. Pelgalt vana commiti uus deploy 
 
    Target on domeen ilma `https://` ja ilma `/rooms/sfddj` lõputa. Õige ruumi valib serveri kood.
 
-5. Lisa muusika, mängijate ja piltide jaoks järgmised kirjed ning salvesta:
+5. Keri samal lehel jaotisse **Proxy Path Mappings**. Lisa sinna muusika, mängijate ja piltide jaoks järgmised kirjed ning salvesta. Hoia Root Mapping oma veebilehele suunatuna:
 
    | Prefix | Target |
    | - | - |
@@ -75,9 +75,11 @@ Pelgalt päiste muutmine ei paigalda uut koodi. Pelgalt vana commiti uus deploy 
 2. Testija saab Discordi **User Settings → Advanced → Application Test Mode** kaudu aktiveerida ID `1563979983582535841`. Arendaja saab kasutada Developer Mode'i.
 3. Sulge vana SFD.DJ Activity täielikult ja käivita see häälekanalis uuesti.
 4. Nähtavale peab tulema SFD.DJ ruumi stseen, mängija ja vestluse ajalugu ning külalise olek. Avalehte ega vana Live rooms kataloogi ei pea alguses ilmuma.
-5. Proovi helinuppu ja loo vahetumist. Vajaduse korral luba heli ühe klõpsuga. Proovi värskendamist ja kahe eri kasutaja üheaegset liitumist.
+5. Vajuta vajadusel **Enable sound** ning proovi helinuppu ja loo vahetumist. Pleieri vea järel kontrolli mapping'uid ja kasuta **Retry playback**. Proovi värskendamist ja kahe eri kasutaja üheaegset liitumist.
 
 Muusika puhul tuleb päriselt kontrollida mõlemat teenust. URL Mappings valmistab vajalikud päringud ette, kuid teenuse enda iframe võib kasutada lisadomeene või proxy esitust piirata. Selles paranduses ei eemaldata teenuste kaitseid ega laadita muusikat serveri kaudu alla.
+
+Heli paranduse kood annab YouTube'i API `host` väljale ainult proxy päritolu ja hoiab `/_discord/youtube` tee iframe'i aadressis. See parandab API sõnumite päritolukontrolli; päris heli tuleb siiski Discordis proovida. Täpsem juhend: [Discord Activity muusika ja heli](discord-activity-audio-et.md).
 
 ## 6. Tee Activity kõigile kättesaadavaks
 

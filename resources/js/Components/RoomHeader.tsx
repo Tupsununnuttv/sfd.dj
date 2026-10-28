@@ -121,6 +121,7 @@ export default function RoomHeader({ room, host, listening, dj, title, live, pla
             </div>
 
             <div className="flex min-w-0 shrink-0 items-center justify-end gap-2">
+                <div data-pumpkin-control />
                 {Object.keys(social).length > 0 && (
                     <nav aria-label="Our social media" className="hidden shrink-0 items-center gap-0.5 rounded-xl border border-white/10 bg-white/4 p-0.5 2xl:flex">
                         {Object.entries(social).map(([key, url]) => (

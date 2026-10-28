@@ -14,18 +14,30 @@ export const PLAYING = 1;
 export const PAUSED = 2;
 export const BUFFERING = 3;
 
-/** If a track has not started this long after it was loaded, the browser is keeping the sound back until a click: say "paused", as a YouTube player does. */
+/** Allow a ready widget time to start before reporting that playback needs a gesture. */
 const BLOCKED_AFTER_MS = 6000;
 /** Further than this from where the room is (seconds), and the track jumps there. */
 const DRIFT_SECONDS = 3;
+const READY_TIMEOUT_MS = 15000;
 
 let widgetApi: Promise<any> | null = null;
 const loadWidgetApi = (): Promise<any> => (widgetApi ??= new Promise((resolve, reject) => {
     if (window.SC?.Widget) return resolve(window.SC);
     const script = document.createElement('script');
+    const timer = window.setTimeout(() => {
+        script.remove();
+        reject(new Error('The SoundCloud player did not start.'));
+    }, READY_TIMEOUT_MS);
     script.src = discordResourceUrl('https://w.soundcloud.com/player/api.js');
-    script.onload = () => (window.SC?.Widget ? resolve(window.SC) : reject(new Error('The SoundCloud player did not start.')));
-    script.onerror = () => reject(new Error('The SoundCloud player could not be loaded.'));
+    script.onload = () => {
+        window.clearTimeout(timer);
+        window.SC?.Widget ? resolve(window.SC) : reject(new Error('The SoundCloud player did not start.'));
+    };
+    script.onerror = () => {
+        window.clearTimeout(timer);
+        script.remove();
+        reject(new Error('The SoundCloud player could not be loaded.'));
+    };
     document.head.appendChild(script);
 })).catch((error) => {
     widgetApi = null; // the next track tries again
@@ -56,8 +68,9 @@ export default class SoundCloudPlayer {
     private loads = 0; // counts the loads: a late answer about an older track is dropped
     private askedAt = 0; // when the widget was last asked for the length (ms)
     private dead = false;
+    private readyTimer = 0;
 
-    constructor(private mount: HTMLElement, private onState: (state: number) => void, private target: () => number) {}
+    constructor(private mount: HTMLElement, private onState: (state: number) => void, private target: () => number, private onError?: (kind: 'load' | 'timeout' | 'track') => void, private onAutoplayBlocked?: () => void) {}
 
     load(id: string) {
         this.wanted = id;
@@ -70,7 +83,11 @@ export default class SoundCloudPlayer {
         this.askedAt = 0;
         this.permalink = null;
         this.state = BUFFERING;
-        this.armBlocked();
+        window.clearTimeout(this.blocked);
+        window.clearTimeout(this.readyTimer);
+        this.readyTimer = window.setTimeout(() => {
+            if (!this.dead && !this.ready) this.onError?.('timeout');
+        }, READY_TIMEOUT_MS);
 
         if (this.widget) {
             const load = this.loads;
@@ -102,6 +119,7 @@ export default class SoundCloudPlayer {
             widget.bind(E.PLAY, (e: any) => this.mine(e) && this.played(e));
             widget.bind(E.PAUSE, (e: any) => this.mine(e) && this.state === PLAYING && this.set(PAUSED));
             widget.bind(E.FINISH, (e: any) => this.mine(e) && this.set(ENDED));
+            widget.bind(E.ERROR, () => { if (!this.dead) this.onError?.('track'); });
             widget.bind(E.PLAY_PROGRESS, (e: any) => {
                 if (this.state !== PLAYING) return; // the track before keeps reporting for a moment after a new one is loaded
                 this.position = (e?.currentPosition ?? 0) / 1000;
@@ -109,8 +127,11 @@ export default class SoundCloudPlayer {
                 if (!this.duration) this.askDuration();
             });
         }).catch(() => {
+            if (this.dead) return;
             this.starting = false;
+            window.clearTimeout(this.readyTimer);
             this.set(PAUSED);
+            this.onError?.('load');
         });
     }
 
@@ -123,8 +144,12 @@ export default class SoundCloudPlayer {
     private loaded(load: number) {
         if (this.dead || load !== this.loads || !this.widget) return;
         this.ready = true;
+        window.clearTimeout(this.readyTimer);
         this.applyVolume();
-        if (this.playingWanted) this.widget.play();
+        if (this.playingWanted) {
+            this.armBlocked();
+            this.widget.play();
+        }
     }
 
     /** What the widget knows once the track plays: its length, and where it lives on SoundCloud. */
@@ -152,7 +177,14 @@ export default class SoundCloudPlayer {
 
     private armBlocked() {
         window.clearTimeout(this.blocked);
-        this.blocked = window.setTimeout(() => this.state === BUFFERING && this.set(PAUSED), BLOCKED_AFTER_MS);
+        this.blocked = window.setTimeout(() => {
+            if (this.dead || !this.ready || !this.playingWanted || this.state !== BUFFERING) return;
+            // Distinguish a blocked start from an ordinary pause, which should resume with sound.
+            if (this.onAutoplayBlocked) {
+                this.state = PAUSED;
+                this.onAutoplayBlocked();
+            } else this.set(PAUSED);
+        }, BLOCKED_AFTER_MS);
     }
 
     private set(state: number) {
@@ -165,7 +197,7 @@ export default class SoundCloudPlayer {
         this.playingWanted = true;
         if (this.state !== PLAYING) {
             this.state = BUFFERING;
-            this.armBlocked();
+            if (this.ready) this.armBlocked();
         }
         this.applyVolume();
         if (this.ready) this.widget?.play();
@@ -175,6 +207,7 @@ export default class SoundCloudPlayer {
     stop() {
         this.playingWanted = false;
         window.clearTimeout(this.blocked);
+        window.clearTimeout(this.readyTimer);
         this.state = UNSTARTED;
         this.widget?.pause();
     }
@@ -225,6 +258,7 @@ export default class SoundCloudPlayer {
     destroy() {
         this.dead = true;
         window.clearTimeout(this.blocked);
+        window.clearTimeout(this.readyTimer);
         this.frame?.remove();
         this.frame = null;
         this.widget = null;

@@ -52,6 +52,23 @@ const origin = () => (typeof window === 'undefined' ? 'https://sfd-dj.eu' : wind
 
 const sections: Section[] = [
     {
+        id: 'pumpkin-hunt',
+        icon: '🎃',
+        title: 'Halloween pumpkin hunt',
+        summary: 'Find 20 hidden pumpkins and earn 250 SFD Coins.',
+        body: (
+            <>
+                <P>The pumpkin hunt runs from 20 October through 7 November. Sign in and look for glowing pumpkin heads around Rooms, Community, Events, the Avatar shop and Playlists. Their hiding places vary between accounts, and each person has their own collection.</P>
+                <List items={[
+                    'Click a pumpkin or focus it and press Enter to collect it. Each of the 20 pumpkins gives 5 SFD Coins. Find all 20 for another 150 coins, making 250 in total.',
+                    'Open the Pumpkin hunt counter to see your collection and clues for pages you have not finished. Your finds save to your account across visits and devices; refreshing or clicking again does not award a second reward.',
+                    'Finishing the hunt unlocks the Pumpkin hunter achievement in My Stuff. The achievement stays after Halloween, while a new year brings a fresh collection.',
+                    'Participating rooms offer extra places to find the same pumpkins. Verified, Partnered or Featured rooms receive this room feature three days early; Official alone does not qualify. All 20 can also be found outside rooms.',
+                ]} />
+            </>
+        ),
+    },
+    {
         id: 'start',
         icon: '🚀',
         title: 'Getting started',

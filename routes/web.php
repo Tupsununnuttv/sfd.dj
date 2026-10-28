@@ -18,6 +18,7 @@ use App\Http\Controllers\MyStuffController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicStatsController;
+use App\Http\Controllers\PumpkinHuntController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\RoomEmojiController;
 use App\Http\Controllers\RoomModerationController;
@@ -73,6 +74,11 @@ Route::get('/version', fn () => response()->json(['version' => Inertia::getVersi
 // is this username free? (the register and profile forms ask while you type)
 Route::get('/api/username-available', UsernameController::class)->middleware('throttle:40,1')->name('username.available');
 Route::get('/api/site-stats', PublicStatsController::class)->middleware('throttle:120,1,site-stats')->name('site.stats');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/api/pumpkin-hunt', [PumpkinHuntController::class, 'show'])->middleware('throttle:60,1')->name('pumpkin-hunt.show');
+    Route::post('/api/pumpkin-hunt/claim', [PumpkinHuntController::class, 'claim'])->middleware('throttle:30,1')->name('pumpkin-hunt.claim');
+});
 
 Route::get('/two-factor-challenge', [TwoFactorController::class, 'challenge'])->name('two-factor.challenge');
 Route::post('/two-factor-challenge', [TwoFactorController::class, 'verify'])->middleware('throttle:6,1,two-factor-verify');
