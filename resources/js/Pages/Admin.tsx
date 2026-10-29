@@ -58,7 +58,7 @@ export default function Admin(props: AdminProps) {
     ] as const).filter((t) => perms.includes(needs[t.key]));
 
     // the tab you are on survives a refresh: it is kept in the address (#Users)
-    const fromHash = (): Tab => { const h = decodeURIComponent(window.location.hash.slice(1)) as Tab; return tabs.some((t) => t.key === h) ? h : 'Overview'; };
+    const fromHash = (): Tab => { const h = decodeURIComponent(window.location.hash.slice(1)) as Tab; return tabs.some((t) => t.key === h) ? h : tabs[0].key; };
     const [tab, setTabState] = useState<Tab>(fromHash);
     const setTab = (t: Tab) => { setTabState(t); history.replaceState(null, '', `#${encodeURIComponent(t)}`); };
     const [refreshing, setRefreshing] = useState(false);

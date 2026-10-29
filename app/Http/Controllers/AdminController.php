@@ -42,13 +42,16 @@ class AdminController extends Controller
 {
     public function index(Request $request): Response
     {
-        $actor = $this->allow($request, 'admin.access');
+        $actor = $request->user();
+        // the reviewers of staff applications who may not open the rest of the panel see only its Applications tab
+        abort_unless($actor->hasPermission('admin.access') || $actor->hasPermission('applications.manage'), 403);
+        $full = $actor->hasPermission('admin.access');
         $q = trim((string) $request->query('q'));
         $role = Role::tryFrom((string) $request->query('role'))?->value;
         $type = in_array($request->query('type'), ['bots', 'online', 'members'], true) ? $request->query('type') : null;
         $sort = in_array($request->query('sort'), ['newest', 'oldest', 'xp', 'seen'], true) ? $request->query('sort') : 'newest';
 
-        return Inertia::render('Admin', [
+        $props = [
             'q' => $q,
             'filters' => ['role' => $role, 'type' => $type, 'sort' => $sort],
             'stats' => fn () => [
@@ -113,7 +116,13 @@ class AdminController extends Controller
                 'test' => $request->session()->get('mail_test'),
             ] : null,
             'myIp' => $request->ip(),
-        ]);
+        ];
+        if (! $full) {
+            // nothing about the members, rooms or settings: only what the page itself needs to draw the Applications tab
+            $props = array_merge($props, array_fill_keys(['overview', 'users', 'rooms', 'counts', 'openTickets', 'matrix', 'announcements', 'myIp'], null));
+        }
+
+        return Inertia::render('Admin', $props);
     }
 
     /** The first tab: numbers that matter today, two weeks of activity, what just happened, and whether the site is set up properly. */

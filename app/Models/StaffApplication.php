@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\StaffApplicationForm;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Validation\ValidationException;
 
@@ -31,6 +32,23 @@ class StaffApplication extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    /** The replies between staff and the applicant, oldest first. */
+    public function messages(): HasMany
+    {
+        return $this->hasMany(StaffApplicationMessage::class)->orderBy('id');
+    }
+
+    /** Add a reply. Staff write as staff; the applicant writes about their own application. */
+    public function reply(User $from, string $body, bool $fromStaff): StaffApplicationMessage
+    {
+        return $this->messages()->create(['user_id' => $from->id, 'from_staff' => $fromStaff, 'body' => $body]);
+    }
+
+    private function thread(): array
+    {
+        return $this->messages()->with('user:id,name,username')->get()->map->payload()->all();
     }
 
     /** The applicant's open application, if they have one. */
@@ -126,6 +144,7 @@ class StaffApplication extends Model
                 'value' => (string) ($this->answers[$field['key']] ?? ''),
             ])->all(),
             'staff_notes' => $this->staff_notes,
+            'messages' => $this->thread(),
             'reviewed_by' => $this->reviewerName(),
             'reviewed_at' => $this->reviewed_at?->toIso8601String(),
         ];
@@ -140,6 +159,7 @@ class StaffApplication extends Model
             'position' => $this->position,
             'submitted_at' => $this->created_at->toIso8601String(),
             'decided_at' => in_array($this->status, self::OPEN, true) ? null : $this->reviewed_at?->toIso8601String(),
+            'messages' => $this->thread(),
         ];
     }
 }

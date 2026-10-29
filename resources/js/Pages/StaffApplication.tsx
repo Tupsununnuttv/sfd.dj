@@ -23,6 +23,7 @@ interface Application {
     position: string;
     submitted_at: string;
     decided_at: string | null;
+    messages: { id: number; from_staff: boolean; who: string; body: string; at: string }[];
 }
 
 interface Props {
@@ -68,6 +69,41 @@ function StatusCard({ application, notice }: { application: Application; notice?
                     <p className="mt-3 text-xs text-neutral-400">{application.position} · {`Submitted on ${when(application.submitted_at)}`}{application.decided_at && <> · {`Decided on ${when(application.decided_at)}`}</>}</p>
                 </div>
             </div>
+        </section>
+    );
+}
+
+/** The replies between the staff and the applicant, and a box to answer them. */
+function Replies({ application }: { application: Application }) {
+    const { data, setData, post, processing, errors, reset } = useForm({ body: '' });
+    const when = (iso: string) => formatDateTime(iso, { dateStyle: 'medium', timeStyle: 'short' });
+    const send = (event: FormEvent) => {
+        event.preventDefault();
+        if (!data.body.trim()) return;
+        post(route('staff-application.reply'), { preserveScroll: true, onSuccess: () => reset() });
+    };
+
+    return (
+        <section className="rounded-2xl border border-white/10 bg-black p-5 sm:p-6">
+            <h2 className="text-sm font-semibold text-white">Replies</h2>
+            {application.messages.length === 0
+                ? <p className="mt-1 text-sm text-neutral-400">When staff reply to your application, you see it here. You can also write to them.</p>
+                : (
+                    <ul className="mt-3 space-y-2">
+                        {application.messages.map((m) => (
+                            <li key={m.id} className={`rounded-lg px-3 py-2 text-sm ${m.from_staff ? 'mr-8 bg-violet-500/10' : 'ml-8 bg-white/5'}`}>
+                                <p className="text-[11px] text-neutral-500">{m.from_staff ? `${m.who} · SFD-DJ.EU staff` : 'You'} · {when(m.at)}</p>
+                                <p className="whitespace-pre-wrap wrap-break-word text-neutral-100">{m.body}</p>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            <form onSubmit={send} className="mt-3">
+                <label htmlFor="reply" className="sr-only">Write to the staff</label>
+                <textarea id="reply" value={data.body} onChange={(e) => setData('body', e.target.value)} maxLength={2000} rows={3} placeholder="Write to the staff" aria-invalid={Boolean(errors.body)} aria-describedby={errors.body ? 'reply-error' : undefined} className={`${input(Boolean(errors.body))} resize-y`} />
+                {errors.body && <p id="reply-error" role="alert" className="mt-1.5 text-sm text-red-400">{errors.body}</p>}
+                <button type="submit" disabled={processing || !data.body.trim()} className="mt-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-50">{processing ? 'Sending…' : 'Send reply'}</button>
+            </form>
         </section>
     );
 }
@@ -179,6 +215,7 @@ export default function StaffApplication({ sections, fields, application, discor
             <PageHeader crumbs={[["Community"], ["Staff application"]]} title="Staff application" text="Tell us how you would help keep SFD-DJ.EU welcoming and running smoothly." />
             <section className="mx-auto max-w-3xl space-y-6 px-6 pb-16">
                 {application && <StatusCard application={application} notice={notice} />}
+                {application && <Replies application={application} />}
                 {errors.application && <p role="alert" className="border-l-2 border-red-400 pl-4 text-sm text-red-200">{errors.application}</p>}
 
                 {links.length > 0 && (

@@ -18,7 +18,7 @@ final class StaffApplicationForm
         'confirmation' => 'Final confirmation',
     ];
 
-    public const POSITIONS = ['Developer', 'Mobile Dev', 'Admin', 'Brand Ambassador', 'Site Moderator'];
+    public const POSITIONS = ['Developer', 'Mobile Dev', 'Admin', 'Lead Moderator', 'Brand Ambassador', 'Site Moderator', 'Moderator'];
 
     private const YES_NO = ['Yes', 'No'];
 

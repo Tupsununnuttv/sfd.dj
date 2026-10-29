@@ -137,6 +137,7 @@ Route::middleware(['auth', 'verified', 'throttle:30,1'])->group(function () {
 Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function () {
     Route::get('/staff/apply', [StaffApplicationController::class, 'create'])->name('staff-application.create');
     Route::post('/staff/apply', [StaffApplicationController::class, 'store'])->middleware('throttle:10,60')->name('staff-application.store');
+    Route::post('/staff/apply/reply', [StaffApplicationController::class, 'reply'])->middleware('throttle:20,10')->name('staff-application.reply');
 
     Route::get('/playlists', [PlaylistController::class, 'index'])->name('playlists');
     Route::get('/selfbots', [SelfDjBotController::class, 'index'])->name('selfbots');
@@ -235,6 +236,7 @@ Route::middleware(['auth', 'verified', EnsureRoomAccess::class])->group(function
     Route::get('/admin/applications', [StaffApplicationReviewController::class, 'index'])->name('admin.applications.index');
     Route::get('/admin/applications/{application}', [StaffApplicationReviewController::class, 'show'])->whereNumber('application')->name('admin.applications.show');
     Route::patch('/admin/applications/{application}', [StaffApplicationReviewController::class, 'update'])->whereNumber('application')->middleware('throttle:60,1')->name('admin.applications.update');
+    Route::post('/admin/applications/{application}/reply', [StaffApplicationReviewController::class, 'reply'])->whereNumber('application')->middleware('throttle:60,1')->name('admin.applications.reply');
     Route::get('/admin', [AdminController::class, 'index'])->name('admin');
     Route::patch('/admin/users/{user}/roles', [AdminController::class, 'updateRoles'])->name('admin.roles');
     Route::patch('/admin/users/{user}/awards', [AdminController::class, 'updateAwards'])->name('admin.awards');

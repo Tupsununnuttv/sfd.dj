@@ -14,11 +14,20 @@ interface Row {
     submitted_at: string;
 }
 
+interface Message {
+    id: number;
+    from_staff: boolean;
+    who: string;
+    body: string;
+    at: string;
+}
+
 interface Detail extends Row {
     applicant_account: { id: number; name: string; username: string | null; joined: string } | null;
     discord_id: string | null;
     answers: { number: number; section: string; label: string; value: string }[];
     staff_notes: string | null;
+    messages: Message[];
     reviewed_by: string | null;
     reviewed_at: string | null;
 }
@@ -41,7 +50,7 @@ const select = 'rounded-md border-neutral-700 bg-neutral-800 text-sm text-neutra
 const field = `w-full ${select} placeholder-neutral-500`;
 const time = (iso: string) => formatDateTime(iso, { dateStyle: 'medium', timeStyle: 'short' });
 
-/** Admin panel → Applications: every staff application with its 15 answers. Staff move it through the review, accept or reject it, and keep private notes. */
+/** Admin panel → Applications: every staff application with its 15 answers. Staff move it through the review, accept or reject it, reply to the applicant and keep private notes. */
 export default function ApplicationsPanel() {
     const [list, setList] = useState<List | null>(null);
     const [status, setStatus] = useState<Status | ''>('');
@@ -49,6 +58,7 @@ export default function ApplicationsPanel() {
     const [openId, setOpenId] = useState<number | null>(() => Number(new URLSearchParams(window.location.search).get('application')) || null);
     const [detail, setDetail] = useState<Detail | null>(null);
     const [notes, setNotes] = useState('');
+    const [reply, setReply] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
@@ -67,6 +77,7 @@ export default function ApplicationsPanel() {
     useEffect(() => {
         if (openId === null) { setDetail(null); return; }
         setMessage('');
+        setReply('');
         getJson<Detail>(route('admin.applications.show', openId)).then((d) => { setDetail(d); setNotes(d.staff_notes ?? ''); }).catch((e: Error) => setError(e.message));
     }, [openId]);
 
@@ -76,6 +87,16 @@ export default function ApplicationsPanel() {
         setError('');
         sendJson<{ application: Detail; notice: string | null }>('PATCH', route('admin.applications.update', detail.id), data)
             .then((r) => { setDetail(r.application); setNotes(r.application.staff_notes ?? ''); setMessage(r.notice ?? (data.status ? `Marked ${list?.statuses[data.status]}.` : 'Notes saved.')); return load(); })
+            .catch((e: Error) => setError(e.message))
+            .finally(() => setBusy(false));
+    };
+
+    const sendReply = () => {
+        if (!detail || busy || !reply.trim()) return;
+        setBusy(true);
+        setError('');
+        sendJson<{ application: Detail }>('POST', route('admin.applications.reply', detail.id), { body: reply })
+            .then((r) => { setDetail(r.application); setReply(''); })
             .catch((e: Error) => setError(e.message))
             .finally(() => setBusy(false));
     };
@@ -161,6 +182,28 @@ export default function ApplicationsPanel() {
                                     </dl>
                                 </div>
                             ))}
+
+                            <div>
+                                <h3 className="mb-2 border-b border-neutral-800 pb-1 text-xs font-bold uppercase tracking-wider text-neutral-500">Replies to the applicant</h3>
+                                {detail.messages.length === 0 && <p className="text-sm text-neutral-500">No replies yet.</p>}
+                                <ul className="space-y-2">
+                                    {detail.messages.map((m) => (
+                                        <li key={m.id} className={`rounded-lg px-3 py-2 text-sm ${m.from_staff ? 'ml-8 bg-violet-500/10' : 'mr-8 bg-white/5'}`}>
+                                            <p className="text-[11px] text-neutral-500">{m.from_staff ? `${m.who} (staff)` : `${m.who} (applicant)`} · {time(m.at)}</p>
+                                            <p className="whitespace-pre-wrap wrap-break-word text-neutral-100">{m.body}</p>
+                                        </li>
+                                    ))}
+                                </ul>
+                                {detail.applicant_account ? (
+                                    <>
+                                        <label htmlFor="application-reply" className="sr-only">Reply to {detail.applicant}</label>
+                                        <textarea id="application-reply" value={reply} onChange={(e) => setReply(e.target.value)} maxLength={2000} rows={3} placeholder={`Reply to ${detail.applicant}: they read it on their Staff application page.`} className={`mt-3 ${field}`} />
+                                        <button disabled={busy || !reply.trim()} onClick={sendReply} className="mt-2 rounded-md bg-violet-600 px-4 py-1.5 text-sm font-semibold hover:bg-violet-500 disabled:opacity-50">Send reply</button>
+                                    </>
+                                ) : (
+                                    <p className="mt-2 text-sm text-neutral-500">This person applied from Discord without an SFD-DJ.EU account, so they cannot read replies here: answer them on Discord.</p>
+                                )}
+                            </div>
 
                             <div>
                                 <label htmlFor="staff-notes" className="mb-1 block text-xs font-bold uppercase tracking-wider text-neutral-500">Private staff notes</label>

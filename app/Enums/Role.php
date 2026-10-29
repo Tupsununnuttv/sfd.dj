@@ -200,8 +200,9 @@ enum Role: string
             self::Developer->value => [...$staff, 'maintenance.toggle', 'email.manage'],
             self::Admin->value => $staff,
             self::LeadModerator->value => ['admin.access', ...$account, 'support.manage', 'applications.manage', 'rooms.moderate', 'ipbans.manage', 'devicebans.manage'],
-            self::Moderator->value => ['rooms.moderate'],
-            self::SiteModerator->value => ['rooms.moderate', 'ipbans.manage', 'devicebans.manage'],
+            self::BrandAmbassador->value => ['applications.manage'],
+            self::Moderator->value => ['rooms.moderate', 'applications.manage'],
+            self::SiteModerator->value => ['rooms.moderate', 'ipbans.manage', 'devicebans.manage', 'applications.manage'],
             self::Promoter->value => ['events.manage'],
         ];
     }

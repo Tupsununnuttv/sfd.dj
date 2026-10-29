@@ -42,4 +42,19 @@ class StaffApplicationController extends Controller
 
         return to_route('staff-application.create')->with('staff_application_notice', 'Your application was sent to the SFD-DJ.EU staff team.');
     }
+
+    /** The applicant answers the staff under their latest application. */
+    public function reply(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $data = $request->validate(['body' => ['required', 'string', 'max:2000']]);
+        $application = StaffApplication::where('user_id', $user->id)->latest('id')->first();
+        if (! $application) {
+            throw ValidationException::withMessages(['body' => 'Send an application first.']);
+        }
+
+        $application->reply($user, trim($data['body']), false);
+
+        return to_route('staff-application.create');
+    }
 }

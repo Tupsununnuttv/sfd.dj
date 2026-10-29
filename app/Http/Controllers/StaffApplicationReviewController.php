@@ -56,6 +56,18 @@ class StaffApplicationReviewController extends Controller
         return response()->json(['application' => $application->detail(), 'notice' => $note]);
     }
 
+    /** A reply the applicant reads on their Staff application page. */
+    public function reply(Request $request, StaffApplication $application): JsonResponse
+    {
+        $staff = $this->staff($request);
+        $data = $request->validate(['body' => ['required', 'string', 'max:2000']]);
+        abort_unless($application->user_id, 422, 'This person applied from Discord without an SFD-DJ.EU account, so they cannot read replies here: answer them on Discord.');
+
+        $application->reply($staff, trim($data['body']), true);
+
+        return response()->json(['application' => $application->detail()]);
+    }
+
     private function staff(Request $request)
     {
         abort_unless($request->user()?->hasPermission('applications.manage'), 403);

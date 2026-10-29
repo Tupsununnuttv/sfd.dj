@@ -47,7 +47,8 @@ return [
         'guild_id' => env('DISCORD_GUILD_ID'),
         'role_prefix' => env('DISCORD_ROLE_PREFIX', 'SFD-DJ.EU | '),
         'member_role_id' => env('DISCORD_MEMBER_ROLE_ID'),
-        'staff_applications_channel_id' => env('DISCORD_STAFF_APPLICATIONS_CHANNEL_ID'),
+        // #application-form in the SFD-DJ.EU server; the live site has no .env file, so the channel works without a variable there.
+        'staff_applications_channel_id' => env('DISCORD_STAFF_APPLICATIONS_CHANNEL_ID') ?: '1560581167281995827',
         'staff_role_id' => env('DISCORD_STAFF_ROLE_ID'),
         'approved_staff_role_id' => env('DISCORD_APPROVED_STAFF_ROLE_ID'),
         // The Discord channels an applicant reads first: blue links on the staff application page, and in the message to the staff. The label is the channel's name.

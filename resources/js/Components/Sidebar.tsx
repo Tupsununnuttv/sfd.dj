@@ -293,7 +293,7 @@ export default function Sidebar({
                 ) : (
                     <>
                         <NavItem label="My Stuff" routeName="my-stuff" icon={Package} />
-                        {user.is_staff && <NavItem label="Admin panel" routeName="admin" icon={ShieldCheck} />}
+                        {(user.is_staff || user.site_permissions.includes('applications.manage')) && <NavItem label="Admin panel" routeName="admin" icon={ShieldCheck} />}
                         <Link href={route('logout')} method="post" as="button" title="Log out" className={`${item} text-neutral-500 hover:bg-neutral-900 hover:text-white`}>
                             <LogOut size={18} className="shrink-0" />
                             <span className={expanded ? 'inline' : 'hidden lg:inline'}>Log out</span>
